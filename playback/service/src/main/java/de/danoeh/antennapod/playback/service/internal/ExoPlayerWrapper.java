@@ -54,6 +54,8 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 
+import android.os.Handler;
+import android.os.Looper;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,6 +82,10 @@ public class ExoPlayerWrapper {
     private SimpleCache simpleCache;
     @Nullable
     private LoudnessEnhancer loudnessEnhancer = null;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private float muteBeforeSpeedChange = -1f; // real volume saved when we intentionally mute for speed change
+    private Runnable pendingSpeedApply = null;
+    private Runnable pendingVolumeRestore = null;
 
     ExoPlayerWrapper(Context context) {
         this.context = context;
@@ -204,6 +210,7 @@ public class ExoPlayerWrapper {
             simpleCache.release();
             simpleCache = null;
         }
+        cancelPendingSpeedChange();
         audioSeekCompleteListener = null;
         audioCompletionListener = null;
         audioErrorListener = null;
@@ -211,6 +218,7 @@ public class ExoPlayerWrapper {
     }
 
     public void reset() {
+        cancelPendingSpeedChange();
         exoPlayer.release();
         if (simpleCache != null) {
             simpleCache.release();
@@ -219,11 +227,26 @@ public class ExoPlayerWrapper {
         createPlayer();
     }
 
+    private void cancelPendingSpeedChange() {
+        if (pendingSpeedApply != null) {
+            mainHandler.removeCallbacks(pendingSpeedApply);
+            pendingSpeedApply = null;
+        }
+        if (pendingVolumeRestore != null) {
+            mainHandler.removeCallbacks(pendingVolumeRestore);
+            pendingVolumeRestore = null;
+        }
+        muteBeforeSpeedChange = -1f;
+    }
+
     public void seekTo(int i) throws IllegalStateException {
         exoPlayer.seekTo(i);
-        if (audioSeekCompleteListener != null) {
-            audioSeekCompleteListener.run();
-        }
+        // Do NOT call audioSeekCompleteListener here — ExoPlayer fires onPositionDiscontinuity
+        // (DISCONTINUITY_REASON_SEEK) on the main thread when the seek is actually complete.
+        // Calling the listener synchronously before ExoPlayer processes the seek causes the
+        // player state to be restored to PLAYING prematurely, which lets a concurrent speed-change
+        // debounce fire setPlaybackParameters while a seek is still in-flight, interrupting the
+        // seek callback delivery and leaving the player stuck in SEEKING state.
     }
 
     public void setAudioStreamType(int i) {
@@ -271,9 +294,45 @@ public class ExoPlayerWrapper {
     }
 
     public void setPlaybackParams(float speed, boolean skipSilence) {
-        playbackParameters = new PlaybackParameters(speed, playbackParameters.pitch);
-        exoPlayer.setSkipSilenceEnabled(skipSilence);
-        exoPlayer.setPlaybackParameters(playbackParameters);
+        playbackParameters = new PlaybackParameters(speed);
+        if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
+            exoPlayer.setSkipSilenceEnabled(skipSilence);
+        }
+
+        // Cancel any in-flight callbacks from a previous speed change so rapid taps
+        // don't create overlapping mute/restore chains or restore to 0.
+        if (pendingSpeedApply != null) {
+            mainHandler.removeCallbacks(pendingSpeedApply);
+            pendingSpeedApply = null;
+        }
+        if (pendingVolumeRestore != null) {
+            mainHandler.removeCallbacks(pendingVolumeRestore);
+            pendingVolumeRestore = null;
+        }
+
+        // If we already muted intentionally for a prior speed change use that saved
+        // volume; otherwise read the current (real) volume from the player.
+        float realVol = (muteBeforeSpeedChange >= 0f) ? muteBeforeSpeedChange : exoPlayer.getVolume();
+
+        if (realVol > 0f && exoPlayer.isPlaying()) {
+            muteBeforeSpeedChange = realVol;
+            exoPlayer.setVolume(0f);
+            // Wait 100 ms for already-buffered full-volume samples to drain through
+            // the hardware audio pipeline before the renderer flush.
+            pendingSpeedApply = () -> {
+                exoPlayer.setPlaybackParameters(playbackParameters);
+                pendingSpeedApply = null;
+                pendingVolumeRestore = () -> {
+                    exoPlayer.setVolume(realVol);
+                    muteBeforeSpeedChange = -1f;
+                    pendingVolumeRestore = null;
+                };
+                mainHandler.postDelayed(pendingVolumeRestore, 250);
+            };
+            mainHandler.postDelayed(pendingSpeedApply, 100);
+        } else {
+            exoPlayer.setPlaybackParameters(playbackParameters);
+        }
     }
 
     public void setVolume(float v, float v1) {
@@ -301,8 +360,6 @@ public class ExoPlayerWrapper {
 
     public void start() {
         exoPlayer.play();
-        // Can't set params when paused - so always set it on start in case they changed
-        exoPlayer.setPlaybackParameters(playbackParameters);
     }
 
     public void stop() {
@@ -401,8 +458,18 @@ public class ExoPlayerWrapper {
         if (!VolumeAdaptionSetting.isBoostSupported()) {
             return;
         }
+        if (audioStreamId == 0) {
+            return;
+        }
 
-        LoudnessEnhancer newEnhancer = new LoudnessEnhancer(audioStreamId);
+        LoudnessEnhancer newEnhancer;
+        try {
+            newEnhancer = new LoudnessEnhancer(audioStreamId);
+        } catch (Exception e) {
+            Log.d(TAG, "Failed to create LoudnessEnhancer: " + e);
+            return;
+        }
+
         LoudnessEnhancer oldEnhancer = this.loudnessEnhancer;
         if (oldEnhancer != null) {
             try {
@@ -410,9 +477,10 @@ public class ExoPlayerWrapper {
                 if (oldEnhancer.getEnabled()) {
                     newEnhancer.setTargetGain((int) oldEnhancer.getTargetGain());
                 }
-                oldEnhancer.release();
             } catch (Exception e) {
                 Log.d(TAG, e.toString());
+            } finally {
+                oldEnhancer.release();
             }
         }
 

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "177178067144",
+    "project_id": "trim-player",
+    "storage_bucket": "trim-player.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177178067144:android:8bdfe10a48fd3c45f025fd",
+        "android_client_info": {
+          "package_name": "com.trimplayer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhP0PjnqBr8tN64Z3U6ymYstpQjzDimrw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177178067144:android:715c1043d8e3d79df025fd",
+        "android_client_info": {
+          "package_name": "com.trimplayer.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhP0PjnqBr8tN64Z3U6ymYstpQjzDimrw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

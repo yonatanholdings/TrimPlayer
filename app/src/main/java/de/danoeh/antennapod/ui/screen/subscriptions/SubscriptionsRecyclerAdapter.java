@@ -3,10 +3,15 @@ package de.danoeh.antennapod.ui.screen.subscriptions;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.os.Build;
+import android.view.ContextMenu;
+import android.view.InputDevice;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,10 +31,13 @@ import java.util.Map;
 /**
  * Adapter for subscriptions
  */
-public class SubscriptionsRecyclerAdapter extends SelectableAdapter<SubscriptionViewHolder> {
+public class SubscriptionsRecyclerAdapter extends SelectableAdapter<SubscriptionViewHolder>
+        implements View.OnCreateContextMenuListener {
     private final WeakReference<MainActivity> mainActivityRef;
     private List<Feed> listItems;
     private Map<Long, Integer> feedCounters;
+    private Feed selectedItem = null;
+    int longPressedPosition = 0; // used to init actionMode
     private int columnCount = 3;
 
     public SubscriptionsRecyclerAdapter(MainActivity mainActivity) {
@@ -46,6 +54,10 @@ public class SubscriptionsRecyclerAdapter extends SelectableAdapter<Subscription
 
     public Object getItem(int position) {
         return listItems.get(position);
+    }
+
+    public Feed getSelectedItem() {
+        return selectedItem;
     }
 
     @NonNull
@@ -67,19 +79,16 @@ public class SubscriptionsRecyclerAdapter extends SelectableAdapter<Subscription
     public void onBindViewHolder(@NonNull SubscriptionViewHolder holder, int position) {
         Feed feed = listItems.get(position);
         holder.bind(feed, columnCount, feedCounters.containsKey(feed.getId()) ? feedCounters.get(feed.getId()) : 0);
-        int cardMargin = 0;
+        holder.itemView.setOnCreateContextMenuListener(this);
         if (inActionMode()) {
-            if (holder.selectIcon != null) {
-                holder.selectIcon.setVisibility(View.VISIBLE);
-                holder.gradient.setVisibility(View.VISIBLE);
-                holder.itemView.setSelected(isSelected(position));
-                holder.selectIcon.setImageResource(isSelected(position)
-                        ? R.drawable.circle_checked : R.drawable.circle_unchecked);
-                cardMargin = isSelected(position) ? (int) convertDpToPixel(
-                        holder.itemView.getContext(), 12f) : 0;
+            if (holder.selectView != null) {
+                holder.selectCheckbox.setVisibility(View.VISIBLE);
+                holder.selectView.setVisibility(View.VISIBLE);
+                holder.selectCheckbox.setChecked((isSelected(position)));
+                holder.selectCheckbox.setOnCheckedChangeListener((buttonView, isChecked)
+                        -> setSelected(holder.getBindingAdapterPosition(), isChecked));
                 holder.count.setVisibility(View.GONE);
             } else {
-                holder.itemView.setSelected(isSelected(position));
                 holder.itemView.setBackgroundResource(android.R.color.transparent);
                 if (isSelected(position)) {
                     holder.itemView.setBackgroundColor(0x88000000
@@ -87,26 +96,30 @@ public class SubscriptionsRecyclerAdapter extends SelectableAdapter<Subscription
                 }
             }
         } else {
-            holder.itemView.setSelected(false);
             holder.itemView.setBackgroundResource(android.R.color.transparent);
-            if (holder.selectIcon != null) {
-                holder.selectIcon.setVisibility(View.GONE);
-                holder.gradient.setVisibility(View.GONE);
+            if (holder.selectView != null) {
+                holder.selectCheckbox.setVisibility(View.GONE);
+                holder.selectView.setVisibility(View.GONE);
             }
-        }
-        if (holder.selectIcon != null) {
-            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) holder.card.getLayoutParams();
-            params.leftMargin = cardMargin;
-            params.topMargin = cardMargin;
-            params.rightMargin = cardMargin;
-            params.bottomMargin = cardMargin;
-            holder.card.setLayoutParams(params);
         }
 
         holder.itemView.setOnLongClickListener(v -> {
             if (!inActionMode()) {
-                startSelectMode(holder.getBindingAdapterPosition());
-                return true;
+                longPressedPosition = holder.getBindingAdapterPosition();
+                selectedItem = feed;
+            }
+            return false;
+        });
+
+        holder.itemView.setOnTouchListener((v, e) -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (e.isFromSource(InputDevice.SOURCE_MOUSE)
+                        &&  e.getButtonState() == MotionEvent.BUTTON_SECONDARY) {
+                    if (!inActionMode()) {
+                        longPressedPosition = holder.getBindingAdapterPosition();
+                        selectedItem = feed;
+                    }
+                }
             }
             return false;
         });
@@ -119,6 +132,7 @@ public class SubscriptionsRecyclerAdapter extends SelectableAdapter<Subscription
                 mainActivityRef.get().loadChildFragment(fragment);
             }
         });
+
     }
 
     @Override
@@ -132,6 +146,25 @@ public class SubscriptionsRecyclerAdapter extends SelectableAdapter<Subscription
             return RecyclerView.NO_ID; // Dummy views
         }
         return listItems.get(position).getId();
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (inActionMode() || selectedItem == null) {
+            return;
+        }
+        MenuInflater inflater = mainActivityRef.get().getMenuInflater();
+        inflater.inflate(R.menu.nav_feed_context, menu);
+        menu.findItem(R.id.multi_select).setVisible(true);
+        menu.setHeaderTitle(selectedItem.getTitle());
+    }
+
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.multi_select) {
+            startSelectMode(longPressedPosition);
+            return true;
+        }
+        return false;
     }
 
     public List<Feed> getSelectedItems() {

@@ -40,6 +40,7 @@ public class FeedMedia implements Playable {
     private int position; // Current position in file
     private long lastPlayedTimeStatistics; // Last time this media was played (in ms)
     private int playedDuration; // How many ms of this file have been played
+    private int skippedDuration; // How many ms were skipped (trimmed) during playback
     private long size; // File size in Byte
     private String mimeType;
     @Nullable private volatile FeedItem item;
@@ -192,6 +193,14 @@ public class FeedMedia implements Playable {
 
     public void setPlayedDuration(int playedDuration) {
         this.playedDuration = playedDuration;
+    }
+
+    public int getSkippedDuration() {
+        return skippedDuration;
+    }
+
+    public void setSkippedDuration(int skippedDuration) {
+        this.skippedDuration = skippedDuration;
     }
 
     public int getPosition() {

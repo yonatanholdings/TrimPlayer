@@ -7,10 +7,10 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.res.ResourcesCompat;
 import de.danoeh.antennapod.ui.echo.EchoConfig;
 import de.danoeh.antennapod.ui.echo.R;
+import de.danoeh.antennapod.ui.echo.WordmarkDrawable;
 import java.util.ArrayList;
 
 public class FinalShareBackground extends BubbleBackground {
@@ -30,7 +30,7 @@ public class FinalShareBackground extends BubbleBackground {
                                 ArrayList<String> favoritePodNames, ArrayList<Drawable> favoritePodImages) {
         super(context);
         this.heading = context.getString(R.string.echo_share_heading);
-        this.logo = AppCompatResources.getDrawable(context, R.drawable.echo);
+        this.logo = new WordmarkDrawable(context);
         this.favoritePodNames = favoritePodNames;
         this.favoritePodImages = favoritePodImages;
         this.year = String.valueOf(EchoConfig.RELEASE_YEAR);

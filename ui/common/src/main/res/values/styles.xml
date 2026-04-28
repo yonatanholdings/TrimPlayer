@@ -43,22 +43,9 @@
         <item name="colorOnPrimaryContainer">@color/black</item>
         <item name="android:colorBackground">@color/background_light</item>
         <item name="colorSurface">@color/background_light</item>
-        <item name="colorOnSurface">@color/black</item>
-        <item name="colorOnContainer">@color/black</item>
-        <item name="colorSurfaceVariant">@color/color_surface_variant_light</item>
-        <item name="colorOnSurfaceVariant">@color/text_color_secondary_light</item>
+        <item name="colorSurfaceVariant">#D3DCE0</item>
         <item name="colorSurfaceContainer">#EBEEF3</item>
-        <item name="colorSecondaryContainer">@color/color_secondary_container_light</item>
-        <item name="colorOnSecondaryContainer">@color/black</item>
-        <item name="android:textColorPrimary">@color/black</item>
-        <item name="android:textColorSecondary">@color/text_color_secondary_light</item>
-        <item name="android:textColorTertiary">@color/text_color_secondary_light</item>
-        <item name="colorOutline">@color/text_color_secondary_light</item>
-        <item name="colorOutlineVariant">@color/text_color_secondary_light</item>
-        <item name="colorSurfaceContainerHigh">@color/color_surface_variant_light</item>
-        <item name="colorSurfaceContainerHighest">@color/color_surface_variant_light</item>
-        <item name="colorSurfaceContainerLow">@color/color_surface_variant_light</item>
-        <item name="colorSurfaceContainerLowest">@color/color_surface_variant_light</item>
+        <item name="colorSecondaryContainer">#D3DCE0</item>
     </style>
 
     <style name="Theme.AntennaPod.Dynamic.Dark" parent="Theme.Base.AntennaPod.Dynamic.Dark">
@@ -101,22 +88,9 @@
         <item name="colorOnPrimaryContainer">@color/white</item>
         <item name="android:colorBackground">@color/background_darktheme</item>
         <item name="colorSurface">@color/background_darktheme</item>
-        <item name="colorOnSurface">@color/white</item>
-        <item name="colorOnContainer">@color/white</item>
-        <item name="colorSurfaceVariant">@color/color_surface_variant_dark</item>
-        <item name="colorOnSurfaceVariant">@color/text_color_secondary_dark</item>
+        <item name="colorSurfaceVariant">#2F3B4F</item>
         <item name="colorSurfaceContainer">#1C2024</item>
-        <item name="colorSecondaryContainer">@color/color_secondary_container_dark</item>
-        <item name="colorOnSecondaryContainer">@color/white</item>
-        <item name="android:textColorPrimary">@color/white</item>
-        <item name="android:textColorSecondary">@color/text_color_secondary_dark</item>
-        <item name="android:textColorTertiary">@color/text_color_secondary_dark</item>
-        <item name="colorOutline">@color/text_color_secondary_dark</item>
-        <item name="colorOutlineVariant">@color/text_color_secondary_dark</item>
-        <item name="colorSurfaceContainerHigh">@color/color_surface_variant_dark</item>
-        <item name="colorSurfaceContainerHighest">@color/color_surface_variant_dark</item>
-        <item name="colorSurfaceContainerLow">@color/color_surface_variant_dark</item>
-        <item name="colorSurfaceContainerLowest">@color/color_surface_variant_dark</item>
+        <item name="colorSecondaryContainer">#2F3B4F</item>
     </style>
 
     <style name="Theme.AntennaPod.Dynamic.TrueBlack" parent="Theme.AntennaPod.Dynamic.Dark">
@@ -249,7 +223,8 @@
         <item name="android:windowTranslucentNavigation">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:enforceNavigationBarContrast" tools:targetApi="q">false</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/launcher_animate</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenBackground">#FF8C42</item>
     </style>
 
     <style name="Theme.AntennaPod.Splash.Translucent" parent="Theme.AntennaPod.Splash">
@@ -267,6 +242,10 @@
     <style name="Theme.AntennaPod.Toolbar" parent="ThemeOverlay.MaterialComponents.Toolbar.Surface">
         <item name="action_icon_color">?attr/colorOnSurface</item>
         <item name="colorControlNormal">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="Theme.AntennaPod.VideoPlayer" parent="@style/Theme.AntennaPod.Dark">
+        <item name="windowActionBarOverlay">true</item>
     </style>
 
     <style name="AntennaPod.TextView.Heading" parent="@android:style/TextAppearance.Medium">

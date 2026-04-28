@@ -70,7 +70,7 @@ public class FinalShareScreen extends EchoScreen {
             background.draw(canvas);
             viewBinding.backgroundImage.setImageDrawable(null);
             viewBinding.backgroundImage.setImageDrawable(background);
-            File file = new File(UserPreferences.getDataFolder(null), "AntennaPodEcho.png");
+            File file = new File(UserPreferences.getDataFolder(null), "TrimPlayerEcho.png");
             FileOutputStream stream = new FileOutputStream(file);
             bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
             stream.close();

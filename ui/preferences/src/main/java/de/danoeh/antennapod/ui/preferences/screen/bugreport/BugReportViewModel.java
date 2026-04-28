@@ -105,7 +105,7 @@ public class BugReportViewModel extends AndroidViewModel {
             this.formattedEnvironmentInfo = "## Environment"
                     + "\nAndroid version: " + environmentInfo.androidVersion
                     + "\nOS version: " + environmentInfo.androidOsVersion
-                    + "\nAntennaPod version: " + environmentInfo.applicationVersion
+                    + "\nTrimPlayer version: " + environmentInfo.applicationVersion
                     + "\nModel: " + environmentInfo.deviceModel
                     + "\nDevice: " + environmentInfo.deviceName
                     + "\nProduct: " + environmentInfo.productName
@@ -118,7 +118,7 @@ public class BugReportViewModel extends AndroidViewModel {
                 SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
                 this.formattedCrashLog = "## Crash info"
                         + "\nTime: " + df.format(crashLogInfo.getTimestamp())
-                        + "\nAntennaPod version: " + environmentInfo.applicationVersion
+                        + "\nTrimPlayer version: " + environmentInfo.applicationVersion
                         + "\n"
                         + "\nStackTrace"
                         + "\n```"

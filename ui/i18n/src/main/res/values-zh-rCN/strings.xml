@@ -30,7 +30,7 @@
     <string name="change_setting">更改</string>
     <string name="individual_subscription">单独订阅</string>
     <!--Statistics fragment-->
-  <string name="statistics_include_marked">包括刚刚标记为已播放的单集时长</string>
+  <string name="statistics_include_marked">包括刚刚标记为已播放的单集时长‌</string>
     <string name="statistics_speed_not_counted">注意：播放速度不在考虑范围之内。</string>
     <string name="statistics_from">从</string>
     <string name="statistics_to">到</string>
@@ -47,7 +47,7 @@
     <string name="home_continue_title">继续收听</string>
     <string name="home_new_title">最近更新</string>
     <string name="home_downloads_title">管理下载</string>
-    <string name="home_welcome_title">欢迎使用 AntennaPod！</string>
+    <string name="home_welcome_title">欢迎使用 TrimPlayer！</string>
     <string name="home_welcome_text">您尚未订阅任何播客。请打开菜单添加播客。</string>
     <string name="notification_permission_denied">您已拒绝该权限。</string>
     <string name="configure_home">配置主屏幕</string>
@@ -59,10 +59,10 @@
     <string name="drawer_feed_order_unplayed_episodes">按计数排序</string>
     <string name="drawer_feed_order_alphabetical">按字母顺序排序</string>
     <string name="drawer_feed_order_last_update">按发布日期排序</string>
-    <string name="drawer_feed_order_most_played">按已播放单集数量排序</string>
+    <string name="drawer_feed_order_most_played">按已播放单集数量排序‌</string>
     <string name="drawer_feed_counter_inbox">收件箱中的单集数量</string>
     <string name="drawer_feed_counter_unplayed">未播放单集数量</string>
-    <string name="drawer_feed_counter_downloaded">已下载单集数量</string>
+    <string name="drawer_feed_counter_downloaded">已下载单集数量‌</string>
     <string name="drawer_feed_counter_downloaded_unplayed">已下载未播放单集数量</string>
     <string name="drawer_feed_counter_none">无</string>
     <!--Bug report activity-->
@@ -230,10 +230,10 @@
     <string name="download_log_title_unknown">未知标题</string>
     <string name="download_type_feed">订阅</string>
     <string name="download_type_media">媒体文件</string>
-    <string name="no_feed_url_podcast_found_by_search">建议的播客没有 RSS 链接，AntennaPod 找到可能匹配的播客</string>
+    <string name="no_feed_url_podcast_found_by_search">建议的播客没有 RSS 链接，TrimPlayer 找到可能匹配的播客</string>
     <string name="authentication_notification_title">需要身份验证</string>
     <string name="confirm_mobile_download_dialog_title">确认使用移动数据下载</string>
-    <string name="confirm_mobile_download_dialog_message">设置中已禁用通过移动数据下载。AntennaPod 将在 Wi-Fi 可用时自动下载单集。</string>
+    <string name="confirm_mobile_download_dialog_message">设置中已禁用通过移动数据下载。TrimPlayer 将在 Wi-Fi 可用时自动下载单集。</string>
     <string name="confirm_mobile_download_dialog_message_vpn">- 正在用 VPN 吗？你的 VPN 应用假装是一个移动网络（按流量计费连接）。如果你想修复该问题，请联系 VPN 应用创建者。.\n- 没在用 VPN？ 请打开安卓系统 Wi-Fi 设置并更改 Wi-Fi 类型为不按流量计费。</string>
     <string name="confirm_mobile_download_dialog_download_later">稍后下载</string>
     <string name="confirm_mobile_download_dialog_allow_this_time">仍要下载</string>
@@ -244,7 +244,7 @@
     <!--Mediaplayer messages-->
   <string name="playback_error_generic">无法播放媒体文件。\n\n- 请尝试删除并重新下载该单集。\n- 请检查您的网络连接，并确保没有 VPN 或登录页面阻止访问。\n- 请尝试长按并将“媒体地址”分享到网络浏览器，查看是否可以播放。如果无法播放，请联系播客创作者。</string>
     <string name="no_media_playing_label">没有可播放的媒体</string>
-    <string name="unknown_media_key">AntennaPod - 未知媒体密钥：%1$d</string>
+    <string name="unknown_media_key">TrimPlayer - 未知媒体密钥：%1$d</string>
     <string name="error_file_not_found">未找到文件</string>
     <string name="no_media_label">条目不包含一个媒体文件</string>
     <!--Queue operations-->
@@ -280,7 +280,7 @@
     <string name="no_log_downloads_head_label">没有下载日志</string>
     <string name="no_log_downloads_label">可用时下载日志会出现在这里。</string>
     <string name="no_history_head_label">无历史记录</string>
-    <string name="no_history_label">收听完单集后，该单集将在此处显示。</string>
+    <string name="no_history_label">收听完单集后，该单集将在此处显示‌。</string>
     <string name="no_all_episodes_head_label">无单集</string>
     <string name="no_all_episodes_label">添加播客时，其单集将在此处显示。</string>
     <string name="no_all_episodes_filtered_label">尝试清除筛选条件以查看更多单集。</string>
@@ -324,19 +324,19 @@
     <string name="pref_auto_delete_sum">播放后或自动下载需要空间时删除单集</string>
     <string name="pref_auto_local_delete_title">自动从本地文件夹删除</string>
     <string name="pref_auto_local_delete_sum">在自动删除功能中包括本地文件夹</string>
-    <string name="pref_auto_local_delete_dialog_body">请注意，对于本地文件夹，此操作会从 AntennaPod 中移除单集，并从设备存储中删除媒体文件。无法通过 AntennaPod 再次下载。是否启用自动删除？</string>
+    <string name="pref_auto_local_delete_dialog_body">请注意，对于本地文件夹，此操作会从 TrimPlayer 中移除单集，并从设备存储中删除媒体文件。无法通过 TrimPlayer 再次下载。是否启用自动删除？</string>
     <string name="pref_smart_mark_as_played_sum">即使单集仍有特定秒数的播放时长未完成，仍将其标记为已播放</string>
     <string name="pref_smart_mark_as_played_title">智能标记为已播放</string>
-    <string name="pref_skip_keeps_episodes_sum">跳过单集时保留该单集</string>
+    <string name="pref_skip_keeps_episodes_sum">跳过单集时保留该单集‌</string>
     <string name="pref_skip_keeps_episodes_title">保留跳过的单集</string>
-    <string name="pref_favorite_keeps_episodes_sum">标记单集为收藏时保留该单集</string>
+    <string name="pref_favorite_keeps_episodes_sum">标记单集为收藏时保留‌该单集</string>
     <string name="pref_favorite_keeps_episodes_title">保留收藏的单集</string>
     <string name="playback_pref">播放</string>
     <string name="playback_pref_sum">耳机控制、跳过间隔、队列</string>
     <string name="downloads_pref">下载</string>
     <string name="downloads_pref_sum">更新间隔、移动数据、自动下载、自动删除</string>
     <string name="feed_refresh_title">刷新播客</string>
-    <string name="feed_refresh_sum">指定 AntennaPod 自动查找新单集的间隔</string>
+    <string name="feed_refresh_sum">指定 TrimPlayer 自动查找新单集的间隔</string>
     <string name="feed_refresh_never">从不</string>
     <string name="feed_every_hour">每 1 小时</string>
     <string name="feed_every_2_hours">每 2 小时</string>
@@ -345,7 +345,7 @@
     <string name="feed_every_12_hours">每 12 小时</string>
     <string name="feed_every_24_hours">每 1 天</string>
     <string name="feed_every_72_hours">每 3 天</string>
-    <string name="pref_followQueue_title">连续播放</string>
+    <string name="pref_followQueue_title">持续播放</string>
     <string name="pref_pauseOnHeadsetDisconnect_title">耳机或蓝牙断开</string>
     <string name="pref_unpauseOnHeadsetReconnect_title">耳机重连</string>
     <string name="pref_unpauseOnBluetoothReconnect_title">蓝牙重连</string>
@@ -367,11 +367,11 @@
     <string name="pref_automatic_download_title">自动下载</string>
     <string name="pref_automatic_download_sum">配置单集的自动下载</string>
     <string name="pref_automatic_download_on_battery_title">未充电时下载</string>
-    <string name="pref_automatic_download_on_battery_sum">允许设备未充电时自动下载</string>
+    <string name="pref_automatic_download_on_battery_sum">允许设备未充电时自动下载‌</string>
     <string name="pref_episode_cache_title">单集限制</string>
     <string name="pref_episode_cache_summary">如果达到此数值，自动下载将停止</string>
     <string name="pref_episode_cover_title">使用单集封面</string>
-    <string name="pref_episode_cover_summary">启用后，如果可用，在列表中使用单集专属封面。未启用，应用将始终使用播客封面图片。</string>
+    <string name="pref_episode_cover_summary">启用后，如果可用，在列表中使用单集专属封面‌。未启用，应用将始终使用播客封面图片。</string>
     <string name="pref_show_remain_time_title">显示剩余时长</string>
     <string name="pref_show_remain_time_summary">启用后显示单集剩余时长。未启用则显示单集总时长。</string>
     <string name="pref_theme_title_automatic">自动</string>
@@ -399,7 +399,7 @@
     <string name="pref_compact_notification_buttons_dialog_error_exact">你必须不多不少地选中两个项目</string>
     <string name="pref_full_notification_buttons_title">设置通知按钮</string>
     <string name="pref_full_notification_buttons_sum">更改播放通知的按钮</string>
-    <string name="pref_enqueue_location_title">加入队列位置</string>
+    <string name="pref_enqueue_location_title">加入队列位置‌</string>
     <string name="pref_enqueue_location_sum">将单集添加到：%1$s</string>
     <string name="enqueue_location_back">末尾</string>
     <string name="enqueue_location_front">开头</string>
@@ -408,6 +408,8 @@
     <string name="pref_smart_mark_as_played_disabled">已禁用</string>
     <string name="documentation_support">文档和支持</string>
     <string name="visit_user_forum">用户论坛</string>
+    <string name="bug_report_title">报告错误</string>
+    <string name="open_bug_tracker">打开错误跟踪器</string>
     <string name="copy_to_clipboard">复制到剪贴板</string>
     <string name="copied_to_clipboard">已复制到剪贴板</string>
     <string name="pref_proxy_title">代理</string>
@@ -415,10 +417,10 @@
     <string name="pref_no_browser_found">未找到网络浏览器。</string>
     <string name="pref_enqueue_downloaded_title">添加已下载单集到队列</string>
     <string name="pref_enqueue_downloaded_summary">将已下载单集添加到队列</string>
-    <string name="pref_skip_silence_title">跳过音频中的无声片段</string>
+    <string name="pref_skip_silence_title">跳过静音部分</string>
     <string name="behavior">行为</string>
     <string name="pref_default_page">默认页面</string>
-    <string name="pref_default_page_sum">启动 AntennaPod 时打开的页面</string>
+    <string name="pref_default_page_sum">启动 TrimPlayer 时打开的页面</string>
     <string name="pref_back_button_opens_drawer">返回按钮打开抽屉</string>
     <string name="pref_back_button_opens_drawer_summary">在默认页面上按下返回按钮打开抽屉式导航栏</string>
     <string name="remember_last_page">记住最后的页面</string>
@@ -439,15 +441,15 @@
     <string name="episode_information">单集信息</string>
     <!--About screen-->
   <string name="about_pref">关于</string>
-    <string name="antennapod_version">AntennaPod 版本</string>
+    <string name="antennapod_version">TrimPlayer 版本</string>
     <string name="contributors">贡献者</string>
-    <string name="contributors_summary">每个人都可以通过代码，翻译或通过帮助我们论坛中的用户来让AntennaPod变得更好</string>
+    <string name="contributors_summary">每个人都可以通过代码，翻译或通过帮助我们论坛中的用户来让TrimPlayer变得更好</string>
     <string name="developers">开发者</string>
     <string name="translators">译者</string>
     <string name="special_thanks">特别感谢</string>
     <string name="privacy_policy">隐私政策</string>
-    <string name="licenses">许可</string>
-    <string name="licenses_summary">AntennaPod 还使用了其他优秀的软件</string>
+    <string name="licenses">许可证</string>
+    <string name="licenses_summary">TrimPlayer使用其他伟大的软件</string>
     <!--Search-->
   <string name="search_status_no_results">未找到任何结果</string>
     <string name="type_to_search">输入要搜索的查询</string>
@@ -469,9 +471,9 @@
     <string name="html">HTML</string>
     <string name="html_export_summary">向朋友展示您的订阅</string>
     <string name="opml_export_summary">将订阅转移到其他播客应用</string>
-    <string name="opml_import_summary">从其他播客应用导入订阅</string>
-    <string name="database_export_summary">将订阅、已听单集和队列转移到其他设备的 AntennaPod</string>
-    <string name="database_import_summary">从其他设备导入 AntennaPod 数据库</string>
+    <string name="opml_import_summary">从其他播客应用导入订阅‌</string>
+    <string name="database_export_summary">将订阅、已听单集和队列转移到其他设备的 TrimPlayer</string>
+    <string name="database_import_summary">从其他设备导入 TrimPlayer 数据库‌</string>
     <string name="opml_import_label">OPML 导入</string>
     <string name="opml_add_podcast_label">导入播客列表（OPML）</string>
     <string name="opml_reader_error">读取文件时出错。请确保您已选择有效的 OPML 文件。</string>
@@ -482,8 +484,8 @@
     <string name="html_export_label">HTML 导出</string>
     <string name="database_export_label">数据库导出</string>
     <string name="automatic_database_export_label">自动数据库导出</string>
-    <string name="automatic_database_export_summary">每 3 天创建 AntennaPod 数据库的备份。仅保留最近的 5 个备份。</string>
-    <string name="automatic_database_export_error">自动数据库备份过程中出错</string>
+    <string name="automatic_database_export_summary">每 3 天创建 TrimPlayer 数据库的备份。仅保留最近的 5 个备份。</string>
+    <string name="automatic_database_export_error">自动数据库备份过程中出错‌</string>
     <string name="database_import_label">数据库导入</string>
     <string name="database_import_warning">导入数据库将替换当前所有订阅和播放记录。您应该将当前数据库导出为备份。是否要替换？</string>
     <string name="please_wait">请稍候…</string>
@@ -491,8 +493,8 @@
     <string name="export_success_title">导出成功</string>
     <string name="opml_import_ask_read_permission">读取 OPML 文件需要访问外部存储的权限</string>
     <string name="successful_import_label">导入成功</string>
-    <string name="import_ok">请按“确定”重启 AntennaPod</string>
-    <string name="import_no_downgrade">此数据库使用较新版本 AntennaPod 导出。您当前的安装版本尚不支持处理此文件。</string>
+    <string name="import_ok">请按“确定”重启 TrimPlayer</string>
+    <string name="import_no_downgrade">此数据库使用较新版本 TrimPlayer 导出。您当前的安装版本尚不支持处理此文件。</string>
     <string name="favorites_export_label">收藏导出</string>
     <string name="favorites_export_summary">将已保存的收藏导出到文件</string>
     <!--Sleep timer-->
@@ -527,12 +529,12 @@
   <string name="synchronization_choose_title">选择同步提供者</string>
     <string name="synchronization_summary_unchoosen">您可以从多个服务提供者中选择，以同步您的订阅和单集播放状态</string>
     <string name="dialog_choose_sync_service_title">选择同步提供者</string>
-    <string name="gpodnet_description">Gpodder.net 是开源的播客同步服务，您可以将其安装在自己的服务器上。Gpodder.net 独立于 AntennaPod 项目。</string>
-    <string name="synchronization_summary_nextcloud">Gpodder Sync 是开源的 Nextcloud 应用，您可以轻松安装在自己的服务器上。Gpodder Sync 独立于 AntennaPod 项目。</string>
+    <string name="gpodnet_description">Gpodder.net 是开源的播客同步服务，您可以将其安装在自己的服务器上。Gpodder.net 独立于 TrimPlayer 项目。</string>
+    <string name="synchronization_summary_nextcloud">Gpodder Sync 是开源的 Nextcloud 应用，您可以轻松安装在自己的服务器上。Gpodder Sync 独立于 TrimPlayer 项目。</string>
     <string name="synchronization_host_explanation">您可以选择自己的服务器进行同步。确定首选同步服务器后，请在此处输入其地址。</string>
     <string name="synchronization_host_label">服务器地址</string>
     <string name="proceed_to_login_butLabel">继续登录</string>
-    <string name="synchronization_nextcloud_authenticate_browser">使用打开的网络浏览器授予访问权限，然后返回到 AntennaPod。</string>
+    <string name="synchronization_nextcloud_authenticate_browser">使用打开的网络浏览器授予访问权限，然后返回到 TrimPlayer。</string>
     <string name="gpodnetauth_login_butLabel">登录</string>
     <string name="synchronization_credentials_explanation">请提供您在同步服务器上的账号凭据。</string>
     <string name="gpodnetauth_encryption_warning">密码和数据未加密！</string>
@@ -541,10 +543,10 @@
     <string name="synchronization_login_butLabel">登录</string>
     <string name="synchronization_selectDevice_explanation">请选择您在同步服务器上创建的设备或创建新设备。</string>
     <string name="gpodnetauth_device_name">设备名称</string>
-    <string name="gpodnetauth_device_name_default">%1$s 上的 AntennaPod</string>
+    <string name="gpodnetauth_device_name_default">%1$s 上的 TrimPlayer</string>
     <string name="gpodnetauth_existing_devices">现有设备</string>
     <string name="gpodnetauth_create_device">创建设备</string>
-    <string name="gpodnetauth_finish_descr">恭喜！您的 gpodder.net 账号现已与设备关联。AntennaPod 今后将自动把设备上的订阅同步至 gpodder.net 账号。</string>
+    <string name="gpodnetauth_finish_descr">恭喜！您的 gpodder.net 账号现已与设备关联。TrimPlayer 今后将自动把设备上的订阅同步至 gpodder.net 账号。</string>
     <string name="pref_gpodnet_setlogin_information_title">更改登录信息</string>
     <string name="pref_gpodnet_setlogin_information_sum">更改 gpodder.net 账号的登录信息。</string>
     <string name="synchronization_sync_changes_title">立即同步</string>
@@ -561,16 +563,16 @@
     <string name="gpodnetsync_username_characters_error">用户名只能包含字母、数字、连字符和下划线。</string>
     <!--Directory chooser-->
   <string name="choose_data_directory">选择数据文件夹</string>
-    <string name="choose_data_directory_message">请选择用于 AntennaPod 的数据根目录， AntennaPod 将会创建合适的子目录。</string>
+    <string name="choose_data_directory_message">请选择用于 TrimPlayer 的数据根目录， TrimPlayer 将会创建合适的子目录。</string>
     <string name="choose_data_directory_available_space">可用空间：%1$s/%2$s</string>
     <string name="pref_pausePlaybackForFocusLoss_sum">当其他应用想要播放声音时，暂停播放而非降低音量</string>
     <string name="pref_pausePlaybackForFocusLoss_title">中断暂停</string>
     <!--Rating dialog-->
-  <string name="rating_tagline">自 %1$s 起，您累计播放 %2$s%3$d%4$s 小时的播客。</string>
+  <string name="rating_tagline">自 %1$s 以来，你累计播放的播客节目时长达 %2$s %3$d %4$s 小时。</string>
     <string name="rating_contribute_label">想加入吗？无论你是要翻译、支持、设计还是写代码，我们都欢迎！</string>
     <string name="rating_contribute_button">如何作出贡献</string>
-    <string name="rating_volunteers_label">AntennaPod 由志愿者在闲暇时间开发。留下好评分享您的感激之情。</string>
-    <string name="rating_rate">评价 AntennaPod</string>
+    <string name="rating_volunteers_label">TrimPlayer 由志愿者在闲暇时间开发。留下好评分享您的感激之情。</string>
+    <string name="rating_rate">评价 TrimPlayer</string>
     <string name="rating_later">稍后</string>
     <!--Online feed view-->
   <string name="subscribe_label">订阅</string>
@@ -648,7 +650,7 @@
     <string name="local_folder">本地文件夹</string>
     <string name="reconnect_local_folder">重新连接本地文件夹</string>
     <string name="reconnect_local_folder_warning">如果权限被拒绝，您可以使用此功能重新连接到同一文件夹。请勿选择其他文件夹。</string>
-    <string name="local_feed_description">此虚拟播客是通过向 AntennaPod 添加文件夹创建的。</string>
+    <string name="local_feed_description">此虚拟播客是通过向 TrimPlayer 添加文件夹创建的。</string>
     <string name="unable_to_start_system_file_manager">无法启动系统文件管理器</string>
     <string name="filter">筛选器</string>
     <string name="hide_is_favorite_label">已收藏</string>
@@ -763,7 +765,7 @@
     <string name="delete_tag_confirmation">请确认您要删除标签“%1$s”。</string>
     <string name="download_error_unsupported_type_html_manual">您输入的地址是网站地址，而不是播客 RSS 地址。</string>
     <string name="pref_automatic_download_global_description">自动从收件箱下载单集。可针对每个播客单独设置。</string>
-    <string name="pref_automatic_download_queue_title">下载队列中的单集</string>
+    <string name="pref_automatic_download_queue_title">下载队列中的单集‌</string>
     <string name="pref_automatic_download_queue_description">自动下载队列中的单集</string>
     <string name="episode_lists">单集列表</string>
     <string name="pref_downloads_button_action_title">从下载屏幕播放</string>
@@ -772,22 +774,22 @@
     <string name="statistics_time_played">已播放</string>
     <string name="notification_channel_refreshing">正在刷新播客</string>
     <string name="notification_channel_refreshing_description">检查新单集时显示。</string>
-    <string name="echo_home_header">年度回顾</string>
+    <string name="echo_home_header">纵览该年</string>
     <string name="echo_home_subtitle">过去一年您最常收听的播客和统计数据。这些数据仅在您的手机上。</string>
-    <string name="echo_intro_your_year">您的</string>
-    <string name="echo_intro_in_podcasts">播客年度报告</string>
+    <string name="echo_intro_your_year">你的播客</string>
+    <string name="echo_intro_in_podcasts">年度数据</string>
     <string name="echo_hours_this_year">这一年您播放了</string>
     <plurals name="echo_hours_podcasts">
         <item quantity="other">小时的单集\n来自 %1$d 个播客</item>
     </plurals>
-    <string name="echo_intro_locally">本报告在您的手机上私密生成</string>
-    <string name="echo_queue_title_clean">您已经准备好开启全新一年的收听计划。您有</string>
-    <string name="echo_queue_title_many">您今年还有很多内容待收听。您有</string>
+    <string name="echo_intro_locally">私密地在你的手机上生成</string>
+    <string name="echo_queue_title_clean">你已经准备好开始崭新的一年。你有</string>
+    <string name="echo_queue_title_many">你今年仍有相当多的节目没听过。你有</string>
     <plurals name="echo_queue_hours_waiting">
-        <item quantity="other">小时内容在队列中待收听，\n这些内容来自 %1$d 个单集</item>
+        <item quantity="other">小时的播客音频在队列中待收听，\n这些音频来自 %1$d 个单集</item>
     </plurals>
-    <string name="echo_queue_hours_normal">这相当于每天收听约 %1$s，直到 %2$d 即可听完。如果您跳过几个单集便可开启全新一年的收听计划。</string>
-    <string name="echo_queue_hours_much">这相当于每天收听约 %1$s，直到 %2$d 即可听完。等等，我没看错吧？</string>
+    <string name="echo_queue_hours_normal">这相当于大约每天 %1$s，直到 %2$d 开始。如果您跳过几个单集便可无负担地开启新一年。</string>
+    <string name="echo_queue_hours_much">这相当于大约每天 %1$s，直至 %2$d 开始。等等，我没看错吧？</string>
     <string name="echo_listened_after_title">我们已经对单集何时发布以及您何时听完它们进行了一些分析。看看我们的结论？</string>
     <string name="echo_listened_after_comment_easy">您悠闲自得，不慌不忙</string>
     <string name="echo_listened_after_time">您通常在一个单集发布 %1$s 后听完它。</string>
@@ -799,16 +801,16 @@
     <string name="echo_hoarder_subtitle_clean">都完成了！</string>
     <string name="echo_hoarder_comment_clean">您今年已播放了来自 %2$d 个活动订阅中 %1$d%% 的单集。我们打赌您的桌子也很整洁！</string>
     <string name="echo_thanks_large">感谢</string>
-    <string name="echo_thanks_we_are_glad_old">今年继续使用本应用！\n\n您于 %1$s 用 AntennaPod 播放了第一个单集。自那时起，我们始终对能为您服务感到荣幸。</string>
+    <string name="echo_thanks_we_are_glad_old">今年继续使用本应用！\n\n您于 %1$s 用 TrimPlayer 播放了第一个单集。自那时起，我们始终对能为您服务感到荣幸。</string>
     <string name="echo_thanks_we_are_glad_new">今年成为我们的新用户！\n\n不论您之前是其他应用的用户，还是刚刚开始播客探险，我们都十分乐意！</string>
     <string name="echo_thanks_now_favorite">现在，让我们看看您收藏的播客…</string>
     <string name="echo_share_heading">我收藏的播客</string>
-    <string name="echo_share">我的 %d 年播客之旅回顾。#AntennaPodEcho</string>
-    <string name="echo_queue_hours_clean">这相当于每天收听约 %1$s，直到 %2$d 即可听完。</string>
+    <string name="echo_share">我的 %d 年播客之旅回顾。#TrimPlayerEcho</string>
+    <string name="echo_queue_hours_clean">这相当于每天大约 %1$s，直至 %2$d 开始。</string>
     <string name="echo_hoarder_comment_hoarder">数字不撒谎。考虑到今年您的 %2$d 个活动订阅中仅 %1$d%% 已播放，我们的结论或许是对的。</string>
     <string name="overflow_more">更多</string>
     <string name="preference_search_clear_input">清除</string>
-    <string name="feed_new_episodes_action_summary_autodownload">自动下载已启用。单集将添加到收件箱，下载完成后移动到队列。</string>
+    <string name="feed_new_episodes_action_summary_autodownload">自动下载已启用。单集将添加到收件箱，下载完成后移动到队列‌。</string>
     <string name="visit_social_interact_label">显示评论</string>
     <string name="rss_address">RSS 地址</string>
     <plurals name="downloading_episodes_message">
@@ -834,11 +836,11 @@
         <item quantity="other">已从队列中移除 %d 个单集。</item>
     </plurals>
     <string name="transcript_follow_audio_label">跟随音频</string>
-    <string name="visit_social_interact_confirm_dialog_title">您正在离开 AntennaPod</string>
+    <string name="visit_social_interact_confirm_dialog_title">您正在离开 TrimPlayer</string>
     <string name="visit_social_interact_confirm_dialog_message">请确保您信任网站“%1$s”。</string>
     <string name="reset_playback_position_label">重置播放位置</string>
     <string name="no_items_selected_message">未选中项目</string>
-    <string name="delete_local_feed_confirmation_dialog_message">删除操作会从 AntennaPod 中移除单集，并从设备存储中删除媒体文件。无法通过 AntennaPod 再次下载。</string>
+    <string name="delete_local_feed_confirmation_dialog_message">删除操作会从 TrimPlayer 中移除单集，并从设备存储中删除媒体文件。无法通过 TrimPlayer 再次下载。</string>
     <plurals name="move_to_top_message">
         <item quantity="other">%d 个单集已移至顶部。</item>
     </plurals>
@@ -862,42 +864,8 @@
     <string name="restore_archive_label">恢复</string>
     <string name="remove_archive_feed_label">删除/归档</string>
     <string name="tag_untagged">无标签</string>
-    <string name="feed_delete_explanation_delete">删除操作会移除订阅，包括所有单集、下载内容、播放记录和统计数据。</string>
-    <string name="feed_delete_explanation_archive">归档操作会将订阅从列表中隐藏并停止查找新单集。下载内容、统计数据和播放状态将保留。</string>
+    <string name="feed_delete_explanation_delete">删除操作将移除其所有单集，包括下载内容、播放记录和统计数据。</string>
+    <string name="feed_delete_explanation_archive">归档操作会将其从订阅列表中隐藏并避免获取更新。下载内容、统计数据和播放状态将保留。</string>
     <string name="no_archive_head_label">无归档内容</string>
     <string name="no_archive_label">您可以从主订阅屏幕归档播客。</string>
-    <string name="general_expand_button">展开</string>
-    <string name="general_collapse_button">收起</string>
-    <string name="archiving_podcast_progress">正在归档第 %1$d 个播客，共 %2$d 个…</string>
-    <string name="deleting_podcast_progress">正在删除第 %1$d 个播客，共 %2$d 个…</string>
-    <string name="download_log_details_human_readable_reason_title">状态</string>
-    <string name="download_log_details_technical_reason_title">技术详情</string>
-    <string name="download_log_details_file_url_title">文件 URL</string>
-    <string name="download_log_open_feed">打开</string>
-    <string name="no_following_in_queue">这是队列中的最后一个单集</string>
-    <string name="episode">单集</string>
-    <string name="feed">播客</string>
-    <string name="pref_global_default_episode_list_sort_order_title">默认排序</string>
-    <string name="pref_global_default_episode_list_sort_order_sum">选择播客页面单集的默认排序</string>
-    <string name="report_bug_title">报告错误</string>
-    <string name="report_bug_message">很抱歉您遇到了问题。我们非常希望您能帮助我们改进 AntennaPod。请查看我们的论坛或 GitHub，看看是否已经有人报告过该问题。如果没有，请告诉我们，我们会进行调查。</string>
-    <string name="report_bug_device_info_title">设备</string>
-    <string name="report_bug_attrib_app_version">应用版本</string>
-    <string name="report_bug_attrib_android_version">Android 版本</string>
-    <string name="report_bug_attrib_device_name">设备名称</string>
-    <string name="report_bug_crash_log_title">崩溃日志</string>
-    <string name="report_bug_crash_log_message">已创建：%1$s。</string>
-    <string name="report_bug_forum_title">论坛</string>
-    <string name="report_bug_github_title">GitHub</string>
-    <string name="sleep_timer_episodes_label">单集</string>
-    <string name="sleep_timer_without_continuous_playback">禁用连续播放</string>
-    <string name="sleep_timer_without_continuous_playback_change_hours">更改小时数</string>
-    <string name="sleep_timer_without_continuous_playback_message">请在设置中禁用“连续播放”，而非播放单集时始终自动启用睡眠定时器。</string>
-    <plurals name="timer_exceeds_remaining_time_while_continuous_playback_disabled">
-        <item quantity="other">连续播放已禁用，当前单集仅剩 %1$d 分钟</item>
-    </plurals>
-    <string name="multiple_sleep_episodes_while_continuous_playback_disabled">设置中已禁用连续播放功能。始终在单集结束后自动停止播放。</string>
-    <plurals name="episodes_sleep_timer_exceeds_queue">
-        <item quantity="other">您的队列中仅剩 %1$d 个单集</item>
-    </plurals>
 </resources>

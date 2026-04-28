@@ -15,7 +15,6 @@ import java.util.Map;
 
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.SortOrder;
-import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 /**
  * Provides method for sorting the a list of {@link FeedItem} according to rules.
@@ -32,10 +31,6 @@ public class FeedItemPermutors {
 
         Comparator<FeedItem> comparator = null;
         Permutor<FeedItem> permutor = null;
-
-        if (SortOrder.GLOBAL_DEFAULT.equals(sortOrder)) {
-            sortOrder = UserPreferences.getPrefGlobalSortedOrder();
-        }
 
         switch (sortOrder) {
             case EPISODE_TITLE_A_Z:

@@ -47,7 +47,7 @@
     <string name="home_continue_title">Continuer d\'écouter</string>
     <string name="home_new_title">Les nouveautés</string>
     <string name="home_downloads_title">Derniers téléchargements</string>
-    <string name="home_welcome_title">Bienvenue dans AntennaPod !</string>
+    <string name="home_welcome_title">Bienvenue dans TrimPlayer !</string>
     <string name="home_welcome_text">Vous n\'avez pas encore d\'abonnements. Ouvrez le menu pour ajouter des podcasts.</string>
     <string name="notification_permission_denied">Vous avez refusé l\'autorisation.</string>
     <string name="configure_home">Paramétrer l\'accueil</string>
@@ -249,10 +249,10 @@
     <string name="download_log_title_unknown">Titre inconnu</string>
     <string name="download_type_feed">Flux</string>
     <string name="download_type_media">Fichier média</string>
-    <string name="no_feed_url_podcast_found_by_search">Le podcast suggéré n\'a pas de flux RSS mais AntennaPod a trouvé un lien qui pourrait correspondre</string>
+    <string name="no_feed_url_podcast_found_by_search">Le podcast suggéré n\'a pas de flux RSS mais TrimPlayer a trouvé un lien qui pourrait correspondre</string>
     <string name="authentication_notification_title">Authentification requise</string>
     <string name="confirm_mobile_download_dialog_title">Confirmer le téléchargement avec la connexion mobile</string>
-    <string name="confirm_mobile_download_dialog_message">Le téléchargement avec la connexion mobile est désactivé dans les options. AntennaPod peut télécharger l\'épisode automatiquement plus tard quand le Wi-Fi sera disponible.</string>
+    <string name="confirm_mobile_download_dialog_message">Le téléchargement avec la connexion mobile est désactivé dans les options. TrimPlayer peut télécharger l\'épisode automatiquement plus tard quand le Wi-Fi sera disponible.</string>
     <string name="confirm_mobile_download_dialog_message_vpn">- Vous utilisez un VPN ? Votre application VPN apparaît comme une connexion mobile (limitée). Si vous voulez régler ce problème contactez les créateurs de votre application VPN.\n- Vous n\'utilisez pas de VPN ? Ouvrez les paramètres pour le Wi-Fi et changer son type en tant que \"non facturé à l\'usage\".</string>
     <string name="confirm_mobile_download_dialog_download_later">Télécharger plus tard</string>
     <string name="confirm_mobile_download_dialog_allow_this_time">Télécharger quand même</string>
@@ -263,7 +263,7 @@
     <!--Mediaplayer messages-->
   <string name="playback_error_generic">Le fichier de média n\'a pas pu être lu.\n\n- Essayez de le supprimer et de télécharger l\'épisode à nouveau.\n- Vérifier votre connexion, et assurez-vous que l\'accès n\'est pas bloqué par un VPN ou une page de connexion.\n- Essayez de faire un appui long et partager le lien du fichier à votre navigateur pour contrôler si l\'épisode peut être lu. Si ce n\'est pas le cas, contactez le créateur du podcast.</string>
     <string name="no_media_playing_label">Aucune lecture</string>
-    <string name="unknown_media_key">AntennaPod - Touche média inconnue : %1$d</string>
+    <string name="unknown_media_key">TrimPlayer - Touche média inconnue : %1$d</string>
     <string name="error_file_not_found">Fichier non trouvé</string>
     <string name="no_media_label">Aucun fichier média disponible</string>
     <!--Queue operations-->
@@ -343,7 +343,7 @@
     <string name="pref_auto_delete_sum">Supprimer les épisodes après la lecture ou si le téléchargement automatique a besoin de plus de place</string>
     <string name="pref_auto_local_delete_title">Suppression automatique pour dossiers locaux</string>
     <string name="pref_auto_local_delete_sum">Inclure les dossiers locaux lors de la suppression automatique</string>
-    <string name="pref_auto_local_delete_dialog_body">Attention la suppression des épisodes des dossiers locaux dans AntennaPod les suppriment aussi de votre appareil. Ils seront définitivement perdus et ne pourront pas être \"retélécharger\" à partir d\'AntennaPod. Activer quand même l\'option ?</string>
+    <string name="pref_auto_local_delete_dialog_body">Attention la suppression des épisodes des dossiers locaux dans TrimPlayer les suppriment aussi de votre appareil. Ils seront définitivement perdus et ne pourront pas être \"retélécharger\" à partir d\'TrimPlayer. Activer quand même l\'option ?</string>
     <string name="pref_smart_mark_as_played_sum">En dessous de la durée choisie les épisodes seront marqués comme lus même s\'ils n\'ont pas été terminés</string>
     <string name="pref_smart_mark_as_played_title">Marquer comme lu intelligemment</string>
     <string name="pref_skip_keeps_episodes_sum">Garder les épisodes quand ils sont passés</string>
@@ -355,7 +355,7 @@
     <string name="downloads_pref">Téléchargements</string>
     <string name="downloads_pref_sum">Fréquence de mise à jour, utilisation de la connexion mobile, téléchargements et suppressions automatiques</string>
     <string name="feed_refresh_title">Actualiser les podcasts</string>
-    <string name="feed_refresh_sum">Choisir la fréquence de mise à jour automatique des épisodes par AntennaPod</string>
+    <string name="feed_refresh_sum">Choisir la fréquence de mise à jour automatique des épisodes par TrimPlayer</string>
     <string name="feed_refresh_never">Jamais</string>
     <string name="feed_every_hour">Toutes les heures</string>
     <string name="feed_every_2_hours">Toutes les 2 heures</string>
@@ -427,6 +427,8 @@
     <string name="pref_smart_mark_as_played_disabled">Désactivé</string>
     <string name="documentation_support">Documentation &amp; support</string>
     <string name="visit_user_forum">Forum des utilisateurs</string>
+    <string name="bug_report_title">Signaler un bug</string>
+    <string name="open_bug_tracker">Ouvrir le suivi des bugs</string>
     <string name="copy_to_clipboard">Copier dans le presse-papier</string>
     <string name="copied_to_clipboard">Copié dans le presse-papier</string>
     <string name="pref_proxy_title">Proxy</string>
@@ -437,7 +439,7 @@
     <string name="pref_skip_silence_title">Supprimer les silences</string>
     <string name="behavior">Comportement</string>
     <string name="pref_default_page">Écran par défaut</string>
-    <string name="pref_default_page_sum">Choisir l\'écran par défaut à l\'ouverture d\'AntennaPod</string>
+    <string name="pref_default_page_sum">Choisir l\'écran par défaut à l\'ouverture d\'TrimPlayer</string>
     <string name="pref_back_button_opens_drawer">Le bouton retour ouvre le volet de navigation</string>
     <string name="pref_back_button_opens_drawer_summary">Ouvrir le volet de navigation quand le bouton retour est utilisé sur l\'écran par défaut</string>
     <string name="remember_last_page">Dernier écran utilisé</string>
@@ -458,15 +460,15 @@
     <string name="episode_information">Épisodes</string>
     <!--About screen-->
   <string name="about_pref">À propos</string>
-    <string name="antennapod_version">Version d\'AntennaPod</string>
+    <string name="antennapod_version">Version d\'TrimPlayer</string>
     <string name="contributors">Contributeurs</string>
-    <string name="contributors_summary">Tout le monde peut contribuer à l\'amélioration d\'AntennaPod - avec du code, des traductions ou en aidant les utilisateurs dans notre forum</string>
+    <string name="contributors_summary">Tout le monde peut contribuer à l\'amélioration d\'TrimPlayer - avec du code, des traductions ou en aidant les utilisateurs dans notre forum</string>
     <string name="developers">Développeurs</string>
     <string name="translators">Traducteurs</string>
     <string name="special_thanks">Remerciements spéciaux</string>
     <string name="privacy_policy">Politique de confidentialité</string>
     <string name="licenses">Licences</string>
-    <string name="licenses_summary">AntennaPod utilise le code d\'autres logiciels</string>
+    <string name="licenses_summary">TrimPlayer utilise le code d\'autres logiciels</string>
     <!--Search-->
   <string name="search_status_no_results">Aucun résultat trouvé</string>
     <string name="type_to_search">Entrer une requête pour chercher</string>
@@ -490,7 +492,7 @@
     <string name="opml_export_summary">Transférer vos abonnements à une autre application de podcasts</string>
     <string name="opml_import_summary">Importer les abonnements d\'une autre application de podcasts</string>
     <string name="database_export_summary">Transférer les abonnements, les épisodes écoutés et la liste de lecture sur un autre appareil</string>
-    <string name="database_import_summary">Importer une base de données AntennaPod d\'un autre appareil</string>
+    <string name="database_import_summary">Importer une base de données TrimPlayer d\'un autre appareil</string>
     <string name="opml_import_label">Importer un fichier OPML</string>
     <string name="opml_add_podcast_label">Importer une liste de podcasts (fichier OPML)</string>
     <string name="opml_reader_error">Une erreur s\'est produite lors de la lecture du fichier. Assurez-vous d\'avoir bien sélectionné un fichier OPML valide.</string>
@@ -510,8 +512,8 @@
     <string name="export_success_title">Export réussi</string>
     <string name="opml_import_ask_read_permission">L\'accès au stockage externe est requis pour lire le fichier OPML</string>
     <string name="successful_import_label">Import réussi</string>
-    <string name="import_ok">Appuyer sur OK pour redémarrer AntennaPod</string>
-    <string name="import_no_downgrade">La base de données a été exportée avec une version plus récente d\'AntennaPod. L\'application actuelle ne sait pas comment l\'importer.</string>
+    <string name="import_ok">Appuyer sur OK pour redémarrer TrimPlayer</string>
+    <string name="import_no_downgrade">La base de données a été exportée avec une version plus récente d\'TrimPlayer. L\'application actuelle ne sait pas comment l\'importer.</string>
     <string name="favorites_export_label">Exporter les favoris</string>
     <string name="favorites_export_summary">Exporter les favoris dans un fichier</string>
     <!--Sleep timer-->
@@ -554,12 +556,12 @@
   <string name="synchronization_choose_title">Choisir le service de synchronisation</string>
     <string name="synchronization_summary_unchoosen">Vous pouvez choisir entre plusieurs services pour synchroniser les abonnements et les statuts des épisodes</string>
     <string name="dialog_choose_sync_service_title">Choisir le service de synchronisation</string>
-    <string name="gpodnet_description">Gpodder.net est un service open-source de synchronisation que vous pouvez installer facilement sur votre propre serveur. Gpodder.net est indépendant du projet AntennaPod.</string>
-    <string name="synchronization_summary_nextcloud">Gpodder Sync est une application Nextcloud open-source que vous pouvez installer facilement sur votre propre serveur. Gpodder Sync est indépendant du projet AntennaPod.</string>
+    <string name="gpodnet_description">Gpodder.net est un service open-source de synchronisation que vous pouvez installer facilement sur votre propre serveur. Gpodder.net est indépendant du projet TrimPlayer.</string>
+    <string name="synchronization_summary_nextcloud">Gpodder Sync est une application Nextcloud open-source que vous pouvez installer facilement sur votre propre serveur. Gpodder Sync est indépendant du projet TrimPlayer.</string>
     <string name="synchronization_host_explanation">Vous pouvez décider du serveur à utiliser pour synchroniser vos données. Quand vous en aurez choisi un, entrer son adresse ici.</string>
     <string name="synchronization_host_label">Adresse du serveur</string>
     <string name="proceed_to_login_butLabel">S\'identifier</string>
-    <string name="synchronization_nextcloud_authenticate_browser">Autoriser l\'accès à l\'aide du navigateur qui a été ouvert puis revenez sur AntennaPod.</string>
+    <string name="synchronization_nextcloud_authenticate_browser">Autoriser l\'accès à l\'aide du navigateur qui a été ouvert puis revenez sur TrimPlayer.</string>
     <string name="gpodnetauth_login_butLabel">Connexion</string>
     <string name="synchronization_credentials_explanation">Merci de renseigner vos informations de connexion au serveur de synchronisation.</string>
     <string name="gpodnetauth_encryption_warning">Le mot de passe et les données ne sont pas cryptés !</string>
@@ -568,10 +570,10 @@
     <string name="synchronization_login_butLabel">Connexion</string>
     <string name="synchronization_selectDevice_explanation">Sélectionner votre appareil sur le serveur de synchronisation ou créez-en un nouveau.</string>
     <string name="gpodnetauth_device_name">Nom de l\'appareil</string>
-    <string name="gpodnetauth_device_name_default">AntennaPod sur %1$s</string>
+    <string name="gpodnetauth_device_name_default">TrimPlayer sur %1$s</string>
     <string name="gpodnetauth_existing_devices">Appareils déjà existants</string>
     <string name="gpodnetauth_create_device">Créer un appareil</string>
-    <string name="gpodnetauth_finish_descr">Félicitations ! Votre compte gpodder.net est maintenant lié à votre appareil. AntennaPod va désormais automatiquement synchroniser vos podcasts sur votre appareil avec votre compte gpodder.</string>
+    <string name="gpodnetauth_finish_descr">Félicitations ! Votre compte gpodder.net est maintenant lié à votre appareil. TrimPlayer va désormais automatiquement synchroniser vos podcasts sur votre appareil avec votre compte gpodder.</string>
     <string name="pref_gpodnet_setlogin_information_title">Modifier les informations de connexion</string>
     <string name="pref_gpodnet_setlogin_information_sum">Modifier les informations de connexion pour votre compte gpodder.net.</string>
     <string name="synchronization_sync_changes_title">Synchroniser maintenant</string>
@@ -588,7 +590,7 @@
     <string name="gpodnetsync_username_characters_error">Le nom d\'utilisateur ne peut contenir que des lettres, des chiffres, des traits d\'union ou des tirets bas.</string>
     <!--Directory chooser-->
   <string name="choose_data_directory">Choisir le répertoire</string>
-    <string name="choose_data_directory_message">Choisissez le répertoire où enregistrer les données. AntennaPod créera automatiquement les sous-répertoires nécessaires.</string>
+    <string name="choose_data_directory_message">Choisissez le répertoire où enregistrer les données. TrimPlayer créera automatiquement les sous-répertoires nécessaires.</string>
     <string name="choose_data_directory_available_space">%1$s sur %2$s d\'espace libre</string>
     <string name="pref_pausePlaybackForFocusLoss_sum">Mettre en pause la lecture au lieu de baisser le volume quand une autre application joue un son</string>
     <string name="pref_pausePlaybackForFocusLoss_title">Mettre en pause lors d\'interruptions</string>
@@ -596,8 +598,8 @@
   <string name="rating_tagline">Depuis le %1$s, vous avez écouté %2$s%3$d%4$s heures de podcasts.</string>
     <string name="rating_contribute_label">Vous voulez nous rejoindre ? Vous le pouvez par de la traduction, du support, du design ou du code et nous en serions heureux !</string>
     <string name="rating_contribute_button">Découvrir comment aider</string>
-    <string name="rating_volunteers_label">AntennaPod est développé par des volontaires pendant leurs temps libre. Remerciez les en laissant une note sympas.</string>
-    <string name="rating_rate">Noter AntennaPod</string>
+    <string name="rating_volunteers_label">TrimPlayer est développé par des volontaires pendant leurs temps libre. Remerciez les en laissant une note sympas.</string>
+    <string name="rating_rate">Noter TrimPlayer</string>
     <string name="rating_later">Plus tard</string>
     <!--Online feed view-->
   <string name="subscribe_label">S\'abonner</string>
@@ -675,7 +677,7 @@
     <string name="local_folder">Dossier local</string>
     <string name="reconnect_local_folder">Se reconnecter au dossier</string>
     <string name="reconnect_local_folder_warning">En cas de refus de permission vous pouvez utiliser cette option pour vous reconnecter au même dossier. Ne sélectionnez pas un autre dossier.</string>
-    <string name="local_feed_description">Ce podcast a été crée à partir d\'un dossier ajouté à AntennaPod.</string>
+    <string name="local_feed_description">Ce podcast a été crée à partir d\'un dossier ajouté à TrimPlayer.</string>
     <string name="unable_to_start_system_file_manager">Impossible d\'ouvrir le gestionnaire de fichier</string>
     <string name="filter">Filtrer</string>
     <string name="hide_is_favorite_label">Favori</string>
@@ -803,8 +805,8 @@
     <string name="echo_queue_title_many">Et vous avez de la réserve pour finir l\'année avec</string>
     <plurals name="echo_queue_hours_waiting">
         <item quantity="one">heures pour finir votre liste de lecture\nd\'%1$d seul épisode</item>
-        <item quantity="many">heures pour finir votre liste de lecture\nde %1$d épisodes</item>
-        <item quantity="other">heures pour finir votre liste de lecture\nde %1$d épisodes</item>
+        <item quantity="many">heures finir votre liste de lecture\nde %1$d épisodes</item>
+        <item quantity="other">heures finir votre liste de lecture\nde %1$d épisodes</item>
     </plurals>
     <string name="echo_queue_hours_clean">C\'est %1$s tous les jours avant que %2$d ne commence.</string>
     <string name="echo_queue_hours_normal">C\'est environ %1$s tous les jours avant que %2$d ne commence. Pour arriver à vider votre liste des épisodes vont devoir être sautés.</string>
@@ -825,7 +827,7 @@
     <string name="echo_thanks_we_are_glad_new">de nous avoir rejoint cette année !\n\nPeu importe si vous avez changé d\'application ou commencé à écouter les podcasts avec nous : on est content de vous avoir !</string>
     <string name="echo_thanks_now_favorite">Maintenant, jetons un coup d\'oeil à vos podcasts préférés…</string>
     <string name="echo_share_heading">Mes podcasts préférés</string>
-    <string name="echo_share">Mon année %d en podcasts. #AntennaPodEcho</string>
+    <string name="echo_share">Mon année %d en podcasts. #TrimPlayerEcho</string>
     <string name="subscriptions_label_short">Abonnements</string>
     <string name="playback_history_label_short">Journal</string>
     <string name="queue_label_more">Liste de lecture »</string>
@@ -836,7 +838,7 @@
     <string name="pref_automatic_download_queue_description">Télécharger automatiquement les épisodes dans la liste de lecture</string>
     <string name="episode_lists">Listes d\'épisodes</string>
     <string name="pref_downloads_button_action_title">Lecture dans l\'écran des téléchargements</string>
-    <string name="pref_downloads_button_action_sum">Afficher le bouton de lecture au lieu du bouton supprimer dans l\'écran des téléchargements</string>
+    <string name="pref_downloads_button_action_sum">Afficher le bouton de lecture au lieu de celui pour supprimer dans l\'écran des téléchargements</string>
     <string name="statistics_time_total">total</string>
     <string name="statistics_time_played">d\'écoute</string>
     <string name="notification_channel_refreshing">Mise à jour des podcasts</string>
@@ -895,11 +897,11 @@
         <item quantity="other">%d épisodes supprimés de la liste de lecture.</item>
     </plurals>
     <string name="transcript_follow_audio_label">Suivre l\'audio</string>
-    <string name="visit_social_interact_confirm_dialog_title">Vous allez sortir d\'AntennaPod</string>
+    <string name="visit_social_interact_confirm_dialog_title">Vous allez sortir d\'TrimPlayer</string>
     <string name="visit_social_interact_confirm_dialog_message">Assurez-vous que vous pouvez faire confiance au site \"%1$s\".</string>
     <string name="reset_playback_position_label">Réinitialiser la position de lecture</string>
     <string name="no_items_selected_message">Rien n\'a été sélectionné</string>
-    <string name="delete_local_feed_confirmation_dialog_message">La suppression d\'un épisode dans AntennaPod le supprime aussi de votre appareil. Il sera définitivement perdu et ne pourra pas être \"retélécharger\" à partir d\'AntennaPod.</string>
+    <string name="delete_local_feed_confirmation_dialog_message">La suppression d\'un épisode dans TrimPlayer le supprime aussi de votre appareil. Il sera définitivement perdu et ne pourra pas être \"retélécharger\" à partir d\'TrimPlayer.</string>
     <plurals name="move_to_top_message">
         <item quantity="one">%d épisode déplacé en haut de la liste.</item>
         <item quantity="many">%d épisodes déplacés en haut de la liste.</item>
@@ -927,48 +929,10 @@
     <string name="archive_feed_label_verb">Archiver</string>
     <string name="archive_feed_label_noun">Archives</string>
     <string name="remove_archive_feed_label">Supprimer / Archiver</string>
-    <string name="feed_delete_explanation_delete">Supprimer efface le podcast avec tous ses épisodes, ses téléchargements, son historique de lecture et ses statistiques.</string>
-    <string name="feed_delete_explanation_archive">Archiver cache le podcast de la liste des abonnements et désactive sa mise à jour. Ses téléchargements, son historique de lecture et ses statistiques sont conservés.</string>
+    <string name="feed_delete_explanation_delete">Supprimer efface TOUS les épisodes téléchargés, l\'historique de lecture et les statistiques.</string>
+    <string name="feed_delete_explanation_archive">Archiver cache le podcast de la liste des abonnements et désactive les mises à jour. Les téléchargements, l\'historique de lecture et les statistiques restent disponibles.</string>
     <string name="tag_untagged">Sans tag</string>
     <string name="restore_archive_label">Désarchiver</string>
     <string name="no_archive_head_label">Aucune archive</string>
     <string name="no_archive_label">Vous pouvez archiver des podcasts depuis l\'écran des abonnements.</string>
-    <string name="general_expand_button">Afficher plus</string>
-    <string name="general_collapse_button">Réduire</string>
-    <string name="archiving_podcast_progress">Archivage du podcast %1$d sur %2$d…</string>
-    <string name="deleting_podcast_progress">Suppression du podcast %1$d sur %2$d…</string>
-    <string name="download_log_details_human_readable_reason_title">Statut</string>
-    <string name="download_log_details_technical_reason_title">Détails techniques</string>
-    <string name="download_log_details_file_url_title">Lien du flux</string>
-    <string name="download_log_open_feed">Ouvrir</string>
-    <string name="no_following_in_queue">Il s\'agissait du dernier épisode de la liste de lecture</string>
-    <string name="episode">Épisode</string>
-    <string name="feed">Podcast</string>
-    <string name="pref_global_default_episode_list_sort_order_title">Tri par défaut</string>
-    <string name="pref_global_default_episode_list_sort_order_sum">Choisir le tri par défaut des épisodes dans l\'écran de détail d\'un podcast</string>
-    <string name="report_bug_title">Signaler un bug</string>
-    <string name="report_bug_message">Désolé si quelque chose ne marche pas. Nous apprécions votre aide pour améliorer AntennaPod. Vérifier sur notre forum ou GitHub si le problème est déjà connu. Si il ne l\'est pas, faites le nous savoir et nous le prendrons en compte.</string>
-    <string name="report_bug_device_info_title">Appareil</string>
-    <string name="report_bug_attrib_app_version">Version de l\'application</string>
-    <string name="report_bug_attrib_android_version">Version Android</string>
-    <string name="report_bug_attrib_device_name">Nom de l\'appareil</string>
-    <string name="report_bug_crash_log_title">Rapport d\'erreur</string>
-    <string name="report_bug_crash_log_message">Créé : %1$s.</string>
-    <string name="report_bug_forum_title">Forum</string>
-    <string name="report_bug_github_title">GitHub</string>
-    <string name="sleep_timer_episodes_label">épisodes</string>
-    <string name="sleep_timer_without_continuous_playback">Désactiver la lecture continue</string>
-    <string name="sleep_timer_without_continuous_playback_change_hours">Changer les heures</string>
-    <string name="sleep_timer_without_continuous_playback_message">Au lieu de toujours activé le minuteur pour s\'arrêter après un épisode, désactivez la lecture continue dans les préférences.</string>
-    <plurals name="timer_exceeds_remaining_time_while_continuous_playback_disabled">
-        <item quantity="one">La lecture continue est désactivée et il ne reste qu\'%1$d minute pour l\'épisode en cours</item>
-        <item quantity="many">La lecture continue est désactivée et il ne reste qu\'%1$d minutes pour l\'épisode en cours</item>
-        <item quantity="other">La lecture continue est désactivée et il ne reste qu\'%1$d minutes pour l\'épisode en cours</item>
-    </plurals>
-    <string name="multiple_sleep_episodes_while_continuous_playback_disabled">La lecture continue est désactivée dans les préférences. La lecture s\'arrête toujours à la fin d\'un épisode.</string>
-    <plurals name="episodes_sleep_timer_exceeds_queue">
-        <item quantity="one">Il reste seulement %1$d épisode dans la liste de lecture</item>
-        <item quantity="many">Il reste seulement %1$d épisodes dans la liste de lecture</item>
-        <item quantity="other">Il reste seulement %1$d épisodes dans la liste de lecture</item>
-    </plurals>
 </resources>

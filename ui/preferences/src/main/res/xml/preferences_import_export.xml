@@ -3,6 +3,14 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:search="http://schemas.android.com/apk/com.bytehamster.lib.preferencesearch">
 
+    <PreferenceCategory android:title="@string/smart_import_label">
+        <Preference
+                android:key="prefImport"
+                search:keywords="@string/import_export_search_keywords"
+                android:title="@string/smart_import_label"
+                android:summary="@string/smart_import_summary"/>
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/database">
         <Preference
                 android:key="prefDatabaseExport"
@@ -14,11 +22,6 @@
                 android:title="@string/automatic_database_export_label"
                 android:summary="@string/automatic_database_export_summary"
                 android:defaultValue="false" />
-        <Preference
-                android:key="prefDatabaseImport"
-                search:keywords="@string/import_export_search_keywords"
-                android:title="@string/database_import_label"
-                android:summary="@string/database_import_summary"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/opml">
@@ -26,10 +29,6 @@
                 android:key="prefOpmlExport"
                 android:title="@string/opml_export_label"
                 android:summary="@string/opml_export_summary"/>
-        <Preference
-                android:key="prefOpmlImport"
-                android:title="@string/opml_import_label"
-                android:summary="@string/opml_import_summary"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/html">

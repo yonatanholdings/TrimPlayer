@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <libraries>
     <library
-        name="AntennaPod"
-        author="The AntennaPod team"
+        name="TrimPlayer"
+        author="The TrimPlayer team"
         website="https://github.com/AntennaPod/AntennaPod"
         license="GPL-3.0"
         licenseText="LICENSE.txt" />

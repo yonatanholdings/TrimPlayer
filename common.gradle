@@ -2,13 +2,13 @@ android {
     compileSdk 35
 
     defaultConfig {
-        minSdk 21
+        minSdk 23
         targetSdk 35
 
         vectorDrawables.useSupportLibrary true
         vectorDrawables.generatedDensities = []
 
-        testApplicationId "de.danoeh.antennapod.core.tests"
+        testApplicationId "com.trimplayer.tests"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ["en", "ar", "br", "ca", "cs", "da", "de", "el", "es", "et", "eu", "fa", "fi", "fr", "gl", "hi", "hu", "in", "it", "iw", "ja", "ko", "lt", "nb", "nl", "pl", "pt", "pt-rBR", "ro", "ru", "sc", "sk", "sl", "sr", "sv", "tr", "uk", "zh-rCN", "zh-rTW"]
     }
@@ -16,10 +16,10 @@ android {
     buildTypes {
         release {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard.cfg"
-            resValue "string", "app_name", "AntennaPod"
+            resValue "string", "app_name", "TrimPlayer"
         }
         debug {
-            resValue "string", "app_name", "AntennaPod Debug"
+            resValue "string", "app_name", "TrimPlayer Debug"
         }
     }
 
@@ -55,6 +55,12 @@ android {
     buildFeatures {
         viewBinding true
         buildConfig true
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -121,7 +127,7 @@ def parseSpotBugsXml(task, xmlFile) {
         }
     }
     if (foundErrors) {
-        throw new TaskExecutionException(task,
+        throw new org.gradle.api.tasks.TaskExecutionException(task,
                 new Exception("SpotBugs violations were found. See output above for details."))
     }
 }

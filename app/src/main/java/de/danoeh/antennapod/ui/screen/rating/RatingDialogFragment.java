@@ -61,11 +61,7 @@ public class RatingDialogFragment extends DialogFragment {
         });
         viewBinding.rateButton.setOnClickListener(v -> {
             IntentUtils.openInBrowser(getContext(),
-                    "https://play.google.com/store/apps/details?id=de.danoeh.antennapod");
-            new RatingDialogManager(getActivity()).saveRated();
-        });
-        viewBinding.contibuteButton.setOnClickListener(v -> {
-            IntentUtils.openInBrowser(getContext(), IntentUtils.getLocalizedWebsiteLink(getContext()) + "/contribute/");
+                    "https://play.google.com/store/apps/details?id=" + getContext().getPackageName());
             new RatingDialogManager(getActivity()).saveRated();
         });
         return viewBinding.getRoot();

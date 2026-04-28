@@ -22,8 +22,8 @@ public abstract class StatisticsListAdapter extends RecyclerView.Adapter<Recycle
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_FEED = 1;
     protected final Context context;
-    private List<StatisticsItem> statisticsData;
-    protected PieChartView.PieChartData pieChartData;
+    private List<StatisticsItem> statisticsData = new java.util.ArrayList<>();
+    protected PieChartView.PieChartData pieChartData = new PieChartView.PieChartData(new float[0]);
 
     protected StatisticsListAdapter(Context context) {
         this.context = context;
@@ -56,6 +56,16 @@ public abstract class StatisticsListAdapter extends RecyclerView.Adapter<Recycle
             holder.pieChart.setData(pieChartData);
             holder.totalTime.setText(getHeaderValue());
             holder.totalText.setText(getHeaderCaption());
+            String savedValue = getHeaderSavedValue();
+            if (savedValue != null) {
+                holder.totalSavedTime.setText(savedValue);
+                holder.totalSavedTime.setVisibility(View.VISIBLE);
+                holder.totalSavedLabel.setText(getHeaderSavedCaption());
+                holder.totalSavedLabel.setVisibility(View.VISIBLE);
+            } else {
+                holder.totalSavedTime.setVisibility(View.GONE);
+                holder.totalSavedLabel.setVisibility(View.GONE);
+            }
         } else {
             StatisticsHolder holder = (StatisticsHolder) h;
             StatisticsItem statsItem = statisticsData.get(position - 1);
@@ -84,12 +94,16 @@ public abstract class StatisticsListAdapter extends RecyclerView.Adapter<Recycle
         TextView totalTime;
         PieChartView pieChart;
         TextView totalText;
+        TextView totalSavedTime;
+        TextView totalSavedLabel;
 
         HeaderHolder(View itemView) {
             super(itemView);
             totalTime = itemView.findViewById(R.id.total_time);
             pieChart = itemView.findViewById(R.id.pie_chart);
             totalText = itemView.findViewById(R.id.total_description);
+            totalSavedTime = itemView.findViewById(R.id.total_saved_time);
+            totalSavedLabel = itemView.findViewById(R.id.total_saved_label);
         }
     }
 
@@ -98,6 +112,7 @@ public abstract class StatisticsListAdapter extends RecyclerView.Adapter<Recycle
         public TextView title;
         public TextView value;
         public TextView chip;
+        public TextView savedValue;
 
         StatisticsHolder(View itemView) {
             super(itemView);
@@ -105,12 +120,22 @@ public abstract class StatisticsListAdapter extends RecyclerView.Adapter<Recycle
             title = itemView.findViewById(R.id.txtvTitle);
             value = itemView.findViewById(R.id.txtvValue);
             chip = itemView.findViewById(R.id.chip);
+            savedValue = itemView.findViewById(R.id.txtvSavedValue);
         }
     }
 
     protected abstract String getHeaderCaption();
 
     protected abstract String getHeaderValue();
+
+    /** Return a formatted saved-time string to show below the chart, or null to hide it. */
+    protected String getHeaderSavedValue() {
+        return null;
+    }
+
+    protected String getHeaderSavedCaption() {
+        return context.getString(R.string.statistics_total_time_saved);
+    }
 
     protected abstract PieChartView.PieChartData generateChartData(List<StatisticsItem> statisticsData);
 

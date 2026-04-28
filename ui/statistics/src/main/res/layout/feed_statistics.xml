@@ -16,6 +16,10 @@
             layout="@layout/feed_statistics_card" />
 
         <include
+            android:id="@+id/timeSaved"
+            layout="@layout/feed_statistics_card" />
+
+        <include
             android:id="@+id/episodesStarted"
             layout="@layout/feed_statistics_card" />
 

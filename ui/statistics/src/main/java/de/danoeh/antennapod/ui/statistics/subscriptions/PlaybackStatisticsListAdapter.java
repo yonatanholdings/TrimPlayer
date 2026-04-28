@@ -1,6 +1,7 @@
 package de.danoeh.antennapod.ui.statistics.subscriptions;
 
 import android.text.format.DateFormat;
+import android.view.View;
 import androidx.fragment.app.Fragment;
 import de.danoeh.antennapod.storage.database.StatisticsItem;
 import de.danoeh.antennapod.ui.common.Converter;
@@ -23,6 +24,7 @@ public class PlaybackStatisticsListAdapter extends StatisticsListAdapter {
     private long timeFilterFrom = 0;
     private long timeFilterTo = Long.MAX_VALUE;
     private boolean includeMarkedAsPlayed = false;
+    private long totalSkippedTime = 0;
 
     public PlaybackStatisticsListAdapter(Fragment fragment) {
         super(fragment.getContext());
@@ -56,17 +58,35 @@ public class PlaybackStatisticsListAdapter extends StatisticsListAdapter {
     @Override
     protected PieChartView.PieChartData generateChartData(List<StatisticsItem> statisticsData) {
         float[] dataValues = new float[statisticsData.size()];
+        totalSkippedTime = 0;
         for (int i = 0; i < statisticsData.size(); i++) {
             StatisticsItem item = statisticsData.get(i);
             dataValues[i] = item.timePlayed;
+            totalSkippedTime += item.timeSkipped;
         }
         return new PieChartView.PieChartData(dataValues);
     }
 
     @Override
+    protected String getHeaderSavedValue() {
+        if (totalSkippedTime <= 0) {
+            return null;
+        }
+        return Converter.shortLocalizedDuration(context, totalSkippedTime);
+    }
+
+    @Override
     protected void onBindFeedViewHolder(StatisticsHolder holder, StatisticsItem statsItem) {
-        long time = statsItem.timePlayed;
-        holder.value.setText(Converter.shortLocalizedDuration(context, time));
+        holder.value.setText(Converter.shortLocalizedDuration(context, statsItem.timePlayed));
+
+        if (statsItem.timeSkipped > 0) {
+            holder.savedValue.setText(context.getString(
+                    R.string.statistics_saved_suffix,
+                    Converter.shortLocalizedDuration(context, statsItem.timeSkipped)));
+            holder.savedValue.setVisibility(View.VISIBLE);
+        } else {
+            holder.savedValue.setVisibility(View.GONE);
+        }
 
         holder.itemView.setOnClickListener(v ->
                 FeedStatisticsDialogFragment.newInstance(statsItem.feed.getId(), statsItem.feed.getTitle())

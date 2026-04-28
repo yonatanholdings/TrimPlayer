@@ -281,14 +281,19 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
         if (StringUtils.isBlank(feed.getLink())) {
             viewBinding.toolbar.getMenu().findItem(R.id.visit_website_item).setVisible(false);
         }
+        if (feed.isLocalFeed()) {
+            viewBinding.toolbar.getMenu().findItem(R.id.share_feed).setVisible(false);
+        }
         if (feed.getState() == Feed.STATE_NOT_SUBSCRIBED) {
             viewBinding.toolbar.getMenu().findItem(R.id.sort_items).setVisible(false);
             viewBinding.toolbar.getMenu().findItem(R.id.refresh_item).setVisible(false);
+            viewBinding.toolbar.getMenu().findItem(R.id.rename_item).setVisible(false);
+            viewBinding.toolbar.getMenu().findItem(R.id.remove_archive_feed).setVisible(false);
+            viewBinding.toolbar.getMenu().findItem(R.id.remove_all_inbox_item).setVisible(false);
             viewBinding.toolbar.getMenu().findItem(R.id.action_search).setVisible(false);
         } else if (feed.getState() == Feed.STATE_ARCHIVED) {
             viewBinding.toolbar.getMenu().findItem(R.id.sort_items).setVisible(false);
         }
-        FeedMenuHandler.onPrepareMenu(viewBinding.toolbar.getMenu(), Collections.singletonList(feed));
     }
 
     @Override
@@ -327,7 +332,7 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
         } else if (item.getItemId() == R.id.sort_items) {
             SingleFeedSortDialog.newInstance(feed).show(getChildFragmentManager(), "SortDialog");
             return true;
-        } else if (item.getItemId() == R.id.remove_archive_feed || item.getItemId() == R.id.remove_restore_feed) {
+        } else if (item.getItemId() == R.id.remove_archive_feed) {
             new RemoveFeedDialogClose(Collections.singletonList(feed)).show(getParentFragmentManager(), null);
             return true;
         } else if (item.getItemId() == R.id.action_search) {
@@ -335,7 +340,9 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
             return true;
         }
 
-        return FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), feed);
+        Runnable showRemovedAllSnackbar = () -> EventBus.getDefault().post(
+                new MessageEvent(getString(R.string.removed_all_inbox_msg)));
+        return FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), feed, showRemovedAllSnackbar);
     }
 
     public static class RemoveFeedDialogClose extends RemoveFeedDialog {

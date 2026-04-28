@@ -355,6 +355,13 @@ class DBUpgrader {
             db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_FAVORITES + " WHERE " + PodDBAdapter.KEY_FEEDITEM
                     + " NOT IN (SELECT " + PodDBAdapter.KEY_ID + " FROM " + PodDBAdapter.TABLE_NAME_FEED_ITEMS + ")");
         }
+        if (oldVersion < 3090000) {
+            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_FEED_MEDIA
+                    + " ADD COLUMN " + PodDBAdapter.KEY_SKIPPED_DURATION + " INTEGER DEFAULT 0");
+        }
+        if (oldVersion < 3100000) {
+            db.execSQL(PodDBAdapter.CREATE_TABLE_SKIP_EVENTS);
+        }
     }
 
 }

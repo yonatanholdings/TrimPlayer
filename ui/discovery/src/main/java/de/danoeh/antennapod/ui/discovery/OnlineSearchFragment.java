@@ -1,11 +1,13 @@
 package de.danoeh.antennapod.ui.discovery;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.GridView;
@@ -24,7 +26,6 @@ import de.danoeh.antennapod.net.discovery.PodcastSearchResult;
 import de.danoeh.antennapod.net.discovery.PodcastSearcher;
 import de.danoeh.antennapod.net.discovery.PodcastSearcherRegistry;
 import de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter;
-import de.danoeh.antennapod.ui.common.Keyboard;
 import io.reactivex.rxjava3.disposables.Disposable;
 
 public class OnlineSearchFragment extends Fragment {
@@ -110,7 +111,9 @@ public class OnlineSearchFragment extends Fragment {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
                 if (scrollState == SCROLL_STATE_TOUCH_SCROLL) {
-                    Keyboard.hide(getActivity());
+                    InputMethodManager imm = (InputMethodManager)
+                            getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                 }
             }
 
@@ -152,7 +155,7 @@ public class OnlineSearchFragment extends Fragment {
         });
         sv.setOnQueryTextFocusChangeListener((view, hasFocus) -> {
             if (hasFocus) {
-                Keyboard.show(getContext(), view.findFocus());
+                showInputMethod(view.findFocus());
             }
         });
         searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
@@ -204,5 +207,12 @@ public class OnlineSearchFragment extends Fragment {
         butRetry.setVisibility(View.GONE);
         txtvEmpty.setVisibility(View.GONE);
         progressBar.setVisibility(View.VISIBLE);
+    }
+
+    private void showInputMethod(View view) {
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.showSoftInput(view, 0);
+        }
     }
 }

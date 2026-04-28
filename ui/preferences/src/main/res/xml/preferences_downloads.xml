@@ -52,4 +52,13 @@
                 android:summary="@string/pref_proxy_sum"
                 android:title="@string/pref_proxy_title"/>
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/trim_player_pref_category">
+        <EditTextPreference
+                android:key="prefTrimServerUrl"
+                android:title="@string/trim_server_url_title"
+                android:summary="@string/trim_server_url_sum"
+                android:defaultValue="http://10.0.2.2:8000/api/v1/"
+                android:inputType="textUri"/>
+    </PreferenceCategory>
 </PreferenceScreen>

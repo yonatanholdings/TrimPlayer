@@ -1,7 +1,5 @@
 package de.danoeh.antennapod.ui.screen.preferences;
 
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,10 +9,10 @@ import com.bytehamster.lib.preferencesearch.SearchConfiguration;
 import com.bytehamster.lib.preferencesearch.SearchPreference;
 
 import de.danoeh.antennapod.R;
-import de.danoeh.antennapod.ui.common.IntentUtils;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
 import de.danoeh.antennapod.ui.preferences.screen.about.AboutFragment;
 import de.danoeh.antennapod.ui.preferences.screen.bugreport.BugReportFragment;
+import de.danoeh.antennapod.ui.statistics.StatisticsFragment;
 
 public class MainPreferencesFragment extends AnimatedPreferenceFragment {
 
@@ -22,46 +20,16 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
     private static final String PREF_SCREEN_PLAYBACK = "prefScreenPlayback";
     private static final String PREF_SCREEN_DOWNLOADS = "prefScreenDownloads";
     private static final String PREF_SCREEN_IMPORT_EXPORT = "prefScreenImportExport";
-    private static final String PREF_SCREEN_SYNCHRONIZATION = "prefScreenSynchronization";
-    private static final String PREF_DOCUMENTATION = "prefDocumentation";
-    private static final String PREF_VIEW_FORUM = "prefViewForum";
     private static final String PREF_SEND_BUG_REPORT = "prefSendBugReport";
-    private static final String PREF_CATEGORY_PROJECT = "project";
     private static final String PREF_ABOUT = "prefAbout";
     private static final String PREF_NOTIFICATION = "notifications";
-    private static final String PREF_CONTRIBUTE = "prefContribute";
+    private static final String PREF_STATISTICS = "prefStatistics";
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.preferences);
         setupMainScreen();
         setupSearch();
-
-        // If you are writing a spin-off, please update the details on screens like "About" and "Report bug"
-        // and afterwards remove the following lines. Please keep in mind that AntennaPod is licensed under the GPL.
-        // This means that your application needs to be open-source under the GPL, too.
-        // It must also include a prominent copyright notice.
-        int packageHash = getContext().getPackageName().hashCode();
-        if (packageHash != 1790437538 && packageHash != -1190467065) {
-            findPreference(PREF_CATEGORY_PROJECT).setVisible(false);
-            Preference copyrightNotice = new Preference(getContext());
-            copyrightNotice.setIcon(R.drawable.ic_info_white);
-            copyrightNotice.getIcon().mutate()
-                    .setColorFilter(new PorterDuffColorFilter(0xffcc0000, PorterDuff.Mode.MULTIPLY));
-            copyrightNotice.setSummary("This application is based on AntennaPod."
-                    + " The AntennaPod team does NOT provide support for this unofficial version."
-                    + " If you can read this message, the developers of this modification"
-                    + " violate the GNU General Public License (GPL).");
-            findPreference(PREF_CATEGORY_PROJECT).getParent().addPreference(copyrightNotice);
-        } else if (packageHash == -1190467065) {
-            Preference debugNotice = new Preference(getContext());
-            debugNotice.setIcon(R.drawable.ic_info_white);
-            debugNotice.getIcon().mutate()
-                    .setColorFilter(new PorterDuffColorFilter(0xffcc0000, PorterDuff.Mode.MULTIPLY));
-            debugNotice.setOrder(-1);
-            debugNotice.setSummary("This is a development version of AntennaPod and not meant for daily use");
-            findPreference(PREF_CATEGORY_PROJECT).getParent().addPreference(debugNotice);
-        }
     }
 
     @Override
@@ -83,10 +51,6 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
             ((PreferenceActivity) getActivity()).openScreen(R.xml.preferences_downloads);
             return true;
         });
-        findPreference(PREF_SCREEN_SYNCHRONIZATION).setOnPreferenceClickListener(preference -> {
-            ((PreferenceActivity) getActivity()).openScreen(R.xml.preferences_synchronization);
-            return true;
-        });
         findPreference(PREF_SCREEN_IMPORT_EXPORT).setOnPreferenceClickListener(preference -> {
             ((PreferenceActivity) getActivity()).openScreen(R.xml.preferences_import_export);
             return true;
@@ -103,24 +67,16 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
                     return true;
                 }
         );
-        findPreference(PREF_DOCUMENTATION).setOnPreferenceClickListener(preference -> {
-            IntentUtils.openInBrowser(getContext(),
-                    IntentUtils.getLocalizedWebsiteLink(getContext()) + "/documentation/");
-            return true;
-        });
-        findPreference(PREF_VIEW_FORUM).setOnPreferenceClickListener(preference -> {
-            IntentUtils.openInBrowser(getContext(), "https://forum.antennapod.org/");
-            return true;
-        });
-        findPreference(PREF_CONTRIBUTE).setOnPreferenceClickListener(preference -> {
-            IntentUtils.openInBrowser(getContext(),
-                    IntentUtils.getLocalizedWebsiteLink(getContext()) + "/contribute/");
-            return true;
-        });
         findPreference(PREF_SEND_BUG_REPORT).setOnPreferenceClickListener(preference -> {
             getParentFragmentManager().beginTransaction()
                     .replace(R.id.settingsContainer, new BugReportFragment())
                     .addToBackStack(getString(R.string.report_bug_title)).commit();
+            return true;
+        });
+        findPreference(PREF_STATISTICS).setOnPreferenceClickListener(preference -> {
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.settingsContainer, new StatisticsFragment())
+                    .addToBackStack(getString(R.string.statistics_label)).commit();
             return true;
         });
     }
@@ -144,8 +100,6 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
                 .addBreadcrumb(PreferenceActivity.getTitleOfPage(R.xml.preferences_downloads))
                 .addBreadcrumb(R.string.automation)
                 .addBreadcrumb(PreferenceActivity.getTitleOfPage(R.xml.preferences_autodownload));
-        config.index(R.xml.preferences_synchronization)
-                .addBreadcrumb(PreferenceActivity.getTitleOfPage(R.xml.preferences_synchronization));
         config.index(R.xml.preferences_notifications)
                 .addBreadcrumb(PreferenceActivity.getTitleOfPage(R.xml.preferences_notifications));
         config.index(R.xml.feed_settings)

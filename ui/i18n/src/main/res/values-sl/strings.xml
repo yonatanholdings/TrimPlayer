@@ -47,7 +47,7 @@
     <string name="home_continue_title">Nadaljuj s poslušanjem</string>
     <string name="home_new_title">Kaj je novega</string>
     <string name="home_downloads_title">Upravljaj prenose</string>
-    <string name="home_welcome_title">Dobrodošli v AntennaPod!</string>
+    <string name="home_welcome_title">Dobrodošli v TrimPlayer!</string>
     <string name="home_welcome_text">Niste naročeni na nobeno poddajo. Odprite meni, da dodate poddaje.</string>
     <string name="notification_permission_denied">Zavrnili ste dovoljenje.</string>
     <string name="configure_home">Nastavitve domačega zaslona</string>
@@ -236,10 +236,10 @@
     <string name="download_log_title_unknown">Neznani naslov</string>
     <string name="download_type_feed">Vir</string>
     <string name="download_type_media">Predstavnostna datoteka</string>
-    <string name="no_feed_url_podcast_found_by_search">Predlagana poddaja nima RSS povezave. AntennaPod je našel poddajo, ki morda ustreza</string>
+    <string name="no_feed_url_podcast_found_by_search">Predlagana poddaja nima RSS povezave. TrimPlayer je našel poddajo, ki morda ustreza</string>
     <string name="authentication_notification_title">Potrebna je avtentikacija</string>
     <string name="confirm_mobile_download_dialog_title">Potrdite prenos preko mobilnih podatkov</string>
-    <string name="confirm_mobile_download_dialog_message">Prenos preko mobilne podatkovne povezave je onemogočen v nastavitvah. AntennaPod lahko pozneje, ko bo na voljo Wi-Fi, epizodo prenese samodejno.</string>
+    <string name="confirm_mobile_download_dialog_message">Prenos preko mobilne podatkovne povezave je onemogočen v nastavitvah. TrimPlayer lahko pozneje, ko bo na voljo Wi-Fi, epizodo prenese samodejno.</string>
     <string name="confirm_mobile_download_dialog_message_vpn">- Uporabljate VPN? Vaša VPN aplikacija se pretvarja, da je mobilno omrežje z omejeno povezavo. Če želite, da se ta težava odpravi, se obrnite na ustvarjalce vaše VPN aplikacije.\n- Ne uporabljate VPN? Spremenite Android nastavitve Wi-Fi omrežja naj bo obravnavano kot brez omejitve prenosa podatkov.</string>
     <string name="confirm_mobile_download_dialog_download_later">Prenesi kasneje</string>
     <string name="confirm_mobile_download_dialog_allow_this_time">Vseeno prenesi</string>
@@ -248,7 +248,7 @@
     <string name="confirm_mobile_streaming_button_always">Vedno</string>
     <string name="confirm_mobile_streaming_button_once">Enkrat</string>
     <string name="no_media_playing_label">Ni medijske vsebine za predvajati</string>
-    <string name="unknown_media_key">AntennaPod - Neznan medijski ključ: %1$d</string>
+    <string name="unknown_media_key">TrimPlayer - Neznan medijski ključ: %1$d</string>
     <string name="error_file_not_found">Datoteka ni najdena</string>
     <string name="no_media_label">Element ne vsebuje predstavnostne datoteke</string>
     <!--Queue operations-->
@@ -331,7 +331,7 @@
     <string name="downloads_pref">Prenosi</string>
     <string name="downloads_pref_sum">Posodobitveni interval, mobilni podatki, samodejni prenos, samodejno brisanje</string>
     <string name="feed_refresh_title">Osveži poddaje</string>
-    <string name="feed_refresh_sum">Določite interval samodejnega iskanja novih epizod v AntennaPod</string>
+    <string name="feed_refresh_sum">Določite interval samodejnega iskanja novih epizod v TrimPlayer</string>
     <string name="feed_refresh_never">Nikoli</string>
     <string name="feed_every_hour">Vsako uro</string>
     <string name="feed_every_2_hours">Vsaki 2 uri</string>
@@ -397,6 +397,8 @@
     <string name="pref_smart_mark_as_played_disabled">Onemogočeno</string>
     <string name="documentation_support">Dokumentacija in podpora</string>
     <string name="visit_user_forum">Uporabniški forum</string>
+    <string name="bug_report_title">Prijavi hrošča</string>
+    <string name="open_bug_tracker">Odprite sledilnik hroščev</string>
     <string name="copy_to_clipboard">Kopiraj v odložišče</string>
     <string name="copied_to_clipboard">Kopirano v odložišče</string>
     <string name="pref_proxy_title">Proxy</string>
@@ -407,7 +409,7 @@
     <string name="pref_skip_silence_title">Preskoči tišino v zvoku</string>
     <string name="behavior">Obnašanje</string>
     <string name="pref_default_page">Privzeta stran</string>
-    <string name="pref_default_page_sum">Zaslon, ki se odpre ob zagonu AntennaPod</string>
+    <string name="pref_default_page_sum">Zaslon, ki se odpre ob zagonu TrimPlayer</string>
     <string name="pref_back_button_opens_drawer">Gumb nazaj odpre predalnik</string>
     <string name="pref_back_button_opens_drawer_summary">Pritisnite gumb za nazaj na privzeti strani, da odprete navigacijski predalnik</string>
     <string name="remember_last_page">Zapomni si zadnjo stran</string>
@@ -426,15 +428,15 @@
     <string name="pref_new_episodes_action_sum">Kaj storiti z novimi epizodami</string>
     <!--About screen-->
   <string name="about_pref">Vizitka</string>
-    <string name="antennapod_version">AntennaPod različica</string>
+    <string name="antennapod_version">TrimPlayer različica</string>
     <string name="contributors">Sodelujoči</string>
-    <string name="contributors_summary">Vsakdo lahko pomaga izboljšati AntennaPod: s kodo, prevodi ali z nudenjem pomoči uporabnikom na našem forumu</string>
+    <string name="contributors_summary">Vsakdo lahko pomaga izboljšati TrimPlayer: s kodo, prevodi ali z nudenjem pomoči uporabnikom na našem forumu</string>
     <string name="developers">Razvijalci</string>
     <string name="translators">Prevajalci</string>
     <string name="special_thanks">Posebna zahvala</string>
     <string name="privacy_policy">Politika zasebnosti</string>
     <string name="licenses">Licence</string>
-    <string name="licenses_summary">AntennaPod uporablja drugo odlično programsko opremo</string>
+    <string name="licenses_summary">TrimPlayer uporablja drugo odlično programsko opremo</string>
     <!--Search-->
   <string name="search_status_no_results">Ni rezultatov</string>
     <string name="type_to_search">Vnesite poizvedbo za iskanje</string>
@@ -457,8 +459,8 @@
     <string name="html_export_summary">Pokažite svoje naročnine prijatelju</string>
     <string name="opml_export_summary">Prenesite svoje naročnine v drugo aplikacijo za poddaje</string>
     <string name="opml_import_summary">Uvozite svoje naročnine iz druge aplikacije za poddaje</string>
-    <string name="database_export_summary">Prenesite naročnine, poslušane epizode in čakalno vrsto na AntennaPod, na drugo napravo</string>
-    <string name="database_import_summary">Uvozite bazo podatkov AntennaPod iz druge naprave</string>
+    <string name="database_export_summary">Prenesite naročnine, poslušane epizode in čakalno vrsto na TrimPlayer, na drugo napravo</string>
+    <string name="database_import_summary">Uvozite bazo podatkov TrimPlayer iz druge naprave</string>
     <string name="opml_import_label">Uvozi OPML</string>
     <string name="opml_add_podcast_label">Uvozite seznam poddaj (OPML)</string>
     <string name="opml_import_error_no_file">Izbrana ni nobena datoteka!</string>
@@ -474,8 +476,8 @@
     <string name="export_success_title">Izvoz uspešen</string>
     <string name="opml_import_ask_read_permission">Za branje datoteke OPML je potreben dostop do zunanjega pomnilnika</string>
     <string name="successful_import_label">Uvoz uspešen</string>
-    <string name="import_ok">Pritisnite OK, da znova zaženete AntennaPod</string>
-    <string name="import_no_downgrade">Ta zbirka podatkov je bila izvožena z novejšo različico AntennaPod. Vaša trenutna namestitev še ne ve, kako ravnati s to datoteko.</string>
+    <string name="import_ok">Pritisnite OK, da znova zaženete TrimPlayer</string>
+    <string name="import_no_downgrade">Ta zbirka podatkov je bila izvožena z novejšo različico TrimPlayer. Vaša trenutna namestitev še ne ve, kako ravnati s to datoteko.</string>
     <string name="favorites_export_label">Priljubljeni izvozi</string>
     <string name="favorites_export_summary">Izvozi shranjene priljubljene v datoteko</string>
     <!--Sleep timer-->
@@ -497,8 +499,8 @@
   <string name="synchronization_choose_title">Izberite ponudnika preko katerega želite opraviti sinhronizacijo</string>
     <string name="synchronization_summary_unchoosen">Izbirate lahko med večimi ponudniki, da sinhronizirate vaše naročnine in epizode</string>
     <string name="dialog_choose_sync_service_title">Izberite ponudnika preko katerega želite opraviti sinhronizacijo</string>
-    <string name="gpodnet_description">Gpodder.net je odprtokodna storitev sinhronizacije poddaj, ki je neodvisna od projekta AntennaPod.</string>
-    <string name="synchronization_summary_nextcloud">Gpoddersync je odportokodna Nextcloud aplikacija, katero lahko enostavno namestite na vaše lastni stsrežnik. Ta aplikacija je neodvisna od projekta AntennaPod.</string>
+    <string name="gpodnet_description">Gpodder.net je odprtokodna storitev sinhronizacije poddaj, ki je neodvisna od projekta TrimPlayer.</string>
+    <string name="synchronization_summary_nextcloud">Gpoddersync je odportokodna Nextcloud aplikacija, katero lahko enostavno namestite na vaše lastni stsrežnik. Ta aplikacija je neodvisna od projekta TrimPlayer.</string>
     <string name="synchronization_host_explanation">Lahko izberete svoj strežnik za sinhronizacijo. Ko ste identificirali svoj želeni sinhronizacijski strežnik, ga prosim vnesite tukaj.</string>
     <string name="synchronization_host_label">Naslov strežnika</string>
     <string name="proceed_to_login_butLabel">Nadaljuj s prijavo</string>
@@ -508,10 +510,10 @@
     <string name="password_label">Geslo</string>
     <string name="synchronization_login_butLabel">Prijavi se</string>
     <string name="gpodnetauth_device_name">Ime naprave</string>
-    <string name="gpodnetauth_device_name_default">AntennaPod je na %1$s</string>
+    <string name="gpodnetauth_device_name_default">TrimPlayer je na %1$s</string>
     <string name="gpodnetauth_existing_devices">Obstoječe naprave</string>
     <string name="gpodnetauth_create_device">Ustvari napravo</string>
-    <string name="gpodnetauth_finish_descr">Čestitam! Vaš račun gpodder.net je zdaj povezan z vašo napravo. AntennaPod bo od zdaj naprej samodejno sinhroniziral naročnine na vaši napravi z vašim računom gpodder.net.</string>
+    <string name="gpodnetauth_finish_descr">Čestitam! Vaš račun gpodder.net je zdaj povezan z vašo napravo. TrimPlayer bo od zdaj naprej samodejno sinhroniziral naročnine na vaši napravi z vašim računom gpodder.net.</string>
     <string name="pref_gpodnet_setlogin_information_title">Spremenite podatke za prijavo</string>
     <string name="pref_gpodnet_setlogin_information_sum">Spremenite podatke za prijavo za svoj račun gpodder.net.</string>
     <string name="synchronization_sync_changes_title">Sinhroniziraj takoj</string>
@@ -582,7 +584,7 @@
     <string name="local_folder">Lokalna mapa</string>
     <string name="reconnect_local_folder">Ponovno povežite lokalno mapo</string>
     <string name="reconnect_local_folder_warning">V primeru zavrnitve dovoljenj lahko to uporabite za ponovno povezavo s popolnoma isto mapo. Ne izberite druge mape.</string>
-    <string name="local_feed_description">Ta virtualna poddaja je bila ustvarjen z dodajanjem mape v AntennaPod.</string>
+    <string name="local_feed_description">Ta virtualna poddaja je bila ustvarjen z dodajanjem mape v TrimPlayer.</string>
     <string name="unable_to_start_system_file_manager">Sistemskega upravitelja datotek ni mogoče zagnati</string>
     <string name="filter">Filter</string>
     <string name="hide_is_favorite_label">Je med priljubljenimi</string>
@@ -653,7 +655,7 @@
     <string name="statistics_release_next">naslednja epizoda (približno)</string>
     <string name="release_schedule_thursday">Čet</string>
     <string name="pref_auto_delete_sum">Izbriši epizode po predvajanju ali ko avtomatski prenos potrebuje prostor</string>
-    <string name="echo_share">Moje leto %d v poddajah. #AntennaPodEcho</string>
+    <string name="echo_share">Moje leto %d v poddajah. #TrimPlayerEcho</string>
     <string name="release_schedule_monthly">mesečno</string>
     <string name="subscription_display_list">Seznam</string>
     <string name="echo_intro_your_year">Vaše leto</string>
@@ -775,31 +777,4 @@
         <item quantity="other">%d dni</item>
     </plurals>
     <string name="delete_tag_confirmation">Prosimo potrdite izbris oznake \"%1$s\".</string>
-    <plurals name="num_subscriptions">
-        <item quantity="one">%d naročnina</item>
-        <item quantity="two">%d naročnini</item>
-        <item quantity="few">%d naročnine</item>
-        <item quantity="other">%d naročnin</item>
-    </plurals>
-    <string name="archive_feed_label_verb">Arhiviraj</string>
-    <string name="archive_feed_label_noun">Arhiv</string>
-    <string name="restore_archive_label">Obnovi</string>
-    <string name="remove_archive_feed_label">Izbriši / arhiviraj</string>
-    <plurals name="downloading_episodes_message">
-        <item quantity="one">Prenašam %d epizodo.</item>
-        <item quantity="two">Prenašam %d epizodi.</item>
-        <item quantity="few">Prenašam %d epizode.</item>
-        <item quantity="other">Prenašam %d epizod.</item>
-    </plurals>
-    <plurals name="deleted_episode_message">
-        <item quantity="one">%d prenešena epizoda izbrisana.</item>
-        <item quantity="two">%d prenešeni epizodi izbrisani.</item>
-        <item quantity="few">%d prenešene epizode izbrisane.</item>
-        <item quantity="other">%d prenešenih epizod izbrisanih.</item>
-    </plurals>
-    <string name="removed_from_inbox_message">Odstranjeno iz prejetih</string>
-    <string name="mark_as_played_label">Označi kot predvajano</string>
-    <string name="mark_as_unplayed_label">Označi kot nepredvajano</string>
-    <string name="transcript_follow_audio_label">Sledi zvoku</string>
-    <string name="visit_social_interact_confirm_dialog_title">Zapuščate AntennaPod</string>
 </resources>

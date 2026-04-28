@@ -84,8 +84,12 @@ public class SubscriptionStatisticsFragment extends Fragment {
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        menu.findItem(R.id.statistics_reset).setVisible(true);
-        menu.findItem(R.id.statistics_filter).setVisible(true);
+        if (menu.findItem(R.id.statistics_reset) != null) {
+            menu.findItem(R.id.statistics_reset).setVisible(true);
+        }
+        if (menu.findItem(R.id.statistics_filter) != null) {
+            menu.findItem(R.id.statistics_filter).setVisible(true);
+        }
     }
 
     @Override
@@ -109,7 +113,11 @@ public class SubscriptionStatisticsFragment extends Fragment {
         if (disposable != null) {
             disposable.dispose();
         }
-        SharedPreferences prefs = getContext().getSharedPreferences(StatisticsFragment.PREF_NAME, Context.MODE_PRIVATE);
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        SharedPreferences prefs = context.getSharedPreferences(StatisticsFragment.PREF_NAME, Context.MODE_PRIVATE);
         boolean includeMarkedAsPlayed = prefs.getBoolean(StatisticsFragment.PREF_INCLUDE_MARKED_PLAYED, false);
         long timeFilterFrom = prefs.getLong(StatisticsFragment.PREF_FILTER_FROM, 0);
         long timeFilterTo = prefs.getLong(StatisticsFragment.PREF_FILTER_TO, Long.MAX_VALUE);

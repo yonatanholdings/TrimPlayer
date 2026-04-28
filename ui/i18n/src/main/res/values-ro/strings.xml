@@ -47,7 +47,7 @@
     <string name="home_continue_title">Continuă ascultarea</string>
     <string name="home_new_title">Vezi ce este nou</string>
     <string name="home_downloads_title">Gestionați descărcările</string>
-    <string name="home_welcome_title">Bine ați venit la AntennaPod!</string>
+    <string name="home_welcome_title">Bine ați venit la TrimPlayer!</string>
     <string name="home_welcome_text">Nu ești abonat la nici-un podcast. Deschide meniul din laterală pentru a adăuga un podcast.</string>
     <string name="notification_permission_denied">Ați refuzat permisiunea.</string>
     <string name="configure_home">Setează ecranul Acasă</string>
@@ -238,10 +238,10 @@
     <string name="download_log_title_unknown">Titlu necunoscut</string>
     <string name="download_type_feed">Feed</string>
     <string name="download_type_media">Fișier media</string>
-    <string name="no_feed_url_podcast_found_by_search">Podcastul sugerat nu are un link RSS, AntennaPod a găsit un podcast care s-ar putea potrivi</string>
+    <string name="no_feed_url_podcast_found_by_search">Podcastul sugerat nu are un link RSS, TrimPlayer a găsit un podcast care s-ar putea potrivi</string>
     <string name="authentication_notification_title">Autentificare necesară</string>
     <string name="confirm_mobile_download_dialog_title">Confirmă descărcarea folosind datele mobile</string>
-    <string name="confirm_mobile_download_dialog_message">Descărcarea folosind conexiunea de date mobile este oprită. AntennaPod poate descărca acest episod mai târziu automat în momentul în care este disponibilă o conexiune Wi-Fi.</string>
+    <string name="confirm_mobile_download_dialog_message">Descărcarea folosind conexiunea de date mobile este oprită. TrimPlayer poate descărca acest episod mai târziu automat în momentul în care este disponibilă o conexiune Wi-Fi.</string>
     <string name="confirm_mobile_download_dialog_message_vpn">Aplicația ta VPN pretinde a fi o rețea de date mobilă(rețea contorizată). Reîmprospătarea podcasturilor folosind o conexiune de date mobile este dezactivată în setări. Dacă dorești să rezolvi această problemă re rugăm să contactezi dezvoltatorii aplicației tale VPN.</string>
     <string name="confirm_mobile_download_dialog_download_later">Descarcă mai târziu</string>
     <string name="confirm_mobile_download_dialog_allow_this_time">Descarcă oricum</string>
@@ -252,7 +252,7 @@
     <!--Mediaplayer messages-->
   <string name="playback_error_generic"><![CDATA[Fișierul media nu a putut fi redat.\n\n- Încearcă să ștergi și să redescarci episodul.\n- Verifică conexiunea ta la internet și asigurăte că nu există un VPN sau o pagină de autentificare ce blochează accesul.\n- Încearcă să ții apăsat și să partajezi \"adresa media\" către browserul web, pentru a vedea dacă fisierul poate fi redat acolo. În cazul în care nu se poate contactează creatorul podacstului.]]></string>
     <string name="no_media_playing_label">Nu se ascultă nimic</string>
-    <string name="unknown_media_key">AntennaPod - tastă media necunoscută: %1$d</string>
+    <string name="unknown_media_key">TrimPlayer - tastă media necunoscută: %1$d</string>
     <string name="error_file_not_found">Fișierul nu a fost găsit</string>
     <string name="no_media_label">Obiectul nu conține un fișier media</string>
     <!--Queue operations-->
@@ -332,7 +332,7 @@
     <string name="pref_auto_delete_sum">Şterge episoadele după redare sau in momenul în care descărcările automate necesită mai mult spaţiu</string>
     <string name="pref_auto_local_delete_title">Ștergere automată din dosarul local</string>
     <string name="pref_auto_local_delete_sum">Include dosare locale în funcționalitatea de ștergere automată</string>
-    <string name="pref_auto_local_delete_dialog_body">Reține faptul ca pentru dosare locale această funcție va elimina episoade din AntennaPod și va șterge fișiere media din memoria dispozitivului folosit. Aceste fișiere nu vor mai putea fi descărcate din nou folosind AntennaPod. Dorești activarea duncției de ștergere automată?</string>
+    <string name="pref_auto_local_delete_dialog_body">Reține faptul ca pentru dosare locale această funcție va elimina episoade din TrimPlayer și va șterge fișiere media din memoria dispozitivului folosit. Aceste fișiere nu vor mai putea fi descărcate din nou folosind TrimPlayer. Dorești activarea duncției de ștergere automată?</string>
     <string name="pref_smart_mark_as_played_sum">Marchează episoadele ca redate chiar dacă un anumit număr de secunde din episod au rămas</string>
     <string name="pref_smart_mark_as_played_title">Marchează inteligent ca fiind redate</string>
     <string name="pref_skip_keeps_episodes_sum">Păstrează episoade când acestea sunt sărite</string>
@@ -344,7 +344,7 @@
     <string name="downloads_pref">Descărcări</string>
     <string name="downloads_pref_sum">Interval actualizare, Date mobile, Descărcări automate, Ștergeri automate</string>
     <string name="feed_refresh_title">Reîmprospătează podcasturile</string>
-    <string name="feed_refresh_sum">Specifică un anumit interval în care AntennaPod caută episoade noi automat</string>
+    <string name="feed_refresh_sum">Specifică un anumit interval în care TrimPlayer caută episoade noi automat</string>
     <string name="feed_refresh_never">Nicio data</string>
     <string name="feed_every_hour">La fiecare oră</string>
     <string name="feed_every_2_hours">La fiecare 2 ore</string>
@@ -416,6 +416,8 @@
     <string name="pref_smart_mark_as_played_disabled">Dezactivat</string>
     <string name="documentation_support">Documentație &amp; suport</string>
     <string name="visit_user_forum">Forumul utilizatorilor</string>
+    <string name="bug_report_title">Raportează o problemă</string>
+    <string name="open_bug_tracker">Deschide trackerul de errori</string>
     <string name="copy_to_clipboard">Copiază</string>
     <string name="copied_to_clipboard">Copiat în clipboard</string>
     <string name="pref_proxy_title">Proxy</string>
@@ -447,15 +449,15 @@
     <string name="episode_information">Informaţii despre episod</string>
     <!--About screen-->
   <string name="about_pref">Despre</string>
-    <string name="antennapod_version">Versiune AntennaPod</string>
+    <string name="antennapod_version">Versiune TrimPlayer</string>
     <string name="contributors">Cobtributori</string>
-    <string name="contributors_summary">Toată lumea poate ajuta să facă AntennaPod mai bun; prin cod, traduceri sau prin ajutarea utilizatorilor de pe forumurile noastre</string>
+    <string name="contributors_summary">Toată lumea poate ajuta să facă TrimPlayer mai bun; prin cod, traduceri sau prin ajutarea utilizatorilor de pe forumurile noastre</string>
     <string name="developers">Dezvoltatori</string>
     <string name="translators">Traducători</string>
     <string name="special_thanks">Mulțumiri speciale</string>
     <string name="privacy_policy">Politică de confidențialitate</string>
     <string name="licenses">Licențe</string>
-    <string name="licenses_summary">AntennaPod folosește alte softwareuri excelente</string>
+    <string name="licenses_summary">TrimPlayer folosește alte softwareuri excelente</string>
     <!--Search-->
   <string name="search_status_no_results">Nu s-a găsit nici un rezultat</string>
     <string name="type_to_search">Introdu o întrebare pentru a începe căutarea</string>
@@ -478,8 +480,8 @@
     <string name="html_export_summary">Arată abonamentele tale la un prieten</string>
     <string name="opml_export_summary">Transferă abonamentele tale către o alta aplicație</string>
     <string name="opml_import_summary">Importă abonamentele tale din altă aplicație de podcasturi</string>
-    <string name="database_export_summary">Transferă abonamentele, episoadele redate și coada de redare către AntennaPod de pe alt dispozitiv</string>
-    <string name="database_import_summary">Importă baza de date AntennaPod din alt dispozitiv</string>
+    <string name="database_export_summary">Transferă abonamentele, episoadele redate și coada de redare către TrimPlayer de pe alt dispozitiv</string>
+    <string name="database_import_summary">Importă baza de date TrimPlayer din alt dispozitiv</string>
     <string name="opml_import_label">Importul fișierelor OPML</string>
     <string name="opml_add_podcast_label">Importă lista de podcasturi (OPML)</string>
     <string name="opml_reader_error">A apărut o eroare în timpul citirii fișierului. Asigurăte că ai selectat un fișier OPML și că fișierul este valid.</string>
@@ -490,7 +492,7 @@
     <string name="html_export_label">export HTML</string>
     <string name="database_export_label">export bază de date</string>
     <string name="automatic_database_export_label">Export automat al bazei de date</string>
-    <string name="automatic_database_export_summary">Creează o copie de rezervă a bazei de date AntennaPod la fiecare 3 zile. Salvează numai ultimele 5 copii.</string>
+    <string name="automatic_database_export_summary">Creează o copie de rezervă a bazei de date TrimPlayer la fiecare 3 zile. Salvează numai ultimele 5 copii.</string>
     <string name="automatic_database_export_error">A apărut o eroare în timpul creării bazei de date</string>
     <string name="database_import_label">import bază de date</string>
     <string name="database_import_warning">Importarea unei baze de date va înlocui abonamentele tale și istoricul fișierelor redate. Ar trebui să exporți baza de date curentă ca un fișier de rezervă. Dorești să înlocuiești?</string>
@@ -499,8 +501,8 @@
     <string name="export_success_title">Exportarea a reușit</string>
     <string name="opml_import_ask_read_permission">Accesarea memoriei externe este necesară pentru a citi fișierul OPML</string>
     <string name="successful_import_label">Importul a reușit</string>
-    <string name="import_ok">Vă rugăm să apăsa|ți OK pentru a reporni AntennaPod</string>
-    <string name="import_no_downgrade">Această bază de date a fost exportată cu o versiune mai nouă de AntennaPod, Versiunea curentă a aplicației tale nu poate să folosească acest fișier.</string>
+    <string name="import_ok">Vă rugăm să apăsa|ți OK pentru a reporni TrimPlayer</string>
+    <string name="import_no_downgrade">Această bază de date a fost exportată cu o versiune mai nouă de TrimPlayer, Versiunea curentă a aplicației tale nu poate să folosească acest fișier.</string>
     <string name="favorites_export_label">Exportă favorite</string>
     <string name="favorites_export_summary">Exportă favoritele salvate într-un fișier</string>
     <!--Sleep timer-->
@@ -523,12 +525,12 @@
   <string name="synchronization_choose_title">Alege furnizorul de sincronizare</string>
     <string name="synchronization_summary_unchoosen">Puteți alege dintre furnizori multipli pentru a vă sincroniza abonamentele dumneavoastră și starea episoadelor</string>
     <string name="dialog_choose_sync_service_title">Alege furnizorul de sincronizare</string>
-    <string name="gpodnet_description">Gpodder.net este un serviciu de sincronizare cu sursă deschisă, ce poate fi instalat pe propriul server. Gpodder.net este independent de proiectul AntennaPod.</string>
-    <string name="synchronization_summary_nextcloud">Gpoddersync este o aplicație Nextcould cu sursă deschisă ce poate fii instalată cu ușurință pe serverul dumneavoastră. Aceasta aplicație este independenta de proiectul AntennaPod.</string>
+    <string name="gpodnet_description">Gpodder.net este un serviciu de sincronizare cu sursă deschisă, ce poate fi instalat pe propriul server. Gpodder.net este independent de proiectul TrimPlayer.</string>
+    <string name="synchronization_summary_nextcloud">Gpoddersync este o aplicație Nextcould cu sursă deschisă ce poate fii instalată cu ușurință pe serverul dumneavoastră. Aceasta aplicație este independenta de proiectul TrimPlayer.</string>
     <string name="synchronization_host_explanation">Poți să îți alegi propriul tău server pentru a sincroniza datele. Când ai găsit un server de sincronizare poți introduce adresa aici.</string>
     <string name="synchronization_host_label">Adresă server</string>
     <string name="proceed_to_login_butLabel">Continuă spre autentificare</string>
-    <string name="synchronization_nextcloud_authenticate_browser">Oferă acces folosint web browserul deschis și întorcețivă la AntennaPod.</string>
+    <string name="synchronization_nextcloud_authenticate_browser">Oferă acces folosint web browserul deschis și întorcețivă la TrimPlayer.</string>
     <string name="gpodnetauth_login_butLabel">Conectare</string>
     <string name="synchronization_credentials_explanation">Te rugăm să introduci datele de autentificare pentru serverul de sincronizare.</string>
     <string name="gpodnetauth_encryption_warning">Parola și datele nu sunt criptate!</string>
@@ -537,10 +539,10 @@
     <string name="synchronization_login_butLabel">Autentificare</string>
     <string name="synchronization_selectDevice_explanation">Te rugăm să selectezi dispozitivul creat pe server sau să creezi un dispozitiv nou.</string>
     <string name="gpodnetauth_device_name">Numele dispozitivului</string>
-    <string name="gpodnetauth_device_name_default">AntennaPod pe %1$s</string>
+    <string name="gpodnetauth_device_name_default">TrimPlayer pe %1$s</string>
     <string name="gpodnetauth_existing_devices">Dispozitive existente</string>
     <string name="gpodnetauth_create_device">Creează un dispozitiv</string>
-    <string name="gpodnetauth_finish_descr">Felicitări! contul tău gpodder.net este acum conectat cu dispozitivul tău. AntennaPod va sincroniza automat toate abonamentele de pe dispozitivul dumneavoastra cu contul gpodder.net</string>
+    <string name="gpodnetauth_finish_descr">Felicitări! contul tău gpodder.net este acum conectat cu dispozitivul tău. TrimPlayer va sincroniza automat toate abonamentele de pe dispozitivul dumneavoastra cu contul gpodder.net</string>
     <string name="pref_gpodnet_setlogin_information_title">Schimbă informațiile de autentificare</string>
     <string name="pref_gpodnet_setlogin_information_sum">Schimbă informațiile de autentificare pentru contul tău gpodder.net.</string>
     <string name="synchronization_sync_changes_title">Sincronizează acum</string>
@@ -557,7 +559,7 @@
     <string name="gpodnetsync_username_characters_error">Numele contului poate conține numai litere, numere, cratime și bară jos.</string>
     <!--Directory chooser-->
   <string name="choose_data_directory">Alege fișier date</string>
-    <string name="choose_data_directory_message">Te rugăm să selectezi folderul de date. AntennaPod va creea subfolderele corespunzătoare.</string>
+    <string name="choose_data_directory_message">Te rugăm să selectezi folderul de date. TrimPlayer va creea subfolderele corespunzătoare.</string>
     <string name="choose_data_directory_available_space">%1$s din %2$s libere</string>
     <string name="pref_pausePlaybackForFocusLoss_sum">Oprește redarea în locul micșorării volumului când o altă aplicație dorește sa redea sunete</string>
     <string name="pref_pausePlaybackForFocusLoss_title">Pauză pentru întreruperi</string>
@@ -565,8 +567,8 @@
   <string name="rating_tagline">De la %1$s ai ascultat %2$s%3$d%4$s de ore de podcast.</string>
     <string name="rating_contribute_label">Vrei să ni te alături ? Indiferent dacă dorești să traduci, să programezi sau să susții comunitatea, am fii bucuroși să vă avem!</string>
     <string name="rating_contribute_button">Descoperă moduri de a contribui</string>
-    <string name="rating_volunteers_label">AntennaPod is dezvoltat de voluntari în timpul lor liber. Apreciază munca lor lăsân o notă de evaluare bună.</string>
-    <string name="rating_rate">Evaluează AntennaPod</string>
+    <string name="rating_volunteers_label">TrimPlayer is dezvoltat de voluntari în timpul lor liber. Apreciază munca lor lăsân o notă de evaluare bună.</string>
+    <string name="rating_rate">Evaluează TrimPlayer</string>
     <string name="rating_later">Mai târziu</string>
     <!--Online feed view-->
   <string name="subscribe_label">Abonează-te</string>
@@ -644,7 +646,7 @@
     <string name="local_folder">Director local</string>
     <string name="reconnect_local_folder">Reconectează directorul local</string>
     <string name="reconnect_local_folder_warning">În cazul în care permisiunile sunt refuzate, poți sa folosești această opțiune pentru a te reconecta la exact același director. Nu selecta alt director.</string>
-    <string name="local_feed_description">Acest podcast virtual a fost creat prin adăugarea unui director la AntennaPod.</string>
+    <string name="local_feed_description">Acest podcast virtual a fost creat prin adăugarea unui director la TrimPlayer.</string>
     <string name="unable_to_start_system_file_manager">Incapabil de a porni sistemul de management al fișierelor</string>
     <string name="filter">Filtrează</string>
     <string name="hide_is_favorite_label">Este favorit</string>
@@ -817,7 +819,7 @@
     <string name="echo_hoarder_comment_hoarder">Se spune că numerele nu mint. Cum numai %1$d din %2$d abonamente active au fost redate în acest an, noi credem că avem dreptate.</string>
     <string name="echo_hoarder_comment_clean">Ai redat %1$d din totalul de %2$d abonamente active în acest an. Noi putem pune pariu că îți menții și biroul curat !</string>
     <string name="echo_share_heading">Podcasturile mele favorite</string>
-    <string name="echo_share">Anul meu %d în podcasturi. #AntennaPodEcho</string>
+    <string name="echo_share">Anul meu %d în podcasturi. #TrimPlayerEcho</string>
     <string name="echo_listened_after_title">Am analizat momentul în care apar episoadele și când tu le termini de ascultat. Concluzia noastră ?</string>
     <string name="echo_thanks_large">Mulțumim</string>
     <string name="echo_home_subtitle">Podcasturile tale de top și statisticile din anul trecut. Exclusiv de pe telefon.</string>
@@ -848,20 +850,4 @@
     <string name="echo_hoarder_subtitle_medium">Verificăm. Nu există nici-o colecție fără sens aici.</string>
     <string name="echo_thanks_we_are_glad_old">pentru că ne-ai ales pe noi în acest an!\n\nAi redat primul episod cu noi în %1$s. A fost o onoare să te servim de atunci și până acum.</string>
     <string name="echo_thanks_now_favorite">Acum să aruncăm o privire asupra podcasturilor tale favorite…</string>
-    <string name="feed_new_episodes_action_summary_autodownload">Descărcările automate sunt active. Episoadele sunt adăugate în inbox după care sunt mutate în folderul coadă după descărcare.</string>
-    <plurals name="num_subscriptions">
-        <item quantity="one">%d abonament</item>
-        <item quantity="few">%d abonamente</item>
-        <item quantity="other">%d de abonamente</item>
-    </plurals>
-    <string name="archive_feed_label_verb">Arhivare</string>
-    <string name="archive_feed_label_noun">Arhivă</string>
-    <string name="restore_archive_label">Restabilire</string>
-    <string name="remove_archive_feed_label">Șterge / arhivează</string>
-    <string name="feed_delete_explanation_delete">Ștergerea va elimina TOATE episoadele, inclusiv descărcările, istoricul redărilor și statisticile.</string>
-    <plurals name="downloading_episodes_message">
-        <item quantity="one">Se descarcă %d episod.</item>
-        <item quantity="few">Se descarcă %d episoade.</item>
-        <item quantity="other">Se descarcă %d de episoade.</item>
-    </plurals>
 </resources>

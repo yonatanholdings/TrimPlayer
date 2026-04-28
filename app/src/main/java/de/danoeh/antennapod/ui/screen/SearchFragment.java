@@ -1,6 +1,7 @@
 package de.danoeh.antennapod.ui.screen;
 
 
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,7 +26,6 @@ import com.google.android.material.chip.Chip;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.event.MessageEvent;
-import de.danoeh.antennapod.ui.common.Keyboard;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
 import de.danoeh.antennapod.ui.screen.subscriptions.HorizontalFeedListAdapter;
 import de.danoeh.antennapod.ui.MenuItemUtils;
@@ -213,7 +214,7 @@ public class SearchFragment extends Fragment implements EpisodeItemListAdapter.O
         }
         searchView.setOnQueryTextFocusChangeListener((view, hasFocus) -> {
             if (hasFocus && !isOtherViewInFoucus) {
-                Keyboard.show(getContext(), view.findFocus());
+                showInputMethod(view.findFocus());
             }
         });
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -221,7 +222,9 @@ public class SearchFragment extends Fragment implements EpisodeItemListAdapter.O
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    Keyboard.hide(getActivity());
+                    InputMethodManager imm = (InputMethodManager)
+                            getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(recyclerView.getWindowToken(), 0);
                 }
             }
         });
@@ -299,7 +302,7 @@ public class SearchFragment extends Fragment implements EpisodeItemListAdapter.O
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         Feed selectedFeedItem  = adapterFeeds.getLongPressedItem();
         if (selectedFeedItem != null
-                && FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), selectedFeedItem)) {
+                && FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), selectedFeedItem, () -> { })) {
             return true;
         }
         FeedItem selectedItem = adapter.getLongPressedItem();
@@ -434,12 +437,20 @@ public class SearchFragment extends Fragment implements EpisodeItemListAdapter.O
                 }, error -> Log.e(TAG, Log.getStackTraceString(error)));
     }
 
+    private void showInputMethod(View view) {
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.showSoftInput(view, 0);
+        }
+    }
+
     private void searchOnline() {
         if (adapter != null && adapter.inActionMode()) {
             adapter.endSelectMode();
         }
         searchView.clearFocus();
-        Keyboard.hide(getActivity());
+        InputMethodManager in = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        in.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
         String query = searchView.getQuery().toString();
         if (query.matches("http[s]?://.*")) {
             startActivity(new OnlineFeedviewActivityStarter(getContext(), query).getIntent());

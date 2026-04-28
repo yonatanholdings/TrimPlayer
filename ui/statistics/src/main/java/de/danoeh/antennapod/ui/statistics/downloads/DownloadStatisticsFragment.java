@@ -56,8 +56,12 @@ public class DownloadStatisticsFragment extends Fragment {
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        menu.findItem(R.id.statistics_reset).setVisible(false);
-        menu.findItem(R.id.statistics_filter).setVisible(false);
+        if (menu.findItem(R.id.statistics_reset) != null) {
+            menu.findItem(R.id.statistics_reset).setVisible(false);
+        }
+        if (menu.findItem(R.id.statistics_filter) != null) {
+            menu.findItem(R.id.statistics_filter).setVisible(false);
+        }
     }
 
     private void refreshDownloadStatistics() {

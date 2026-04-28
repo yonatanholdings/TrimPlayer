@@ -74,7 +74,7 @@ public class AutomaticDatabaseExportWorker extends Worker {
         if (documentFolder == null || !documentFolder.exists() || !documentFolder.canWrite()) {
             throw new IOException("Unable to open export folder");
         }
-        String filename = String.format("AntennaPodBackup-%s.db",
+        String filename = String.format("TrimPlayerBackup-%s.db",
                 new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()));
         DocumentFile exportFile = documentFolder.createFile("application/x-sqlite3", filename);
         if (exportFile == null || !exportFile.canWrite()) {
@@ -85,7 +85,7 @@ public class AutomaticDatabaseExportWorker extends Worker {
         Iterator<DocumentFile> itr = files.iterator();
         while (itr.hasNext()) {
             DocumentFile file = itr.next();
-            if (!file.getName().matches("AntennaPodBackup-\\d\\d\\d\\d-\\d\\d-\\d\\d\\.db")) {
+            if (!file.getName().matches("TrimPlayerBackup-\\d\\d\\d\\d-\\d\\d-\\d\\d\\.db")) {
                 itr.remove();
             }
         }

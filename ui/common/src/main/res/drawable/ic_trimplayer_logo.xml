@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="58"
+    android:viewportHeight="64">
+
+    <!-- Vertical stem -->
+    <path
+        android:pathData="M4,0 L4,64"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Horizontal crossbar -->
+    <path
+        android:pathData="M4,32 L54,32"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Top play triangle -->
+    <path
+        android:pathData="M9,0 L54,27 L9,27 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Bottom play triangle -->
+    <path
+        android:pathData="M9,37 L54,37 L9,64 Z"
+        android:fillColor="#FFFFFF" />
+
+</vector>

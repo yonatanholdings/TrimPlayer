@@ -38,6 +38,9 @@ public class RemoveFromHistorySwipeAction implements SwipeAction {
 
     @Override
     public void performAction(FeedItem item, Fragment fragment, FeedItemFilter filter) {
+        if (item.getMedia() == null) {
+            return;
+        }
         Date lastPlayedTimeHistory = item.getMedia().getLastPlayedTimeHistory();
         DBWriter.deleteFromPlaybackHistory(item);
         EventBus.getDefault().post(new MessageEvent(fragment.getString(R.string.removed_history_label),

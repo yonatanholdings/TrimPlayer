@@ -16,6 +16,7 @@ import de.danoeh.antennapod.ui.echo.screen.HoursPlayedScreen;
 import de.danoeh.antennapod.ui.echo.screen.IntroScreen;
 import de.danoeh.antennapod.ui.echo.screen.QueueScreen;
 import de.danoeh.antennapod.ui.echo.screen.ThanksScreen;
+import de.danoeh.antennapod.ui.echo.screen.TimeSavedScreen;
 import de.danoeh.antennapod.ui.echo.screen.TimeReleasePlayScreen;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 public class EchoActivity extends AppCompatActivity {
     private static final String TAG = "EchoActivity";
-    private static final int NUM_SCREENS = 7;
+    private static final int NUM_SCREENS = 8;
 
     private EchoActivityBinding viewBinding;
     private int currentScreenIdx = -1;
@@ -51,6 +52,7 @@ public class EchoActivity extends AppCompatActivity {
         screens =  List.of(new IntroScreen(this, getLayoutInflater()),
                 new HoursPlayedScreen(this, getLayoutInflater()), new QueueScreen(this, getLayoutInflater()),
                 new TimeReleasePlayScreen(this, getLayoutInflater()), new HoarderScreen(this, getLayoutInflater()),
+                new TimeSavedScreen(this, getLayoutInflater()),
                 new ThanksScreen(this, getLayoutInflater()), new FinalShareScreen(this, getLayoutInflater()));
         viewBinding = EchoActivityBinding.inflate(getLayoutInflater());
         viewBinding.closeButton.setOnClickListener(v -> finish());

@@ -3,7 +3,7 @@ package de.danoeh.antennapod.ui.echo;
 import java.util.Calendar;
 
 public class EchoConfig {
-    public static final int RELEASE_YEAR = 2025;
+    public static int RELEASE_YEAR = Calendar.getInstance().get(Calendar.YEAR);
 
     public static long jan1() {
         Calendar date = Calendar.getInstance();
@@ -18,8 +18,6 @@ public class EchoConfig {
     }
 
     public static boolean isCurrentlyVisible() {
-        return Calendar.getInstance().get(Calendar.YEAR) == RELEASE_YEAR
-                && Calendar.getInstance().get(Calendar.MONTH) == Calendar.DECEMBER
-                && Calendar.getInstance().get(Calendar.DAY_OF_MONTH) >= 10;
+        return true;
     }
 }

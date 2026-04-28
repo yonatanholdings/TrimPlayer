@@ -63,12 +63,12 @@ public abstract class UserPreferences {
     public static final String PREF_BACK_OPENS_DRAWER = "prefBackButtonOpensDrawer";
     public static final String PREF_BOTTOM_NAVIGATION = "prefBottomNavigation";
 
-    public static final String PREF_GLOBAL_DEFAULT_SORTED_ORDER = "prefGlobalDefaultSortedOrder";
     public static final String PREF_QUEUE_KEEP_SORTED = "prefQueueKeepSorted";
     public static final String PREF_QUEUE_KEEP_SORTED_ORDER = "prefQueueKeepSortedOrder";
     public static final String PREF_NEW_EPISODES_ACTION = "prefNewEpisodesAction";
     private static final String PREF_DOWNLOADS_SORTED_ORDER = "prefDownloadSortedOrder";
     private static final String PREF_INBOX_SORTED_ORDER = "prefInboxSortedOrder";
+    private static final String PREF_HISTORY_SORTED_ORDER = "prefHistorySortedOrder";
 
     // Episode
     public static final String PREF_SORT_ALL_EPISODES = "prefEpisodesSort";
@@ -78,6 +78,7 @@ public abstract class UserPreferences {
     public static final String PREF_PAUSE_ON_HEADSET_DISCONNECT = "prefPauseOnHeadsetDisconnect";
     public static final String PREF_UNPAUSE_ON_HEADSET_RECONNECT = "prefUnpauseOnHeadsetReconnect";
     public static final String PREF_UNPAUSE_ON_BLUETOOTH_RECONNECT = "prefUnpauseOnBluetoothReconnect";
+    public static final String PREF_PAUSE_ON_MUTE = "prefPauseOnMute";
     public static final String PREF_HARDWARE_FORWARD_BUTTON = "prefHardwareForwardButton";
     public static final String PREF_HARDWARE_PREVIOUS_BUTTON = "prefHardwarePreviousButton";
     public static final String PREF_FOLLOW_QUEUE = "prefFollowQueue";
@@ -225,7 +226,7 @@ public abstract class UserPreferences {
 
     public static List<Integer> getFullNotificationButtons() {
         String[] buttons = TextUtils.split(
-                prefs.getString(PREF_FULL_NOTIFICATION_BUTTONS,
+            prefs.getString(PREF_FULL_NOTIFICATION_BUTTONS,
                 NOTIFICATION_BUTTON_SKIP + "," + NOTIFICATION_BUTTON_PLAYBACK_SPEED), ",");
 
         List<Integer> notificationButtons = new ArrayList<>();
@@ -374,6 +375,10 @@ public abstract class UserPreferences {
         return prefs.getBoolean(PREF_PAUSE_ON_HEADSET_DISCONNECT, true);
     }
 
+    public static boolean isPauseOnMute() {
+        return prefs.getBoolean(PREF_PAUSE_ON_MUTE, true);
+    }
+
     public static boolean isUnpauseOnHeadsetReconnect() {
         return prefs.getBoolean(PREF_UNPAUSE_ON_HEADSET_RECONNECT, true);
     }
@@ -443,7 +448,7 @@ public abstract class UserPreferences {
     }
 
     public static boolean isSkipSilence() {
-        return prefs.getBoolean(PREF_PLAYBACK_SKIP_SILENCE, false);
+        return prefs.getBoolean(PREF_PLAYBACK_SKIP_SILENCE, true);
     }
 
     public static List<Float> getPlaybackSpeedArray() {
@@ -757,7 +762,7 @@ public abstract class UserPreferences {
     }
 
     public static boolean isBottomNavigationEnabled() {
-        return prefs.getBoolean(PREF_BOTTOM_NAVIGATION, true);
+        return prefs.getBoolean(PREF_BOTTOM_NAVIGATION, false);
     }
 
     public static void setBottomNavigationEnabled(boolean enabled) {
@@ -847,6 +852,16 @@ public abstract class UserPreferences {
         prefs.edit().putString(PREF_INBOX_SORTED_ORDER, "" + sortOrder.code).apply();
     }
 
+    public static SortOrder getHistorySortedOrder() {
+        String sortOrderStr = prefs.getString(PREF_HISTORY_SORTED_ORDER,
+                "" + SortOrder.COMPLETION_DATE_NEW_OLD.code);
+        return SortOrder.fromCodeString(sortOrderStr);
+    }
+
+    public static void setHistorySortedOrder(SortOrder sortOrder) {
+        prefs.edit().putString(PREF_HISTORY_SORTED_ORDER, "" + sortOrder.code).apply();
+    }
+
     public static SubscriptionsFilter getSubscriptionsFilter() {
         String value = prefs.getString(PREF_FILTER_FEED, "");
         return new SubscriptionsFilter(value);
@@ -864,15 +879,6 @@ public abstract class UserPreferences {
         prefs.edit().putBoolean(PREF_SUBSCRIPTION_TITLE, show).apply();
     }
 
-    public static void setPrefGlobalSortedOrder(SortOrder sortOrder) {
-        prefs.edit().putString(PREF_GLOBAL_DEFAULT_SORTED_ORDER, "" + sortOrder.code).apply();
-    }
-
-    public static SortOrder getPrefGlobalSortedOrder() {
-        return SortOrder.fromCodeString(prefs.getString(PREF_GLOBAL_DEFAULT_SORTED_ORDER,
-                "" + SortOrder.DATE_NEW_OLD.code));
-    }
-
     public static void setAllEpisodesSortOrder(SortOrder s) {
         prefs.edit().putString(PREF_SORT_ALL_EPISODES, "" + s.code).apply();
     }
@@ -888,5 +894,29 @@ public abstract class UserPreferences {
 
     public static void setPrefFilterAllEpisodes(String filter) {
         prefs.edit().putString(PREF_FILTER_ALL_EPISODES, filter).apply();
+    }
+
+    public static final String PREF_TRIM_SERVER_URL = "prefTrimServerUrl";
+
+    public static String getTrimServerUrl() {
+        String url = prefs.getString(PREF_TRIM_SERVER_URL, "http://10.0.2.2:8000/api/v1/");
+        if (url == null || url.trim().isEmpty()) {
+            return "http://10.0.2.2:8000/api/v1/";
+        }
+        return url.endsWith("/") ? url : url + "/";
+    }
+
+    public static void setTrimServerUrl(String url) {
+        prefs.edit().putString(PREF_TRIM_SERVER_URL, url).apply();
+    }
+
+    public static final String PREF_TRIM_STUB_ENABLED = "prefTrimStubEnabled";
+
+    public static boolean isTrimStubEnabled() {
+        return prefs.getBoolean(PREF_TRIM_STUB_ENABLED, true);
+    }
+
+    public static void setTrimStubEnabled(boolean enabled) {
+        prefs.edit().putBoolean(PREF_TRIM_STUB_ENABLED, enabled).apply();
     }
 }

@@ -304,6 +304,7 @@
             android:text="@string/report_bug_github_title"
             android:layout_marginEnd="8dp"
             android:textColor="?attr/colorPrimary"
+            android:visibility="gone"
             style="?android:attr/borderlessButtonStyle" />
 
         <Button
@@ -312,6 +313,7 @@
             android:layout_height="wrap_content"
             android:text="@string/report_bug_forum_title"
             android:layout_marginEnd="8dp"
+            android:visibility="gone"
             tools:ignore="ButtonStyle" />
 
     </LinearLayout>

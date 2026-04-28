@@ -69,4 +69,20 @@
         android:layout_below="@+id/txtvTitle"
         tools:text="23 hours" />
 
+    <TextView
+        android:id="@+id/txtvSavedValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:lines="1"
+        android:textColor="?android:attr/textColorTertiary"
+        android:textSize="14sp"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_toEndOf="@+id/txtvValue"
+        android:layout_toRightOf="@+id/txtvValue"
+        android:layout_below="@+id/txtvTitle"
+        android:visibility="gone"
+        tools:text="· 12 min saved"
+        tools:visibility="visible" />
+
 </RelativeLayout>

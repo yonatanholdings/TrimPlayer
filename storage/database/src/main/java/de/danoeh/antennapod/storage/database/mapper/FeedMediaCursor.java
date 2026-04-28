@@ -22,6 +22,7 @@ public class FeedMediaCursor extends CursorWrapper {
     private final int indexDownloadUrl;
     private final int indexDownloadDate;
     private final int indexPlayedDuration;
+    private final int indexSkippedDuration;
     private final int indexLastPlayedTimeStatistics;
     private final int indexHasEmbeddedPicture;
 
@@ -37,6 +38,7 @@ public class FeedMediaCursor extends CursorWrapper {
         indexDownloadUrl = cursor.getColumnIndexOrThrow(PodDBAdapter.KEY_DOWNLOAD_URL);
         indexDownloadDate = cursor.getColumnIndexOrThrow(PodDBAdapter.KEY_DOWNLOAD_DATE);
         indexPlayedDuration = cursor.getColumnIndexOrThrow(PodDBAdapter.KEY_PLAYED_DURATION);
+        indexSkippedDuration = cursor.getColumnIndex(PodDBAdapter.KEY_SKIPPED_DURATION);
         indexLastPlayedTimeStatistics = cursor.getColumnIndexOrThrow(PodDBAdapter.KEY_LAST_PLAYED_TIME_STATISTICS);
         indexHasEmbeddedPicture = cursor.getColumnIndexOrThrow(PodDBAdapter.KEY_HAS_EMBEDDED_PICTURE);
     }
@@ -62,7 +64,7 @@ public class FeedMediaCursor extends CursorWrapper {
                 break;
         }
 
-        return new FeedMedia(
+        FeedMedia media = new FeedMedia(
                 getLong(indexId),
                 null,
                 getInt(indexDuration),
@@ -77,5 +79,9 @@ public class FeedMediaCursor extends CursorWrapper {
                 hasEmbeddedPicture,
                 getLong(indexLastPlayedTimeStatistics)
         );
+        if (indexSkippedDuration >= 0) {
+            media.setSkippedDuration(getInt(indexSkippedDuration));
+        }
+        return media;
     }
 }

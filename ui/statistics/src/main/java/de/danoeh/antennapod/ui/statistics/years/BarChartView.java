@@ -51,6 +51,7 @@ public class BarChartView extends AppCompatImageView {
         for (DBReader.MonthlyStatisticsItem item : data) {
             drawable.maxValue = Math.max(drawable.maxValue, item.getTimePlayed());
         }
+        invalidate();
     }
 
     private class BarChartDrawable extends Drawable {
@@ -78,6 +79,9 @@ public class BarChartView extends AppCompatImageView {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            if (data == null || data.isEmpty()) {
+                return;
+            }
             final float width = getBounds().width();
             final float height = getBounds().height();
             final float barHeight = height * 0.9f;
@@ -86,7 +90,6 @@ public class BarChartView extends AppCompatImageView {
             final float textSize = height * 0.06f;
             paintGridText.setTextSize(textSize);
 
-            paintBars.setStrokeWidth(height * 0.015f);
             paintBars.setColor(colors[0]);
             int colorIndex = 0;
             int prevYear = data.isEmpty() ? 0 : data.get(0).getYear();
@@ -110,20 +113,43 @@ public class BarChartView extends AppCompatImageView {
                     }
                 }
 
-                float valuePercentage = (float) Math.max(0.005, (float) data.get(i).getTimePlayed() / maxValue);
-                float y = (1 - valuePercentage) * barHeight;
-                canvas.drawRect(x, y, x + stepSize * 0.95f, barHeight, paintBars);
+                if (data.get(i).getTimePlayed() > 0) {
+                    float valuePercentage = (float) data.get(i).getTimePlayed() / maxValue;
+                    float y = (1 - valuePercentage) * barHeight;
+                    canvas.drawRect(x, y, x + stepSize * 0.95f, barHeight, paintBars);
+                }
             }
 
-            float maxLine = (float) (Math.floor(maxValue / (10.0 * ONE_HOUR)) * 10 * ONE_HOUR);
-            float y = (1 - (maxLine / maxValue)) * barHeight;
+            // Grid lines — pick a scale that's meaningful for the data
+            long gridStep = pickGridStep(maxValue);
+            long topLine = (long) (Math.floor((double) maxValue / gridStep) * gridStep);
+            if (topLine == 0 || topLine > maxValue) {
+                topLine = gridStep;
+            }
+            float y = (1 - (float) topLine / maxValue) * barHeight;
             canvas.drawLine(0, y, width, y, paintGridLines);
-            canvas.drawText(String.valueOf((long) maxLine / ONE_HOUR), 0, y + 1.2f * textSize, paintGridText);
+            canvas.drawText(formatGridLabel(topLine), 0, y + 1.2f * textSize, paintGridText);
 
-            float midLine = maxLine / 2;
-            y = (1 - (midLine / maxValue)) * barHeight;
-            canvas.drawLine(0, y, width, y, paintGridLines);
-            canvas.drawText(String.valueOf((long) midLine / ONE_HOUR), 0, y + 1.2f * textSize, paintGridText);
+            long midLine = topLine / 2;
+            if (midLine > 0) {
+                y = (1 - (float) midLine / maxValue) * barHeight;
+                canvas.drawLine(0, y, width, y, paintGridLines);
+                canvas.drawText(formatGridLabel(midLine), 0, y + 1.2f * textSize, paintGridText);
+            }
+        }
+
+        private long pickGridStep(long maxVal) {
+            if (maxVal >= 10 * ONE_HOUR) return 10 * ONE_HOUR;
+            if (maxVal >= 2 * ONE_HOUR)  return ONE_HOUR;
+            if (maxVal >= ONE_HOUR / 2)  return ONE_HOUR / 2;
+            return ONE_HOUR / 6; // 10 minutes
+        }
+
+        private String formatGridLabel(long ms) {
+            if (ms >= ONE_HOUR) {
+                return String.valueOf(ms / ONE_HOUR) + "h";
+            }
+            return String.valueOf(ms / 60000) + "m";
         }
 
         @Override

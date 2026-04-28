@@ -17,7 +17,6 @@ import de.danoeh.antennapod.ui.common.SquareImageView;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import android.view.ContextMenu;
@@ -123,7 +122,6 @@ public class HorizontalFeedListAdapter extends RecyclerView.Adapter<HorizontalFe
         }
         inflater.inflate(R.menu.nav_feed_context, contextMenu);
         contextMenu.setHeaderTitle(longPressedItem.getTitle());
-        FeedMenuHandler.onPrepareMenu(contextMenu, Collections.singletonList(longPressedItem));
     }
 
     public void setEndButton(@StringRes int text, Runnable action) {

@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import de.danoeh.antennapod.ui.echo.EchoConfig;
 import de.danoeh.antennapod.ui.echo.R;
+import de.danoeh.antennapod.ui.echo.WordmarkDrawable;
 import de.danoeh.antennapod.ui.echo.background.BubbleBackground;
 import de.danoeh.antennapod.ui.echo.databinding.SimpleEchoScreenBinding;
 
@@ -15,6 +16,7 @@ public class IntroScreen extends EchoScreen {
         super(context);
         viewBinding = SimpleEchoScreenBinding.inflate(layoutInflater);
         viewBinding.echoLogo.setVisibility(View.VISIBLE);
+        viewBinding.echoLogo.setImageDrawable(new WordmarkDrawable(context));
         viewBinding.aboveLabel.setText(R.string.echo_intro_your_year);
         viewBinding.largeLabel.setText(String.format(getEchoLanguage(), "%d", EchoConfig.RELEASE_YEAR));
         viewBinding.belowLabel.setText(R.string.echo_intro_in_podcasts);

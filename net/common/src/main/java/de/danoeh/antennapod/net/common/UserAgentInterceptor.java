@@ -6,7 +6,7 @@ import okhttp3.Response;
 import java.io.IOException;
 
 public class UserAgentInterceptor implements Interceptor {
-    public static String USER_AGENT = "AntennaPod/0.0.0";
+    public static String USER_AGENT = "TrimPlayer/0.0.0";
 
     @Override
     public Response intercept(Chain chain) throws IOException {

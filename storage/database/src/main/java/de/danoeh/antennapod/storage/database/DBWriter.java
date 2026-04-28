@@ -78,6 +78,14 @@ public class DBWriter {
     }
 
     /**
+     * Submits a runnable to the database executor after all currently pending writes.
+     * Use this to ensure work runs only after all enqueued DB writes have completed.
+     */
+    public static void postAfterWrites(Runnable runnable) {
+        dbExec.submit(runnable);
+    }
+
+    /**
      * Wait until all threads are finished to avoid the "Illegal connection pointer" error of
      * Robolectric. Call this method only for unit tests.
      */
@@ -95,6 +103,25 @@ public class DBWriter {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Records a skip event (intro, outro, ad, silence, speed) for time-saved statistics.
+     */
+    public static void recordSkipEvent(long feedItemId, String skipType, int durationMs) {
+        recordSkipEvent(feedItemId, skipType, durationMs, System.currentTimeMillis());
+    }
+
+    public static void recordSkipEvent(long feedItemId, String skipType, int durationMs, long timestampMs) {
+        if (durationMs <= 0) {
+            return;
+        }
+        runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.insertSkipEvent(feedItemId, skipType, durationMs, timestampMs);
+            adapter.close();
+        });
     }
 
     /**
@@ -969,6 +996,7 @@ public class DBWriter {
             PodDBAdapter adapter = PodDBAdapter.getInstance();
             adapter.open();
             adapter.resetAllMediaPlayedDuration();
+            adapter.resetSkipEvents();
             adapter.close();
         });
     }

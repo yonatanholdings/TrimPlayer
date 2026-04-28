@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.elevation.SurfaceColors;
 
+import de.danoeh.antennapod.BuildConfig;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.ui.CoverLoader;
@@ -55,6 +56,9 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
     public final ImageView isInQueue;
     private final ImageView isVideo;
     public final ImageView isFavorite;
+    private final ImageView ivPlayed;
+    private final ImageView isStubbed;
+    private final View playedOverlay;
     private final ProgressBar progressBar;
     public final View secondaryActionButton;
     public final ImageView secondaryActionIcon;
@@ -85,6 +89,9 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
         isVideo = itemView.findViewById(R.id.ivIsVideo);
         isInbox = itemView.findViewById(R.id.statusInbox);
         isFavorite = itemView.findViewById(R.id.isFavorite);
+        ivPlayed = itemView.findViewById(R.id.ivPlayed);
+        isStubbed = itemView.findViewById(R.id.ivStubbed);
+        playedOverlay = itemView.findViewById(R.id.playedOverlay);
         size = itemView.findViewById(R.id.size);
         separatorIcons = itemView.findViewById(R.id.separatorIcons);
         secondaryActionProgress = itemView.findViewById(R.id.secondaryActionProgress);
@@ -109,7 +116,18 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
         isInbox.setVisibility(item.isNew() ? View.VISIBLE : View.GONE);
         isFavorite.setVisibility(item.isTagged(FeedItem.TAG_FAVORITE) ? View.VISIBLE : View.GONE);
         isInQueue.setVisibility(item.isTagged(FeedItem.TAG_QUEUE) ? View.VISIBLE : View.GONE);
-        container.setAlpha(item.isPlayed() ? 0.5f : 1.0f);
+        if (BuildConfig.DEBUG && item.getItemIdentifier() != null) {
+            boolean hasStub = de.danoeh.antennapod.playback.service.trim.TrimStub
+                    .hasSegments(activity, item.getItemIdentifier());
+            isStubbed.setVisibility(hasStub ? View.VISIBLE : View.GONE);
+        } else {
+            isStubbed.setVisibility(View.GONE);
+        }
+        boolean played = item.isPlayed();
+        playedOverlay.setVisibility(played ? View.VISIBLE : View.GONE);
+        ivPlayed.setVisibility(played ? View.VISIBLE : View.GONE);
+        title.setAlpha(played ? 0.5f : 1.0f);
+        container.setAlpha(1.0f);
 
         ItemActionButton actionButton = ItemActionButton.forItem(item);
         actionButton.configure(secondaryActionButton, secondaryActionIcon, activity);
@@ -275,7 +293,8 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
                 || isInQueue.getVisibility() == View.VISIBLE
                 || isVideo.getVisibility() == View.VISIBLE
                 || isFavorite.getVisibility() == View.VISIBLE
-                || isInbox.getVisibility() == View.VISIBLE;
+                || isInbox.getVisibility() == View.VISIBLE
+                || isStubbed.getVisibility() == View.VISIBLE;
         separatorIcons.setVisibility(hasIcons ? View.VISIBLE : View.GONE);
     }
 }

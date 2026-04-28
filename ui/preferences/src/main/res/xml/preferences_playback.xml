@@ -28,6 +28,12 @@
                 android:key="prefPauseForFocusLoss"
                 android:summary="@string/pref_pausePlaybackForFocusLoss_sum"
                 android:title="@string/pref_pausePlaybackForFocusLoss_title"/>
+        <SwitchPreferenceCompat
+                android:defaultValue="true"
+                android:enabled="true"
+                android:key="prefPauseOnMute"
+                android:summary="@string/pref_pauseOnMute_sum"
+                android:title="@string/pref_pauseOnMute_title"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/playback_control">
@@ -95,4 +101,13 @@
                 android:summary="@string/pref_skip_keeps_episodes_sum"
                 android:title="@string/pref_skip_keeps_episodes_title"/>
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="Debug">
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="prefTrimStubEnabled"
+            android:summary="Load skip segments from assets/stub_segments.json instead of the backend"
+            android:title="Stub skip segments" />
+    </PreferenceCategory>
+
 </PreferenceScreen>

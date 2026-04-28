@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
@@ -24,8 +25,9 @@ import de.danoeh.antennapod.event.StatisticsEvent;
 import de.danoeh.antennapod.ui.common.PagedToolbarFragment;
 import de.danoeh.antennapod.ui.echo.EchoActivity;
 import de.danoeh.antennapod.ui.echo.EchoConfig;
-import de.danoeh.antennapod.ui.statistics.downloads.DownloadStatisticsFragment;
+import de.danoeh.antennapod.ui.statistics.insights.InsightsStatisticsFragment;
 import de.danoeh.antennapod.ui.statistics.subscriptions.SubscriptionStatisticsFragment;
+import de.danoeh.antennapod.ui.statistics.timesaved.TimeSavedStatisticsFragment;
 import de.danoeh.antennapod.ui.statistics.years.YearsStatisticsFragment;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -46,8 +48,9 @@ public class StatisticsFragment extends PagedToolbarFragment {
 
     private static final int POS_SUBSCRIPTIONS = 0;
     private static final int POS_YEARS = 1;
-    private static final int POS_SPACE_TAKEN = 2;
-    private static final int TOTAL_COUNT = 3;
+    private static final int POS_TIME_SAVED = 2;
+    private static final int POS_INSIGHTS = 3;
+    private static final int TOTAL_COUNT = 4;
 
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
@@ -62,12 +65,16 @@ public class StatisticsFragment extends PagedToolbarFragment {
         View rootView = inflater.inflate(R.layout.pager_fragment, container, false);
         viewPager = rootView.findViewById(R.id.viewpager);
         toolbar = rootView.findViewById(R.id.toolbar);
-        toolbar.setTitle(getString(R.string.statistics_label));
-        toolbar.inflateMenu(R.menu.statistics);
-        if (BuildConfig.DEBUG || EchoConfig.isCurrentlyVisible()) {
-            toolbar.getMenu().findItem(R.id.show_echo).setVisible(true);
+        if (((AppCompatActivity) requireActivity()).getSupportActionBar() != null) {
+            rootView.findViewById(R.id.appbar).setVisibility(View.GONE);
+        } else {
+            toolbar.setTitle(getString(R.string.statistics_label));
+            toolbar.inflateMenu(R.menu.statistics);
+            if (BuildConfig.DEBUG || EchoConfig.isCurrentlyVisible()) {
+                toolbar.getMenu().findItem(R.id.show_echo).setVisible(true);
+            }
+            toolbar.setNavigationOnClickListener(v -> getParentFragmentManager().popBackStack());
         }
-        toolbar.setNavigationOnClickListener(v -> getParentFragmentManager().popBackStack());
         viewPager.setAdapter(new StatisticsPagerAdapter(this));
         // Give the TabLayout the ViewPager
         tabLayout = rootView.findViewById(R.id.sliding_tabs);
@@ -80,8 +87,11 @@ public class StatisticsFragment extends PagedToolbarFragment {
                 case POS_YEARS:
                     tab.setText(R.string.years_statistics_label);
                     break;
-                case POS_SPACE_TAKEN:
-                    tab.setText(R.string.downloads_label);
+                case POS_TIME_SAVED:
+                    tab.setText(R.string.time_saved_label);
+                    break;
+                case POS_INSIGHTS:
+                    tab.setText(R.string.insights_label);
                     break;
                 default:
                     break;
@@ -144,9 +154,11 @@ public class StatisticsFragment extends PagedToolbarFragment {
                     return new SubscriptionStatisticsFragment();
                 case POS_YEARS:
                     return new YearsStatisticsFragment();
+                case POS_TIME_SAVED:
+                    return new TimeSavedStatisticsFragment();
+                case POS_INSIGHTS:
                 default:
-                case POS_SPACE_TAKEN:
-                    return new DownloadStatisticsFragment();
+                    return new InsightsStatisticsFragment();
             }
         }
 

@@ -66,8 +66,6 @@ public class EchoSection extends Fragment {
     void hideThisYear() {
         getContext().getSharedPreferences(HomeFragment.PREF_NAME, Context.MODE_PRIVATE)
                 .edit().putInt(HomeFragment.PREF_HIDE_ECHO, EchoConfig.RELEASE_YEAR).apply();
-        if (isVisible()) {
-            ((MainActivity) getActivity()).loadFragment(HomeFragment.TAG, null);
-        }
+        ((MainActivity) getActivity()).loadFragment(HomeFragment.TAG, null);
     }
 }

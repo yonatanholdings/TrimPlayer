@@ -11,6 +11,7 @@ import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.ui.statistics.R;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -94,6 +95,21 @@ public class YearStatisticsListAdapter extends RecyclerView.Adapter<RecyclerView
         yearAggregate.setTimePlayed(yearSum);
         yearlyAggregate.add(yearAggregate);
         Collections.reverse(yearlyAggregate);
+
+        // Pad statisticsData with empty months from the last data point to the current month,
+        // so the chart always extends to the present and no high bar appears stranded at the right edge.
+        if (!statisticsData.isEmpty()) {
+            Calendar now = Calendar.getInstance();
+            int currentDataPoint = now.get(Calendar.MONTH) + now.get(Calendar.YEAR) * 12;
+            while (lastDataPoint < currentDataPoint) {
+                lastDataPoint++;
+                DBReader.MonthlyStatisticsItem item = new DBReader.MonthlyStatisticsItem();
+                item.setYear(lastDataPoint / 12);
+                item.setMonth(lastDataPoint % 12 + 1);
+                statisticsData.add(item);
+            }
+        }
+
         notifyDataSetChanged();
     }
 

@@ -9,7 +9,6 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.snackbar.Snackbar;
-import de.danoeh.antennapod.ui.common.IntentUtils;
 import de.danoeh.antennapod.ui.preferences.BuildConfig;
 import de.danoeh.antennapod.ui.preferences.R;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
@@ -42,22 +41,6 @@ public class AboutFragment extends AnimatedPreferenceFragment {
             if (Build.VERSION.SDK_INT <= 32) {
                 Snackbar.make(getView(), R.string.copied_to_clipboard, Snackbar.LENGTH_SHORT).show();
             }
-            return true;
-        });
-        findPreference("about_contributors").setOnPreferenceClickListener((preference) -> {
-            getParentFragmentManager().beginTransaction()
-                    .replace(R.id.settingsContainer, new ContributorsPagerFragment())
-                    .addToBackStack(getString(R.string.contributors)).commit();
-            return true;
-        });
-        findPreference("about_privacy_policy").setOnPreferenceClickListener((preference) -> {
-            IntentUtils.openInBrowser(getContext(), "https://antennapod.org/privacy/");
-            return true;
-        });
-        findPreference("about_licenses").setOnPreferenceClickListener((preference) -> {
-            getParentFragmentManager().beginTransaction()
-                    .replace(R.id.settingsContainer, new LicensesFragment())
-                    .addToBackStack(getString(R.string.translators)).commit();
             return true;
         });
     }

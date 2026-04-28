@@ -11,6 +11,7 @@ import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.net.sync.serviceinterface.SynchronizationQueue;
 import de.danoeh.antennapod.net.sync.serviceinterface.SynchronizationQueueStub;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,6 +45,11 @@ public class FeedDatabaseWriterTest {
         adapter.open();
         adapter.close();
         SynchronizationQueue.setInstance(new SynchronizationQueueStub());
+    }
+
+    @After
+    public void tearDown() {
+        PodDBAdapter.tearDownTests();
     }
 
     @Test

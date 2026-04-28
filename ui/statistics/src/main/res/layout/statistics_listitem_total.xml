@@ -39,10 +39,36 @@
         android:layout_alignBottom="@id/pie_chart" />
 
     <View
+        android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="16dp"
         android:background="?android:attr/dividerVertical"
         android:layout_below="@+id/pie_chart" />
+
+    <TextView
+        android:id="@+id/total_saved_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?android:attr/textColorPrimary"
+        android:gravity="center_horizontal"
+        android:textSize="20sp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="2dp"
+        android:layout_below="@+id/divider"
+        android:visibility="gone"
+        tools:text="1.5 hours"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/total_saved_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="13sp"
+        android:layout_below="@+id/total_saved_time"
+        android:visibility="gone"
+        tools:text="saved by skipping ads"
+        tools:visibility="visible" />
 
 </RelativeLayout>

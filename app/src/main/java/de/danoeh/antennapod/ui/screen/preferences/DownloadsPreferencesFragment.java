@@ -82,5 +82,10 @@ public class DownloadsPreferencesFragment extends AnimatedPreferenceFragment
                 || UserPreferences.PREF_MOBILE_UPDATE.equals(key)) {
             FeedUpdateManager.getInstance().restartUpdateAlarm(getContext(), true);
         }
+        if (UserPreferences.PREF_TRIM_SERVER_URL.equals(key)) {
+            // TrimClient.getInstance() will rebuild with the new URL on next call
+            findPreference(UserPreferences.PREF_TRIM_SERVER_URL)
+                    .setSummary(UserPreferences.getTrimServerUrl());
+        }
     }
 }

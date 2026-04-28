@@ -66,7 +66,6 @@
         <SwitchPreferenceCompat
                 android:title="@string/bottom_navigation"
                 android:summary="@string/bottom_navigation_summary"
-                android:defaultValue="true"
                 android:key="prefBottomNavigation" />
         <Preference
                 android:key="prefHiddenDrawerItems"
@@ -79,10 +78,6 @@
                 android:defaultValue="false"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/episode_lists">
-        <Preference
-                android:key="prefGlobalDefaultSortedOrder"
-                android:title="@string/pref_global_default_episode_list_sort_order_title"
-                android:summary="@string/pref_global_default_episode_list_sort_order_sum" />
         <Preference
                 android:key="prefSwipe"
                 android:summary="@string/swipeactions_summary"

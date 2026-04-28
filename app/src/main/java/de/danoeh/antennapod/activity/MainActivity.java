@@ -348,6 +348,7 @@ public class MainActivity extends CastEnabledActivity {
         SharedPreferences prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         if (prefs.getBoolean(PREF_IS_FIRST_LAUNCH, true)) {
             FeedUpdateManager.getInstance().restartUpdateAlarm(this, true);
+            UserPreferences.setBottomNavigationEnabled(true);
 
             SharedPreferences.Editor edit = prefs.edit();
             edit.putBoolean(PREF_IS_FIRST_LAUNCH, false);
@@ -655,16 +656,13 @@ public class MainActivity extends CastEnabledActivity {
     public void onEventMainThread(MessageEvent event) {
         Log.d(TAG, "onEvent(" + event + ")");
         Snackbar snackbar;
-        if (getBottomSheet().getState() == BottomSheetBehavior.STATE_EXPANDED) {
-            snackbar = Snackbar.make(findViewById(android.R.id.content), event.message, Snackbar.LENGTH_LONG);
-            if (findViewById(R.id.bottomNavigationView).getVisibility() == View.VISIBLE) {
-                snackbar.setAnchorView(findViewById(R.id.bottomNavigationView));
-            }
-        } else {
+        if (getBottomSheet().getState() == BottomSheetBehavior.STATE_COLLAPSED) {
             snackbar = Snackbar.make(findViewById(R.id.main_content_view), event.message, Snackbar.LENGTH_LONG);
             if (findViewById(R.id.audioplayerFragment).getVisibility() == View.VISIBLE) {
                 snackbar.setAnchorView(findViewById(R.id.audioplayerFragment));
             }
+        } else {
+            snackbar = Snackbar.make(findViewById(android.R.id.content), event.message, Snackbar.LENGTH_LONG);
         }
         snackbar.show();
 
@@ -680,7 +678,7 @@ public class MainActivity extends CastEnabledActivity {
             long feedId = intent.getLongExtra(MainActivityStarter.EXTRA_FEED_ID, 0);
             Bundle args = intent.getBundleExtra(MainActivityStarter.EXTRA_FRAGMENT_ARGS);
             if (feedId > 0) {
-                if (intent.getBooleanExtra(MainActivityStarter.EXTRA_CLEAR_BACK_STACK, true)) {
+                if (intent.getBooleanExtra(MainActivityStarter.EXTRA_CLEAR_BACK_STACK, false)) {
                     loadFeedFragmentById(feedId, args);
                 } else {
                     loadChildFragment(FeedItemlistFragment.newInstance(feedId));
@@ -691,7 +689,7 @@ public class MainActivity extends CastEnabledActivity {
             String tag = intent.getStringExtra(MainActivityStarter.EXTRA_FRAGMENT_TAG);
             Bundle args = intent.getBundleExtra(MainActivityStarter.EXTRA_FRAGMENT_ARGS);
             if (tag != null) {
-                if (intent.getBooleanExtra(MainActivityStarter.EXTRA_CLEAR_BACK_STACK, true)) {
+                if (intent.getBooleanExtra(MainActivityStarter.EXTRA_CLEAR_BACK_STACK, false)) {
                     loadFragment(tag, null);
                 } else {
                     loadChildFragment(createFragmentInstance(tag, args), TransitionEffect.NONE, tag);

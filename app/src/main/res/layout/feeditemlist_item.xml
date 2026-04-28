@@ -75,6 +75,24 @@
                     android:importantForAccessibility="no"
                     tools:src="@tools:sample/avatars" />
 
+                <!-- Played state overlay: dark scrim + checkmark, shown when episode is played -->
+                <FrameLayout
+                    android:id="@+id/playedOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#99000000"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        app:srcCompat="@drawable/ic_check"
+                        app:tint="@android:color/white" />
+
+                </FrameLayout>
+
             </RelativeLayout>
 
         </androidx.cardview.widget.CardView>
@@ -100,7 +118,6 @@
                     android:layout_width="14sp"
                     android:layout_height="14sp"
                     android:contentDescription="@string/is_inbox_label"
-                    app:tint="?attr/colorOnSurfaceVariant"
                     app:srcCompat="@drawable/ic_inbox" />
 
                 <ImageView
@@ -108,7 +125,6 @@
                     android:layout_width="14sp"
                     android:layout_height="14sp"
                     android:contentDescription="@string/media_type_video_label"
-                    app:tint="?attr/colorOnSurfaceVariant"
                     app:srcCompat="@drawable/ic_videocam" />
 
                 <ImageView
@@ -116,7 +132,6 @@
                     android:layout_width="14sp"
                     android:layout_height="14sp"
                     android:contentDescription="@string/is_favorite_label"
-                    app:tint="?attr/colorOnSurfaceVariant"
                     app:srcCompat="@drawable/ic_star" />
 
                 <ImageView
@@ -124,8 +139,24 @@
                     android:layout_width="14sp"
                     android:layout_height="14sp"
                     android:contentDescription="@string/in_queue_label"
-                    app:tint="?attr/colorOnSurfaceVariant"
                     app:srcCompat="@drawable/ic_playlist_play" />
+
+                <ImageView
+                    android:id="@+id/ivPlayed"
+                    android:layout_width="14sp"
+                    android:layout_height="14sp"
+                    android:contentDescription="@string/is_played"
+                    app:srcCompat="@drawable/ic_check"
+                    app:tint="?attr/colorPrimary" />
+
+                <ImageView
+                    android:id="@+id/ivStubbed"
+                    android:layout_width="14sp"
+                    android:layout_height="14sp"
+                    android:contentDescription="Stub segments available"
+                    android:visibility="gone"
+                    app:srcCompat="@drawable/ic_bug"
+                    app:tint="?attr/colorAccent" />
 
                 <TextView
                     android:id="@+id/separatorIcons"

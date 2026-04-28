@@ -57,14 +57,21 @@ public class DatabaseExporter {
 
     public static void importBackup(Uri inputUri, Context context) throws IOException {
         InputStream inputStream = null;
+        File tempDB = context.getDatabasePath(TEMP_DB_NAME);
         try {
-            File tempDB = context.getDatabasePath(TEMP_DB_NAME);
             inputStream = context.getContentResolver().openInputStream(inputUri);
             FileUtils.copyInputStreamToFile(inputStream, tempDB);
 
-            SQLiteDatabase db = SQLiteDatabase.openDatabase(tempDB.getAbsolutePath(),
-                    null, SQLiteDatabase.OPEN_READONLY);
+            SQLiteDatabase db;
+            try {
+                db = SQLiteDatabase.openDatabase(tempDB.getAbsolutePath(),
+                        null, SQLiteDatabase.OPEN_READONLY);
+            } catch (SQLiteException e) {
+                Log.e(TAG, Log.getStackTraceString(e));
+                throw new IOException(context.getString(R.string.import_not_a_database));
+            }
             if (db.getVersion() > PodDBAdapter.VERSION) {
+                db.close();
                 throw new IOException(context.getString(R.string.import_no_downgrade));
             }
             db.close();
@@ -75,11 +82,16 @@ public class DatabaseExporter {
                 throw new IOException("Unable to delete old database");
             }
             FileUtils.moveFile(tempDB, currentDB);
-        } catch (IOException | SQLiteException e) {
+        } catch (IOException e) {
             Log.e(TAG, Log.getStackTraceString(e));
             throw e;
         } finally {
             IOUtils.closeQuietly(inputStream);
+            // Clean up temp file; Android SQLite may rename corrupt DBs to .corrupt
+            if (tempDB.exists()) {
+                tempDB.delete();
+            }
+            new File(tempDB.getAbsolutePath() + ".corrupt").delete();
         }
     }
 }

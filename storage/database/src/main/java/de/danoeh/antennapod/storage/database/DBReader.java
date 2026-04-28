@@ -443,6 +443,25 @@ public final class DBReader {
         }
     }
 
+    public static FeedItem getNextInFeed(FeedItem item) {
+        Log.d(TAG, "getNextInFeed() called with: itemId = [" + item.getId() + "]");
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (FeedItemCursor cursor = new FeedItemCursor(adapter.getNextInFeed(item))) {
+            List<FeedItem> list = extractItemlistFromCursor(cursor);
+            if (!list.isEmpty()) {
+                FeedItem nextItem = list.get(0);
+                loadAdditionalFeedItemListData(list);
+                return nextItem;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            adapter.close();
+        }
+    }
+
     @NonNull
     public static List<FeedItem> getPausedQueue(int limit) {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
@@ -617,6 +636,211 @@ public final class DBReader {
         public long oldestDate = System.currentTimeMillis();
     }
 
+    public static class InsightPeriod {
+        public final String label;
+        public final long playedMs;
+        public final long savedMs;
+
+        InsightPeriod(String label, long playedMs, long savedMs) {
+            this.label = label;
+            this.playedMs = playedMs;
+            this.savedMs = savedMs;
+        }
+    }
+
+    public static List<InsightPeriod> getInsightsData() {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        List<InsightPeriod> result = new ArrayList<>();
+
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        long now = System.currentTimeMillis();
+
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long todayStart = cal.getTimeInMillis();
+        long yesterdayStart = todayStart - 86400000L;
+
+        cal.set(java.util.Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
+        if (cal.getTimeInMillis() > todayStart) {
+            cal.add(java.util.Calendar.WEEK_OF_YEAR, -1);
+        }
+        long thisWeekStart = cal.getTimeInMillis();
+        long lastWeekStart = thisWeekStart - 7 * 86400000L;
+
+        cal.setTimeInMillis(todayStart);
+        cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+        long thisMonthStart = cal.getTimeInMillis();
+        int thisMonthIdx = cal.get(java.util.Calendar.MONTH);
+        int currentYear = cal.get(java.util.Calendar.YEAR);
+        cal.add(java.util.Calendar.MONTH, -1);
+        long lastMonthStart = cal.getTimeInMillis();
+        int lastMonthIdx = cal.get(java.util.Calendar.MONTH);
+        int lastMonthYear = cal.get(java.util.Calendar.YEAR);
+
+        cal.setTimeInMillis(todayStart);
+        cal.set(java.util.Calendar.DAY_OF_YEAR, 1);
+        long thisYearStart = cal.getTimeInMillis();
+
+        String[] months = new java.text.DateFormatSymbols().getMonths();
+
+        result.add(new InsightPeriod("Today",
+                adapter.getPlayedTimePeriodMs(todayStart, Long.MAX_VALUE),
+                adapter.getSkipTotalPeriodMs(todayStart, Long.MAX_VALUE)));
+        result.add(new InsightPeriod("Yesterday",
+                adapter.getPlayedTimePeriodMs(yesterdayStart, todayStart),
+                adapter.getSkipTotalPeriodMs(yesterdayStart, todayStart)));
+        result.add(new InsightPeriod("This week",
+                adapter.getPlayedTimePeriodMs(thisWeekStart, Long.MAX_VALUE),
+                adapter.getSkipTotalPeriodMs(thisWeekStart, Long.MAX_VALUE)));
+        result.add(new InsightPeriod("Last week",
+                adapter.getPlayedTimePeriodMs(lastWeekStart, thisWeekStart),
+                adapter.getSkipTotalPeriodMs(lastWeekStart, thisWeekStart)));
+        result.add(new InsightPeriod(months[thisMonthIdx],
+                adapter.getPlayedTimePeriodMs(thisMonthStart, Long.MAX_VALUE),
+                adapter.getSkipTotalPeriodMs(thisMonthStart, Long.MAX_VALUE)));
+        String lastMonthLabel = lastMonthYear != currentYear
+                ? months[lastMonthIdx] + " " + lastMonthYear : months[lastMonthIdx];
+        result.add(new InsightPeriod(lastMonthLabel,
+                adapter.getPlayedTimePeriodMs(lastMonthStart, thisMonthStart),
+                adapter.getSkipTotalPeriodMs(lastMonthStart, thisMonthStart)));
+        result.add(new InsightPeriod(String.valueOf(currentYear),
+                adapter.getPlayedTimePeriodMs(thisYearStart, Long.MAX_VALUE),
+                adapter.getSkipTotalPeriodMs(thisYearStart, Long.MAX_VALUE)));
+
+        // Historical years — merge played and saved by year, exclude current year
+        Map<Integer, long[]> yearMap = new HashMap<>();
+        try (Cursor c = adapter.getYearlyPlayedCursor()) {
+            int idxYear = c.getColumnIndexOrThrow("year");
+            int idxPlayed = c.getColumnIndexOrThrow("played_ms");
+            while (c.moveToNext()) {
+                int year = c.getInt(idxYear);
+                if (year != currentYear) {
+                    long[] row = yearMap.get(year);
+                    if (row == null) { row = new long[2]; yearMap.put(year, row); }
+                    row[0] = c.getLong(idxPlayed);
+                }
+            }
+        }
+        try (Cursor c = adapter.getYearlySkipCursor()) {
+            int idxYear = c.getColumnIndexOrThrow("year");
+            int idxSaved = c.getColumnIndexOrThrow("saved_ms");
+            while (c.moveToNext()) {
+                int year = c.getInt(idxYear);
+                if (year != currentYear) {
+                    long[] row = yearMap.get(year);
+                    if (row == null) { row = new long[2]; yearMap.put(year, row); }
+                    row[1] = c.getLong(idxSaved);
+                }
+            }
+        }
+        List<Integer> years = new ArrayList<>(yearMap.keySet());
+        Collections.sort(years, new Comparator<Integer>() {
+            @Override public int compare(Integer a, Integer b) { return Integer.compare(b, a); }
+        });
+        for (int year : years) {
+            long[] row = yearMap.get(year);
+            result.add(new InsightPeriod(String.valueOf(year), row[0], row[1]));
+        }
+
+        adapter.close();
+        return result;
+    }
+
+    public static class MonthlySkipItem {
+        public int year;
+        public int month;
+        public long totalMs;
+    }
+
+    public static class SkipStatistics {
+        public long totalMs;
+        public long introMs;
+        public long outroMs;
+        public long adMs;
+        public long silenceMs;
+        public long speedMs;
+        public long todayMs;
+        public long weekMs;
+        public long monthMs;
+        public List<MonthlySkipItem> monthly = new ArrayList<>();
+    }
+
+    @NonNull
+    public static SkipStatistics getSkipStatistics() {
+        SkipStatistics result = new SkipStatistics();
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+
+        // Period boundaries
+        long now = System.currentTimeMillis();
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long startOfDay = cal.getTimeInMillis();
+        long startOfWeek = startOfDay - (cal.get(java.util.Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()) * 86400000L;
+        if (startOfWeek > startOfDay) {
+            startOfWeek -= 7 * 86400000L;
+        }
+        cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+        long startOfMonth = cal.getTimeInMillis();
+
+        // All-time totals by type
+        try (Cursor c = adapter.getSkipEventStatsCursor(0, now)) {
+            int idxType = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TYPE);
+            int idxTotal = c.getColumnIndexOrThrow("total_ms");
+            while (c.moveToNext()) {
+                String type = c.getString(idxType);
+                long ms = c.getLong(idxTotal);
+                result.totalMs += ms;
+                switch (type) {
+                    case "intro":    result.introMs   = ms; break;
+                    case "outro":    result.outroMs   = ms; break;
+                    case "ad":       result.adMs      = ms; break;
+                    case "silence":  result.silenceMs = ms; break;
+                    case "speed":    result.speedMs   = ms; break;
+                }
+            }
+        }
+
+        // Period totals (today/week/month) — single aggregation query each
+        result.todayMs  = sumSkipPeriod(adapter, startOfDay, now);
+        result.weekMs   = sumSkipPeriod(adapter, startOfWeek, now);
+        result.monthMs  = sumSkipPeriod(adapter, startOfMonth, now);
+
+        // Monthly history
+        try (Cursor c = adapter.getSkipEventsMonthlyCursor()) {
+            int idxYear  = c.getColumnIndexOrThrow("year");
+            int idxMonth = c.getColumnIndexOrThrow("month");
+            int idxMs    = c.getColumnIndexOrThrow("total_ms");
+            while (c.moveToNext()) {
+                MonthlySkipItem item = new MonthlySkipItem();
+                item.year    = c.getInt(idxYear);
+                item.month   = c.getInt(idxMonth);
+                item.totalMs = c.getLong(idxMs);
+                result.monthly.add(item);
+            }
+        }
+
+        adapter.close();
+        return result;
+    }
+
+    private static long sumSkipPeriod(PodDBAdapter adapter, long from, long to) {
+        try (Cursor c = adapter.getSkipEventStatsCursor(from, to)) {
+            int idxTotal = c.getColumnIndexOrThrow("total_ms");
+            long sum = 0;
+            while (c.moveToNext()) {
+                sum += c.getLong(idxTotal);
+            }
+            return sum;
+        }
+    }
+
     /**
      * Searches the DB for statistics.
      *
@@ -640,6 +864,7 @@ public final class DBReader {
             int indexNumDownloaded = cursor.getColumnIndexOrThrow("num_downloaded");
             int indexDownloadSize = cursor.getColumnIndexOrThrow("download_size");
             int indexNumRecentUnplayed = cursor.getColumnIndexOrThrow("num_recent_unplayed");
+            int indexSkippedTime = cursor.getColumnIndex("skipped_time");
 
             while (cursor.moveToNext()) {
                 Feed feed = cursor.getFeed();
@@ -652,13 +877,14 @@ public final class DBReader {
                 long episodesDownloadCount = cursor.getLong(indexNumDownloaded);
                 long oldestDate = cursor.getLong(indexOldestDate);
                 boolean hasRecentUnplayed = cursor.getLong(indexNumRecentUnplayed) > 0;
+                long feedSkippedTime = indexSkippedTime >= 0 ? cursor.getLong(indexSkippedTime) / 1000 : 0;
 
                 if (episodes > 0 && oldestDate < Long.MAX_VALUE) {
                     result.oldestDate = Math.min(result.oldestDate, oldestDate);
                 }
 
                 result.feedTime.add(new StatisticsItem(feed, feedTotalTime, feedPlayedTime, episodes,
-                        episodesStarted, totalDownloadSize, episodesDownloadCount, hasRecentUnplayed));
+                        episodesStarted, totalDownloadSize, episodesDownloadCount, hasRecentUnplayed, feedSkippedTime));
             }
         }
         adapter.close();
@@ -814,15 +1040,15 @@ public final class DBReader {
         }
         List<NavDrawerData.TagItem> tagsSorted = new ArrayList<>(tags.values());
         Collections.sort(tagsSorted, (o1, o2) -> o1.getTitle().compareToIgnoreCase(o2.getTitle()));
+        if (!untaggedTag.getFeeds().isEmpty()) {
+            tagsSorted.add(0, untaggedTag);
+        }
         // Root tag here means "all feeds", this is different from the nav drawer.
         NavDrawerData.TagItem rootTag = new NavDrawerData.TagItem(FeedPreferences.TAG_ROOT);
         for (Feed feed : feeds) {
             rootTag.addFeed(feed, 0);
         }
         tagsSorted.add(0, rootTag);
-        if (!untaggedTag.getFeeds().isEmpty()) {
-            tagsSorted.add(untaggedTag);
-        }
         return tagsSorted;
     }
 

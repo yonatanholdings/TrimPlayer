@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TrimPlayer monochrome icon (Android 13+ themed icons).
+  Single-color paths; system applies theming color automatically.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Vertical stem -->
+    <path
+        android:pathData="M36,22 L36,86"
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Horizontal crossbar -->
+    <path
+        android:pathData="M36,54 L79,54"
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Top play triangle -->
+    <path
+        android:pathData="M41,22 L79,49 L41,49 Z"
+        android:fillColor="#000000" />
+
+    <!-- Bottom play triangle -->
+    <path
+        android:pathData="M41,59 L79,59 L41,86 Z"
+        android:fillColor="#000000" />
+
+</vector>

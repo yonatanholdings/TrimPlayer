@@ -1,5 +1,6 @@
 package de.danoeh.antennapod.ui.screen.playback;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
@@ -25,7 +27,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
-import de.danoeh.antennapod.ui.common.Keyboard;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -145,11 +146,6 @@ public class SleepTimerDialog extends BottomSheetDialogFragment {
 
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                try {
-                    SleepTimerPreferences.setLastTimer(String.valueOf(getSelectedSleepTime()));
-                } catch (NumberFormatException ignore) {
-                    // Ignore silently and just not save it
-                }
                 final SleepTimerType sleepType = SleepTimerType.fromIndex(position);
                 SleepTimerPreferences.setSleepTimerType(sleepType);
                 // this callback is called even when the spinner is first initialized
@@ -159,7 +155,12 @@ public class SleepTimerDialog extends BottomSheetDialogFragment {
                     if (isSleepTimerConfiguredForMostOfTheDay()) {
                         viewBinding.autoEnableCheckbox.setChecked(false);
                     }
-                    viewBinding.timeEditText.setText(SleepTimerPreferences.lastTimerValue());
+                    // change suggested value back to default value for sleep type
+                    if (sleepType == SleepTimerType.EPISODES) {
+                        viewBinding.timeEditText.setText(SleepTimerPreferences.DEFAULT_SLEEP_TIMER_EPISODES);
+                    } else {
+                        viewBinding.timeEditText.setText(SleepTimerPreferences.DEFAULT_SLEEP_TIMER_MINUTES);
+                    }
                 }
                 sleepTimerTypeInitialized = true;
                 refreshUiState();
@@ -191,6 +192,10 @@ public class SleepTimerDialog extends BottomSheetDialogFragment {
             startActivity(playbackIntent);
             dismiss();
         });
+        viewBinding.timeEditText.postDelayed(() -> {
+            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(viewBinding.timeEditText, InputMethodManager.SHOW_IMPLICIT);
+        }, 100);
         refreshUiState();
         viewBinding.autoEnableCheckbox.setChecked(SleepTimerPreferences.autoEnable());
         viewBinding.shakeToResetCheckbox.setChecked(SleepTimerPreferences.shakeToReset());
@@ -232,7 +237,7 @@ public class SleepTimerDialog extends BottomSheetDialogFragment {
                 if (controller != null) {
                     controller.setSleepTimer(SleepTimerPreferences.timerMillisOrEpisodes());
                 }
-                Keyboard.hide(getActivity());
+                closeKeyboard(viewBinding.getRoot());
             } catch (NumberFormatException e) {
                 e.printStackTrace();
                 Snackbar.make(viewBinding.getRoot(), R.string.time_dialog_invalid_input, Snackbar.LENGTH_LONG).show();
@@ -437,5 +442,10 @@ public class SleepTimerDialog extends BottomSheetDialogFragment {
         } else {
             viewBinding.time.setText(Converter.getDurationStringLong((int) event.getDisplayTimeLeft()));
         }
+    }
+
+    private void closeKeyboard(View content) {
+        InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(content.getWindowToken(), 0);
     }
 }

@@ -33,9 +33,15 @@ public class StatisticsItem {
 
     public final boolean hasRecentUnplayed;
 
+    /**
+     * Total duration skipped (trimmed) across all episodes, in seconds.
+     */
+    public final long timeSkipped;
+
     public StatisticsItem(Feed feed, long time, long timePlayed,
                           long episodes, long episodesStarted,
-                          long totalDownloadSize, long episodesDownloadCount, boolean hasRecentUnplayed) {
+                          long totalDownloadSize, long episodesDownloadCount,
+                          boolean hasRecentUnplayed, long timeSkipped) {
         this.feed = feed;
         this.time = time;
         this.timePlayed = timePlayed;
@@ -44,5 +50,6 @@ public class StatisticsItem {
         this.totalDownloadSize = totalDownloadSize;
         this.episodesDownloadCount = episodesDownloadCount;
         this.hasRecentUnplayed = hasRecentUnplayed;
+        this.timeSkipped = timeSkipped;
     }
 }

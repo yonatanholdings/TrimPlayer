@@ -167,6 +167,9 @@ public class FeedStatisticsFragment extends Fragment {
         viewBinding.playbackTime.mainLabel.setText(Converter.shortLocalizedDuration(getContext(), s.timePlayed));
         viewBinding.playbackTime.subtitleLabel.setText(R.string.statistics_time_played);
 
+        viewBinding.timeSaved.mainLabel.setText(Converter.shortLocalizedDuration(getContext(), s.timeSkipped));
+        viewBinding.timeSaved.subtitleLabel.setText(R.string.statistics_time_saved);
+
         viewBinding.durationTotal.mainLabel.setText(Converter.shortLocalizedDuration(getContext(), s.time));
         viewBinding.durationTotal.subtitleLabel.setText(R.string.statistics_time_total);
 

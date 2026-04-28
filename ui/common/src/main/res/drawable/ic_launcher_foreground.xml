@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TrimPlayer adaptive icon foreground.
+  Designed for a 108dp viewport; logo content sits within the 18–90dp safe zone.
+  Vertical stem + horizontal crossbar with two stacked right-pointing play triangles.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Vertical stem -->
+    <path
+        android:pathData="M36,22 L36,86"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Horizontal crossbar -->
+    <path
+        android:pathData="M36,54 L79,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Top play triangle -->
+    <path
+        android:pathData="M41,22 L79,49 L41,49 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Bottom play triangle -->
+    <path
+        android:pathData="M41,59 L79,59 L41,86 Z"
+        android:fillColor="#FFFFFF" />
+
+</vector>

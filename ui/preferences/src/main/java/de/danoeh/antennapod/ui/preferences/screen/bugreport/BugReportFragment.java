@@ -28,7 +28,6 @@ import java.util.Objects;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.common.AnimatedFragment;
 import de.danoeh.antennapod.ui.common.ClipboardUtils;
-import de.danoeh.antennapod.ui.common.IntentUtils;
 import de.danoeh.antennapod.ui.preferences.R;
 import de.danoeh.antennapod.ui.preferences.databinding.BugReportFragmentBinding;
 
@@ -84,10 +83,6 @@ public class BugReportFragment extends AnimatedFragment {
                     break;
             }
         });
-        viewBinding.openForumButton.setOnClickListener(v ->
-                IntentUtils.openInBrowser(requireContext(), "https://forum.antennapod.org/search"));
-        viewBinding.openGithubButton.setOnClickListener(v ->
-                IntentUtils.openInBrowser(requireContext(), "https://github.com/AntennaPod/AntennaPod/issues"));
         viewBinding.attribAppVersionLabel.setOnClickListener(v ->
                 ClipboardUtils.copyText((TextView) v, R.string.report_bug_attrib_app_version));
         viewBinding.attribAndroidVersionLabel.setOnClickListener(v ->

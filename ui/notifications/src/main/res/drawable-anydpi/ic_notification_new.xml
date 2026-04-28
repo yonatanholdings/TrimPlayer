@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TrimPlayer "new episodes" notification icon (monochrome, white on transparent).
+  Same logo as ic_notification with a small dot badge at top-right to indicate new content.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Vertical stem -->
+    <path
+        android:pathData="M8,4.9 L8,19.1"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Horizontal crossbar -->
+    <path
+        android:pathData="M8,12 L17.6,12"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Top play triangle -->
+    <path
+        android:pathData="M9.1,4.9 L17.6,10.9 L9.1,10.9 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Bottom play triangle -->
+    <path
+        android:pathData="M9.1,13.1 L17.6,13.1 L9.1,19.1 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Badge dot (top-right) indicating new content -->
+    <path
+        android:pathData="M20,4 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0"
+        android:fillColor="#FFFFFF" />
+
+</vector>

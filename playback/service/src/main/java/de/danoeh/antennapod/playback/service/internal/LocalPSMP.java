@@ -14,7 +14,6 @@ import androidx.lifecycle.Observer;
 import androidx.media.AudioAttributesCompat;
 import androidx.media.AudioFocusRequestCompat;
 import androidx.media.AudioManagerCompat;
-import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.event.PlayerErrorEvent;
 import de.danoeh.antennapod.event.playback.BufferUpdateEvent;
 import de.danoeh.antennapod.event.playback.SpeedChangedEvent;
@@ -27,7 +26,6 @@ import de.danoeh.antennapod.playback.base.PlaybackServiceMediaPlayer;
 import de.danoeh.antennapod.playback.base.PlayerStatus;
 import de.danoeh.antennapod.playback.base.RewindAfterPauseUtils;
 import de.danoeh.antennapod.playback.service.PlaybackService;
-import de.danoeh.antennapod.playback.service.R;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.episodes.PlaybackSpeedUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -61,6 +59,9 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
     private final Handler audioFocusCanceller;
     private boolean isShutDown = false;
     private CountDownLatch seekLatch;
+    private final Handler speedChangeHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingSpeedChange = null;
+    private volatile float displaySpeed = 1.0f;
     private LiveData<Integer> androidAutoConnectionState;
     private boolean androidAutoConnected;
     private Observer<Integer> androidAutoConnectionObserver;
@@ -369,12 +370,12 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         if (playerStatus == PlayerStatus.PLAYING
                 || playerStatus == PlayerStatus.PAUSED
                 || playerStatus == PlayerStatus.PREPARED) {
-            if(seekLatch != null && seekLatch.getCount() > 0) {
-                try {
-                    seekLatch.await(3, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Log.e(TAG, Log.getStackTraceString(e));
-                }
+            // If a previous seek is still pending, skip this seek rather than blocking
+            // the main thread — ExoPlayer delivers its seek-complete callback on the main
+            // thread, so awaiting here would deadlock.
+            if (seekLatch != null && seekLatch.getCount() > 0) {
+                Log.d(TAG, "seekTo: previous seek still in progress, skipping");
+                return;
             }
             seekLatch = new CountDownLatch(1);
             statusBeforeSeeking = playerStatus;
@@ -383,11 +384,9 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             if (statusBeforeSeeking == PlayerStatus.PREPARED) {
                 media.setPosition(t);
             }
-            try {
-                seekLatch.await(3, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Log.e(TAG, Log.getStackTraceString(e));
-            }
+            // Do NOT await seekLatch here — ExoPlayer delivers onPositionDiscontinuity
+            // on the main thread, so awaiting from the main thread would deadlock for
+            // 3 seconds. State is restored asynchronously by genericSeekCompleteListener.
         } else if (playerStatus == PlayerStatus.INITIALIZED) {
             media.setPosition(t);
             startWhenPrepared.set(false);
@@ -459,8 +458,22 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
     @Override
     public void setPlaybackParams(final float speed, final boolean skipSilence) {
         Log.d(TAG, "Playback speed was set to " + speed);
+        displaySpeed = speed;
+        // Update UI immediately so the speed display responds to every button press.
         EventBus.getDefault().post(new SpeedChangedEvent(speed));
-        mediaPlayer.setPlaybackParams(speed, skipSilence);
+        // Debounce the actual ExoPlayer call: calling setPlaybackParameters on every
+        // rapid +/- press flushes the audio renderer each time and produces a beep.
+        // Apply only the final value after a short settling period.
+        if (pendingSpeedChange != null) {
+            speedChangeHandler.removeCallbacks(pendingSpeedChange);
+        }
+        pendingSpeedChange = () -> {
+            pendingSpeedChange = null;
+            if (mediaPlayer != null) {
+                mediaPlayer.setPlaybackParams(speed, skipSilence);
+            }
+        };
+        speedChangeHandler.postDelayed(pendingSpeedChange, 150);
     }
 
     /**
@@ -468,14 +481,13 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
      */
     @Override
     public float getPlaybackSpeed() {
-        float retVal = 1;
         if ((playerStatus == PlayerStatus.PLAYING
                 || playerStatus == PlayerStatus.PAUSED
                 || playerStatus == PlayerStatus.INITIALIZED
                 || playerStatus == PlayerStatus.PREPARED)) {
-            retVal = mediaPlayer.getCurrentSpeedMultiplier();
+            return displaySpeed;
         }
-        return retVal;
+        return 1f;
     }
 
     @Override
@@ -639,9 +651,20 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             }
 
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                // Treat permanent focus loss (e.g. phone call) as recoverable: pause and
+                // auto-resume when focus returns. Show paused UI after 30 s so the user
+                // knows what happened if the interruption is long.
                 Log.d(TAG, "Lost audio focus");
-                pause(true, false);
-                callback.shouldStop();
+                if (playerStatus == PlayerStatus.PLAYING) {
+                    mediaPlayer.pause();
+                    pausedBecauseOfTransientAudiofocusLoss = true;
+                    audioFocusCanceller.removeCallbacksAndMessages(null);
+                    audioFocusCanceller.postDelayed(() -> {
+                        if (pausedBecauseOfTransientAudiofocusLoss) {
+                            pause(true, false);
+                        }
+                    }, 30000);
+                }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
                     && !UserPreferences.shouldPauseForFocusLoss()) {
                 if (playerStatus == PlayerStatus.PLAYING) {
@@ -653,13 +676,11 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
                 if (playerStatus == PlayerStatus.PLAYING) {
                     Log.d(TAG, "Lost audio focus temporarily. Pausing...");
-                    mediaPlayer.pause(); // Pause without telling the PlaybackService
+                    mediaPlayer.pause();
                     pausedBecauseOfTransientAudiofocusLoss = true;
-
                     audioFocusCanceller.removeCallbacksAndMessages(null);
                     audioFocusCanceller.postDelayed(() -> {
                         if (pausedBecauseOfTransientAudiofocusLoss) {
-                            // Still did not get back the audio focus. Now actually pause.
                             pause(true, false);
                         }
                     }, 30000);
@@ -667,9 +688,14 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 Log.d(TAG, "Gained audio focus");
                 audioFocusCanceller.removeCallbacksAndMessages(null);
-                if (pausedBecauseOfTransientAudiofocusLoss) { // we paused => play now
+                if (pausedBecauseOfTransientAudiofocusLoss) {
+                    // Resume ExoPlayer, then sync player status if the 30-second timeout
+                    // had already moved us to a full PAUSED state.
                     mediaPlayer.start();
-                } else { // we ducked => raise audio level back
+                    if (playerStatus == PlayerStatus.PAUSED) {
+                        setPlayerStatus(PlayerStatus.PLAYING, media);
+                    }
+                } else {
                     setVolume(1.0f, 1.0f);
                 }
                 pausedBecauseOfTransientAudiofocusLoss = false;
@@ -693,6 +719,8 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             if (position >= 0) {
                 media.setPosition(position);
             }
+            // Save final played_duration to DB so statistics are up to date
+            PlayableUtils.saveCurrentPosition(media, media.getPosition(), System.currentTimeMillis());
         }
 
         if (mediaPlayer != null) {
@@ -702,34 +730,42 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         abandonAudioFocus();
 
         final Playable currentMedia = media;
-        Playable nextMedia = null;
 
         // we should continue to next episode if we were told to continue and we're allowed to (by sleep timer)
-        shouldContinue &= callback.shouldContinueToNextEpisode();
+        final boolean finalShouldContinue = shouldContinue & callback.shouldContinueToNextEpisode();
+        final boolean finalIsPlaying = isPlaying;
 
-        if (shouldContinue) {
-            // Load next episode if previous episode was in the queue and if there
-            // is an episode in the queue left.
-            // Start playback immediately if continuous playback is enabled
-            nextMedia = callback.getNextInQueue(currentMedia);
-            if (nextMedia != null) {
-                callback.onPlaybackEnded(nextMedia.getMediaType(), false);
-                // setting media to null signals to playMediaObject() that
-                // we're taking care of post-playback processing
-                media = null;
-                playMediaObject(nextMedia, false, !nextMedia.localFileAvailable(), isPlaying, isPlaying);
-            } else if (wasSkipped) {
-                EventBus.getDefault().post(new MessageEvent(context.getString(R.string.no_following_in_queue)));
-            }
+        if (finalShouldContinue) {
+            // getNextInQueue reads from the database — dispatch to a background thread to avoid
+            // I/O on the main thread, then resume on the main looper for ExoPlayer operations.
+            new Thread(() -> {
+                Playable nextMedia = callback.getNextInQueue(currentMedia);
+                new Handler(Looper.getMainLooper()).post(() ->
+                        finishEndPlayback(currentMedia, nextMedia, hasEnded, wasSkipped,
+                                true, toStoppedState, finalIsPlaying));
+            }).start();
+        } else {
+            finishEndPlayback(currentMedia, null, hasEnded, wasSkipped,
+                    false, toStoppedState, finalIsPlaying);
+        }
+    }
+
+    private void finishEndPlayback(Playable currentMedia, Playable nextMedia,
+                                   boolean hasEnded, boolean wasSkipped,
+                                   boolean shouldContinue, boolean toStoppedState, boolean isPlaying) {
+        if (shouldContinue && nextMedia != null) {
+            callback.onPlaybackEnded(nextMedia.getMediaType(), false);
+            // setting media to null signals to playMediaObject() that
+            // we're taking care of post-playback processing
+            media = null;
+            playMediaObject(nextMedia, false, !nextMedia.localFileAvailable(), isPlaying, isPlaying);
         }
         if (shouldContinue || toStoppedState) {
             if (nextMedia == null) {
                 callback.onPlaybackEnded(null, true);
                 stop();
             }
-            final boolean hasNext = nextMedia != null;
-
-            callback.onPostPlayback(currentMedia, hasEnded, wasSkipped, hasNext);
+            callback.onPostPlayback(currentMedia, hasEnded, wasSkipped, nextMedia != null);
         } else if (isPlaying) {
             callback.onPlaybackPause(currentMedia, currentMedia.getPosition());
         }
@@ -786,11 +822,13 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         if (seekLatch != null) {
             seekLatch.countDown();
         }
-        if (playerStatus == PlayerStatus.PLAYING) {
-            callback.onPlaybackStart(media, getPosition());
-        }
         if (playerStatus == PlayerStatus.SEEKING) {
             setPlayerStatus(statusBeforeSeeking, media, getPosition());
+            // Notify playback start so statistics tracking (startPosition) is reset to the
+            // seek destination and the position saver keeps running.
+            if (statusBeforeSeeking == PlayerStatus.PLAYING) {
+                callback.onPlaybackStart(media, getPosition());
+            }
         }
     }
 

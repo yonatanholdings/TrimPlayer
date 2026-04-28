@@ -107,6 +107,9 @@ public class PieChartView extends AppCompatImageView {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            if (data == null) {
+                return;
+            }
             final float strokeSize = getBounds().height() / 30f;
             paint.setStrokeWidth(strokeSize);
 

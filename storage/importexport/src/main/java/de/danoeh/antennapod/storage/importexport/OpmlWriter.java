@@ -20,7 +20,7 @@ public class OpmlWriter {
     private static final String TAG = "OpmlWriter";
     private static final String ENCODING = "UTF-8";
     private static final String OPML_VERSION = "2.0";
-    private static final String OPML_TITLE = "AntennaPod Subscriptions";
+    private static final String OPML_TITLE = "TrimPlayer Subscriptions";
 
     /**
      * Takes a list of feeds and a writer and writes those into an OPML

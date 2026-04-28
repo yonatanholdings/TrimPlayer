@@ -54,7 +54,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3110000;
+    public static final int VERSION = 3100000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -102,6 +102,11 @@ public class PodDBAdapter {
     public static final String KEY_AUTO_DELETE_ACTION = "auto_delete_action";
     public static final String KEY_FEED_VOLUME_ADAPTION = "feed_volume_adaption";
     public static final String KEY_PLAYED_DURATION = "played_duration";
+    public static final String KEY_SKIPPED_DURATION = "skipped_duration";
+    public static final String TABLE_NAME_SKIP_EVENTS = "TrimSkipEvents";
+    public static final String KEY_SKIP_TYPE = "skip_type";
+    public static final String KEY_SKIP_DURATION_MS = "skip_duration_ms";
+    public static final String KEY_SKIP_TIMESTAMP = "skip_timestamp";
     public static final String KEY_USERNAME = "username";
     public static final String KEY_PASSWORD = "password";
     public static final String KEY_IS_PAGED = "is_paged";
@@ -202,6 +207,7 @@ public class PodDBAdapter {
             + KEY_LAST_PLAYED_TIME_HISTORY + " INTEGER,"
             + KEY_FEEDITEM + " INTEGER,"
             + KEY_PLAYED_DURATION + " INTEGER,"
+            + KEY_SKIPPED_DURATION + " INTEGER,"
             + KEY_HAS_EMBEDDED_PICTURE + " INTEGER,"
             + KEY_LAST_PLAYED_TIME_STATISTICS + " INTEGER" + ")";
 
@@ -250,6 +256,13 @@ public class PodDBAdapter {
             + TABLE_NAME_FAVORITES + "(" + KEY_ID + " INTEGER PRIMARY KEY,"
             + KEY_FEEDITEM + " INTEGER," + KEY_FEED + " INTEGER)";
 
+    static final String CREATE_TABLE_SKIP_EVENTS = "CREATE TABLE "
+            + TABLE_NAME_SKIP_EVENTS + "(" + TABLE_PRIMARY_KEY
+            + KEY_FEEDITEM + " INTEGER NOT NULL,"
+            + KEY_SKIP_TYPE + " TEXT NOT NULL,"
+            + KEY_SKIP_DURATION_MS + " INTEGER NOT NULL,"
+            + KEY_SKIP_TIMESTAMP + " INTEGER NOT NULL)";
+
     /**
      * All the tables in the database
      */
@@ -260,7 +273,8 @@ public class PodDBAdapter {
             TABLE_NAME_DOWNLOAD_LOG,
             TABLE_NAME_QUEUE,
             TABLE_NAME_SIMPLECHAPTERS,
-            TABLE_NAME_FAVORITES
+            TABLE_NAME_FAVORITES,
+            TABLE_NAME_SKIP_EVENTS
     };
 
     public static final String SELECT_KEY_ITEM_ID = "item_id";
@@ -297,6 +311,7 @@ public class PodDBAdapter {
             + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_HISTORY + ", "
             + TABLE_NAME_FEED_MEDIA + "." + KEY_FEEDITEM + ", "
             + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + ", "
+            + TABLE_NAME_FEED_MEDIA + "." + KEY_SKIPPED_DURATION + ", "
             + TABLE_NAME_FEED_MEDIA + "." + KEY_HAS_EMBEDDED_PICTURE + ", "
             + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS;
 
@@ -567,8 +582,12 @@ public class PodDBAdapter {
             values.put(KEY_POSITION, media.getPosition());
             values.put(KEY_DURATION, media.getDuration());
             values.put(KEY_PLAYED_DURATION, media.getPlayedDuration());
+            values.put(KEY_SKIPPED_DURATION, media.getSkippedDuration());
             values.put(KEY_LAST_PLAYED_TIME_STATISTICS, media.getLastPlayedTimeStatistics());
-            values.put(KEY_LAST_PLAYED_TIME_HISTORY, media.getLastPlayedTimeHistory().getTime());
+            java.util.Date lastPlayedTimeHistory = media.getLastPlayedTimeHistory();
+            if (lastPlayedTimeHistory != null) {
+                values.put(KEY_LAST_PLAYED_TIME_HISTORY, lastPlayedTimeHistory.getTime());
+            }
             db.update(TABLE_NAME_FEED_MEDIA, values, KEY_ID + "=?",
                     new String[]{String.valueOf(media.getId())});
         } else {
@@ -599,6 +618,14 @@ public class PodDBAdapter {
             Log.e(TAG, Log.getStackTraceString(e));
         } finally {
             db.endTransaction();
+        }
+    }
+
+    public void resetSkipEvents() {
+        try {
+            db.delete(TABLE_NAME_SKIP_EVENTS, null, null);
+        } catch (SQLException e) {
+            Log.e(TAG, Log.getStackTraceString(e));
         }
     }
 
@@ -1084,6 +1111,18 @@ public class PodDBAdapter {
         return db.rawQuery(query, null);
     }
 
+    public Cursor getNextInFeed(final FeedItem item) {
+        final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
+                + " FROM " + TABLE_NAME_FEED_ITEMS
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " WHERE " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + " = " + item.getFeedId()
+                + " AND " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " != " + FeedItem.PLAYED
+                + " AND " + TABLE_NAME_FEED_ITEMS + "." + KEY_PUBDATE + " > " + item.getPubDate().getTime()
+                + " ORDER BY " + TABLE_NAME_FEED_ITEMS + "." + KEY_PUBDATE + " ASC"
+                + " LIMIT 1";
+        return db.rawQuery(query, null);
+    }
+
     public final Cursor getPausedQueueCursor(int limit) {
         final String hasPositionOrRecentlyPlayed = TABLE_NAME_FEED_MEDIA + "."  + KEY_POSITION + " >= 1000"
                 + " OR " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS
@@ -1231,12 +1270,19 @@ public class PodDBAdapter {
     }
 
     public final Cursor getMonthlyStatisticsCursor() {
-        final String query = "SELECT SUM(" + KEY_PLAYED_DURATION + ") AS total_duration"
+        // Cap played_duration per episode at its actual duration to prevent replayed episodes
+        // from inflating a month's total beyond one full listen-through.
+        final String query = "SELECT SUM(MAX("
+                + "CASE WHEN " + KEY_DURATION + " > 0"
+                + " THEN MIN(" + KEY_PLAYED_DURATION + ", " + KEY_DURATION + ")"
+                + " ELSE " + KEY_PLAYED_DURATION + " END"
+                + " - " + KEY_SKIPPED_DURATION + ", 0)) AS total_duration"
                 + ", strftime('%m', datetime(" + KEY_LAST_PLAYED_TIME_STATISTICS + "/1000, 'unixepoch')) AS month"
                 + ", strftime('%Y', datetime(" + KEY_LAST_PLAYED_TIME_STATISTICS + "/1000, 'unixepoch')) AS year"
                 + " FROM " + TABLE_NAME_FEED_MEDIA
                 + " WHERE " + KEY_LAST_PLAYED_TIME_STATISTICS + " > 0 AND " + KEY_PLAYED_DURATION + " > 0"
                 + " GROUP BY year, month"
+                + " HAVING total_duration > 0"
                 + " ORDER BY year, month";
         return db.rawQuery(query, null);
     }
@@ -1277,7 +1323,9 @@ public class PodDBAdapter {
                                 + " THEN " + TABLE_NAME_FEED_MEDIA + "." + KEY_SIZE + " ELSE 0 END) AS download_size, "
                         + "SUM(CASE WHEN " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " != " + FeedItem.PLAYED
                                 + " AND " + TABLE_NAME_FEED_ITEMS + "." + KEY_PUBDATE + " >= " + sixMonthsAgo
-                                + " THEN 1 ELSE 0 END) AS num_recent_unplayed "
+                                + " THEN 1 ELSE 0 END) AS num_recent_unplayed, "
+                        + "IFNULL(SUM(CASE WHEN (" + TABLE_NAME_FEED_MEDIA + "." + KEY_SKIPPED_DURATION + " > 0)"
+                                + " THEN " + TABLE_NAME_FEED_MEDIA + "." + KEY_SKIPPED_DURATION + " ELSE 0 END), 0) AS skipped_time "
                 + " FROM " + TABLE_NAME_FEED_ITEMS
                 + JOIN_FEED_ITEM_AND_MEDIA
                 + " INNER JOIN " + TABLE_NAME_FEEDS
@@ -1523,6 +1571,83 @@ public class PodDBAdapter {
     /**
      * Helper class for opening the Antennapod database.
      */
+    public void insertSkipEvent(long feedItemId, String skipType, int durationMs) {
+        insertSkipEvent(feedItemId, skipType, durationMs, System.currentTimeMillis());
+    }
+
+    public void insertSkipEvent(long feedItemId, String skipType, int durationMs, long timestampMs) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_FEEDITEM, feedItemId);
+        values.put(KEY_SKIP_TYPE, skipType);
+        values.put(KEY_SKIP_DURATION_MS, durationMs);
+        values.put(KEY_SKIP_TIMESTAMP, timestampMs);
+        db.insertWithOnConflict(TABLE_NAME_SKIP_EVENTS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
+    }
+
+    public Cursor getSkipEventStatsCursor(long timeFrom, long timeTo) {
+        String sql = "SELECT " + KEY_SKIP_TYPE + ","
+                + " SUM(" + KEY_SKIP_DURATION_MS + ") AS total_ms"
+                + " FROM " + TABLE_NAME_SKIP_EVENTS
+                + " WHERE " + KEY_SKIP_TIMESTAMP + " >= " + timeFrom
+                + " AND " + KEY_SKIP_TIMESTAMP + " <= " + timeTo
+                + " GROUP BY " + KEY_SKIP_TYPE;
+        return db.rawQuery(sql, null);
+    }
+
+    public Cursor getSkipEventsMonthlyCursor() {
+        String sql = "SELECT"
+                + " CAST(strftime('%Y', " + KEY_SKIP_TIMESTAMP + " / 1000, 'unixepoch') AS INTEGER) AS year,"
+                + " CAST(strftime('%m', " + KEY_SKIP_TIMESTAMP + " / 1000, 'unixepoch') AS INTEGER) AS month,"
+                + " SUM(" + KEY_SKIP_DURATION_MS + ") AS total_ms"
+                + " FROM " + TABLE_NAME_SKIP_EVENTS
+                + " GROUP BY year, month"
+                + " ORDER BY year DESC, month DESC";
+        return db.rawQuery(sql, null);
+    }
+
+    public long getPlayedTimePeriodMs(long timeFrom, long timeTo) {
+        String sql = "SELECT IFNULL(SUM(" + KEY_PLAYED_DURATION + "), 0)"
+                + " FROM " + TABLE_NAME_FEED_MEDIA
+                + " WHERE " + KEY_LAST_PLAYED_TIME_STATISTICS + " >= " + timeFrom
+                + " AND " + KEY_LAST_PLAYED_TIME_STATISTICS + " < " + timeTo;
+        try (Cursor c = db.rawQuery(sql, null)) {
+            c.moveToFirst();
+            return c.getLong(0);
+        }
+    }
+
+    public long getSkipTotalPeriodMs(long timeFrom, long timeTo) {
+        String sql = "SELECT IFNULL(SUM(" + KEY_SKIP_DURATION_MS + "), 0)"
+                + " FROM " + TABLE_NAME_SKIP_EVENTS
+                + " WHERE " + KEY_SKIP_TIMESTAMP + " >= " + timeFrom
+                + " AND " + KEY_SKIP_TIMESTAMP + " < " + timeTo;
+        try (Cursor c = db.rawQuery(sql, null)) {
+            c.moveToFirst();
+            return c.getLong(0);
+        }
+    }
+
+    public Cursor getYearlyPlayedCursor() {
+        String sql = "SELECT"
+                + " CAST(strftime('%Y', " + KEY_LAST_PLAYED_TIME_STATISTICS + " / 1000, 'unixepoch') AS INTEGER) AS year,"
+                + " SUM(" + KEY_PLAYED_DURATION + ") AS played_ms"
+                + " FROM " + TABLE_NAME_FEED_MEDIA
+                + " WHERE " + KEY_LAST_PLAYED_TIME_STATISTICS + " > 0"
+                + " GROUP BY year"
+                + " ORDER BY year DESC";
+        return db.rawQuery(sql, null);
+    }
+
+    public Cursor getYearlySkipCursor() {
+        String sql = "SELECT"
+                + " CAST(strftime('%Y', " + KEY_SKIP_TIMESTAMP + " / 1000, 'unixepoch') AS INTEGER) AS year,"
+                + " SUM(" + KEY_SKIP_DURATION_MS + ") AS saved_ms"
+                + " FROM " + TABLE_NAME_SKIP_EVENTS
+                + " GROUP BY year"
+                + " ORDER BY year DESC";
+        return db.rawQuery(sql, null);
+    }
+
     private static class PodDBHelper extends SQLiteOpenHelper {
         /**
          * Constructor.
@@ -1543,6 +1668,7 @@ public class PodDBAdapter {
             db.execSQL(CREATE_TABLE_DOWNLOAD_LOG);
             db.execSQL(CREATE_TABLE_QUEUE);
             db.execSQL(CREATE_TABLE_SIMPLECHAPTERS);
+            db.execSQL(CREATE_TABLE_SKIP_EVENTS);
             db.execSQL(CREATE_TABLE_FAVORITES);
 
             db.execSQL(CREATE_INDEX_FEEDITEMS_FEED);

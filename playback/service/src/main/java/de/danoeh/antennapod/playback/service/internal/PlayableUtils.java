@@ -28,9 +28,12 @@ public abstract class PlayableUtils {
             if (item != null && item.isNew()) {
                 DBWriter.markItemPlayed(FeedItem.UNPLAYED, item.getId());
             }
-            if (media.getStartPosition() >= 0 && playable.getPosition() > media.getStartPosition()) {
+            // Treat startPosition == -1 as 0 (episode played from beginning, onPlaybackStart was never called).
+            // Without this, fresh episodes never accumulate played_duration and are excluded from statistics.
+            int effectiveStart = Math.max(media.getStartPosition(), 0);
+            if (playable.getPosition() > effectiveStart) {
                 media.setPlayedDuration(media.getPlayedDurationWhenStarted()
-                        + playable.getPosition() - media.getStartPosition());
+                        + playable.getPosition() - effectiveStart);
             }
             DBWriter.setFeedMediaPlaybackInformation(media);
         }
