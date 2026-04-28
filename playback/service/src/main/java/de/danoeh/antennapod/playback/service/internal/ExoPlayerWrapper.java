@@ -83,7 +83,9 @@ public class ExoPlayerWrapper {
     @Nullable
     private LoudnessEnhancer loudnessEnhancer = null;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private float muteBeforeSpeedChange = -1f; // real volume saved when we intentionally mute for speed change
+    // >= 0 means a speed-change mute is active; value is the volume to restore when done.
+    // Updated by setVolume() so that external duck/restore events don't break the mute window.
+    private float muteBeforeSpeedChange = -1f;
     private Runnable pendingSpeedApply = null;
     private Runnable pendingVolumeRestore = null;
 
@@ -295,9 +297,6 @@ public class ExoPlayerWrapper {
 
     public void setPlaybackParams(float speed, boolean skipSilence) {
         playbackParameters = new PlaybackParameters(speed);
-        if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
-            exoPlayer.setSkipSilenceEnabled(skipSilence);
-        }
 
         // Cancel any in-flight callbacks from a previous speed change so rapid taps
         // don't create overlapping mute/restore chains or restore to 0.
@@ -320,41 +319,65 @@ public class ExoPlayerWrapper {
             // Wait 100 ms for already-buffered full-volume samples to drain through
             // the hardware audio pipeline before the renderer flush.
             pendingSpeedApply = () -> {
+                // Apply skip-silence toggle here (inside the mute window) so that any
+                // renderer flush it triggers is also covered by the mute.
+                if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
+                    exoPlayer.setSkipSilenceEnabled(skipSilence);
+                }
                 exoPlayer.setPlaybackParameters(playbackParameters);
                 pendingSpeedApply = null;
                 pendingVolumeRestore = () -> {
-                    exoPlayer.setVolume(realVol);
+                    // Read muteBeforeSpeedChange here rather than capturing realVol at creation
+                    // time: setVolume() may have been called (e.g. audio-focus duck/restore) during
+                    // the muting window and updated this field to the new desired volume.
+                    float restoreVol = muteBeforeSpeedChange;
                     muteBeforeSpeedChange = -1f;
                     pendingVolumeRestore = null;
+                    applyVolume(restoreVol);
                 };
                 mainHandler.postDelayed(pendingVolumeRestore, 250);
             };
             mainHandler.postDelayed(pendingSpeedApply, 100);
         } else {
+            if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
+                exoPlayer.setSkipSilenceEnabled(skipSilence);
+            }
             exoPlayer.setPlaybackParameters(playbackParameters);
         }
     }
 
     public void setVolume(float v, float v1) {
+        if (muteBeforeSpeedChange >= 0f) {
+            // Speed-change mute is active. Record the new desired volume so pendingVolumeRestore
+            // restores to the right level, but leave ExoPlayer muted until the flush completes.
+            muteBeforeSpeedChange = Math.min(v, 1f);
+            updateLoudnessEnhancer(v);
+            return;
+        }
+        applyVolume(v);
+    }
+
+    private void applyVolume(float v) {
         if (v > 1) {
             exoPlayer.setVolume(1f);
-            try {
-                if (loudnessEnhancer != null) {
-                    loudnessEnhancer.setEnabled(true);
-                    loudnessEnhancer.setTargetGain((int) (1000 * (v - 1)));
-                }
-            } catch (Exception e) {
-                Log.d(TAG, e.toString());
-            }
         } else {
             exoPlayer.setVolume(v);
-            try {
-                if (loudnessEnhancer != null) {
+        }
+        updateLoudnessEnhancer(v);
+    }
+
+    private void updateLoudnessEnhancer(float v) {
+        try {
+            if (loudnessEnhancer != null) {
+                if (v > 1) {
+                    loudnessEnhancer.setEnabled(true);
+                    loudnessEnhancer.setTargetGain((int) (1000 * (v - 1)));
+                } else {
                     loudnessEnhancer.setEnabled(false);
                 }
-            } catch (Exception e) {
-                Log.d(TAG, e.toString());
             }
+        } catch (Exception e) {
+            Log.d(TAG, e.toString());
         }
     }
 
