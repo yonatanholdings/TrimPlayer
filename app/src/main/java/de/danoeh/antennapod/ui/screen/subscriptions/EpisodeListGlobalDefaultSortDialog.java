@@ -18,7 +18,7 @@ public class EpisodeListGlobalDefaultSortDialog extends ItemSortDialog {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        sortOrder = SortOrder.fromCodeString(String.valueOf(UserPreferences.getPrefGlobalSortedOrder().code));
+        sortOrder = UserPreferences.getAllEpisodesSortOrder();
     }
 
     @Override
@@ -32,6 +32,6 @@ public class EpisodeListGlobalDefaultSortDialog extends ItemSortDialog {
     @Override
     protected void onSelectionChanged() {
         super.onSelectionChanged();
-        UserPreferences.setPrefGlobalSortedOrder(sortOrder);
+        UserPreferences.setAllEpisodesSortOrder(sortOrder);
     }
 }
