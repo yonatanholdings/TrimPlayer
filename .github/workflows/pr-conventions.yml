@@ -26,7 +26,7 @@ jobs:
             }
 
             const bodyLines = (context.payload.pull_request.body || "").split(/\r?\n/);
-            const checklistIndex = bodyLines.map(l => l.includes("https://antennapod.org")).lastIndexOf(true);
+            const checklistIndex = bodyLines.map(l => l.includes("https://trimplayer.com")).lastIndexOf(true);
             if (checklistIndex === -1) {
               core.setFailed("It looks like you did not follow the PR template. The checklist from the template is missing or incomplete.");
               return;

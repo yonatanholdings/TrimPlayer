@@ -107,7 +107,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="antennapod.org"
+                    android:host="trimplayer.com"
                     android:pathPrefix="/deeplink/main"
                     android:scheme="https" />
             </intent-filter>
@@ -118,7 +118,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="antennapod.org"
+                    android:host="trimplayer.com"
                     android:pathPrefix="/deeplink/search"
                     android:scheme="https" />
             </intent-filter>
@@ -225,13 +225,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:host="antennapod.org" />
+                <data android:host="trimplayer.com" />
                 <data android:pathPrefix="/deeplink/subscribe" />
                 <data android:scheme="http" />
                 <data android:scheme="https" />
             </intent-filter>
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />

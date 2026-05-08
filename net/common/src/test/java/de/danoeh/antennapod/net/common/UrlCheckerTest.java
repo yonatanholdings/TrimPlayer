@@ -104,18 +104,18 @@ public class UrlCheckerTest {
     @Test
     public void testAntennaPodSubscribeDeeplink() throws UnsupportedEncodingException {
         final String feed = "http://example.org/podcast.rss";
-        assertEquals(feed, UrlChecker.prepareUrl("https://antennapod.org/deeplink/subscribe?url=" + feed));
-        assertEquals(feed, UrlChecker.prepareUrl("http://antennapod.org/deeplink/subscribe?url=" + feed));
-        assertEquals(feed, UrlChecker.prepareUrl("http://antennapod.org/deeplink/subscribe/?url=" + feed));
-        assertEquals(feed, UrlChecker.prepareUrl("https://www.antennapod.org/deeplink/subscribe?url=" + feed));
-        assertEquals(feed, UrlChecker.prepareUrl("http://www.antennapod.org/deeplink/subscribe?url=" + feed));
-        assertEquals(feed, UrlChecker.prepareUrl("http://www.antennapod.org/deeplink/subscribe/?url=" + feed));
-        assertEquals(feed, UrlChecker.prepareUrl("http://www.antennapod.org/deeplink/subscribe?url="
+        assertEquals(feed, UrlChecker.prepareUrl("https://trimplayer.com/deeplink/subscribe?url=" + feed));
+        assertEquals(feed, UrlChecker.prepareUrl("http://trimplayer.com/deeplink/subscribe?url=" + feed));
+        assertEquals(feed, UrlChecker.prepareUrl("http://trimplayer.com/deeplink/subscribe/?url=" + feed));
+        assertEquals(feed, UrlChecker.prepareUrl("https://www.trimplayer.com/deeplink/subscribe?url=" + feed));
+        assertEquals(feed, UrlChecker.prepareUrl("http://www.trimplayer.com/deeplink/subscribe?url=" + feed));
+        assertEquals(feed, UrlChecker.prepareUrl("http://www.trimplayer.com/deeplink/subscribe/?url=" + feed));
+        assertEquals(feed, UrlChecker.prepareUrl("http://www.trimplayer.com/deeplink/subscribe?url="
                 + URLEncoder.encode(feed, "UTF-8")));
-        assertEquals(feed, UrlChecker.prepareUrl("http://www.antennapod.org/deeplink/subscribe?url="
+        assertEquals(feed, UrlChecker.prepareUrl("http://www.trimplayer.com/deeplink/subscribe?url="
                 + "example.org/podcast.rss"));
-        assertEquals(feed, UrlChecker.prepareUrl("https://antennapod.org/deeplink/subscribe?url=" + feed + "&title=a"));
-        assertEquals(feed, UrlChecker.prepareUrl("https://antennapod.org/deeplink/subscribe?url="
+        assertEquals(feed, UrlChecker.prepareUrl("https://trimplayer.com/deeplink/subscribe?url=" + feed + "&title=a"));
+        assertEquals(feed, UrlChecker.prepareUrl("https://trimplayer.com/deeplink/subscribe?url="
                 + URLEncoder.encode(feed) + "&title=a"));
     }
 

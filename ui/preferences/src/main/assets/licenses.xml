@@ -3,7 +3,7 @@
     <library
         name="TrimPlayer"
         author="The TrimPlayer team"
-        website="https://github.com/AntennaPod/AntennaPod"
+        website="https://github.com/yonatanholdings/TrimPlayer"
         license="GPL-3.0"
         licenseText="LICENSE.txt" />
     <library

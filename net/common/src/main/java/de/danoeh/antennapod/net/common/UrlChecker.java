@@ -28,7 +28,7 @@ public final class UrlChecker {
     private static final String TAG = "UrlChecker";
 
     private static final String AP_SUBSCRIBE = "antennapod-subscribe://";
-    private static final String AP_SUBSCRIBE_DEEPLINK = "antennapod.org/deeplink/subscribe";
+    private static final String AP_SUBSCRIBE_DEEPLINK = "trimplayer.com/deeplink/subscribe";
 
     /**
      * Checks if URL is valid and modifies it if necessary.

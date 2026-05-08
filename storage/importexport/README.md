@@ -1,3 +1,3 @@
 # :storage:importexport
 
-Import/Export of the AntennaPod database.
+Import/Export of the TrimPlayer database.
