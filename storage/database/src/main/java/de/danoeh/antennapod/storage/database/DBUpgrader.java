@@ -362,6 +362,14 @@ class DBUpgrader {
         if (oldVersion < 3100000) {
             db.execSQL(PodDBAdapter.CREATE_TABLE_SKIP_EVENTS);
         }
+        if (oldVersion < 3110000) {
+            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_FEEDS
+                    + " ADD COLUMN " + PodDBAdapter.KEY_FEED_TRIM_SKIP_INTROS + " INTEGER DEFAULT 1");
+            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_FEEDS
+                    + " ADD COLUMN " + PodDBAdapter.KEY_FEED_TRIM_SKIP_ADS + " INTEGER DEFAULT 1");
+            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_FEEDS
+                    + " ADD COLUMN " + PodDBAdapter.KEY_FEED_TRIM_SKIP_OUTROS + " INTEGER DEFAULT 1");
+        }
     }
 
 }

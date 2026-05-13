@@ -3,6 +3,7 @@ package de.danoeh.antennapod.storage.database;
 import android.content.Context;
 import android.util.Log;
 import de.danoeh.antennapod.event.FeedListUpdateEvent;
+import de.danoeh.antennapod.event.NewEpisodesPrefetchEvent;
 import de.danoeh.antennapod.model.download.DownloadError;
 import de.danoeh.antennapod.model.download.DownloadResult;
 import de.danoeh.antennapod.model.feed.Feed;
@@ -59,6 +60,7 @@ public abstract class FeedDatabaseWriter {
         Feed resultFeed;
         List<FeedItem> unlistedItems = new ArrayList<>();
         List<FeedItem> itemsToAddToQueue = new ArrayList<>();
+        List<NewEpisodesPrefetchEvent.Item> trimPrefetchItems = new ArrayList<>();
 
         PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();
@@ -158,6 +160,15 @@ public abstract class FeedDatabaseWriter {
                             || priorMostRecentDate.before(item.getPubDate())
                             || priorMostRecentDate.equals(item.getPubDate());
                     if (savedFeed.getState() == Feed.STATE_SUBSCRIBED && shouldPerformNewEpisodesAction) {
+                        if (!savedFeed.isLocalFeed() && item.getMedia() != null) {
+                            String mediaUrl = item.getMedia().getDownloadUrl();
+                            String rssUrl = savedFeed.getDownloadUrl();
+                            if (mediaUrl != null && !mediaUrl.isEmpty()
+                                    && rssUrl != null && !rssUrl.isEmpty()) {
+                                trimPrefetchItems.add(new NewEpisodesPrefetchEvent.Item(
+                                        rssUrl, mediaUrl, item.getItemIdentifier()));
+                            }
+                        }
                         FeedPreferences.NewEpisodesAction action = savedFeed.getPreferences().getNewEpisodesAction();
                         if (action == FeedPreferences.NewEpisodesAction.GLOBAL) {
                             action = UserPreferences.getNewEpisodesAction();
@@ -227,6 +238,10 @@ public abstract class FeedDatabaseWriter {
             EventBus.getDefault().post(new FeedListUpdateEvent(savedFeed));
         } else {
             EventBus.getDefault().post(new FeedListUpdateEvent(Collections.emptyList()));
+        }
+
+        if (!trimPrefetchItems.isEmpty()) {
+            EventBus.getDefault().post(new NewEpisodesPrefetchEvent(trimPrefetchItems));
         }
 
         return resultFeed;

@@ -122,6 +122,9 @@ public class FeedPreferences implements Serializable {
     private int feedSkipEnding;
     private SkipSilence feedSkipSilence;
     private boolean showEpisodeNotification;
+    private boolean trimSkipIntros = true;
+    private boolean trimSkipAds = true;
+    private boolean trimSkipOutros = true;
     private final Set<String> tags = new HashSet<>();
 
     public FeedPreferences(long feedID, AutoDownloadSetting autoDownload, AutoDeleteAction autoDeleteAction,
@@ -320,5 +323,29 @@ public class FeedPreferences implements Serializable {
 
     public void setShowEpisodeNotification(boolean showEpisodeNotification) {
         this.showEpisodeNotification = showEpisodeNotification;
+    }
+
+    public boolean isTrimSkipIntros() {
+        return trimSkipIntros;
+    }
+
+    public void setTrimSkipIntros(boolean enabled) {
+        this.trimSkipIntros = enabled;
+    }
+
+    public boolean isTrimSkipAds() {
+        return trimSkipAds;
+    }
+
+    public void setTrimSkipAds(boolean enabled) {
+        this.trimSkipAds = enabled;
+    }
+
+    public boolean isTrimSkipOutros() {
+        return trimSkipOutros;
+    }
+
+    public void setTrimSkipOutros(boolean enabled) {
+        this.trimSkipOutros = enabled;
     }
 }

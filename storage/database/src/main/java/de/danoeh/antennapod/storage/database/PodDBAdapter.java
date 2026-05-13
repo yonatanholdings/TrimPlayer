@@ -54,7 +54,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3100000;
+    public static final int VERSION = 3110000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -127,6 +127,9 @@ public class PodDBAdapter {
     public static final String KEY_FEED_TAGS = "tags";
     public static final String KEY_EPISODE_NOTIFICATION = "episode_notification";
     public static final String KEY_NEW_EPISODES_ACTION = "new_episodes_action";
+    public static final String KEY_FEED_TRIM_SKIP_INTROS = "feed_trim_skip_intros";
+    public static final String KEY_FEED_TRIM_SKIP_ADS = "feed_trim_skip_ads";
+    public static final String KEY_FEED_TRIM_SKIP_OUTROS = "feed_trim_skip_outros";
     public static final String KEY_PODCASTINDEX_CHAPTER_URL = "podcastindex_chapter_url";
     public static final String KEY_SOCIAL_INTERACT_URL = "social_interact_url";
     public static final String KEY_STATE = "state";
@@ -183,7 +186,10 @@ public class PodDBAdapter {
             + KEY_FEED_SKIP_ENDING + " INTEGER DEFAULT 0,"
             + KEY_EPISODE_NOTIFICATION + " INTEGER DEFAULT 0,"
             + KEY_STATE + " INTEGER DEFAULT " + Feed.STATE_SUBSCRIBED + ","
-            + KEY_NEW_EPISODES_ACTION + " INTEGER DEFAULT 0)";
+            + KEY_NEW_EPISODES_ACTION + " INTEGER DEFAULT 0,"
+            + KEY_FEED_TRIM_SKIP_INTROS + " INTEGER DEFAULT 1,"
+            + KEY_FEED_TRIM_SKIP_ADS + " INTEGER DEFAULT 1,"
+            + KEY_FEED_TRIM_SKIP_OUTROS + " INTEGER DEFAULT 1)";
 
     private static final String CREATE_TABLE_FEED_ITEMS = "CREATE TABLE "
             + TABLE_NAME_FEED_ITEMS + " (" + TABLE_PRIMARY_KEY
@@ -352,7 +358,10 @@ public class PodDBAdapter {
             + TABLE_NAME_FEEDS + "." + KEY_FEED_SKIP_ENDING + ", "
             + TABLE_NAME_FEEDS + "." + KEY_EPISODE_NOTIFICATION + ", "
             + TABLE_NAME_FEEDS + "." + KEY_STATE + ", "
-            + TABLE_NAME_FEEDS + "." + KEY_NEW_EPISODES_ACTION;
+            + TABLE_NAME_FEEDS + "." + KEY_NEW_EPISODES_ACTION + ", "
+            + TABLE_NAME_FEEDS + "." + KEY_FEED_TRIM_SKIP_INTROS + ", "
+            + TABLE_NAME_FEEDS + "." + KEY_FEED_TRIM_SKIP_ADS + ", "
+            + TABLE_NAME_FEEDS + "." + KEY_FEED_TRIM_SKIP_OUTROS;
 
     private static final String JOIN_FEED_ITEM_AND_MEDIA = " LEFT JOIN " + TABLE_NAME_FEED_MEDIA
             + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_ID + "=" + TABLE_NAME_FEED_MEDIA + "." + KEY_FEEDITEM + " ";
@@ -524,6 +533,9 @@ public class PodDBAdapter {
         values.put(KEY_FEED_SKIP_ENDING, prefs.getFeedSkipEnding());
         values.put(KEY_EPISODE_NOTIFICATION, prefs.getShowEpisodeNotification());
         values.put(KEY_NEW_EPISODES_ACTION, prefs.getNewEpisodesAction().code);
+        values.put(KEY_FEED_TRIM_SKIP_INTROS, prefs.isTrimSkipIntros() ? 1 : 0);
+        values.put(KEY_FEED_TRIM_SKIP_ADS, prefs.isTrimSkipAds() ? 1 : 0);
+        values.put(KEY_FEED_TRIM_SKIP_OUTROS, prefs.isTrimSkipOutros() ? 1 : 0);
         db.update(TABLE_NAME_FEEDS, values, KEY_ID + "=?", new String[]{String.valueOf(prefs.getFeedID())});
     }
 
@@ -1584,6 +1596,26 @@ public class PodDBAdapter {
         db.insertWithOnConflict(TABLE_NAME_SKIP_EVENTS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
     }
 
+    /** Skip events with id &gt; minId, joined with episode/feed URLs for upload payload.
+     *  Columns: id, skip_type, skip_duration_ms, skip_timestamp, guid, episode_url, rss_url. */
+    public Cursor getSkipEventsToUploadCursor(long minId, int limit) {
+        String sql = "SELECT se." + KEY_ID + ","
+                + " se." + KEY_SKIP_TYPE + ","
+                + " se." + KEY_SKIP_DURATION_MS + ","
+                + " se." + KEY_SKIP_TIMESTAMP + ","
+                + " fi." + KEY_ITEM_IDENTIFIER + " AS guid,"
+                + " fm." + KEY_DOWNLOAD_URL + " AS episode_url,"
+                + " f."  + KEY_DOWNLOAD_URL + " AS rss_url"
+                + " FROM " + TABLE_NAME_SKIP_EVENTS + " se"
+                + " LEFT JOIN " + TABLE_NAME_FEED_ITEMS + " fi ON fi." + KEY_ID + " = se." + KEY_FEEDITEM
+                + " LEFT JOIN " + TABLE_NAME_FEED_MEDIA + " fm ON fm." + KEY_FEEDITEM + " = fi." + KEY_ID
+                + " LEFT JOIN " + TABLE_NAME_FEEDS + " f ON f." + KEY_ID + " = fi." + KEY_FEED
+                + " WHERE se." + KEY_ID + " > ?"
+                + " ORDER BY se." + KEY_ID
+                + " LIMIT ?";
+        return db.rawQuery(sql, new String[] {String.valueOf(minId), String.valueOf(limit)});
+    }
+
     public Cursor getSkipEventStatsCursor(long timeFrom, long timeTo) {
         String sql = "SELECT " + KEY_SKIP_TYPE + ","
                 + " SUM(" + KEY_SKIP_DURATION_MS + ") AS total_ms"
@@ -1645,6 +1677,86 @@ public class PodDBAdapter {
                 + " FROM " + TABLE_NAME_SKIP_EVENTS
                 + " GROUP BY year"
                 + " ORDER BY year DESC";
+        return db.rawQuery(sql, null);
+    }
+
+    /** 24 rows: hour-of-day (local time) → total listening minutes. */
+    public Cursor getByHourCursor() {
+        String net = "MAX(MIN(" + KEY_PLAYED_DURATION + ", CASE WHEN " + KEY_DURATION + " > 0"
+                + " THEN " + KEY_DURATION + " ELSE " + KEY_PLAYED_DURATION + " END)"
+                + " - " + KEY_SKIPPED_DURATION + ", 0)";
+        String sql = "SELECT"
+                + " CAST(strftime('%H', " + KEY_LAST_PLAYED_TIME_STATISTICS + " / 1000, 'unixepoch', 'localtime') AS INTEGER) AS hour,"
+                + " SUM(" + net + ") / 60000 AS minutes"
+                + " FROM " + TABLE_NAME_FEED_MEDIA
+                + " WHERE " + KEY_LAST_PLAYED_TIME_STATISTICS + " > 0 AND " + KEY_PLAYED_DURATION + " > 0"
+                + " GROUP BY hour ORDER BY hour";
+        return db.rawQuery(sql, null);
+    }
+
+    /** 7 rows: day-of-week 0=Sun…6=Sat (local time) → average daily listening minutes. */
+    public Cursor getByDayCursor() {
+        String net = "MAX(MIN(" + KEY_PLAYED_DURATION + ", CASE WHEN " + KEY_DURATION + " > 0"
+                + " THEN " + KEY_DURATION + " ELSE " + KEY_PLAYED_DURATION + " END)"
+                + " - " + KEY_SKIPPED_DURATION + ", 0)";
+        String sql = "SELECT"
+                + " CAST(strftime('%w', " + KEY_LAST_PLAYED_TIME_STATISTICS + " / 1000, 'unixepoch', 'localtime') AS INTEGER) AS dow,"
+                + " SUM(" + net + ") / 60000 AS minutes"
+                + " FROM " + TABLE_NAME_FEED_MEDIA
+                + " WHERE " + KEY_LAST_PLAYED_TIME_STATISTICS + " > 0 AND " + KEY_PLAYED_DURATION + " > 0"
+                + " GROUP BY dow ORDER BY dow";
+        return db.rawQuery(sql, null);
+    }
+
+    /** Daily listening ms from fromMs to toMs, one row per calendar day (local time). */
+    public Cursor getDailyListeningCursor(long fromMs, long toMs) {
+        String net = "MAX(MIN(" + KEY_PLAYED_DURATION + ", CASE WHEN " + KEY_DURATION + " > 0"
+                + " THEN " + KEY_DURATION + " ELSE " + KEY_PLAYED_DURATION + " END)"
+                + " - " + KEY_SKIPPED_DURATION + ", 0)";
+        String sql = "SELECT"
+                + " date(" + KEY_LAST_PLAYED_TIME_STATISTICS + " / 1000, 'unixepoch', 'localtime') AS day,"
+                + " SUM(" + net + ") AS ms"
+                + " FROM " + TABLE_NAME_FEED_MEDIA
+                + " WHERE " + KEY_LAST_PLAYED_TIME_STATISTICS + " >= " + fromMs
+                + " AND " + KEY_LAST_PLAYED_TIME_STATISTICS + " <= " + toMs
+                + " AND " + KEY_PLAYED_DURATION + " > 0"
+                + " GROUP BY day ORDER BY day";
+        return db.rawQuery(sql, null);
+    }
+
+    /** Daily listening ms for a single feed over the given period. */
+    public Cursor getFeedDailyListeningCursor(long feedId, long fromMs, long toMs) {
+        String net = "MAX(MIN(" + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + ", CASE WHEN "
+                + TABLE_NAME_FEED_MEDIA + "." + KEY_DURATION + " > 0"
+                + " THEN " + TABLE_NAME_FEED_MEDIA + "." + KEY_DURATION
+                + " ELSE " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " END)"
+                + " - " + TABLE_NAME_FEED_MEDIA + "." + KEY_SKIPPED_DURATION + ", 0)";
+        String sql = "SELECT"
+                + " date(" + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " / 1000, 'unixepoch', 'localtime') AS day,"
+                + " SUM(" + net + ") AS ms"
+                + " FROM " + TABLE_NAME_FEED_ITEMS
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " WHERE " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + " = " + feedId
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " >= " + fromMs
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " <= " + toMs
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0"
+                + " GROUP BY day ORDER BY day";
+        return db.rawQuery(sql, null);
+    }
+
+    /** Global episode play-state counts across all subscribed feeds. */
+    public Cursor getGlobalEpisodeCountsCursor() {
+        String sql = "SELECT"
+                + " COUNT(*) AS total_started,"
+                + " SUM(CASE WHEN " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " = " + FeedItem.PLAYED + " THEN 1 ELSE 0 END) AS completed,"
+                + " SUM(CASE WHEN " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " != " + FeedItem.PLAYED
+                        + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0 THEN 1 ELSE 0 END) AS in_progress"
+                + " FROM " + TABLE_NAME_FEED_ITEMS
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " INNER JOIN " + TABLE_NAME_FEEDS
+                + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + " = " + TABLE_NAME_FEEDS + "." + KEY_ID
+                + " WHERE " + TABLE_NAME_FEEDS + "." + KEY_STATE + " != " + Feed.STATE_NOT_SUBSCRIBED
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0";
         return db.rawQuery(sql, null);
     }
 

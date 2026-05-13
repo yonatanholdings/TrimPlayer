@@ -1,5 +1,6 @@
 package de.danoeh.antennapod.playback.service.trim;
 
+import de.danoeh.antennapod.net.common.TrimPrefetcher;
 import java.util.List;
 import retrofit2.Call;
 import retrofit2.Retrofit;
@@ -17,8 +18,11 @@ public class TrimClient {
 
     private TrimClient(String baseUrl) {
         this.currentBaseUrl = baseUrl;
+        // Share OkHttp client (and its connection pool) with TrimPrefetcher.
+        // The shared client already adds the X-Api-Key header via interceptor.
         this.api = new Retrofit.Builder()
                 .baseUrl(baseUrl)
+                .client(TrimPrefetcher.client())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(TrimApi.class);
@@ -32,12 +36,12 @@ public class TrimClient {
         return instance;
     }
 
-    public Call<EpisodeSegmentsResponse> getSegments(String episodeUrl) {
-        return api.getSegments(episodeUrl);
+    public Call<EpisodeSegmentsResponse> getSegments(String episodeUrl, String episodeGuid) {
+        return api.getSegments(episodeUrl, episodeGuid);
     }
 
-    public Call<AnalyzeResponse> analyze(String rssUrl) {
-        return api.analyze(new AnalyzeRequest(rssUrl));
+    public Call<AnalyzeResponse> analyze(String rssUrl, String episodeUrl, String episodeGuid) {
+        return api.analyze(new AnalyzeRequest(rssUrl, episodeUrl, episodeGuid));
     }
 
     public Call<JobStatusResponse> getJobStatus(String jobId) {
@@ -46,7 +50,9 @@ public class TrimClient {
 
     public interface TrimApi {
         @GET("segments")
-        Call<EpisodeSegmentsResponse> getSegments(@Query("episode_url") String episodeUrl);
+        Call<EpisodeSegmentsResponse> getSegments(
+                @Query("episode_url") String episodeUrl,
+                @Query("episode_guid") String episodeGuid);
 
         @POST("analyze")
         Call<AnalyzeResponse> analyze(@Body AnalyzeRequest request);
@@ -69,9 +75,13 @@ public class TrimClient {
 
     public static class AnalyzeRequest {
         public String rss_url;
+        public String episode_url;
+        public String episode_guid;
 
-        public AnalyzeRequest(String rssUrl) {
+        public AnalyzeRequest(String rssUrl, String episodeUrl, String episodeGuid) {
             this.rss_url = rssUrl;
+            this.episode_url = episodeUrl;
+            this.episode_guid = episodeGuid;
         }
     }
 

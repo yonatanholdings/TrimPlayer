@@ -48,4 +48,22 @@
         android:layout_height="wrap_content"
         android:text="@string/pref_skip_silence_title" />
 
+    <CheckBox
+        android:id="@+id/skipIntros"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pref_trim_skip_intros_title" />
+
+    <CheckBox
+        android:id="@+id/skipAds"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pref_trim_skip_ads_title" />
+
+    <CheckBox
+        android:id="@+id/skipOutros"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pref_trim_skip_outros_title" />
+
 </LinearLayout>

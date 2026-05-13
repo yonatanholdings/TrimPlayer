@@ -755,6 +755,47 @@ public final class DBReader {
         public long totalMs;
     }
 
+    /** One skip event prepared for upload to the backend /events endpoint. */
+    public static class SkipEventToUpload {
+        public long id;
+        public String skipType;
+        public int durationMs;
+        public long timestampMs;
+        public String episodeGuid;   // may be null if FeedItem was deleted
+        public String episodeUrl;    // may be null
+        public String rssUrl;        // may be null
+    }
+
+    @NonNull
+    public static List<SkipEventToUpload> getSkipEventsToUpload(long minId, int limit) {
+        List<SkipEventToUpload> result = new ArrayList<>();
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (Cursor c = adapter.getSkipEventsToUploadCursor(minId, limit)) {
+            int idxId       = c.getColumnIndexOrThrow(PodDBAdapter.KEY_ID);
+            int idxType     = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TYPE);
+            int idxDuration = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_DURATION_MS);
+            int idxTs       = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TIMESTAMP);
+            int idxGuid     = c.getColumnIndex("guid");
+            int idxEpUrl    = c.getColumnIndex("episode_url");
+            int idxRssUrl   = c.getColumnIndex("rss_url");
+            while (c.moveToNext()) {
+                SkipEventToUpload e = new SkipEventToUpload();
+                e.id          = c.getLong(idxId);
+                e.skipType    = c.getString(idxType);
+                e.durationMs  = c.getInt(idxDuration);
+                e.timestampMs = c.getLong(idxTs);
+                e.episodeGuid = idxGuid >= 0 ? c.getString(idxGuid) : null;
+                e.episodeUrl  = idxEpUrl >= 0 ? c.getString(idxEpUrl) : null;
+                e.rssUrl      = idxRssUrl >= 0 ? c.getString(idxRssUrl) : null;
+                result.add(e);
+            }
+        } finally {
+            adapter.close();
+        }
+        return result;
+    }
+
     public static class SkipStatistics {
         public long totalMs;
         public long introMs;
@@ -889,6 +930,325 @@ public final class DBReader {
         }
         adapter.close();
         return result;
+    }
+
+    // ─── Editorial stats (Statistics Redesign) ───────────────────────────────
+
+    public static class EditorialStats {
+        public long totalPlayedMs;
+        public long totalSavedMs;
+        public long savedSpeedMs;
+        public long savedSilenceMs;
+        public long savedIntrosMs;
+        public int episodesStarted;
+        public int episodesCompleted;
+        public int episodesInProgress;
+        public int streakDays;
+        public int topHourLocal;
+        /** Minutes listened per hour-of-day, index 0–23. */
+        public long[] byHour = new long[24];
+        /** Minutes listened per weekday, index 0=Sun…6=Sat. */
+        public long[] byDay = new long[7];
+        /** Hours listened per week, last 12 weeks (index 0 = oldest). */
+        public float[] weekly = new float[12];
+        /** Intensity grid [26 weeks][7 days], 0–4 (oldest week = index 0). */
+        public int[][] heatmap = new int[26][7];
+        /** Aggregated hours per year, ascending by year. */
+        public List<YearItem> yearly = new ArrayList<>();
+        /** Top shows (up to 9, rest collapsed into "Other"). */
+        public List<ShowItem> shows = new ArrayList<>();
+
+        public static class YearItem {
+            public final int year;
+            public final float hrs;
+            public YearItem(int year, float hrs) {
+                this.year = year;
+                this.hrs = hrs;
+            }
+        }
+
+        public static class ShowItem {
+            public final long feedId;
+            public final String title;
+            public final String imageUrl;
+            public final float hrs;
+            public final int pct;
+            public final int color;
+            public ShowItem(long feedId, String title, String imageUrl, float hrs, int pct, int color) {
+                this.feedId = feedId;
+                this.title = title;
+                this.imageUrl = imageUrl;
+                this.hrs = hrs;
+                this.pct = pct;
+                this.color = color;
+            }
+        }
+    }
+
+    public static class FeedDetail {
+        public final long feedId;
+        public final String title;
+        public final String imageUrl;
+        public final int color;
+        public final long subscribedMs;
+        public final int episodesTotal;
+        public final int episodesPlayed;
+        public final float hrsListened;
+        public final float hrsSaved;
+        /** Hours per week, last 12 weeks (index 0 = oldest). */
+        public final float[] weekly;
+
+        public FeedDetail(long feedId, String title, String imageUrl, int color,
+                          long subscribedMs, int episodesTotal, int episodesPlayed,
+                          float hrsListened, float hrsSaved, float[] weekly) {
+            this.feedId = feedId;
+            this.title = title;
+            this.imageUrl = imageUrl;
+            this.color = color;
+            this.subscribedMs = subscribedMs;
+            this.episodesTotal = episodesTotal;
+            this.episodesPlayed = episodesPlayed;
+            this.hrsListened = hrsListened;
+            this.hrsSaved = hrsSaved;
+            this.weekly = weekly;
+        }
+    }
+
+    @NonNull
+    public static EditorialStats getEditorialStats() {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        EditorialStats s = new EditorialStats();
+
+        // byHour
+        try (Cursor c = adapter.getByHourCursor()) {
+            int iHour = c.getColumnIndexOrThrow("hour");
+            int iMin = c.getColumnIndexOrThrow("minutes");
+            while (c.moveToNext()) {
+                int h = c.getInt(iHour);
+                if (h >= 0 && h < 24) s.byHour[h] = c.getLong(iMin);
+            }
+        }
+
+        // topHourLocal
+        long maxHour = 0;
+        for (int h = 0; h < 24; h++) {
+            if (s.byHour[h] > maxHour) { maxHour = s.byHour[h]; s.topHourLocal = h; }
+        }
+
+        // byDay
+        try (Cursor c = adapter.getByDayCursor()) {
+            int iDow = c.getColumnIndexOrThrow("dow");
+            int iMin = c.getColumnIndexOrThrow("minutes");
+            while (c.moveToNext()) {
+                int d = c.getInt(iDow);
+                if (d >= 0 && d < 7) s.byDay[d] = c.getLong(iMin);
+            }
+        }
+
+        // heatmap + weekly (last 26 weeks daily data)
+        long nowMs = System.currentTimeMillis();
+        long heatmapStart = nowMs - 26L * 7 * 86400_000L;
+        java.util.Map<String, Long> dailyMs = new java.util.LinkedHashMap<>();
+        try (Cursor c = adapter.getDailyListeningCursor(heatmapStart, nowMs)) {
+            int iDay = c.getColumnIndexOrThrow("day");
+            int iMs = c.getColumnIndexOrThrow("ms");
+            while (c.moveToNext()) dailyMs.put(c.getString(iDay), c.getLong(iMs));
+        }
+
+        // Build heatmap: bucket 0-4 by quintile of max
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        // align to start of the week containing heatmapStart (Sun=0)
+        cal.setTimeInMillis(heatmapStart);
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        int dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK) - 1; // 0=Sun
+        cal.add(java.util.Calendar.DAY_OF_YEAR, -dayOfWeek);
+
+        long maxDay = 1;
+        for (long v : dailyMs.values()) if (v > maxDay) maxDay = v;
+
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+        for (int w = 0; w < 26; w++) {
+            for (int d = 0; d < 7; d++) {
+                String key = sdf.format(cal.getTime());
+                long ms = dailyMs.containsKey(key) ? dailyMs.get(key) : 0L;
+                int bucket = ms == 0 ? 0 : (int) Math.min(4, 1 + (ms * 4) / maxDay);
+                s.heatmap[w][d] = bucket;
+                cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+            }
+        }
+
+        // weekly: aggregate daily data into 12 weekly buckets
+        long weekStart = nowMs - 12L * 7 * 86400_000L;
+        java.util.Calendar wCal = java.util.Calendar.getInstance();
+        wCal.setTimeInMillis(weekStart);
+        wCal.set(java.util.Calendar.HOUR_OF_DAY, 0); wCal.set(java.util.Calendar.MINUTE, 0);
+        wCal.set(java.util.Calendar.SECOND, 0); wCal.set(java.util.Calendar.MILLISECOND, 0);
+        for (int w = 0; w < 12; w++) {
+            long weekMs = 0;
+            for (int d = 0; d < 7; d++) {
+                String key = sdf.format(wCal.getTime());
+                weekMs += dailyMs.containsKey(key) ? dailyMs.get(key) : 0L;
+                wCal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+            }
+            s.weekly[w] = weekMs / 3_600_000f;
+        }
+
+        // streak: consecutive days with listening ending today
+        java.util.Calendar streakCal = java.util.Calendar.getInstance();
+        streakCal.set(java.util.Calendar.HOUR_OF_DAY, 0); streakCal.set(java.util.Calendar.MINUTE, 0);
+        streakCal.set(java.util.Calendar.SECOND, 0); streakCal.set(java.util.Calendar.MILLISECOND, 0);
+        int streak = 0;
+        for (int i = 0; i < 365; i++) {
+            String key = sdf.format(streakCal.getTime());
+            if (dailyMs.containsKey(key) && dailyMs.get(key) > 0) {
+                streak++;
+            } else if (i == 0) {
+                // today no data yet — still try yesterday
+            } else {
+                break;
+            }
+            streakCal.add(java.util.Calendar.DAY_OF_YEAR, -1);
+        }
+        s.streakDays = streak;
+
+        // Skip statistics (reuse existing method via its sub-queries)
+        try (Cursor c = adapter.getSkipEventStatsCursor(0, nowMs)) {
+            int iType = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TYPE);
+            int iMs = c.getColumnIndexOrThrow("total_ms");
+            while (c.moveToNext()) {
+                String type = c.getString(iType);
+                long ms = c.getLong(iMs);
+                s.totalSavedMs += ms;
+                switch (type) {
+                    case "speed":   s.savedSpeedMs   = ms; break;
+                    case "silence": s.savedSilenceMs = ms; break;
+                    case "intro":   s.savedIntrosMs  = ms; break;
+                }
+            }
+        }
+
+        // Total played (all time) — total_duration is already in milliseconds
+        try (Cursor c = adapter.getMonthlyStatisticsCursor()) {
+            int iMs = c.getColumnIndexOrThrow("total_duration");
+            while (c.moveToNext()) s.totalPlayedMs += c.getLong(iMs);
+        }
+
+        // Episode counts
+        try (Cursor c = adapter.getGlobalEpisodeCountsCursor()) {
+            if (c.moveToFirst()) {
+                s.episodesStarted  = c.getInt(c.getColumnIndexOrThrow("total_started"));
+                s.episodesCompleted = c.getInt(c.getColumnIndexOrThrow("completed"));
+                s.episodesInProgress = c.getInt(c.getColumnIndexOrThrow("in_progress"));
+            }
+        }
+
+        // Yearly aggregation from monthly data — total_duration is already in milliseconds
+        java.util.TreeMap<Integer, Long> yearMap = new java.util.TreeMap<>();
+        try (Cursor c = adapter.getMonthlyStatisticsCursor()) {
+            int iYear = c.getColumnIndexOrThrow("year");
+            int iMs = c.getColumnIndexOrThrow("total_duration");
+            while (c.moveToNext()) {
+                int yr = Integer.parseInt(c.getString(iYear));
+                yearMap.merge(yr, c.getLong(iMs), Long::sum);
+            }
+        }
+        for (java.util.Map.Entry<Integer, Long> e : yearMap.entrySet()) {
+            s.yearly.add(new EditorialStats.YearItem(e.getKey(), e.getValue() / 3_600_000f));
+        }
+
+        // Shows: feed-level playback totals
+        StatisticsResult feedStats = getStatistics(false, 0, Long.MAX_VALUE);
+        Collections.sort(feedStats.feedTime, (a, b) -> Long.compare(b.timePlayed, a.timePlayed));
+        long totalPlayed = 0;
+        for (StatisticsItem it : feedStats.feedTime) totalPlayed += it.timePlayed;
+
+        int[] palette = {0xFFf4a261, 0xFF2a9d8f, 0xFFe76f51, 0xFF264653,
+                         0xFFa06cd5, 0xFF83c5be, 0xFFbc4749, 0xFF588157, 0xFF9aa0a6};
+        int colorIdx = 0;
+        float otherHrs = 0;
+        long threshold = totalPlayed / 25; // <4% → "Other"
+        for (StatisticsItem it : feedStats.feedTime) {
+            if (it.timePlayed == 0) continue;
+            int pct = totalPlayed > 0 ? (int) Math.round(it.timePlayed * 100.0 / totalPlayed) : 0;
+            if (it.timePlayed < threshold || s.shows.size() >= 8) {
+                otherHrs += it.timePlayed / 3_600_000f;
+            } else {
+                s.shows.add(new EditorialStats.ShowItem(
+                        it.feed.getId(), it.feed.getTitle(), it.feed.getImageUrl(),
+                        it.timePlayed / 3_600_000f, pct,
+                        palette[colorIdx % palette.length] | 0xFF000000));
+                colorIdx++;
+            }
+        }
+        if (otherHrs > 0) {
+            s.shows.add(new EditorialStats.ShowItem(-1, "Other", null, otherHrs, 0, 0xFF9aa0a6));
+        }
+
+        adapter.close();
+        return s;
+    }
+
+    @NonNull
+    public static FeedDetail getFeedDetail(long feedId) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+
+        Feed feed = getFeed(feedId, false, 0, 0);
+        if (feed == null) {
+            adapter.close();
+            return new FeedDetail(feedId, "Unknown", null, 0xFF9aa0a6,
+                    0, 0, 0, 0, 0, new float[12]);
+        }
+
+        // Feed-level stats
+        StatisticsResult r = getStatistics(false, 0, Long.MAX_VALUE);
+        float hrsListened = 0, hrsSaved = 0;
+        int totalEp = 0, playedEp = 0;
+        for (StatisticsItem it : r.feedTime) {
+            if (it.feed.getId() == feedId) {
+                hrsListened = it.timePlayed / 3_600_000f;
+                hrsSaved = it.timeSkipped / 3_600_000f;
+                totalEp = (int) it.episodes;
+                playedEp = (int) it.episodesStarted;
+                break;
+            }
+        }
+
+        // Weekly sparkline (last 12 weeks)
+        long nowMs = System.currentTimeMillis();
+        long weekStart = nowMs - 12L * 7 * 86400_000L;
+        java.util.Map<String, Long> dailyMs = new java.util.LinkedHashMap<>();
+        try (Cursor c = adapter.getFeedDailyListeningCursor(feedId, weekStart, nowMs)) {
+            int iDay = c.getColumnIndexOrThrow("day");
+            int iMs = c.getColumnIndexOrThrow("ms");
+            while (c.moveToNext()) dailyMs.put(c.getString(iDay), c.getLong(iMs));
+        }
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+        java.util.Calendar wCal = java.util.Calendar.getInstance();
+        wCal.setTimeInMillis(weekStart);
+        wCal.set(java.util.Calendar.HOUR_OF_DAY, 0); wCal.set(java.util.Calendar.MINUTE, 0);
+        wCal.set(java.util.Calendar.SECOND, 0); wCal.set(java.util.Calendar.MILLISECOND, 0);
+        float[] weekly = new float[12];
+        for (int w = 0; w < 12; w++) {
+            long wMs = 0;
+            for (int d = 0; d < 7; d++) {
+                String key = sdf.format(wCal.getTime());
+                wMs += dailyMs.containsKey(key) ? dailyMs.get(key) : 0L;
+                wCal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+            }
+            weekly[w] = wMs / 3_600_000f;
+        }
+
+        long subscribedMs = feed.getLastRefreshAttempt() > 0 ? feed.getLastRefreshAttempt() : 0;
+        int color = 0xFF9aa0a6;
+
+        adapter.close();
+        return new FeedDetail(feedId, feed.getTitle(), feed.getImageUrl(), color,
+                subscribedMs, totalEp, playedEp, hrsListened, hrsSaved, weekly);
     }
 
     public static long getTimeBetweenReleaseAndPlayback(long timeFilterFrom, long timeFilterTo) {

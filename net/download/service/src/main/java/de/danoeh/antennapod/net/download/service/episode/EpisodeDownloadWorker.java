@@ -19,6 +19,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import de.danoeh.antennapod.net.common.TrimPrefetcher;
 import de.danoeh.antennapod.net.download.service.R;
 import de.danoeh.antennapod.net.download.service.feed.remote.DefaultDownloaderFactory;
 import de.danoeh.antennapod.net.download.service.feed.remote.Downloader;
@@ -193,6 +194,7 @@ public class EpisodeDownloadWorker extends Worker {
             handler.run();
             DBWriter.addDownloadStatus(handler.getUpdatedStatus());
             DownloadAnnouncer.announceCompleted(getApplicationContext(), request.getTitle());
+            trimPrefetch(media);
             return Result.success();
         }
 
@@ -216,6 +218,20 @@ public class EpisodeDownloadWorker extends Worker {
         }
         sendMessage(request.getTitle(), false);
         return retry3times();
+    }
+
+    private void trimPrefetch(FeedMedia media) {
+        try {
+            if (media == null || media.getItem() == null || media.getItem().getFeed() == null) {
+                return;
+            }
+            String rssUrl = media.getItem().getFeed().getDownloadUrl();
+            String episodeUrl = media.getDownloadUrl();
+            String guid = media.getItem().getItemIdentifier();
+            TrimPrefetcher.prefetchAnalyze(rssUrl, episodeUrl, guid);
+        } catch (Throwable t) {
+            Log.w(TAG, "Trim prefetch failed", t);
+        }
     }
 
     private Result retry3times() {

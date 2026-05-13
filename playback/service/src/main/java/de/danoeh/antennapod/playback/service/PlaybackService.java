@@ -25,7 +25,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.service.quicksettings.TileService;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -80,6 +82,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Set;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -200,6 +203,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     private final Handler trimPollHandler = new Handler(Looper.getMainLooper());
     private String activePollingJobId = null;
 
+    /** Debug-only: last segments received from backend, readable by the debug preference dialog. */
+    public static volatile List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> debugLastSegments = Collections.emptyList();
+    public static volatile String debugLastSegmentsEpisode = null;
+
+    /** Tracks which indices in currentSegments were auto-skipped during this episode. */
+    private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
+
 
     /**
      * Used for Lollipop notifications, Android Wear, and Android Auto.
@@ -316,7 +326,6 @@ public class PlaybackService extends MediaBrowserServiceCompat {
 
         mediaSession = new MediaSessionCompat(getApplicationContext(), TAG, eventReceiver, buttonReceiverIntent);
         mediaSession.setCallback(sessionCallback);
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         recreateMediaPlayer();
         mediaSession.setActive(true);
         setSessionToken(mediaSession.getSessionToken());
@@ -349,10 +358,20 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     private void trimFetchSegments(FeedMedia media) {
         String episodeUrl = media.getStreamUrl();
         String episodeGuid = media.getItem() != null ? media.getItem().getItemIdentifier() : null;
+
+        // Capture RSS URL synchronously now — item.getFeed() may return null inside async callbacks
+        String rssUrlSync = null;
+        if (media.getItem() != null && media.getItem().getFeed() != null) {
+            rssUrlSync = media.getItem().getFeed().getDownloadUrl();
+        }
+        final String capturedRssUrl = rssUrlSync;
+        final String capturedGuid = episodeGuid;
+
         java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> stub =
                 de.danoeh.antennapod.playback.service.trim.TrimStub.getSegments(this, episodeGuid);
         if (stub != null) {
             currentSegments = stub;
+            skippedSegmentIndices.clear();
             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " stub segments");
             if (BuildConfig.DEBUG) {
                 android.widget.Toast.makeText(this,
@@ -361,8 +380,21 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             }
             return;
         }
+
+        // Warm path: cached segments for this GUID skip the network round trip entirely.
+        java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> cached =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(this, episodeGuid);
+        if (cached != null && !cached.isEmpty()) {
+            currentSegments = cached;
+            skippedSegmentIndices.clear();
+            debugLastSegments = currentSegments;
+            debugLastSegmentsEpisode = episodeUrl;
+            Log.d(TAG, "Trim Player: Loaded " + cached.size() + " cached segments");
+            return;
+        }
+
         de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
-                .getSegments(episodeUrl)
+                .getSegments(episodeUrl, episodeGuid)
                 .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse>() {
                     @Override
                     public void onResponse(
@@ -372,10 +404,28 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 && response.body().segments != null
                                 && !response.body().segments.isEmpty()) {
                             currentSegments = response.body().segments;
+                            skippedSegmentIndices.clear();
+                            debugLastSegments = currentSegments;
+                            debugLastSegmentsEpisode = episodeUrl;
+                            de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.put(
+                                    getApplicationContext(), capturedGuid, currentSegments);
                             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " segments");
+                            if (BuildConfig.DEBUG) {
+                                new Handler(Looper.getMainLooper()).post(() ->
+                                        Toast.makeText(getApplicationContext(),
+                                                "[TrimBrain] " + currentSegments.size() + " segments received",
+                                                Toast.LENGTH_SHORT).show());
+                            }
+                        } else if (capturedRssUrl != null && !capturedRssUrl.isEmpty()) {
+                            if (trimAnalyzeOnCooldown(capturedGuid, episodeUrl)) {
+                                Log.d(TAG, "Trim Player: No segments, analyze cooldown active — not re-triggering");
+                            } else {
+                                Log.d(TAG, "Trim Player: No segments found, triggering analysis");
+                                trimRecordAnalyzeAttempt(capturedGuid, episodeUrl);
+                                trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid);
+                            }
                         } else {
-                            Log.d(TAG, "Trim Player: No segments found, triggering analysis");
-                            trimTriggerAnalysis(media, episodeUrl);
+                            Log.w(TAG, "Trim Player: No segments and no RSS URL available, cannot trigger analysis");
                         }
                     }
 
@@ -388,16 +438,106 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 });
     }
 
-    private void trimTriggerAnalysis(FeedMedia media, String episodeUrl) {
-        de.danoeh.antennapod.model.feed.FeedItem item = media.getItem();
-        if (item == null) return;
-        de.danoeh.antennapod.model.feed.Feed feed = item.getFeed();
-        if (feed == null) return;
-        String rssUrl = feed.getDownloadUrl();
-        if (rssUrl == null || rssUrl.isEmpty()) return;
+    private void showSegmentSkipToast(String eventType, int skippedMs) {
+        int sec = skippedMs / 1000;
+        if (sec <= 0) return;  // sub-second skip (e.g. tail-end of a tick) — no toast worth showing
+        int stringRes;
+        if ("intro".equals(eventType)) {
+            stringRes = R.string.trim_skip_toast_intro;
+        } else if ("ad".equals(eventType)) {
+            stringRes = R.string.trim_skip_toast_ad;
+        } else if ("outro".equals(eventType)) {
+            stringRes = R.string.trim_skip_toast_outro;
+        } else {
+            stringRes = R.string.trim_skip_toast_generic;
+        }
+        String duration = formatSkipDuration(sec);
+        Toast.makeText(getApplicationContext(),
+                getString(stringRes, duration), Toast.LENGTH_SHORT).show();
+    }
 
+    /** Build the end-of-episode toast: total time saved + per-type breakdown.
+     *
+     *  Counts each skipped segment by its canonical type (intro / ad / outro)
+     *  using the segments snapshot we have from this playback. The breakdown
+     *  string only includes types whose count is > 0. If the snapshot is
+     *  unexpectedly empty (segments list cleared between skip and post-playback),
+     *  we still show the duration via the no-breakdown variant. */
+    private String buildEpisodeSkipSummary(
+            int totalSkippedSec,
+            List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsAtEnd) {
+        String duration = formatSkipDuration(totalSkippedSec);
+        int intros = 0, ads = 0, outros = 0;
+        if (segsAtEnd != null) {
+            for (Integer si : skippedSegmentIndices) {
+                if (si == null || si < 0 || si >= segsAtEnd.size()) continue;
+                String t = segsAtEnd.get(si).type;
+                if (t == null) {
+                    ads++;  // matches the eventType fallback used at skip time
+                    continue;
+                }
+                String tl = t.toLowerCase();
+                if ("intro".equals(tl)) intros++;
+                else if ("outro".equals(tl)) outros++;
+                else ads++;
+            }
+        }
+        java.util.List<String> parts = new java.util.ArrayList<>(3);
+        if (intros > 0) parts.add(getResources().getQuantityString(R.plurals.trim_summary_intros, intros, intros));
+        if (ads    > 0) parts.add(getResources().getQuantityString(R.plurals.trim_summary_ads,    ads,    ads));
+        if (outros > 0) parts.add(getResources().getQuantityString(R.plurals.trim_summary_outros, outros, outros));
+        if (parts.isEmpty()) {
+            return getString(R.string.trim_summary_no_breakdown, duration);
+        }
+        return getString(R.string.trim_summary_with_breakdown, duration, String.join(", ", parts));
+    }
+
+    /** Format a skip duration as "Xs" under a minute, "M:SS" under an hour, "H:MM:SS" beyond. */
+    private static String formatSkipDuration(int totalSec) {
+        if (totalSec < 60) {
+            return totalSec + "s";
+        }
+        java.util.Locale loc = java.util.Locale.getDefault();
+        if (totalSec < 3600) {
+            int min = totalSec / 60;
+            int sec = totalSec % 60;
+            return String.format(loc, "%d:%02d", min, sec);
+        }
+        int hr  = totalSec / 3600;
+        int min = (totalSec % 3600) / 60;
+        int sec = totalSec % 60;
+        return String.format(loc, "%d:%02d:%02d", hr, min, sec);
+    }
+
+    // Per-episode cooldown so we don't re-trigger /analyze on every playback start when the
+    // backend has nothing for this episode (or has just been asked). Persisted via
+    // SharedPreferences so it survives process restarts.
+    private static final String TRIM_COOLDOWN_PREFS = "trim_player_cooldown";
+    private static final long TRIM_ANALYZE_COOLDOWN_MS = 60L * 60L * 1000L; // 1 hour
+
+    private static String trimCooldownKey(String guid, String episodeUrl) {
+        if (guid != null && !guid.isEmpty()) return "g:" + guid;
+        if (episodeUrl != null && !episodeUrl.isEmpty()) return "u:" + episodeUrl;
+        return null;
+    }
+
+    private boolean trimAnalyzeOnCooldown(String guid, String episodeUrl) {
+        String key = trimCooldownKey(guid, episodeUrl);
+        if (key == null) return false;
+        long last = getSharedPreferences(TRIM_COOLDOWN_PREFS, MODE_PRIVATE).getLong(key, 0L);
+        return last > 0 && (System.currentTimeMillis() - last) < TRIM_ANALYZE_COOLDOWN_MS;
+    }
+
+    private void trimRecordAnalyzeAttempt(String guid, String episodeUrl) {
+        String key = trimCooldownKey(guid, episodeUrl);
+        if (key == null) return;
+        getSharedPreferences(TRIM_COOLDOWN_PREFS, MODE_PRIVATE)
+                .edit().putLong(key, System.currentTimeMillis()).apply();
+    }
+
+    private void trimTriggerAnalysis(String rssUrl, String episodeUrl, String episodeGuid) {
         de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
-                .analyze(rssUrl)
+                .analyze(rssUrl, episodeUrl, episodeGuid)
                 .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.AnalyzeResponse>() {
                     @Override
                     public void onResponse(
@@ -421,6 +561,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
 
     private void trimStartPolling(String jobId, String episodeUrl) {
         activePollingJobId = jobId;
+        final int[] pollsSoFar = {0};
         Runnable[] pollRunnable = new Runnable[1];
         pollRunnable[0] = new Runnable() {
             @Override
@@ -451,7 +592,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     activePollingJobId = null;
                                     Log.e(TAG, "Trim Player: Analysis failed: " + response.body().message);
                                 } else {
-                                    trimPollHandler.postDelayed(pollRunnable[0], 5000);
+                                    pollsSoFar[0]++;
+                                    trimPollHandler.postDelayed(pollRunnable[0], trimPollDelayMs(pollsSoFar[0]));
                                 }
                             }
 
@@ -466,7 +608,37 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         });
             }
         };
-        trimPollHandler.postDelayed(pollRunnable[0], 5000);
+        trimPollHandler.postDelayed(pollRunnable[0], trimPollDelayMs(0));
+    }
+
+    private static long trimPollDelayMs(int priorPolls) {
+        switch (priorPolls) {
+            case 0: return 1000;
+            case 1: return 1500;
+            case 2: return 3000;
+            default: return 5000;
+        }
+    }
+
+    /**
+     * Whether to auto-skip a segment of the given type. Per-feed prefs take precedence;
+     * the global UserPreferences value is the fallback when no feed context exists.
+     */
+    private static boolean trimSkipEnabledForFeed(
+            de.danoeh.antennapod.model.feed.FeedMedia fm, String eventType) {
+        if (fm != null && fm.getItem() != null && fm.getItem().getFeed() != null
+                && fm.getItem().getFeed().getPreferences() != null) {
+            de.danoeh.antennapod.model.feed.FeedPreferences fp = fm.getItem().getFeed().getPreferences();
+            if (eventType != null) {
+                switch (eventType) {
+                    case "intro": return fp.isTrimSkipIntros();
+                    case "ad":    return fp.isTrimSkipAds();
+                    case "outro": return fp.isTrimSkipOutros();
+                    default:
+                }
+            }
+        }
+        return UserPreferences.isTrimSkipEnabledForType(eventType);
     }
 
     @Override
@@ -724,7 +896,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         final int keycode = intent.getIntExtra(MediaButtonReceiver.EXTRA_KEYCODE, -1);
         final String customAction = intent.getStringExtra(MediaButtonReceiver.EXTRA_CUSTOM_ACTION);
         final boolean hardwareButton = intent.getBooleanExtra(MediaButtonReceiver.EXTRA_HARDWAREBUTTON, false);
-        Playable playable = intent.getParcelableExtra(PlaybackServiceInterface.EXTRA_PLAYABLE);
+        Playable playable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? intent.getParcelableExtra(PlaybackServiceInterface.EXTRA_PLAYABLE, Playable.class)
+                : intent.getParcelableExtra(PlaybackServiceInterface.EXTRA_PLAYABLE);
         if (keycode == -1 && playable == null && customAction == null) {
             Log.e(TAG, "PlaybackService was started with no arguments");
             stateManager.stopService();
@@ -1126,6 +1300,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         EventBus.getDefault().post(AnalyticsEvent.episodePlayed(
                                 analyticsMedia.getEpisodeTitle(), podcastTitle,
                                 durationMin, androidAutoConnected));
+                        // Apply the feed's configured speed (covers Android Auto and any other
+                        // path that starts a new episode without going through onSetPlaybackSpeed)
+                        if (analyticsMedia.getItem() != null && analyticsMedia.getItem().getFeed() != null) {
+                            float feedSpeed = analyticsMedia.getItem().getFeed().getPreferences().getFeedPlaybackSpeed();
+                            if (feedSpeed == SPEED_USE_GLOBAL) {
+                                setSpeed(UserPreferences.getPlaybackSpeed());
+                            } else {
+                                setSpeed(feedSpeed);
+                            }
+                        }
                     }
                     // If the device was already muted before playback started, the
                     // ContentObserver never fires (no volume change occurred). Check now.
@@ -1437,6 +1621,25 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                     ? (int) (100.0 * media.getPosition() / media.getDuration()) : 100;
             EventBus.getDefault().post(AnalyticsEvent.episodeCompleted(
                     media.getEpisodeTitle(), completedPodcast, completionPct));
+            int totalSkippedSec = media.getSkippedDuration() / 1000;
+            if (totalSkippedSec > 0) {
+                String summaryMsg = buildEpisodeSkipSummary(totalSkippedSec, currentSegments);
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(
+                        () -> Toast.makeText(getApplicationContext(), summaryMsg, Toast.LENGTH_LONG).show());
+            }
+            // Record segment misses: segments that were present but never auto-skipped.
+            List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsAtEnd = currentSegments;
+            if (item != null && !segsAtEnd.isEmpty()) {
+                for (int si = 0; si < segsAtEnd.size(); si++) {
+                    if (!skippedSegmentIndices.contains(si)) {
+                        de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg = segsAtEnd.get(si);
+                        int expectedMs = (int) ((seg.end - seg.start) * 1000);
+                        de.danoeh.antennapod.storage.database.DBWriter.recordSkipEvent(
+                                item.getId(), "miss", expectedMs);
+                    }
+                }
+            }
+            skippedSegmentIndices.clear();
         } else {
             SynchronizationQueue.getInstance().enqueueEpisodePlayed(media, false);
             media.onPlaybackPause(getApplicationContext());
@@ -1953,9 +2156,18 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 mediaPlayer.resume();
             } else if (bluetooth && UserPreferences.isUnpauseOnBluetoothReconnect()) {
                 // let the user know we've started playback again...
-                Vibrator v = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
-                if (v != null) {
-                    v.vibrate(500);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    VibratorManager vm = (VibratorManager) getApplicationContext()
+                            .getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+                    if (vm != null) {
+                        vm.getDefaultVibrator().vibrate(
+                                VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+                    }
+                } else {
+                    Vibrator v = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                    if (v != null) {
+                        v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+                    }
                 }
                 mediaPlayer.resume();
             }
@@ -2260,7 +2472,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         }
                         int pos = getCurrentPosition(); // ms
                         int dur = getDuration();
-                        for (de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg : currentSegments) {
+                        List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsSnap = currentSegments;
+                        for (int si = 0; si < segsSnap.size(); si++) {
+                            de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg = segsSnap.get(si);
                             int startMs = (int) (seg.start * 1000);
                             int endMs = (int) (seg.end * 1000);
                             // Cap endMs to episode duration so we never seek past the end
@@ -2268,16 +2482,27 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 endMs = Math.min(endMs, dur);
                             }
                             if (pos >= startMs && pos < endMs) {
+                                String eventType = seg.type != null ? seg.type.toLowerCase() : "ad";
+                                if (!trimSkipEnabledForFeed(fm, eventType)) {
+                                    // User disabled auto-skip for this segment type. Don't skip,
+                                    // don't record it as skipped — leaving skippedSegmentIndices
+                                    // unchanged means re-enabling mid-episode will still take effect.
+                                    continue;
+                                }
                                 Log.d(TAG, "Trim Player: Auto-skipping segment " + seg.type);
+                                boolean firstSkipForThisSegment = !skippedSegmentIndices.contains(si);
+                                skippedSegmentIndices.add(si);
                                 int skippedMs = endMs - pos;
                                 fm.setSkippedDuration(fm.getSkippedDuration() + skippedMs);
                                 de.danoeh.antennapod.storage.database.DBWriter.setFeedMediaPlaybackInformation(fm);
-                                String eventType = seg.type != null ? seg.type.toLowerCase() : "ad";
                                 de.danoeh.antennapod.storage.database.DBWriter.recordSkipEvent(
                                         fm.getItem().getId(), eventType, skippedMs);
                                 EventBus.getDefault().post(AnalyticsEvent.segmentSkipped(
                                         eventType, skippedMs / 1000));
                                 seekTo(endMs);
+                                if (firstSkipForThisSegment) {
+                                    showSegmentSkipToast(eventType, skippedMs);
+                                }
                                 break;
                             }
                         }
@@ -2471,7 +2696,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         public boolean onMediaButtonEvent(final Intent mediaButton) {
             Log.d(TAG, "onMediaButtonEvent(" + mediaButton + ")");
             if (mediaButton != null) {
-                KeyEvent keyEvent = mediaButton.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                KeyEvent keyEvent = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                        ? mediaButton.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent.class)
+                        : mediaButton.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
                 if (keyEvent != null &&
                         keyEvent.getAction() == KeyEvent.ACTION_DOWN &&
                         keyEvent.getRepeatCount() == 0) {

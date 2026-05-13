@@ -120,6 +120,7 @@ public abstract class UserPreferences {
     // Mediaplayer
     private static final String PREF_PLAYBACK_SPEED = "prefPlaybackSpeed";
     public static final String PREF_PLAYBACK_SKIP_SILENCE = "prefSkipSilence";
+    private static final String PREF_SKIP_SILENCE_DEFAULT_TRUE_MIGRATED = "prefSkipSilenceDefaultTrueMigrated";
     private static final String PREF_FAST_FORWARD_SECS = "prefFastForwardSecs";
     private static final String PREF_REWIND_SECS = "prefRewindSecs";
     private static final String PREF_QUEUE_LOCKED = "prefQueueLocked";
@@ -150,8 +151,17 @@ public abstract class UserPreferences {
         Log.d(TAG, "Creating new instance of UserPreferences");
 
         UserPreferences.context = context.getApplicationContext();
+        // Initialize SharedPreferences before accessing
         UserPreferences.prefs = PreferenceManager.getDefaultSharedPreferences(context);
-
+        // One-time migration: force skip silence on for all users (fresh installs and existing
+        // users who had it disabled by the old upstream default). The migration flag ensures we
+        // only do this once per install — after that, the user's toggle is respected.
+        if (!prefs.getBoolean(PREF_SKIP_SILENCE_DEFAULT_TRUE_MIGRATED, false)) {
+            prefs.edit()
+                    .putBoolean(PREF_PLAYBACK_SKIP_SILENCE, true)
+                    .putBoolean(PREF_SKIP_SILENCE_DEFAULT_TRUE_MIGRATED, true)
+                    .apply();
+        }
         createNoMediaFile();
     }
 
@@ -899,9 +909,9 @@ public abstract class UserPreferences {
     public static final String PREF_TRIM_SERVER_URL = "prefTrimServerUrl";
 
     public static String getTrimServerUrl() {
-        String url = prefs.getString(PREF_TRIM_SERVER_URL, "http://10.0.2.2:8000/api/v1/");
+        String url = prefs.getString(PREF_TRIM_SERVER_URL, "https://api.trimplayer.com/api/v1/");
         if (url == null || url.trim().isEmpty()) {
-            return "http://10.0.2.2:8000/api/v1/";
+            return "https://api.trimplayer.com/api/v1/";
         }
         return url.endsWith("/") ? url : url + "/";
     }
@@ -918,5 +928,70 @@ public abstract class UserPreferences {
 
     public static void setTrimStubEnabled(boolean enabled) {
         prefs.edit().putBoolean(PREF_TRIM_STUB_ENABLED, enabled).apply();
+    }
+
+    // Per-type auto-skip toggles. Each defaults to true (preserves existing behaviour
+    // for users who upgrade). The SharedPreferences keys match the preferences_playback
+    // entries so an XML SwitchPreferenceCompat reads/writes them directly.
+    public static final String PREF_TRIM_SKIP_INTROS = "prefTrimSkipIntros";
+    public static final String PREF_TRIM_SKIP_ADS    = "prefTrimSkipAds";
+    public static final String PREF_TRIM_SKIP_OUTROS = "prefTrimSkipOutros";
+
+    public static boolean isTrimSkipIntrosEnabled() {
+        return prefs.getBoolean(PREF_TRIM_SKIP_INTROS, true);
+    }
+
+    public static boolean isTrimSkipAdsEnabled() {
+        return prefs.getBoolean(PREF_TRIM_SKIP_ADS, true);
+    }
+
+    public static boolean isTrimSkipOutrosEnabled() {
+        return prefs.getBoolean(PREF_TRIM_SKIP_OUTROS, true);
+    }
+
+    public static void setTrimSkipIntrosEnabled(boolean enabled) {
+        prefs.edit().putBoolean(PREF_TRIM_SKIP_INTROS, enabled).apply();
+    }
+
+    public static void setTrimSkipAdsEnabled(boolean enabled) {
+        prefs.edit().putBoolean(PREF_TRIM_SKIP_ADS, enabled).apply();
+    }
+
+    public static void setTrimSkipOutrosEnabled(boolean enabled) {
+        prefs.edit().putBoolean(PREF_TRIM_SKIP_OUTROS, enabled).apply();
+    }
+
+    /** Returns true when the auto-skip pref for this segment type is enabled.
+     *  Unknown types default to enabled so we never silently skip skipping. */
+    public static boolean isTrimSkipEnabledForType(String segmentType) {
+        if (segmentType == null) return true;
+        switch (segmentType.toLowerCase()) {
+            case "intro": return isTrimSkipIntrosEnabled();
+            case "ad":    return isTrimSkipAdsEnabled();
+            case "outro": return isTrimSkipOutrosEnabled();
+            default:      return true;
+        }
+    }
+
+    // Anonymous, app-install-scoped client id for aggregated telemetry. Used as a
+    // dedup key by the backend's /events endpoint. Generated lazily on first read.
+    public static final String PREF_TRIM_CLIENT_ID = "prefTrimClientId";
+    public static final String PREF_TRIM_LAST_UPLOADED_SKIP_EVENT_ID = "prefTrimLastUploadedSkipEventId";
+
+    public static String getOrCreateTrimClientId() {
+        String id = prefs.getString(PREF_TRIM_CLIENT_ID, null);
+        if (id == null || id.isEmpty()) {
+            id = java.util.UUID.randomUUID().toString();
+            prefs.edit().putString(PREF_TRIM_CLIENT_ID, id).apply();
+        }
+        return id;
+    }
+
+    public static long getLastUploadedSkipEventId() {
+        return prefs.getLong(PREF_TRIM_LAST_UPLOADED_SKIP_EVENT_ID, 0);
+    }
+
+    public static void setLastUploadedSkipEventId(long id) {
+        prefs.edit().putLong(PREF_TRIM_LAST_UPLOADED_SKIP_EVENT_ID, id).apply();
     }
 }
