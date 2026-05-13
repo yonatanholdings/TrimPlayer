@@ -85,8 +85,9 @@ public class YearsStatisticsFragment extends Fragment {
 
         float totalHrs = 0;
         for (DBReader.EditorialStats.YearItem y : s.yearly) totalHrs += y.hrs;
-        long totalDays = (long) (totalHrs / 24);
-        long remHours = Math.round(totalHrs % 24);
+        long totalHoursRounded = Math.round(totalHrs);
+        long totalDays = totalHoursRounded / 24;
+        long remHours = totalHoursRounded % 24;
         allTimeHours.setText(String.format(Locale.getDefault(), "%dd", totalDays));
         allTimeDays.setText(String.format(Locale.getDefault(),
                 "%d days, %d hours of audio.", totalDays, remHours));
@@ -148,11 +149,12 @@ public class YearsStatisticsFragment extends Fragment {
 
         // Hours
         TextView tvHrs = new TextView(ctx);
-        long days = (long) (y.hrs / 24);
-        long hrs  = Math.round(y.hrs % 24);
+        long yearHoursRounded = Math.round(y.hrs);
+        long days = yearHoursRounded / 24;
+        long hrs  = yearHoursRounded % 24;
         tvHrs.setText(days > 0
                 ? String.format(Locale.getDefault(), "%dd %dh", days, hrs)
-                : String.format(Locale.getDefault(), "%dh", Math.round(y.hrs)));
+                : String.format(Locale.getDefault(), "%dh", yearHoursRounded));
         tvHrs.setTextSize(16);
         tvHrs.setTextColor(EditorialTheme.INK);
         tvHrs.setTypeface(EditorialTheme.getSerif(ctx));

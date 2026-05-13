@@ -69,6 +69,9 @@ public class StatisticsFragment extends PagedToolbarFragment {
         } else {
             toolbar.setTitle(getString(R.string.statistics_label));
             toolbar.inflateMenu(R.menu.statistics);
+            // Filter is part of an in-progress redesign (see STATS_REDESIGN.md) and
+            // currently has no handler — hide it instead of showing a dead button.
+            toolbar.getMenu().findItem(R.id.statistics_filter).setVisible(false);
             if (BuildConfig.DEBUG || EchoConfig.isCurrentlyVisible()) {
                 toolbar.getMenu().findItem(R.id.show_echo).setVisible(true);
             }
