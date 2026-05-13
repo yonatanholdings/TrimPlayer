@@ -25,7 +25,8 @@ import de.danoeh.antennapod.event.StatisticsEvent;
 import de.danoeh.antennapod.ui.common.PagedToolbarFragment;
 import de.danoeh.antennapod.ui.echo.EchoActivity;
 import de.danoeh.antennapod.ui.echo.EchoConfig;
-import de.danoeh.antennapod.ui.statistics.insights.InsightsStatisticsFragment;
+import de.danoeh.antennapod.ui.statistics.activity.ActivityStatisticsFragment;
+import de.danoeh.antennapod.ui.statistics.overview.OverviewStatisticsFragment;
 import de.danoeh.antennapod.ui.statistics.subscriptions.SubscriptionStatisticsFragment;
 import de.danoeh.antennapod.ui.statistics.timesaved.TimeSavedStatisticsFragment;
 import de.danoeh.antennapod.ui.statistics.years.YearsStatisticsFragment;
@@ -35,9 +36,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.greenrobot.eventbus.EventBus;
 
-/**
- * Displays the 'statistics' screen
- */
 public class StatisticsFragment extends PagedToolbarFragment {
     public static final String TAG = "StatisticsFragment";
     public static final String PREF_NAME = "StatisticsActivityPrefs";
@@ -45,12 +43,13 @@ public class StatisticsFragment extends PagedToolbarFragment {
     public static final String PREF_FILTER_FROM = "filterFrom";
     public static final String PREF_FILTER_TO = "filterTo";
 
-
-    private static final int POS_SUBSCRIPTIONS = 0;
-    private static final int POS_YEARS = 1;
-    private static final int POS_TIME_SAVED = 2;
-    private static final int POS_INSIGHTS = 3;
-    private static final int TOTAL_COUNT = 4;
+    // Tab positions — visible to sibling fragments for cross-tab navigation
+    public static final int POS_OVERVIEW      = 0;
+    public static final int POS_SUBSCRIPTIONS = 1;
+    public static final int POS_ACTIVITY      = 2;
+    public static final int POS_YEARS         = 3;
+    public static final int POS_TIME_SAVED    = 4;
+    private static final int TOTAL_COUNT      = 5;
 
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
@@ -76,22 +75,24 @@ public class StatisticsFragment extends PagedToolbarFragment {
             toolbar.setNavigationOnClickListener(v -> getParentFragmentManager().popBackStack());
         }
         viewPager.setAdapter(new StatisticsPagerAdapter(this));
-        // Give the TabLayout the ViewPager
         tabLayout = rootView.findViewById(R.id.sliding_tabs);
         super.setupPagedToolbar(toolbar, viewPager);
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             switch (position) {
+                case POS_OVERVIEW:
+                    tab.setText(R.string.statistics_overview_label);
+                    break;
                 case POS_SUBSCRIPTIONS:
                     tab.setText(R.string.subscriptions_label);
+                    break;
+                case POS_ACTIVITY:
+                    tab.setText(R.string.statistics_activity_label);
                     break;
                 case POS_YEARS:
                     tab.setText(R.string.years_statistics_label);
                     break;
                 case POS_TIME_SAVED:
                     tab.setText(R.string.time_saved_label);
-                    break;
-                case POS_INSIGHTS:
-                    tab.setText(R.string.insights_label);
                     break;
                 default:
                     break;
@@ -116,7 +117,6 @@ public class StatisticsFragment extends PagedToolbarFragment {
                 getActivity(),
                 R.string.statistics_reset_data,
                 R.string.statistics_reset_data_msg) {
-
             @Override
             public void onConfirmButtonPressed(DialogInterface dialog) {
                 dialog.dismiss();
@@ -150,15 +150,17 @@ public class StatisticsFragment extends PagedToolbarFragment {
         @Override
         public Fragment createFragment(int position) {
             switch (position) {
+                case POS_OVERVIEW:
+                    return new OverviewStatisticsFragment();
                 case POS_SUBSCRIPTIONS:
                     return new SubscriptionStatisticsFragment();
+                case POS_ACTIVITY:
+                    return new ActivityStatisticsFragment();
                 case POS_YEARS:
                     return new YearsStatisticsFragment();
                 case POS_TIME_SAVED:
-                    return new TimeSavedStatisticsFragment();
-                case POS_INSIGHTS:
                 default:
-                    return new InsightsStatisticsFragment();
+                    return new TimeSavedStatisticsFragment();
             }
         }
 

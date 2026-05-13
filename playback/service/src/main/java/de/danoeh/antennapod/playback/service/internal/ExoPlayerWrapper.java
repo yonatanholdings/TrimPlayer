@@ -83,11 +83,17 @@ public class ExoPlayerWrapper {
     @Nullable
     private LoudnessEnhancer loudnessEnhancer = null;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    // >= 0 means a speed-change mute is active; value is the volume to restore when done.
-    // Updated by setVolume() so that external duck/restore events don't break the mute window.
-    private float muteBeforeSpeedChange = -1f;
+    // True while a speed-change pause-window is active and we owe the player a play() once
+    // the new params are applied. Lets rapid taps reuse the same pause without double-pausing.
+    private boolean wasPlayingBeforeSpeedChange = false;
     private Runnable pendingSpeedApply = null;
-    private Runnable pendingVolumeRestore = null;
+    // True while a seekTo() triggered internally by setPlaybackParams is in flight.
+    // onPositionDiscontinuity uses this to apply the new speed + resume after the
+    // seek-triggered AudioSink.flush() is confirmed complete, and to suppress the
+    // external seek-complete listener for this internal seek.
+    private boolean speedChangeSeeking = false;
+    // skipSilence value captured at setPlaybackParams call-time for use in onPositionDiscontinuity.
+    private boolean pendingSkipSilence = false;
 
     ExoPlayerWrapper(Context context) {
         this.context = context;
@@ -156,8 +162,22 @@ public class ExoPlayerWrapper {
             public void onPositionDiscontinuity(@NonNull Player.PositionInfo oldPosition,
                                                 @NonNull Player.PositionInfo newPosition,
                                                 @Player.DiscontinuityReason int reason) {
-                if (audioSeekCompleteListener != null && reason == Player.DISCONTINUITY_REASON_SEEK) {
-                    audioSeekCompleteListener.run();
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    if (speedChangeSeeking) {
+                        // The flush-seek is confirmed complete by ExoPlayer — AudioSink.flush()
+                        // has already run, SonicAudioProcessor's stale-sample buffer is clear.
+                        // Now it is safe to set the new speed and resume.
+                        speedChangeSeeking = false;
+                        applySpeedAndSilence(pendingSkipSilence);
+                        if (wasPlayingBeforeSpeedChange) {
+                            wasPlayingBeforeSpeedChange = false;
+                            exoPlayer.play();
+                        }
+                        return;
+                    }
+                    if (audioSeekCompleteListener != null) {
+                        audioSeekCompleteListener.run();
+                    }
                 }
             }
 
@@ -234,11 +254,8 @@ public class ExoPlayerWrapper {
             mainHandler.removeCallbacks(pendingSpeedApply);
             pendingSpeedApply = null;
         }
-        if (pendingVolumeRestore != null) {
-            mainHandler.removeCallbacks(pendingVolumeRestore);
-            pendingVolumeRestore = null;
-        }
-        muteBeforeSpeedChange = -1f;
+        wasPlayingBeforeSpeedChange = false;
+        speedChangeSeeking = false;
     }
 
     public void seekTo(int i) throws IllegalStateException {
@@ -297,63 +314,53 @@ public class ExoPlayerWrapper {
 
     public void setPlaybackParams(float speed, boolean skipSilence) {
         playbackParameters = new PlaybackParameters(speed);
+        pendingSkipSilence = skipSilence;
 
-        // Cancel any in-flight callbacks from a previous speed change so rapid taps
-        // don't create overlapping mute/restore chains or restore to 0.
+        // Cancel any pending apply from rapid taps without resetting wasPlayingBeforeSpeedChange —
+        // a prior tap may have already paused the player and we still owe it a play().
         if (pendingSpeedApply != null) {
             mainHandler.removeCallbacks(pendingSpeedApply);
             pendingSpeedApply = null;
         }
-        if (pendingVolumeRestore != null) {
-            mainHandler.removeCallbacks(pendingVolumeRestore);
-            pendingVolumeRestore = null;
-        }
 
-        // If we already muted intentionally for a prior speed change use that saved
-        // volume; otherwise read the current (real) volume from the player.
-        float realVol = (muteBeforeSpeedChange >= 0f) ? muteBeforeSpeedChange : exoPlayer.getVolume();
-
-        if (realVol > 0f && exoPlayer.isPlaying()) {
-            muteBeforeSpeedChange = realVol;
-            exoPlayer.setVolume(0f);
-            // Wait 100 ms for already-buffered full-volume samples to drain through
-            // the hardware audio pipeline before the renderer flush.
-            pendingSpeedApply = () -> {
-                // Apply skip-silence toggle here (inside the mute window) so that any
-                // renderer flush it triggers is also covered by the mute.
-                if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
-                    exoPlayer.setSkipSilenceEnabled(skipSilence);
-                }
-                exoPlayer.setPlaybackParameters(playbackParameters);
-                pendingSpeedApply = null;
-                pendingVolumeRestore = () -> {
-                    // Read muteBeforeSpeedChange here rather than capturing realVol at creation
-                    // time: setVolume() may have been called (e.g. audio-focus duck/restore) during
-                    // the muting window and updated this field to the new desired volume.
-                    float restoreVol = muteBeforeSpeedChange;
-                    muteBeforeSpeedChange = -1f;
-                    pendingVolumeRestore = null;
-                    applyVolume(restoreVol);
-                };
-                mainHandler.postDelayed(pendingVolumeRestore, 250);
-            };
-            mainHandler.postDelayed(pendingSpeedApply, 100);
-        } else {
-            if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
-                exoPlayer.setSkipSilenceEnabled(skipSilence);
+        if (!exoPlayer.isPlaying()) {
+            if (!wasPlayingBeforeSpeedChange) {
+                // Truly not playing and no speed change in progress — apply directly.
+                applySpeedAndSilence(skipSilence);
+                return;
             }
-            exoPlayer.setPlaybackParameters(playbackParameters);
+            // wasPlayingBeforeSpeedChange=true: a prior rapid tap already paused the player.
+            // Fall through to re-arm the debounce with the new speed.
+        } else {
+            // Pause now so no audio renders at the old speed during the debounce window.
+            wasPlayingBeforeSpeedChange = true;
+            exoPlayer.pause();
         }
+
+        // Debounce rapid taps: wait until the user settles on a speed, then apply.
+        //
+        // Seek +1ms (not the same position — ExoPlayer may no-op same-position seeks).
+        // ExoPlayer processes: pause → SEEK → AudioSink.flush() → SonicAudioProcessor.clear()
+        // onPositionDiscontinuity fires on the main thread only after the seek (and flush) is
+        // confirmed complete. setPlaybackParameters and play() are called from there, so the
+        // message order on ExoPlayer's internal thread is guaranteed:
+        //   flush (stale samples cleared) → setParams (new speed) → play
+        pendingSpeedApply = () -> {
+            pendingSpeedApply = null;
+            speedChangeSeeking = true;
+            exoPlayer.seekTo(exoPlayer.getCurrentPosition() + 1);
+        };
+        mainHandler.postDelayed(pendingSpeedApply, 80);
+    }
+
+    private void applySpeedAndSilence(boolean skipSilence) {
+        if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
+            exoPlayer.setSkipSilenceEnabled(skipSilence);
+        }
+        exoPlayer.setPlaybackParameters(playbackParameters);
     }
 
     public void setVolume(float v, float v1) {
-        if (muteBeforeSpeedChange >= 0f) {
-            // Speed-change mute is active. Record the new desired volume so pendingVolumeRestore
-            // restores to the right level, but leave ExoPlayer muted until the flush completes.
-            muteBeforeSpeedChange = Math.min(v, 1f);
-            updateLoudnessEnhancer(v);
-            return;
-        }
         applyVolume(v);
     }
 
@@ -411,6 +418,7 @@ public class ExoPlayerWrapper {
         return formats;
     }
 
+    @SuppressWarnings("deprecation")
     public void setAudioTrack(int track) {
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (trackInfo == null) {
@@ -432,6 +440,7 @@ public class ExoPlayerWrapper {
         return -1;
     }
 
+    @SuppressWarnings("deprecation")
     public int getSelectedAudioTrack() {
         TrackSelectionArray trackSelections = exoPlayer.getCurrentTrackSelections();
         List<Format> availableFormats = getFormats();

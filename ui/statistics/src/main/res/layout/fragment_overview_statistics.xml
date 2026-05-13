@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ─── Masthead ─── -->
+        <LinearLayout
+            android:id="@+id/masthead"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="● TRIM PLAYER STATISTICS"
+                    android:textSize="9sp"
+                    android:letterSpacing="0.15"
+                    android:textAllCaps="true"
+                    android:textColor="#7A6E60" />
+
+                <TextView
+                    android:id="@+id/masthead_vol"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="9sp"
+                    android:letterSpacing="0.15"
+                    android:textAllCaps="true"
+                    android:textColor="#7A6E60"
+                    android:text="VOL. 01 · ISSUE 01" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:background="#1A15110D" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/kicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="THE YEAR SO FAR"
+                    android:textSize="10sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.1"
+                    android:textColor="#B8442E"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="A reader's log."
+                    android:textSize="42sp"
+                    android:textColor="#15110D"
+                    android:lineSpacingMultiplier="0.94"
+                    android:layout_marginTop="6dp" />
+
+                <TextView
+                    android:id="@+id/lede"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="#3A322A"
+                    android:lineSpacingMultiplier="1.55"
+                    android:layout_marginTop="14dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ─── Hero stat block ─── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/listened_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="LISTENED, YEAR-TO-DATE"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.15"
+                    android:textColor="#7A6E60" />
+
+                <TextView
+                    android:id="@+id/yoy_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="8sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.12"
+                    android:textColor="#B8442E"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/hero_hours"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="64sp"
+                    android:textColor="#15110D"
+                    android:includeFontPadding="false"
+                    android:text="—" />
+
+                <de.danoeh.antennapod.ui.statistics.editorial.SparklineView
+                    android:id="@+id/hero_sparkline"
+                    android:layout_width="80dp"
+                    android:layout_height="36dp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/hero_minutes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="#3A322A"
+                android:textStyle="italic"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- ─── Thick rule ─── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="14dp"
+            android:background="#15110D" />
+
+        <!-- ─── Three-column hangs ─── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/hang_trimmed_val"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="28sp" android:textColor="#15110D" android:text="—" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="TRIMMED" android:textSize="8sp" android:textAllCaps="true"
+                    android:letterSpacing="0.15" android:textColor="#7A6E60" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/hang_finished_val"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="28sp" android:textColor="#15110D" android:text="—" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="FINISHED" android:textSize="8sp" android:textAllCaps="true"
+                    android:letterSpacing="0.15" android:textColor="#7A6E60" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/hang_streak_val"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="28sp" android:textColor="#15110D" android:text="—" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="DAY STREAK" android:textSize="8sp" android:textAllCaps="true"
+                    android:letterSpacing="0.15" android:textColor="#7A6E60" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ─── Section §01 Heatmap ─── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical">
+
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="§ 01  WHEN YOU LISTENED"
+                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:textColor="#7A6E60" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="LAST 26 WEEKS"
+                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:textColor="#7A6E60" />
+
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="#1A15110D" />
+
+        <de.danoeh.antennapod.ui.statistics.editorial.HeatmapView
+            android:id="@+id/heatmap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- ─── Section §02 Table of contents ─── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical">
+
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="§ 02  IN THIS ISSUE"
+                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:textColor="#7A6E60" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PAGES 02 — 18"
+                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:textColor="#7A6E60" />
+
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="#1A15110D" />
+
+        <LinearLayout android:id="@+id/toc_subscriptions"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:padding="14dp"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
+                android:text="01" android:textSize="9sp" android:textColor="#7A6E60"
+                android:textAllCaps="true" android:letterSpacing="0.15" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Subscriptions" android:textSize="16sp" android:textColor="#15110D" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Where the hours went, ranked." android:textSize="12sp"
+                    android:textColor="#7A6E60" />
+            </LinearLayout>
+            <TextView android:id="@+id/toc_sub_hrs"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textSize="16sp" android:textColor="#15110D"
+                android:layout_gravity="center_vertical" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="#1A15110D" />
+
+        <LinearLayout android:id="@+id/toc_activity"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:padding="14dp"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
+                android:text="02" android:textSize="9sp" android:textColor="#7A6E60"
+                android:textAllCaps="true" android:letterSpacing="0.15" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Activity" android:textSize="16sp" android:textColor="#15110D" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Started, finished, abandoned." android:textSize="12sp"
+                    android:textColor="#7A6E60" />
+            </LinearLayout>
+            <TextView android:id="@+id/toc_act_pct"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textSize="16sp" android:textColor="#15110D"
+                android:layout_gravity="center_vertical" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="#1A15110D" />
+
+        <LinearLayout android:id="@+id/toc_years"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:padding="14dp"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
+                android:text="03" android:textSize="9sp" android:textColor="#7A6E60"
+                android:textAllCaps="true" android:letterSpacing="0.15" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Years" android:textSize="16sp" android:textColor="#15110D" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="A reading list, by year." android:textSize="12sp"
+                    android:textColor="#7A6E60" />
+            </LinearLayout>
+            <TextView android:id="@+id/toc_years_hrs"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textSize="16sp" android:textColor="#15110D"
+                android:layout_gravity="center_vertical" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="#1A15110D" />
+
+        <LinearLayout android:id="@+id/toc_saved"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:padding="14dp"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
+                android:text="04" android:textSize="9sp" android:textColor="#7A6E60"
+                android:textAllCaps="true" android:letterSpacing="0.15" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Time Saved" android:textSize="16sp" android:textColor="#15110D" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Speed, silence, intros." android:textSize="12sp"
+                    android:textColor="#7A6E60" />
+            </LinearLayout>
+            <TextView android:id="@+id/toc_saved_hrs"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textSize="16sp" android:textColor="#15110D"
+                android:layout_gravity="center_vertical" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#15110D" android:layout_marginBottom="32dp" />
+
+    </LinearLayout>
+</ScrollView>

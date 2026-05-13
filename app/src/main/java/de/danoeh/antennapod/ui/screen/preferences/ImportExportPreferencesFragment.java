@@ -66,6 +66,7 @@ import java.util.Locale;
 
 public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment {
     private static final String TAG = "ImportExPrefFragment";
+    public static final String ARG_IMPORT_URI = "ImportUri";
     private static final String PREF_OPML_EXPORT = "prefOpmlExport";
     private static final String PREF_HTML_EXPORT = "prefHtmlExport";
     private static final String PREF_DATABASE_EXPORT = "prefDatabaseExport";
@@ -105,6 +106,14 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
         progressDialog = new ProgressDialog(getContext());
         progressDialog.setIndeterminate(true);
         progressDialog.setMessage(getContext().getString(R.string.please_wait));
+
+        if (savedInstanceState == null && getArguments() != null) {
+            Uri pendingImport = getArguments().getParcelable(ARG_IMPORT_URI);
+            if (pendingImport != null) {
+                getArguments().remove(ARG_IMPORT_URI);
+                handleUnifiedImport(pendingImport);
+            }
+        }
     }
 
     @Override

@@ -7,16 +7,35 @@ plugins {
 apply from: "../common.gradle"
 apply from: "../playFlavor.gradle"
 
+// Single source of truth: versionName. versionCode is derived from it.
+// Schema: major * 1_000_000 + minor * 10_000 + patch * 100 + (betaNum or 95 for final)
+//   "1.2.3-beta4" -> 1020304
+//   "1.2.3"       -> 1020395
+static int computeVersionCode(String versionName) {
+    def m = versionName =~ /^(\d+)\.(\d+)\.(\d+)(?:-beta(\d+))?$/
+    if (!m.matches()) {
+        throw new GradleException(
+                "Invalid versionName '${versionName}'. Expected 'X.Y.Z' or 'X.Y.Z-betaN'.")
+    }
+    int major = m.group(1) as int
+    int minor = m.group(2) as int
+    int patch = m.group(3) as int
+    boolean isBeta = m.group(4) != null
+    int suffix = isBeta ? (m.group(4) as int) : 95
+    if (major > 9 || minor > 99 || patch > 99 || (isBeta && suffix > 94)) {
+        throw new GradleException(
+                "Version part out of range in '${versionName}' (major<=9, minor/patch<=99, beta 1-94).")
+    }
+    return major * 1_000_000 + minor * 10_000 + patch * 100 + suffix
+}
+
 android {
     namespace "de.danoeh.antennapod"
 
     defaultConfig {
         applicationId "com.trimplayer"
-        // Version code schema:
-        // "1.2.3-beta4"    -> 1020304
-        // "1.2.3"          -> 1020395
-        versionCode 3100195
-        versionName "3.10.1"
+        versionName "1.0.4-beta3"
+        versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -27,12 +46,10 @@ android {
 
     signingConfigs {
         releaseConfig {
-            enableV1Signing true
-            enableV2Signing true
-            storeFile file(project.getProperties().getOrDefault("releaseStoreFile", "keystore"))
-            storePassword project.getProperties().getOrDefault("releaseStorePassword", "password")
-            keyAlias project.getProperties().getOrDefault("releaseKeyAlias", "alias")
-            keyPassword project.getProperties().getOrDefault("releaseKeyPassword", "password")
+            storeFile rootProject.file("trimplayer-upload.p12")
+            storePassword findProperty("trimplayerReleaseStorePassword") ?: ""
+            keyAlias "trimplayer-upload"
+            keyPassword findProperty("trimplayerReleaseKeyPassword") ?: ""
         }
     }
 
@@ -46,6 +63,9 @@ android {
             minifyEnabled true
             shrinkResources true
             signingConfig signingConfigs.releaseConfig
+            ndk {
+                debugSymbolLevel = 'FULL'
+            }
         }
     }
 

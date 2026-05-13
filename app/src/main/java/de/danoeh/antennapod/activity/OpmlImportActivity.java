@@ -123,10 +123,13 @@ public class OpmlImportActivity extends ToolbarActivity {
         Uri uri = getIntent().getData();
         if (uri != null && uri.toString().startsWith("/")) {
             uri = Uri.parse("file://" + uri.toString());
-        } else {
-            String extraText = getIntent().getStringExtra(Intent.EXTRA_TEXT);
-            if (extraText != null) {
-                uri = Uri.parse(extraText);
+        } else if (Intent.ACTION_SEND.equals(getIntent().getAction())) {
+            uri = getIntent().getParcelableExtra(Intent.EXTRA_STREAM);
+            if (uri == null) {
+                String extraText = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+                if (extraText != null) {
+                    uri = Uri.parse(extraText);
+                }
             }
         }
         importUri(uri);

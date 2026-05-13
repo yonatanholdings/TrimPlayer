@@ -68,6 +68,10 @@
     <string name="insights_col_saved">Saved</string>
     <string name="insights_col_pct">%</string>
 
+    <!-- Statistics editorial redesign -->
+    <string name="statistics_overview_label">Overview</string>
+    <string name="statistics_activity_label">Activity</string>
+
     <!-- Time Saved statistics -->
     <string name="time_saved_label">Time Saved</string>
     <string name="time_saved_total_label">total time saved</string>
@@ -89,6 +93,9 @@
     <string name="home_continue_title">Continue listening</string>
     <string name="home_new_title">See what\'s new</string>
     <string name="home_downloads_title">Manage downloads</string>
+    <string name="home_monthly_title">This month</string>
+    <string name="statistics_listened_label">Listened</string>
+    <string name="statistics_trimmed_label">Trimmed</string>
     <string name="home_no_recent_unplayed_episodes_text">You already played all recent episodes. Nothing to be surprised here ;)</string>
     <string name="home_continue_empty_text">You can add episodes by downloading them or long-pressing them and selecting \"Add to queue\".</string>
     <string name="home_new_empty_text">New episodes will show up here. You can then decide whether you are interested in them.</string>
@@ -557,6 +564,36 @@
     <string name="pref_feed_skip_intro">Skip first</string>
     <string name="pref_feed_skip_ending_toast">Skipped last %d seconds</string>
     <string name="pref_feed_skip_intro_toast">Skipped first %d seconds</string>
+    <!-- Real-time toast shown when TrimPlayer auto-skips a detected segment.
+         %s is the formatted duration (e.g. "24s" or "3:12"). -->
+    <string name="trim_skip_toast_intro">Skipped intro · saved %s</string>
+    <string name="trim_skip_toast_ad">Skipped ad · saved %s</string>
+    <string name="trim_skip_toast_outro">Skipped outro · saved %s</string>
+    <string name="trim_skip_toast_generic">Skipped segment · saved %s</string>
+    <!-- End-of-episode summary toast. %1$s is total duration, %2$s is breakdown ("1 intro, 2 ads"). -->
+    <string name="trim_summary_with_breakdown">Saved %1$s · %2$s skipped</string>
+    <string name="trim_summary_no_breakdown">Saved %1$s</string>
+    <!-- Per-type counts used to build the end-of-episode breakdown. -->
+    <plurals name="trim_summary_intros">
+        <item quantity="one">%d intro</item>
+        <item quantity="other">%d intros</item>
+    </plurals>
+    <plurals name="trim_summary_ads">
+        <item quantity="one">%d ad</item>
+        <item quantity="other">%d ads</item>
+    </plurals>
+    <plurals name="trim_summary_outros">
+        <item quantity="one">%d outro</item>
+        <item quantity="other">%d outros</item>
+    </plurals>
+    <!-- Per-type auto-skip preferences in Playback settings. -->
+    <string name="pref_trim_skip_category_title">Auto-skip detected segments</string>
+    <string name="pref_trim_skip_intros_title">Skip intros</string>
+    <string name="pref_trim_skip_intros_sum">Auto-skip detected intro music and host openings</string>
+    <string name="pref_trim_skip_ads_title">Skip ads</string>
+    <string name="pref_trim_skip_ads_sum">Auto-skip detected ad reads and sponsor breaks</string>
+    <string name="pref_trim_skip_outros_title">Skip outros</string>
+    <string name="pref_trim_skip_outros_sum">Auto-skip detected outro music and end-of-episode wrap-up</string>
     <string name="pref_playback_time_respects_speed_title">Adjust media info to playback speed</string>
     <string name="pref_playback_time_respects_speed_sum">Displayed position and duration are adapted to playback speed</string>
     <string name="pref_fast_forward">Fast-forward skip time</string>
@@ -579,6 +616,8 @@
     <string name="pref_smart_mark_as_played_disabled">Disabled</string>
     <string name="documentation_support">Documentation &amp; support</string>
     <string name="visit_user_forum">User forum</string>
+    <string name="bug_report_title">Report a bug</string>
+    <string name="open_bug_tracker">Open bug tracker</string>
     <string name="copy_to_clipboard">Copy to clipboard</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="pref_proxy_title">Proxy</string>

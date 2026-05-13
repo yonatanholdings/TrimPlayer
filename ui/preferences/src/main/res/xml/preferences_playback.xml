@@ -102,12 +102,34 @@
                 android:title="@string/pref_skip_keeps_episodes_title"/>
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_trim_skip_category_title">
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="prefTrimSkipIntros"
+            android:summary="@string/pref_trim_skip_intros_sum"
+            android:title="@string/pref_trim_skip_intros_title"/>
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="prefTrimSkipAds"
+            android:summary="@string/pref_trim_skip_ads_sum"
+            android:title="@string/pref_trim_skip_ads_title"/>
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="prefTrimSkipOutros"
+            android:summary="@string/pref_trim_skip_outros_sum"
+            android:title="@string/pref_trim_skip_outros_title"/>
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="Debug">
         <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="prefTrimStubEnabled"
             android:summary="Load skip segments from assets/stub_segments.json instead of the backend"
             android:title="Stub skip segments" />
+        <Preference
+            android:key="prefTrimDebugSegments"
+            android:title="View received segments"
+            android:summary="Show the last set of segments received from backend for the current episode" />
     </PreferenceCategory>
 
 </PreferenceScreen>

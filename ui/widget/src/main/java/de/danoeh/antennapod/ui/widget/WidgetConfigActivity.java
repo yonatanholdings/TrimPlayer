@@ -144,6 +144,7 @@ public class WidgetConfigActivity extends ToolbarActivity {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void loadCover(int viewId, Transformation<android.graphics.Bitmap> transform) {
         ImageView target = findViewById(viewId);
         Glide.with(this)

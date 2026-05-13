@@ -5,16 +5,20 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.collection.ArrayMap;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import de.danoeh.antennapod.BuildConfig;
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.playback.service.PlaybackService;
+import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
 import de.danoeh.antennapod.ui.screen.feed.preferences.SkipPreferenceDialog;
 import de.danoeh.antennapod.ui.screen.playback.VariableSpeedDialog;
 
+import java.util.List;
 import java.util.Map;
 
 public class PlaybackPreferencesFragment extends AnimatedPreferenceFragment {
@@ -56,6 +60,13 @@ public class PlaybackPreferencesFragment extends AnimatedPreferenceFragment {
             findPreference(UserPreferences.PREF_UNPAUSE_ON_BLUETOOTH_RECONNECT).setVisible(false);
         }
         findPreference(UserPreferences.PREF_TRIM_STUB_ENABLED).setVisible(BuildConfig.DEBUG);
+
+        Preference debugSegmentsPref = findPreference("prefTrimDebugSegments");
+        debugSegmentsPref.setVisible(BuildConfig.DEBUG);
+        debugSegmentsPref.setOnPreferenceClickListener(pref -> {
+            showDebugSegmentsDialog();
+            return true;
+        });
 
         buildEnqueueLocationPreference();
     }
@@ -115,5 +126,27 @@ public class PlaybackPreferencesFragment extends AnimatedPreferenceFragment {
             }
         }
         pref.setEntries(entries);
+    }
+
+    private void showDebugSegmentsDialog() {
+        List<TrimClient.Segment> segs = PlaybackService.debugLastSegments;
+        String episode = PlaybackService.debugLastSegmentsEpisode;
+        StringBuilder sb = new StringBuilder();
+        if (episode != null) {
+            sb.append("Episode: ").append(episode).append("\n\n");
+        }
+        if (segs == null || segs.isEmpty()) {
+            sb.append("No segments received yet.");
+        } else {
+            sb.append(segs.size()).append(" segment(s):\n");
+            for (TrimClient.Segment s : segs) {
+                sb.append(String.format("  [%s] %.1f – %.1f s\n", s.type, s.start, s.end));
+            }
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("TrimBrain Segments")
+                .setMessage(sb.toString())
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 }

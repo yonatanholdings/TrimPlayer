@@ -140,7 +140,7 @@ public class EchoActivity extends AppCompatActivity {
         disposable = Observable.fromCallable(
                 () -> {
                     DBReader.StatisticsResult statisticsData = DBReader.getStatistics(
-                            false, EchoConfig.jan1(), Long.MAX_VALUE);
+                            false, EchoConfig.jan1(), EchoConfig.endTime());
                     Collections.sort(statisticsData.feedTime, (item1, item2) ->
                             Long.compare(item2.timePlayed, item1.timePlayed));
                     return statisticsData;

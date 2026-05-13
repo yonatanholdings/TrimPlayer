@@ -45,7 +45,7 @@ public class EchoSection extends Fragment {
         disposable = Observable.fromCallable(
             () -> {
                 DBReader.StatisticsResult statisticsResult = DBReader.getStatistics(
-                        false, EchoConfig.jan1(), Long.MAX_VALUE);
+                        false, EchoConfig.jan1(), EchoConfig.endTime());
                 long totalTime = 0;
                 for (StatisticsItem feedTime : statisticsResult.feedTime) {
                     totalTime += feedTime.timePlayed;

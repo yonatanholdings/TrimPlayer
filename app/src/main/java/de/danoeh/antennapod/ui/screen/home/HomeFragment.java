@@ -27,6 +27,7 @@ import de.danoeh.antennapod.ui.screen.home.sections.DownloadsSection;
 import de.danoeh.antennapod.ui.screen.home.sections.EchoSection;
 import de.danoeh.antennapod.ui.screen.home.sections.EpisodesSurpriseSection;
 import de.danoeh.antennapod.ui.screen.home.sections.InboxSection;
+import de.danoeh.antennapod.ui.screen.home.sections.MonthlyStatsSection;
 import de.danoeh.antennapod.ui.screen.home.sections.QueueSection;
 import de.danoeh.antennapod.ui.screen.home.sections.SubscriptionsSection;
 import de.danoeh.antennapod.ui.screen.home.settingsdialog.HomePreferences;
@@ -101,6 +102,8 @@ public class HomeFragment extends Fragment implements Toolbar.OnMenuItemClickLis
 
     private Fragment getSection(String tag) {
         switch (tag) {
+            case MonthlyStatsSection.TAG:
+                return new MonthlyStatsSection();
             case QueueSection.TAG:
                 return new QueueSection();
             case InboxSection.TAG:

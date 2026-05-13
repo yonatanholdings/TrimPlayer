@@ -149,7 +149,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
-                <action android:name="android.intent.action.SEND"/>
 
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
@@ -162,6 +161,61 @@
                 <data android:scheme="content"/>
                 <data android:scheme="http"/>
                 <data android:scheme="https"/>
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".activity.ShareImportActivity"
+            android:label="@string/import_export_pref"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.AntennaPod.Splash.Translucent"
+            android:exported="true">
+            <!-- Files shared from another app (e.g. Podcast Addict backup, OPML, TrimPlayer DB) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+
+                <data android:mimeType="text/xml"/>
+                <data android:mimeType="text/x-opml"/>
+                <data android:mimeType="application/xml"/>
+                <data android:mimeType="application/zip"/>
+                <data android:mimeType="application/x-sqlite3"/>
+                <data android:mimeType="application/vnd.sqlite3"/>
+                <data android:mimeType="application/octet-stream"/>
+            </intent-filter>
+
+            <!-- Opening a file from a file manager (VIEW) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+
+                <data android:mimeType="application/zip"/>
+                <data android:mimeType="application/x-sqlite3"/>
+                <data android:mimeType="application/vnd.sqlite3"/>
+                <data android:mimeType="application/octet-stream"/>
+            </intent-filter>
+
+            <!-- Match by extension when MIME is generic/unknown -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:host="*"/>
+
+                <data android:mimeType="*/*"/>
+                <data android:pathPattern=".*\\.backup"/>
+                <data android:pathPattern=".*\\..*\\.backup"/>
+                <data android:pathPattern=".*\\..*\\..*\\.backup"/>
+                <data android:pathPattern=".*\\.opml"/>
+                <data android:pathPattern=".*\\..*\\.opml"/>
             </intent-filter>
         </activity>
 
@@ -242,6 +296,43 @@
                 <data android:scheme="https" />
             </intent-filter>
 
+            <!-- Spotify show / episode links: resolved to the public RSS feed via SpotifyPodcastSearcher. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="open.spotify.com" />
+                <data android:pathPrefix="/show/" />
+                <data android:pathPrefix="/episode/" />
+            </intent-filter>
+
+            <!-- YouTube Music / YouTube podcast links: resolved via YouTubeMusicPodcastSearcher.
+                 Only podcast-specific paths are claimed; watch/youtu.be share via SEND text/plain. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="music.youtube.com" />
+                <data android:pathPrefix="/podcast/" />
+                <data android:pathPrefix="/playlist" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="www.youtube.com" />
+                <data android:pathPrefix="/podcast/" />
+            </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
 
@@ -276,10 +367,6 @@
                 android:resource="@xml/provider_paths"/>
         </provider>
 
-        <meta-data
-            tools:ignore="Deprecated"
-            android:name="com.google.android.actions"
-            android:resource="@xml/actions" />
     </application>
 
 </manifest>

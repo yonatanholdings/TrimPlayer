@@ -1,6 +1,7 @@
 package de.danoeh.antennapod.ui.screen.preferences;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -33,6 +34,8 @@ public class PreferenceActivity extends ToolbarActivity implements SearchPrefere
     private static final String FRAGMENT_TAG = "tag_preferences";
     public static final String OPEN_AUTO_DOWNLOAD_SETTINGS = "OpenAutoDownloadSettings";
     public static final String OPEN_PLAYBACK_SETTINGS = "OpenPlaybackSettings";
+    public static final String OPEN_IMPORT_EXPORT = "OpenImportExport";
+    public static final String IMPORT_URI = "ImportUri";
     private SettingsActivityBinding binding;
 
     @Override
@@ -58,6 +61,19 @@ public class PreferenceActivity extends ToolbarActivity implements SearchPrefere
         }
         if (intent.getBooleanExtra(OPEN_PLAYBACK_SETTINGS, false)) {
             openScreen(R.xml.preferences_playback);
+        }
+        if (intent.getBooleanExtra(OPEN_IMPORT_EXPORT, false)) {
+            Uri importUri = intent.getParcelableExtra(IMPORT_URI);
+            ImportExportPreferencesFragment fragment = new ImportExportPreferencesFragment();
+            if (importUri != null) {
+                Bundle args = new Bundle();
+                args.putParcelable(ImportExportPreferencesFragment.ARG_IMPORT_URI, importUri);
+                fragment.setArguments(args);
+            }
+            getSupportFragmentManager().beginTransaction()
+                    .replace(binding.settingsContainer.getId(), fragment)
+                    .addToBackStack(getString(getTitleOfPage(R.xml.preferences_import_export)))
+                    .commit();
         }
     }
 
