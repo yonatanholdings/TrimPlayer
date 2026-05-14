@@ -47,7 +47,7 @@
     <string name="home_continue_title">המשך האזנה</string>
     <string name="home_new_title">מה חדש</string>
     <string name="home_downloads_title">ניהול הורדות</string>
-    <string name="home_welcome_title">ברוך בואך לאנטנה־פּוֹד!</string>
+    <string name="home_welcome_title">ברוך בואך ל־TrimPlayer!</string>
     <string name="home_welcome_text">לא נרשמת עדיין לאף הסכת. יש לפתוח את התפריט ולהוסיף הסכת.</string>
     <string name="notification_permission_denied">דחית את בקשת ההרשאה.</string>
     <string name="configure_home">הגדרת מסך הבית</string>
@@ -248,10 +248,10 @@
     <string name="download_log_title_unknown">כותרת לא ידועה</string>
     <string name="download_type_feed">הזנה</string>
     <string name="download_type_media">קובץ מדיה</string>
-    <string name="no_feed_url_podcast_found_by_search">להסכת המוצע לא היה קישור RSS,‏ אנטנה־פּוֹד מצאה הסכת שכנראה יתאים</string>
+    <string name="no_feed_url_podcast_found_by_search">להסכת המוצע לא היה קישור RSS,‏ TrimPlayer מצאה הסכת שכנראה יתאים</string>
     <string name="authentication_notification_title">נדרש אימות</string>
     <string name="confirm_mobile_download_dialog_title">אישור הורדה דרך רשת סלולרית</string>
-    <string name="confirm_mobile_download_dialog_message">הורדה דרך חיבור סלולרי מושבתת בהגדרות. לאנטנה־פּוֹד יש אפשרות להוריד את הפרק הזה מאוחר יותר כשרשת אלחוטית תהיה זמינה.</string>
+    <string name="confirm_mobile_download_dialog_message">הורדה דרך חיבור סלולרי מושבתת בהגדרות. ל־TrimPlayer יש אפשרות להוריד את הפרק הזה מאוחר יותר כשרשת אלחוטית תהיה זמינה.</string>
     <string name="confirm_mobile_download_dialog_message_vpn">- החיבור הוא דרך VPN? יישום ה־VPN שלך מתחזה לרשת סלולרית (חיבור מדוד). כדי שהבעיה הזאת תתוקן, יש ליצור קשר עם מפתחי יישומון ה־VPN שלך.\n- החיבור הוא לא דרך VPN? נא לפתוח את הגדרות הרשת האלחוטית ב־Android ולשנות את סוג הרשת האלחוטית שלך לרשת לא מדודה.</string>
     <string name="confirm_mobile_download_dialog_download_later">להוריד אח״כ</string>
     <string name="confirm_mobile_download_dialog_allow_this_time">להוריד בכ״ז</string>
@@ -262,7 +262,7 @@
     <!--Mediaplayer messages-->
   <string name="playback_error_generic">לא ניתן לנגן את המדיה.\n\n- כדאי לנסות למחוק ולהוריד את הפרק מחדש.\n- לבדוק את החיבור שלך לרשת ולוודא שאין VPN או עמוד כניסה שחוסמים את הגישה.\n- לנסות ללחוץ ארוכות ולשתף את „כתובת מדיה” עם הדפדפן שלך כדי לראות אם אפשר לנגן את זה שם. אם לא, נא ליצור קשר עם יוצרי ההסכת.</string>
     <string name="no_media_playing_label">אין מדיה מתנגנת</string>
-    <string name="unknown_media_key">אנטנה־פּוֹד - מפתח מדיה לא ידוע: %1$d</string>
+    <string name="unknown_media_key">TrimPlayer - מפתח מדיה לא ידוע: %1$d</string>
     <string name="error_file_not_found">הקובץ לא נמצא</string>
     <string name="no_media_label">הפריט אינו מכיל קובץ מדיה</string>
     <!--Queue operations-->
@@ -342,7 +342,7 @@
     <string name="pref_auto_delete_sum">למחוק פרקים אוטומטית לאחר נגינתם או כאשר ההורדה האוטומטית צריכה עוד מקום</string>
     <string name="pref_auto_local_delete_title">מחיקה אוטומטית מהתיקיות המקומיות</string>
     <string name="pref_auto_local_delete_sum">לכלול את התיקיות המקומיות ביכולת המחיקה האוטומטית</string>
-    <string name="pref_auto_local_delete_dialog_body">נא לשים לב שעבור תיקיות מקומיות פעולה זו תסיר פרקים מאנטנה־פּוֹד ותמחק את קובצי המדיה שלהן מאחסון המכשיר שלך. אי אפשר להוריד אותם שום דרך אנטנה־פּוֹד. להפעיל מחיקה אוטומטית?</string>
+    <string name="pref_auto_local_delete_dialog_body">נא לשים לב שעבור תיקיות מקומיות פעולה זו תסיר פרקים מ־TrimPlayer ותמחק את קובצי המדיה שלהן מאחסון המכשיר שלך. אי אפשר להוריד אותם שום דרך TrimPlayer. להפעיל מחיקה אוטומטית?</string>
     <string name="pref_smart_mark_as_played_sum">סימון פרקים כנוגנו אפילו אם נשארו כמה שניות לנגינה</string>
     <string name="pref_smart_mark_as_played_title">סימון חכם כנוגנו</string>
     <string name="pref_skip_keeps_episodes_sum">להשאיר פרקים למרות שדילגת עליהם</string>
@@ -354,7 +354,7 @@
     <string name="downloads_pref">הורדות</string>
     <string name="downloads_pref_sum">הפרש בין עדכונים, חיבור סלולרי, הורדה אוטומטית, מחיקה אוטומטית</string>
     <string name="feed_refresh_title">רענון הסכתים</string>
-    <string name="feed_refresh_sum">נא לציין הפרש או מועד מסוים לחיפוש פרקים אוטומטית על ידי אנטנה־פּוֹד</string>
+    <string name="feed_refresh_sum">נא לציין הפרש או מועד מסוים לחיפוש פרקים אוטומטית על ידי TrimPlayer</string>
     <string name="feed_refresh_never">אף פעם לא</string>
     <string name="feed_every_hour">כל שעה</string>
     <string name="feed_every_2_hours">כל שעתיים</string>
@@ -438,7 +438,7 @@
     <string name="pref_skip_silence_title">דילוג על שקט בשמע</string>
     <string name="behavior">התנהגות</string>
     <string name="pref_default_page">עמוד ברירת מחדל</string>
-    <string name="pref_default_page_sum">המסך שייפתח בהפעלת אנטנה־פּוֹד</string>
+    <string name="pref_default_page_sum">המסך שייפתח בהפעלת TrimPlayer</string>
     <string name="pref_back_button_opens_drawer">כפתור חזרה פותח מגירה</string>
     <string name="pref_back_button_opens_drawer_summary">לחיצה על כפתור החזרה בעמוד ברירת המחדל פותח את מגירת הניווט</string>
     <string name="remember_last_page">זכירת העמוד האחרון</string>
@@ -467,7 +467,7 @@
     <string name="special_thanks">תודות מיוחדות</string>
     <string name="privacy_policy">מדיניות פרטיות</string>
     <string name="licenses">רישיונות</string>
-    <string name="licenses_summary">היישומון אנטנה־פּוֹד משתמש בתכניות נהדרות נוספות</string>
+    <string name="licenses_summary">היישומון TrimPlayer משתמש בתכניות נהדרות נוספות</string>
     <!--Search-->
   <string name="search_status_no_results">לא נמצאו תוצאות</string>
     <string name="type_to_search">נא להקליד שאילתה כדי לחפש</string>
@@ -490,8 +490,8 @@
     <string name="html_export_summary">הצגת המינויים שלך לחבר</string>
     <string name="opml_export_summary">העברת המינויים שלך ליישומון הסכתים אחר</string>
     <string name="opml_import_summary">ייבוא המינויים שלך מיישומון הסכתים אחר</string>
-    <string name="database_export_summary">העברת מינויים, פרקים להם האזנת ותור נגינה לאנטנה־פ‎וֹד במכשיר אחר</string>
-    <string name="database_import_summary">ייבוא מסד הנתונים של אנטנה־פ‎וֹד ממכשיר אחר</string>
+    <string name="database_export_summary">העברת מינויים, פרקים להם האזנת ותור נגינה ל־TrimPlayer במכשיר אחר</string>
+    <string name="database_import_summary">ייבוא מסד הנתונים של TrimPlayer ממכשיר אחר</string>
     <string name="opml_import_label">ייבוא OPML</string>
     <string name="opml_add_podcast_label">לייבא רשימת הסכתים (OPML)</string>
     <string name="opml_reader_error">אירעה שגיאה בקריאת הקובץ. נא לוודא שבחרת קובץ OPML בפועל ושהקובץ תקין.</string>
@@ -502,7 +502,7 @@
     <string name="html_export_label">ייצוא HTML</string>
     <string name="database_export_label">ייצוא מסד הנתונים</string>
     <string name="automatic_database_export_label">ייצוא אוטומטי של מסד הנתונים</string>
-    <string name="automatic_database_export_summary">יצירת גיבוי של מסד הנתונים של אנטנה־פּוֹד כל שלושה ימים. לשמור רק את חמשת הגיבויים העדכניים ביותר.</string>
+    <string name="automatic_database_export_summary">יצירת גיבוי של מסד הנתונים של TrimPlayer כל שלושה ימים. לשמור רק את חמשת הגיבויים העדכניים ביותר.</string>
     <string name="automatic_database_export_error">שגיאה במהלך גיבוי אוטומטי של מסד נתונים</string>
     <string name="database_import_label">ייבוא מסד נתונים</string>
     <string name="database_import_warning">ייבוא מסד נתונים יחליף את כל המינויים הנוכחיים שלך לרבות היסטוריית הנגינה. עליך תחילה לייצא את מסד הנתונים הנוכחי שלך כגיבוי. להמשיך בהחלפה?</string>
@@ -511,7 +511,7 @@
     <string name="export_success_title">הייצוא הצליח</string>
     <string name="opml_import_ask_read_permission">נדרשת גישה לאחסון חיצוני כדי לקרוא את קובץ ה־OPML</string>
     <string name="successful_import_label">הייבוא הצליח</string>
-    <string name="import_ok">נא ללחוץ על אישור כדי להפעיל את אנטנה־פּוֹד מחדש</string>
+    <string name="import_ok">נא ללחוץ על אישור כדי להפעיל את TrimPlayer מחדש</string>
     <string name="import_no_downgrade">מסד נתונים זה ייוצא עם גרסה עדכנית יותר של TrimPlayer. ההתקנה הנוכחית שלך לא יודעת עדיין איך לטפל בקובץ הזה.</string>
     <string name="favorites_export_label">ייצוא מועדפים</string>
     <string name="favorites_export_summary">ייצור המועדפים השמורים לקובץ</string>
@@ -555,8 +555,8 @@
   <string name="synchronization_choose_title">בחירת ספק סנכרון</string>
     <string name="synchronization_summary_unchoosen">אפשר לבחור בין מגוון ספקית לסנכרון המינויים ומצב נגינ הפרקים שלך עם</string>
     <string name="dialog_choose_sync_service_title">בחירת ספק סנכרון</string>
-    <string name="gpodnet_description">Gpodder.net הוא שירות סנכרון הסכתים בקוד פתוח שניתן להתקין על שרת משלך. ל־Gpodder.net אין לו קשר למיזם אנטנה־פּוֹד.</string>
-    <string name="synchronization_summary_nextcloud">Gpodder Sync הוא יישומון Nextcloud בקוד פתוח שניתן להתקין בקלות בשרת שלך. Gpodder Sync אינו תלוי במיזם אנטנה־פּוֹד.</string>
+    <string name="gpodnet_description">Gpodder.net הוא שירות סנכרון הסכתים בקוד פתוח שניתן להתקין על שרת משלך. ל־Gpodder.net אין לו קשר למיזם TrimPlayer.</string>
+    <string name="synchronization_summary_nextcloud">Gpodder Sync הוא יישומון Nextcloud בקוד פתוח שניתן להתקין בקלות בשרת שלך. Gpodder Sync אינו תלוי במיזם TrimPlayer.</string>
     <string name="synchronization_host_explanation">אפשר לבחור שרת משלך להסתנכרן מולו. כשזיהית את שרת הסנכרון המועדף עליך, נא למלא את הכתובת שלו כאן.</string>
     <string name="synchronization_host_label">כתובת שרת</string>
     <string name="proceed_to_login_butLabel">המשך לכניסה</string>
@@ -569,10 +569,10 @@
     <string name="synchronization_login_butLabel">כניסה</string>
     <string name="synchronization_selectDevice_explanation">נא לבחור את המכשיר שיצרת בשרת הסנכרון או ליצור אחד חדש.</string>
     <string name="gpodnetauth_device_name">שם המכשיר</string>
-    <string name="gpodnetauth_device_name_default">אנטנה־פּוֹד על %1$s</string>
+    <string name="gpodnetauth_device_name_default">TrimPlayer על %1$s</string>
     <string name="gpodnetauth_existing_devices">מכשירים קיימים</string>
     <string name="gpodnetauth_create_device">יצירת מכשיר</string>
-    <string name="gpodnetauth_finish_descr">מזל טוב! חשבון ה־gpodder.net שלך מקושר כעת עם המכשיר שלך. מעתה כל המינויים שלך יסונכרנו אוטומטית על ידי אנטנה־פּוֹד מהמכשיר שלך לחשבון ה־gpodder.net שלך.</string>
+    <string name="gpodnetauth_finish_descr">מזל טוב! חשבון ה־gpodder.net שלך מקושר כעת עם המכשיר שלך. מעתה כל המינויים שלך יסונכרנו אוטומטית על ידי TrimPlayer מהמכשיר שלך לחשבון ה־gpodder.net שלך.</string>
     <string name="pref_gpodnet_setlogin_information_title">שינוי פרטי הכניסה</string>
     <string name="pref_gpodnet_setlogin_information_sum">שינוי פרטי הכניסה לחשבון ה־gpodder.net שלך.</string>
     <string name="synchronization_sync_changes_title">לסנכרן עכשיו</string>
@@ -589,7 +589,7 @@
     <string name="gpodnetsync_username_characters_error">שמות המשתמשים יכולים להכיל אותיות, ספרות, מינוסים וקווים תחתיים בלבד.</string>
     <!--Directory chooser-->
   <string name="choose_data_directory">בחירת תיקיית נתונים</string>
-    <string name="choose_data_directory_message">נא לבחור את בסיס תיקיית הנתונים שלך. אנטנה־פּוֹד ייצור את תת־התיקיות בהתאמה.</string>
+    <string name="choose_data_directory_message">נא לבחור את בסיס תיקיית הנתונים שלך. TrimPlayer ייצור את תת־התיקיות בהתאמה.</string>
     <string name="choose_data_directory_available_space">%1$s מתוך %2$s פנויים</string>
     <string name="pref_pausePlaybackForFocusLoss_sum">השהיית הניגון במקום הנמכת עצמת השמע כאשר יישומון אחר מעוניין לנגן צלילים</string>
     <string name="pref_pausePlaybackForFocusLoss_title">השהיה במהלך הפרעות</string>
@@ -597,8 +597,8 @@
   <string name="rating_tagline">מאז %1$s, ניגנת %2$s%3$d%4$s שעות של הסכתים.</string>
     <string name="rating_contribute_label">מעניין אותך להצטרף? בין אם למטרות תרגום, תמיכה, עיצוב או פיתוח, נשמח לקבל את עזרתך!</string>
     <string name="rating_contribute_button">חשיפת הדרכים להתנדבות</string>
-    <string name="rating_volunteers_label">אנטנה־פּוֹד מפותחת על ידי מתנדבים בזמנם הפנוי. אפשר לשתף את הערכתך לעבודתם על ידי דירוג חיובי בהתאם.</string>
-    <string name="rating_rate">דירוג אנטנה־פּוֹד</string>
+    <string name="rating_volunteers_label">TrimPlayer מפותחת על ידי מתנדבים בזמנם הפנוי. אפשר לשתף את הערכתך לעבודתם על ידי דירוג חיובי בהתאם.</string>
+    <string name="rating_rate">דירוג TrimPlayer</string>
     <string name="rating_later">אחר כך</string>
     <!--Online feed view-->
   <string name="subscribe_label">הרשמה</string>
@@ -676,7 +676,7 @@
     <string name="local_folder">תיקייה מקומית</string>
     <string name="reconnect_local_folder">חיבור מחדש לתיקייה מקומית</string>
     <string name="reconnect_local_folder_warning">במקרה של דחיית הרשה, ניתן להשתמש בזה כדי לחבר את אותה התיקייה בדיוק מחדש. אין לבחור בתיקייה אחרת.</string>
-    <string name="local_feed_description">ההסכת הווירטואלי הזה נוצר על ידי הוספת תיקייה לאנטנה־פּוֹד.</string>
+    <string name="local_feed_description">ההסכת הווירטואלי הזה נוצר על ידי הוספת תיקייה ל־TrimPlayer.</string>
     <string name="unable_to_start_system_file_manager">לא ניתן להפעיל את מנהל הקבצים של המערכת</string>
     <string name="filter">מסנן</string>
     <string name="hide_is_favorite_label">עם סימון מועדף</string>
@@ -896,11 +896,11 @@
         <item quantity="other">%d פרקים הוסרו מהתור.</item>
     </plurals>
     <string name="transcript_follow_audio_label">מעקב אחר השמע</string>
-    <string name="visit_social_interact_confirm_dialog_title">בחרת לצאת מאנטנה־פּוֹד</string>
+    <string name="visit_social_interact_confirm_dialog_title">בחרת לצאת מ־TrimPlayer</string>
     <string name="visit_social_interact_confirm_dialog_message">נא לוודא שהאתר„%1$s” אמין מבחינתך.</string>
     <string name="reset_playback_position_label">איפוס נקודת נגינה</string>
     <string name="no_items_selected_message">לא נבחרו פריטים</string>
-    <string name="delete_local_feed_confirmation_dialog_message">מחיקה מסירה את הפרק מאנטנה־פּוֹד ומוחקת את קובץ המדיה מאחסון המכשיר שלך. אי אפשר להוריד אותו שוב דרך אנטנה־פּוֹד.</string>
+    <string name="delete_local_feed_confirmation_dialog_message">מחיקה מסירה את הפרק מ־TrimPlayer ומוחקת את קובץ המדיה מאחסון המכשיר שלך. אי אפשר להוריד אותו שוב דרך TrimPlayer.</string>
     <plurals name="move_to_top_message">
         <item quantity="one">פרק עלה להתחלה.</item>
         <item quantity="two">שני פרקים עלו להתחלה.</item>

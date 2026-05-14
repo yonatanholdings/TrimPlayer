@@ -41,7 +41,7 @@
     <string name="home_continue_title">শোনা চালিয়ে যান</string>
     <string name="home_new_title">দেখুন নতুন কি আছে</string>
     <string name="home_downloads_title">ডাউনলোড পরিচালনা করুন</string>
-    <string name="home_welcome_title">অ্যান্টেনাপডে স্বাগতম!</string>
+    <string name="home_welcome_title">TrimPlayer-এ স্বাগতম!</string>
     <string name="home_welcome_text">আপনি এখনও কোনো পডকাস্ট সদস্যতা নেননি. পডকাস্ট যোগ করতে পাশের মেনু খুলুন।</string>
     <string name="configure_home">হোম স্ক্রীন কনফিগার করুন</string>
     <!--Main activity-->

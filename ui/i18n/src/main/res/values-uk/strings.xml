@@ -825,7 +825,7 @@
     <string name="echo_thanks_we_are_glad_old">...за те, що ви з нами цього року!\n\nСвій перший випуск ви прослухали з нами у %1$s. Для нас це честь бути корисними для вас відтоді.</string>
     <string name="echo_thanks_now_favorite">А тепер давайте подивимося на ваші улюблені подкасти…</string>
     <string name="echo_share_heading">Мої улюблені подкасти</string>
-    <string name="echo_share">Мій %d рік у подкастах. #АнтенаПоДехо</string>
+    <string name="echo_share">Мій %d рік у подкастах. #TrimPlayerEcho</string>
     <string name="delete_tag_confirmation">Підтвердьте, що ви хочете видалити тег \"%1$s\".</string>
     <string name="pref_downloads_button_action_sum">Відображати кнопку відтворення замість кнопки видалення на екрані завантажень</string>
     <string name="add_feed_label_short">Додати</string>

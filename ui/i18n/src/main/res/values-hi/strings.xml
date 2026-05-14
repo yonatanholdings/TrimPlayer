@@ -47,7 +47,7 @@
     <string name="home_continue_title">और सुनें</string>
     <string name="home_new_title">क्या नया है</string>
     <string name="home_downloads_title">डाउनलोड मैनेज करें</string>
-    <string name="home_welcome_title">एंटीनापॉड में वेलकम!</string>
+    <string name="home_welcome_title">TrimPlayer में वेलकम!</string>
     <string name="home_welcome_text">आपने अभी तक किसी पॉडकास्ट का सब्सक्रिप्शन नहीं लिया हैं। पॉडकास्ट जोड़ने के लिए साइड मेन्यू खोलें।</string>
     <string name="notification_permission_denied">आपने परमिशन नहीं दिया।</string>
     <string name="configure_home">होमस्क्रीन बदलें</string>
@@ -230,10 +230,10 @@
     <string name="download_log_title_unknown">अज्ञात शीर्षक</string>
     <string name="download_type_feed">फीड</string>
     <string name="download_type_media">मीडिया फाइल</string>
-    <string name="no_feed_url_podcast_found_by_search">दिए गए पॉडकास्ट के पास आरएसएस लिंक नहीं है, एंटीनापॉड को एक पॉडकास्ट मिला है जो मेल खाता है</string>
+    <string name="no_feed_url_podcast_found_by_search">दिए गए पॉडकास्ट के पास आरएसएस लिंक नहीं है, TrimPlayer को एक पॉडकास्ट मिला है जो मेल खाता है</string>
     <string name="authentication_notification_title">सत्यापन ज़रूरी</string>
     <string name="confirm_mobile_download_dialog_title">मोबाइल डाउनलोड की पुष्टि करें</string>
-    <string name="confirm_mobile_download_dialog_message">सेटिंग्स में मोबाइल डेटा कनेक्शन पर डाउनलोड करना अक्षम है। वाई-फाई उपलब्ध होने पर एंटीनापॉड बाद में एपिसोड को स्वचालित रूप से डाउनलोड कर सकता है।</string>
+    <string name="confirm_mobile_download_dialog_message">सेटिंग्स में मोबाइल डेटा कनेक्शन पर डाउनलोड करना अक्षम है। वाई-फाई उपलब्ध होने पर TrimPlayer बाद में एपिसोड को स्वचालित रूप से डाउनलोड कर सकता है।</string>
     <string name="confirm_mobile_download_dialog_message_vpn">आपका वीपीएन ऐप एक मोबाइल नेटवर्क (मीटर्ड कनेक्शन) होने का दिखावा करता है। सेटिंग्स में मोबाइल डेटा कनेक्शन पर डाउनलोड करना अक्षम है। यदि आप चाहते हैं कि यह समस्या ठीक हो जाए, तो अपने वीपीएन ऐप के निर्माताओं से संपर्क करें।</string>
     <string name="confirm_mobile_download_dialog_download_later">बाद में डाउनलोड करें</string>
     <string name="confirm_mobile_download_dialog_allow_this_time">फिर भी डाउनलोड करें</string>
@@ -244,7 +244,7 @@
     <!--Mediaplayer messages-->
   <string name="playback_error_generic"><![CDATA[मीडिया फ़ाइल प्ले नहीं की जा सकी।\n\n- कोशिश करें एपिसोड को हटा दें और फिर से डाउनलोड करें।\n- अपने नेटवर्क कनेक्शन की जाँच करें, और सुनिश्चित करें कि कोई VPN या लॉगिन पेज एक्सेस को ब्लॉक नहीं कर रहा है।\n- \"मीडिया पता\" को लंबे समय तक दबाकर और अपने वेब ब्राउज़र के साथ साझा करने का प्रयास करें, देखें कि क्या यहाँ चलाया जा सकता है। यदि नहीं, पॉडकास्ट निर्माताओं से संपर्क करें।]]></string>
     <string name="no_media_playing_label">कोई मीडिया नहीं चल रहा</string>
-    <string name="unknown_media_key">एंटीनापॉड - अनजान मीडिया चाबी: %1$d</string>
+    <string name="unknown_media_key">TrimPlayer - अनजान मीडिया चाबी: %1$d</string>
     <string name="error_file_not_found">फाइल नहीं मिला</string>
     <string name="no_media_label">चीज़ में मीडिया फाइल नहीं है</string>
     <!--Queue operations-->
@@ -328,7 +328,7 @@
     <string name="downloads_pref">डाउनलोड</string>
     <string name="downloads_pref_sum">अपडेट अंतराल, मोबाइल डेटा, स्वचालित डाउनलोड, स्वचालित मिटाना</string>
     <string name="feed_refresh_title">पॉडकास्ट ताज़ा करें</string>
-    <string name="feed_refresh_sum">एक अंतराल निर्धारित करें जिसमें एंटीनापोड स्वचालित रूप से नए एपिसोड की खोज करता है</string>
+    <string name="feed_refresh_sum">एक अंतराल निर्धारित करें जिसमें TrimPlayer स्वचालित रूप से नए एपिसोड की खोज करता है</string>
     <string name="feed_refresh_never">कभी नहीं</string>
     <string name="feed_every_hour">हर घंटे</string>
     <string name="feed_every_2_hours">हर 2 घंटे</string>
@@ -424,15 +424,15 @@
     <string name="pref_new_episodes_action_sum">नए एपिसोड के लिए कार्रवाई</string>
     <!--About screen-->
   <string name="about_pref">हमारे बारे में</string>
-    <string name="antennapod_version">एंटीनापॉड संस्करण</string>
+    <string name="antennapod_version">TrimPlayer संस्करण</string>
     <string name="contributors">मदद करनेवाले</string>
-    <string name="contributors_summary">हर कोई एंटीनापॉड बेहतर करने में मदद कर सकता है: कोड करके, अनुवाद करके, या फॉरम पे दूसरे लोगो की मदद करके।</string>
+    <string name="contributors_summary">हर कोई TrimPlayer बेहतर करने में मदद कर सकता है: कोड करके, अनुवाद करके, या फॉरम पे दूसरे लोगो की मदद करके।</string>
     <string name="developers">कोडर</string>
     <string name="translators">अनुवादक</string>
     <string name="special_thanks">खास शुक्रिया</string>
     <string name="privacy_policy">निजता नीति</string>
     <string name="licenses">लाइसेंस</string>
-    <string name="licenses_summary">एंटीनापॉड कई दूसरे मस्त सॉफ्टवेयर इस्तेमाल करता है</string>
+    <string name="licenses_summary">TrimPlayer कई दूसरे मस्त सॉफ्टवेयर इस्तेमाल करता है</string>
     <!--Search-->
   <string name="search_status_no_results">कोई नतीजा नहीं मिला</string>
     <string name="type_to_search">खोजने के लिए सवाल लिखें</string>
@@ -456,7 +456,7 @@
     <string name="opml_export_summary">अपनी सदस्यताओं को दूसरे पॉडकास्ट ऐप में स्थानांतरित करें</string>
     <string name="opml_import_summary">अपनी सदस्यताओं को दूसरे पॉडकास्ट ऐप से आयात करें</string>
     <string name="database_export_summary">सदस्यताओं, सुने गए एपिसोड और कतार को दूसरे उपकरण पर एंटेनापॉड में स्थानांतरित करें</string>
-    <string name="database_import_summary">दूसरे डिवाइस से एंटीनापॉड डाटाबेस आयात करें</string>
+    <string name="database_import_summary">दूसरे डिवाइस से TrimPlayer डाटाबेस आयात करें</string>
     <string name="opml_import_label">ओपीएमएल आयात</string>
     <string name="opml_add_podcast_label">पॉडकास्ट लिस्ट (ओपीएमएल) आयात करें</string>
     <string name="opml_import_error_no_file">कोई फाइल नहीं चुना गया।</string>
@@ -472,8 +472,8 @@
     <string name="export_success_title">निर्यात सफल</string>
     <string name="opml_import_ask_read_permission">ओपीएमएल फाइल पढ़ने के लिए बाहरी स्टोरेज तक का एक्सेस चाहिए</string>
     <string name="successful_import_label">आयात सफल</string>
-    <string name="import_ok">एंटीनापॉड बंद करके वापस चालू करने के लिए \'ठीक है\' दबाएं</string>
-    <string name="import_no_downgrade">इस डाटाबेस को एंटीनापॉड के एक नए संस्करण ने निर्यात किया था। आपका संस्करण इस फाइल को संभालना नहीं जानता।</string>
+    <string name="import_ok">TrimPlayer बंद करके वापस चालू करने के लिए \'ठीक है\' दबाएं</string>
+    <string name="import_no_downgrade">इस डाटाबेस को TrimPlayer के एक नए संस्करण ने निर्यात किया था। आपका संस्करण इस फाइल को संभालना नहीं जानता।</string>
     <string name="favorites_export_label">मनपसंद का निर्यात</string>
     <string name="favorites_export_summary">सेव किए गए मनपसंद को फाइल पे निर्यात करें</string>
     <!--Sleep timer-->
@@ -496,11 +496,11 @@
     <string name="synchronization_summary_unchoosen">आप अपनी सदस्यताओं और एपिसोड प्ले स्थिति को समकालीन करने के लिए कई प्रदाताओं में से चुन सकते हैं</string>
     <string name="dialog_choose_sync_service_title">सिंक प्रदाता चुनें</string>
     <string name="gpodnet_description">Gpodder.net एक आज़ाद कोड पॉडकास्ट सिंक सेवा है जिसे अपने सर्वर पे इंस्टॉल किया जा सकता है। Gpodder.net और AnteenaPod प्रोजेक्ट के बीच कोई रिश्ता नहीं है।</string>
-    <string name="synchronization_summary_nextcloud">जीपॉडरसिंक एक आज़ाद कोड नेक्स्टक्लाउट ऐप जो किसी सर्वर पे इंस्टॉल किया जा सकता है। उस ऐप और एंटीनापॉड में कोई रिश्ता नहीं है।</string>
+    <string name="synchronization_summary_nextcloud">जीपॉडरसिंक एक आज़ाद कोड नेक्स्टक्लाउट ऐप जो किसी सर्वर पे इंस्टॉल किया जा सकता है। उस ऐप और TrimPlayer में कोई रिश्ता नहीं है।</string>
     <string name="synchronization_host_explanation">अपने पसंद के सर्वर के साथ सिंक करें। जब मनपसंद सिंक सर्वर मिल जाए, तब उसका पता यहा डालें।</string>
     <string name="synchronization_host_label">सर्वर पता</string>
     <string name="proceed_to_login_butLabel">लॉगइन करने के लिए जारी रखें</string>
-    <string name="synchronization_nextcloud_authenticate_browser">खुले हुए वेब ब्राउज़र से अनुमति दें और एंटीनापॉड पे वापस आएं।</string>
+    <string name="synchronization_nextcloud_authenticate_browser">खुले हुए वेब ब्राउज़र से अनुमति दें और TrimPlayer पे वापस आएं।</string>
     <string name="gpodnetauth_login_butLabel">लॉगइन करें</string>
     <string name="synchronization_credentials_explanation">सिंक सर्वर के अपने खाते का प्रमाण दें।</string>
     <string name="gpodnetauth_encryption_warning">पासवर्ड और डाटा पे एन्क्रिप्शन नहीं है!</string>
@@ -509,7 +509,7 @@
     <string name="synchronization_login_butLabel">लॉगइन करें</string>
     <string name="synchronization_selectDevice_explanation">आपने सिंक सर्वर पे जो डिवाइस बनाया था वो चुनें या एक नया बनाएं।</string>
     <string name="gpodnetauth_device_name">डिवाइस नाम</string>
-    <string name="gpodnetauth_device_name_default">एंटीनापॉड %1$s पे</string>
+    <string name="gpodnetauth_device_name_default">TrimPlayer %1$s पे</string>
     <string name="gpodnetauth_existing_devices">मौजूदा डिवाइस</string>
     <string name="gpodnetauth_create_device">डिवाइस बनाएं</string>
     <string name="gpodnetauth_finish_descr">बधाई हो! आपका gpodder.net खाता अब आपके उपकरण के साथ लिंक किया गया है। अब एंटेना पॉड आपकी डिवाइस पर सदस्यताओं को स्वचालित रूप से आपके gpodder.net खाते के साथ सिंक करेगा।</string>
@@ -585,7 +585,7 @@
     <string name="local_folder">लोकल फोल्डर</string>
     <string name="reconnect_local_folder">लोकल फोल्डर से वापस जुड़ें</string>
     <string name="reconnect_local_folder_warning">परमिशन ना मिलने पे, इसका इस्तेमाल उसी फोल्डर से वापस जुड़ने के लिए किया जा सकता है। दूसरा फोल्डर ना चुनें।</string>
-    <string name="local_feed_description">ये वर्चुअल पॉडकास्ट एंटीनापॉड में एक फोल्डर जोड़कर बनाया गया था।</string>
+    <string name="local_feed_description">ये वर्चुअल पॉडकास्ट TrimPlayer में एक फोल्डर जोड़कर बनाया गया था।</string>
     <string name="unable_to_start_system_file_manager">सिस्टम फाइल मैनेजर ऑन नहीं कर सके</string>
     <string name="filter">फिल्टर करें</string>
     <string name="hide_is_favorite_label">मनपसंद है</string>
