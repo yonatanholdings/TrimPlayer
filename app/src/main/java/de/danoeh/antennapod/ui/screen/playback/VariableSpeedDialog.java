@@ -53,6 +53,16 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     private CheckBox skipOutrosCheckbox;
     private Disposable disposable;
 
+    /**
+     * Snapshot of the currently-playing media, resolved on the IO thread by
+     * {@link #loadMediaInfo()}. The seek-bar and skip-silence listeners must
+     * NEVER call {@code controller.getMedia()} directly — its first call
+     * synchronously opens the DB and crashes the app via StrictMode when
+     * triggered from the main thread (e.g. the global Settings → Playback
+     * speed entry where the dialog opens with no media yet loaded).
+     */
+    private volatile de.danoeh.antennapod.model.playback.Playable cachedMedia;
+
     public VariableSpeedDialog() {
         DecimalFormatSymbols format = new DecimalFormatSymbols(Locale.US);
         format.setDecimalSeparator('.');
@@ -90,17 +100,21 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         }
         disposable = Observable.fromCallable(() -> {
             if (controller == null) {
-                return null;
+                return java.util.Optional.<de.danoeh.antennapod.model.playback.Playable>empty();
             }
-            // Make sure the media is loaded in case getCurrentPlaybackSpeedMultiplier has to access it
-            return controller.getMedia();
+            // Force the IO-side DB load here (off the main thread) so the seek-bar
+            // and silence listeners can use the cached snapshot without re-fetching.
+            de.danoeh.antennapod.model.playback.Playable p = controller.getMedia();
+            return p == null ? java.util.Optional.<de.danoeh.antennapod.model.playback.Playable>empty()
+                             : java.util.Optional.of(p);
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(pair -> {
+                .subscribe(maybe -> {
                     if (controller == null) {
                         return;
                     }
+                    cachedMedia = maybe.orElse(null);
                     updateSpeed(new SpeedChangedEvent(controller.getCurrentPlaybackSpeedMultiplier()));
                     updateSkipSilence(controller.getCurrentPlaybackSkipSilence());
                     updateTrimSkipCheckboxes();
@@ -132,12 +146,18 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         View root = View.inflate(getContext(), R.layout.speed_select_dialog, null);
         speedSeekBar = root.findViewById(R.id.speed_seek_bar);
         speedSeekBar.setProgressChangedListener(multiplier -> {
-            if (controller != null && controller.getMedia() instanceof FeedMedia) {
-                FeedMedia media = (FeedMedia) controller.getMedia();
-                Feed feed = media.getItem().getFeed();
+            // Use the cached snapshot resolved by loadMediaInfo on the IO thread;
+            // calling controller.getMedia() here would trigger a main-thread DB
+            // open and crash via StrictMode (RuntimeException: I/O on main thread).
+            de.danoeh.antennapod.model.playback.Playable media = cachedMedia;
+            if (media instanceof FeedMedia) {
+                FeedMedia feedMedia = (FeedMedia) media;
+                Feed feed = feedMedia.getItem() != null ? feedMedia.getItem().getFeed() : null;
                 if (feed != null && feed.getPreferences() != null) {
                     feed.getPreferences().setFeedPlaybackSpeed(multiplier);
                     DBWriter.setFeedPreferences(feed.getPreferences());
+                } else {
+                    UserPreferences.setPlaybackSpeed(multiplier);
                 }
             } else {
                 UserPreferences.setPlaybackSpeed(multiplier);
@@ -169,10 +189,13 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         // to UserPreferences, which silently flipped silence globally and broke
         // inheritance for other podcasts the user had not configured.
         skipSilenceUserChangedListener = (buttonView, isChecked) -> {
+            // Use cachedMedia, not controller.getMedia(), for the same StrictMode
+            // reason as the speed seek-bar listener above.
             boolean wroteToFeed = false;
-            if (controller != null && controller.getMedia() instanceof FeedMedia) {
-                FeedMedia media = (FeedMedia) controller.getMedia();
-                Feed feed = media.getItem() != null ? media.getItem().getFeed() : null;
+            de.danoeh.antennapod.model.playback.Playable media = cachedMedia;
+            if (media instanceof FeedMedia) {
+                FeedMedia feedMedia = (FeedMedia) media;
+                Feed feed = feedMedia.getItem() != null ? feedMedia.getItem().getFeed() : null;
                 if (feed != null && feed.getPreferences() != null) {
                     feed.getPreferences().setFeedSkipSilence(isChecked
                             ? FeedPreferences.SkipSilence.AGGRESSIVE
@@ -224,11 +247,14 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     }
 
     private Feed currentFeed() {
-        if (controller == null) return null;
-        if (!(controller.getMedia() instanceof FeedMedia)) return null;
-        FeedMedia media = (FeedMedia) controller.getMedia();
-        if (media.getItem() == null) return null;
-        return media.getItem().getFeed();
+        // Use cachedMedia (resolved on the IO thread by loadMediaInfo) — calling
+        // controller.getMedia() from main-thread UI callbacks would trigger a
+        // synchronous DB open and crash via StrictMode.
+        de.danoeh.antennapod.model.playback.Playable media = cachedMedia;
+        if (!(media instanceof FeedMedia)) return null;
+        FeedMedia feedMedia = (FeedMedia) media;
+        if (feedMedia.getItem() == null) return null;
+        return feedMedia.getItem().getFeed();
     }
 
     private void writeTrimSkipPref(String type, boolean enabled) {
@@ -286,14 +312,20 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                 return true;
             });
             holder.chip.setOnClickListener(v -> {
-                if (controller != null && controller.getMedia() instanceof FeedMedia) {
-                    FeedMedia media = (FeedMedia) controller.getMedia();
-                    Feed feed = media.getItem().getFeed();
+                // Use cachedMedia, not controller.getMedia(), to avoid main-thread
+                // DB I/O when nothing is playing yet (Settings → Playback speed).
+                de.danoeh.antennapod.model.playback.Playable cm = cachedMedia;
+                boolean wroteToFeed = false;
+                if (cm instanceof FeedMedia) {
+                    FeedMedia media = (FeedMedia) cm;
+                    Feed feed = media.getItem() != null ? media.getItem().getFeed() : null;
                     if (feed != null && feed.getPreferences() != null) {
                         feed.getPreferences().setFeedPlaybackSpeed(speed);
                         DBWriter.setFeedPreferences(feed.getPreferences());
+                        wroteToFeed = true;
                     }
-                } else {
+                }
+                if (!wroteToFeed) {
                     UserPreferences.setPlaybackSpeed(speed);
                 }
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
