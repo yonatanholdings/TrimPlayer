@@ -58,6 +58,15 @@ public class PodcastAddictImporter {
          *  custom speed for this feed (inherit our global). Stored as float so
          *  e.g. 1.25 maps directly to FeedPreferences.feedPlaybackSpeed. */
         public float playbackSpeed;
+        /** Per-podcast intro skip duration in seconds (PA's pref_podcastOffset_<id>).
+         *  Maps directly to FeedPreferences.feedSkipIntro. 0 means no override. */
+        public int skipIntroSec;
+        /** Per-podcast outro skip duration in seconds (PA's pref_podcastOutroOffset_<id>).
+         *  Maps directly to FeedPreferences.feedSkipEnding. 0 means no override. */
+        public int skipOutroSec;
+        /** Category string from PA's podcasts.category column. Split on "/" into
+         *  TrimPlayer tags. null/empty = no tags. */
+        public String category;
     }
 
     /**
@@ -80,6 +89,24 @@ public class PodcastAddictImporter {
         public List<ConflictEpisode> conflicts = new ArrayList<>();
     }
 
+    /** Per-podcast preferences extracted from PA's SharedPreferences XML. */
+    private static class PaPrefs {
+        /** Resolved playback speed per PA podcast id; key -1 holds the PA global. */
+        Map<Long, Float> effectiveSpeedByPodcastId;
+        /** PA pref_podcastOffset_<id> → seconds to skip at start. */
+        Map<Long, Integer> skipIntroSecByPodcastId;
+        /** PA pref_podcastOutroOffset_<id> → seconds to skip at end. */
+        Map<Long, Integer> skipOutroSecByPodcastId;
+
+        static PaPrefs empty() {
+            PaPrefs p = new PaPrefs();
+            p.effectiveSpeedByPodcastId = Collections.emptyMap();
+            p.skipIntroSecByPodcastId = Collections.emptyMap();
+            p.skipOutroSecByPodcastId = Collections.emptyMap();
+            return p;
+        }
+    }
+
     /**
      * Parse the backup file and build a preview of what will be imported,
      * including conflict detection against the existing AntennaPod library.
@@ -90,9 +117,8 @@ public class PodcastAddictImporter {
         File prefsFile = new File(context.getCacheDir(), "pa_import_prefs.xml");
         extractFiles(backupStream, dbFile, prefsFile);
         try {
-            Map<Long, Float> speedByPodcastId = prefsFile.exists()
-                    ? parseSpeedSettings(prefsFile) : Collections.emptyMap();
-            return buildPreview(context, dbFile, speedByPodcastId);
+            PaPrefs paPrefs = prefsFile.exists() ? parsePrefs(prefsFile) : PaPrefs.empty();
+            return buildPreview(context, dbFile, paPrefs);
         } finally {
             dbFile.delete();
             prefsFile.delete();
@@ -112,10 +138,45 @@ public class PodcastAddictImporter {
             Feed feed = new Feed(paFeed.url, null, paFeed.title);
             feed.setItems(Collections.emptyList());
             Feed persisted = FeedDatabaseWriter.updateFeed(context, feed, false);
-            if (paFeed.playbackSpeed > 0.0f && persisted != null
-                    && persisted.getPreferences() != null) {
-                de.danoeh.antennapod.model.feed.FeedPreferences prefs = persisted.getPreferences();
+            if (persisted == null || persisted.getPreferences() == null) continue;
+
+            de.danoeh.antennapod.model.feed.FeedPreferences prefs = persisted.getPreferences();
+            boolean dirty = false;
+
+            if (paFeed.playbackSpeed > 0.0f) {
                 prefs.setFeedPlaybackSpeed(paFeed.playbackSpeed);
+                dirty = true;
+            }
+            if (paFeed.skipIntroSec > 0) {
+                prefs.setFeedSkipIntro(paFeed.skipIntroSec);
+                dirty = true;
+            }
+            if (paFeed.skipOutroSec > 0) {
+                prefs.setFeedSkipEnding(paFeed.skipOutroSec);
+                dirty = true;
+            }
+            // PA's category column is a slash-separated list (e.g.
+            // "Technology/Education/How To"). Split into tags so PA users keep
+            // their organizational grouping. Skip empty / "Virtual podcast" /
+            // placeholder values.
+            if (paFeed.category != null && !paFeed.category.trim().isEmpty()
+                    && !"Virtual podcast".equalsIgnoreCase(paFeed.category.trim())) {
+                java.util.Set<String> tags = new java.util.HashSet<>(prefs.getTags());
+                boolean tagsChanged = false;
+                for (String raw : paFeed.category.split("/")) {
+                    String tag = raw.trim();
+                    if (!tag.isEmpty() && tags.add(tag)) {
+                        tagsChanged = true;
+                    }
+                }
+                if (tagsChanged) {
+                    prefs.getTags().clear();
+                    prefs.getTags().addAll(tags);
+                    dirty = true;
+                }
+            }
+
+            if (dirty) {
                 de.danoeh.antennapod.storage.database.DBWriter.setFeedPreferences(prefs);
             }
         }
@@ -136,7 +197,8 @@ public class PodcastAddictImporter {
     // -------------------------------------------------------------------------
 
     private static ImportPreview buildPreview(Context context, File dbFile,
-                                              Map<Long, Float> speedByPodcastId) throws Exception {
+                                              PaPrefs paPrefs) throws Exception {
+        Map<Long, Float> speedByPodcastId = paPrefs.effectiveSpeedByPodcastId;
         ImportPreview preview = new ImportPreview();
 
         // Build lookup of existing AP episodes for conflict detection
@@ -162,7 +224,8 @@ public class PodcastAddictImporter {
             // Read subscribed podcasts
             Map<Long, String> podcastTitleById = new HashMap<>();
             try (Cursor cur = paDb.rawQuery(
-                    "SELECT _id, feed_url, name, custom_name FROM podcasts WHERE subscribed_status = 1",
+                    "SELECT _id, feed_url, name, custom_name, category FROM podcasts "
+                    + "WHERE subscribed_status = 1",
                     null)) {
                 while (cur.moveToNext()) {
                     long id = cur.getLong(0);
@@ -172,12 +235,14 @@ public class PodcastAddictImporter {
                     }
                     String name = cur.getString(2);
                     String customName = cur.getString(3);
+                    String category = cur.getString(4);
                     String title = (customName != null && !customName.isEmpty()) ? customName : name;
                     podcastTitleById.put(id, title != null ? title : "Unknown");
 
                     PaFeed paFeed = new PaFeed();
                     paFeed.url = feedUrl;
                     paFeed.title = title != null ? title : "Unknown";
+                    paFeed.category = category;
                     // Per-podcast speed: prefer this podcast's setting, fall back to
                     // PA's global speed (-1 key). 0 means PA had no speed configured
                     // at all → leave the new feed inheriting our app-level default.
@@ -186,6 +251,16 @@ public class PodcastAddictImporter {
                             : speedByPodcastId.get(-1L);
                     if (paSpeed != null && paSpeed > 0.0f) {
                         paFeed.playbackSpeed = paSpeed;
+                    }
+                    // PA's per-podcast intro/outro skip seconds. 0 means PA had no
+                    // override; leave the feed inheriting our app-level default.
+                    Integer introSec = paPrefs.skipIntroSecByPodcastId.get(id);
+                    if (introSec != null && introSec > 0) {
+                        paFeed.skipIntroSec = introSec;
+                    }
+                    Integer outroSec = paPrefs.skipOutroSecByPodcastId.get(id);
+                    if (outroSec != null && outroSec > 0) {
+                        paFeed.skipOutroSec = outroSec;
                     }
                     preview.feeds.add(paFeed);
                 }
@@ -308,13 +383,16 @@ public class PodcastAddictImporter {
     }
 
     /**
-     * Parses per-podcast playback speed from Podcast Addict's SharedPreferences XML.
-     * Returns a map of PA podcast ID → effective speed (1.0 if speed is disabled for that podcast).
-     * Podcasts not in the map should fall back to the global speed.
+     * Parses per-podcast prefs from Podcast Addict's SharedPreferences XML.
+     * Returns all the per-podcast values we know how to map onto TrimPlayer's
+     * FeedPreferences. Walking the file once is cheaper than four passes and
+     * avoids re-allocating the file buffer.
      */
-    private static Map<Long, Float> parseSpeedSettings(File prefsFile) throws IOException {
-        Map<Long, Float> speedEnabled = new HashMap<>();  // id → explicit on/off
+    private static PaPrefs parsePrefs(File prefsFile) throws IOException {
+        Map<Long, Float> speedEnabled = new HashMap<>();  // id → explicit on/off (1.0/0.0)
         Map<Long, Float> speedValue = new HashMap<>();    // id → speed float
+        Map<Long, Integer> introSec = new HashMap<>();    // id → pref_podcastOffset_<id>
+        Map<Long, Integer> outroSec = new HashMap<>();    // id → pref_podcastOutroOffset_<id>
         float globalSpeed = 1.0f;
 
         String content = new String(readFile(prefsFile), "UTF-8");
@@ -350,24 +428,53 @@ public class PodcastAddictImporter {
             } catch (NumberFormatException ignored) {}
         }
 
+        // Per-podcast intro skip seconds (PA: pref_podcastOffset_<id>)
+        m = Pattern
+                .compile("name=\"pref_podcastOffset_([0-9]+)\" value=\"([0-9]+)\"")
+                .matcher(content);
+        while (m.find()) {
+            try {
+                long id = Long.parseLong(m.group(1));
+                int sec = Integer.parseInt(m.group(2));
+                if (sec > 0) introSec.put(id, sec);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        // Per-podcast outro skip seconds (PA: pref_podcastOutroOffset_<id>)
+        m = Pattern
+                .compile("name=\"pref_podcastOutroOffset_([0-9]+)\" value=\"([0-9]+)\"")
+                .matcher(content);
+        while (m.find()) {
+            try {
+                long id = Long.parseLong(m.group(1));
+                int sec = Integer.parseInt(m.group(2));
+                if (sec > 0) outroSec.put(id, sec);
+            } catch (NumberFormatException ignored) {}
+        }
+
         // Build effective speed map
-        Map<Long, Float> result = new HashMap<>();
+        Map<Long, Float> effectiveSpeed = new HashMap<>();
         Set<Long> allIds = new HashSet<>();
         allIds.addAll(speedEnabled.keySet());
         allIds.addAll(speedValue.keySet());
         for (long id : allIds) {
             Float enabled = speedEnabled.get(id);
             if (enabled != null && enabled == 0.0f) {
-                result.put(id, 1.0f); // explicitly disabled
+                effectiveSpeed.put(id, 1.0f); // explicitly disabled — no override
             } else {
                 // enabled explicitly or no override — use per-podcast value or global
                 float speed = speedValue.containsKey(id) ? speedValue.get(id) : globalSpeed;
-                result.put(id, speed);
+                effectiveSpeed.put(id, speed);
             }
         }
         // Store global speed under key -1 for podcasts with no override
-        result.put(-1L, globalSpeed);
-        return result;
+        effectiveSpeed.put(-1L, globalSpeed);
+
+        PaPrefs out = new PaPrefs();
+        out.effectiveSpeedByPodcastId = effectiveSpeed;
+        out.skipIntroSecByPodcastId = introSec;
+        out.skipOutroSecByPodcastId = outroSec;
+        return out;
     }
 
     private static byte[] readFile(File file) throws IOException {
