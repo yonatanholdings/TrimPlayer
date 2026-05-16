@@ -22,6 +22,7 @@ import java.net.Proxy;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -637,8 +638,24 @@ public abstract class UserPreferences {
         DecimalFormatSymbols format = new DecimalFormatSymbols(Locale.US);
         format.setDecimalSeparator('.');
         DecimalFormat speedFormat = new DecimalFormat("0.00", format);
+        // 1.0× is the default speed and must always be available as a one-tap
+        // option, even if older code (or a hand-edited prefs file) left it out
+        // of the saved array. Add it back if missing; the UI layer also blocks
+        // direct removal, this is the data-side safety net.
+        List<Float> guarded = new ArrayList<>(speeds);
+        boolean hasDefault = false;
+        for (Float s : guarded) {
+            if (s != null && Math.abs(s - 1.0f) < 0.001f) {
+                hasDefault = true;
+                break;
+            }
+        }
+        if (!hasDefault) {
+            guarded.add(1.0f);
+            Collections.sort(guarded);
+        }
         JSONArray jsonArray = new JSONArray();
-        for (float speed : speeds) {
+        for (float speed : guarded) {
             jsonArray.put(speedFormat.format(speed));
         }
         prefs.edit().putString(PREF_PLAYBACK_SPEED_ARRAY, jsonArray.toString()).apply();

@@ -306,6 +306,15 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
 
             holder.chip.setText(String.format(Locale.getDefault(), "%1$.2f", speed));
             holder.chip.setOnLongClickListener(v -> {
+                // 1.0× is the default speed and must always remain available as a
+                // one-tap preset. Block removal at the UI layer; the storage layer
+                // (UserPreferences.setPlaybackSpeedArray) also re-adds it if missing.
+                if (Math.abs(speed - 1.0f) < 0.001f) {
+                    android.widget.Toast.makeText(v.getContext(),
+                            R.string.playback_speed_default_cannot_remove,
+                            android.widget.Toast.LENGTH_SHORT).show();
+                    return true;
+                }
                 selectedSpeeds.remove(speed);
                 UserPreferences.setPlaybackSpeedArray(selectedSpeeds);
                 notifyDataSetChanged();
