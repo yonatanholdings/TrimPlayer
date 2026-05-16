@@ -33,8 +33,10 @@ public class MonthlyStatsSection extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         viewBinding = HomeSectionMonthlyStatsBinding.inflate(inflater);
-        viewBinding.statsCard.setOnClickListener(v ->
-                ((MainActivity) requireActivity()).loadChildFragment(new StatisticsFragment()));
+        View.OnClickListener openStats = v ->
+                ((MainActivity) requireActivity()).loadChildFragment(new StatisticsFragment());
+        viewBinding.statsCard.setOnClickListener(openStats);
+        viewBinding.moreButton.setOnClickListener(openStats);
         return viewBinding.getRoot();
     }
 

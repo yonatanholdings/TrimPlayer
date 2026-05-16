@@ -94,6 +94,7 @@
     <string name="home_new_title">See what\'s new</string>
     <string name="home_downloads_title">Manage downloads</string>
     <string name="home_monthly_title">This month</string>
+    <string name="home_monthly_label_more">Statistics »</string>
     <string name="statistics_listened_label">Listened</string>
     <string name="statistics_trimmed_label">Trimmed</string>
     <string name="home_no_recent_unplayed_episodes_text">You already played all recent episodes. Nothing to be surprised here ;)</string>
