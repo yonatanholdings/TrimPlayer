@@ -38,6 +38,8 @@ public class PodcastAddictImporter {
 
     static final String PREFS_NAME = "podcast_addict_import";
     static final String KEY_EPISODE_STATES = "episode_states";
+    static final String KEY_QUEUE = "import_queue";
+    static final String KEY_CURRENTLY_PLAYING = "import_currently_playing";
 
     public static class EpisodeState {
         public String guid;
@@ -87,7 +89,24 @@ public class PodcastAddictImporter {
         public List<PaFeed> feeds = new ArrayList<>();
         public List<EpisodeState> nonConflictingStates = new ArrayList<>();
         public List<ConflictEpisode> conflicts = new ArrayList<>();
+        /** PA play queue in rank order. Limited at extraction time to MAX_QUEUE_IMPORT
+         *  to avoid blowing up AP's queue from PA's auto-add-all-new-episodes mode. */
+        public List<QueueEntry> queue = new ArrayList<>();
+        /** Currently/last playing episode in PA, identified by guid + downloadUrl
+         *  for resolution against our DB. null if PA had no playback history. */
+        public QueueEntry currentlyPlaying;
     }
+
+    /** Minimal identity payload for an episode in the queue or current-playing slot. */
+    public static class QueueEntry {
+        public String guid;
+        public String downloadUrl;
+    }
+
+    /** Cap on imported queue size — PA users often have thousands of queued
+     *  episodes from auto-add-on-publish. Bringing all 5k+ into AP would be
+     *  noise; the first N (typically the next-to-play ones) are what matters. */
+    public static final int MAX_QUEUE_IMPORT = 200;
 
     /** Per-podcast preferences extracted from PA's SharedPreferences XML. */
     private static class PaPrefs {
@@ -97,12 +116,16 @@ public class PodcastAddictImporter {
         Map<Long, Integer> skipIntroSecByPodcastId;
         /** PA pref_podcastOutroOffset_<id> → seconds to skip at end. */
         Map<Long, Integer> skipOutroSecByPodcastId;
+        /** PA pref_lastPlayedAudioEpisode — internal PA episode _id of last-played
+         *  audio episode. 0 means PA had no audio playback history. */
+        long lastPlayedAudioEpisodeId;
 
         static PaPrefs empty() {
             PaPrefs p = new PaPrefs();
             p.effectiveSpeedByPodcastId = Collections.emptyMap();
             p.skipIntroSecByPodcastId = Collections.emptyMap();
             p.skipOutroSecByPodcastId = Collections.emptyMap();
+            p.lastPlayedAudioEpisodeId = 0;
             return p;
         }
     }
@@ -190,6 +213,7 @@ public class PodcastAddictImporter {
         }
 
         saveEpisodeStates(context, statesToApply);
+        saveQueueAndCurrentlyPlaying(context, preview.queue, preview.currentlyPlaying);
         FeedUpdateManager.getInstance().runOnce(context);
         PodcastAddictStateWorker.enqueue(context);
     }
@@ -308,6 +332,49 @@ public class PodcastAddictImporter {
                         preview.conflicts.add(conflict);
                     } else {
                         preview.nonConflictingStates.add(state);
+                    }
+                }
+            }
+
+            // ---- Play queue ----
+            // PA stores the play queue in ordered_list with type=1, ranked.
+            // Episodes referenced here may or may not be in our subscribed-feed
+            // set, so we just collect their guid + downloadUrl and resolve them
+            // against the AP DB later (after the feed refresh has populated
+            // episode rows).
+            try (Cursor cur = paDb.rawQuery(
+                    "SELECT e.guid, e.download_url FROM ordered_list o "
+                    + "INNER JOIN episodes e ON e._id = o.id "
+                    + "WHERE o.type = 1 "
+                    + "ORDER BY o.rank ASC LIMIT " + MAX_QUEUE_IMPORT,
+                    null)) {
+                while (cur.moveToNext()) {
+                    String guid = cur.getString(0);
+                    String url  = cur.getString(1);
+                    if ((guid == null || guid.isEmpty()) && (url == null || url.isEmpty())) {
+                        continue;
+                    }
+                    QueueEntry q = new QueueEntry();
+                    q.guid = guid;
+                    q.downloadUrl = url;
+                    preview.queue.add(q);
+                }
+            }
+
+            // ---- Currently-playing ----
+            if (paPrefs.lastPlayedAudioEpisodeId > 0) {
+                try (Cursor cur = paDb.rawQuery(
+                        "SELECT guid, download_url FROM episodes WHERE _id = ? LIMIT 1",
+                        new String[]{String.valueOf(paPrefs.lastPlayedAudioEpisodeId)})) {
+                    if (cur.moveToFirst()) {
+                        String guid = cur.getString(0);
+                        String url  = cur.getString(1);
+                        if ((guid != null && !guid.isEmpty()) || (url != null && !url.isEmpty())) {
+                            QueueEntry cp = new QueueEntry();
+                            cp.guid = guid;
+                            cp.downloadUrl = url;
+                            preview.currentlyPlaying = cp;
+                        }
                     }
                 }
             }
@@ -452,6 +519,15 @@ public class PodcastAddictImporter {
             } catch (NumberFormatException ignored) {}
         }
 
+        // Last-played audio episode (PA's internal episode _id)
+        long lastPlayedAudioId = 0L;
+        m = Pattern
+                .compile("name=\"pref_lastPlayedAudioEpisode\" value=\"([0-9]+)\"")
+                .matcher(content);
+        if (m.find()) {
+            try { lastPlayedAudioId = Long.parseLong(m.group(1)); } catch (NumberFormatException ignored) {}
+        }
+
         // Build effective speed map
         Map<Long, Float> effectiveSpeed = new HashMap<>();
         Set<Long> allIds = new HashSet<>();
@@ -474,6 +550,7 @@ public class PodcastAddictImporter {
         out.effectiveSpeedByPodcastId = effectiveSpeed;
         out.skipIntroSecByPodcastId = introSec;
         out.skipOutroSecByPodcastId = outroSec;
+        out.lastPlayedAudioEpisodeId = lastPlayedAudioId;
         return out;
     }
 
@@ -536,5 +613,66 @@ public class PodcastAddictImporter {
 
     public static void clearEpisodeStates(Context context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply();
+    }
+
+    /** Stash queue + currently-playing for PodcastAddictStateWorker to resolve
+     *  and apply after the feed refresh has materialized FeedItems in our DB. */
+    static void saveQueueAndCurrentlyPlaying(Context context, List<QueueEntry> queue,
+                                             QueueEntry currentlyPlaying) throws Exception {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        JSONArray array = new JSONArray();
+        for (QueueEntry q : queue) {
+            JSONObject obj = new JSONObject();
+            obj.put("guid", q.guid != null ? q.guid : "");
+            obj.put("downloadUrl", q.downloadUrl != null ? q.downloadUrl : "");
+            array.put(obj);
+        }
+        SharedPreferences.Editor edit = prefs.edit()
+                .putString(KEY_QUEUE, array.toString());
+        if (currentlyPlaying != null) {
+            JSONObject obj = new JSONObject();
+            obj.put("guid", currentlyPlaying.guid != null ? currentlyPlaying.guid : "");
+            obj.put("downloadUrl", currentlyPlaying.downloadUrl != null
+                    ? currentlyPlaying.downloadUrl : "");
+            edit.putString(KEY_CURRENTLY_PLAYING, obj.toString());
+        } else {
+            edit.remove(KEY_CURRENTLY_PLAYING);
+        }
+        edit.apply();
+    }
+
+    public static List<QueueEntry> loadQueue(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY_QUEUE, null);
+        if (json == null) {
+            return Collections.emptyList();
+        }
+        List<QueueEntry> out = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(json);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.getJSONObject(i);
+                QueueEntry q = new QueueEntry();
+                q.guid = obj.optString("guid", "");
+                q.downloadUrl = obj.optString("downloadUrl", "");
+                out.add(q);
+            }
+        } catch (Exception ignored) { }
+        return out;
+    }
+
+    public static QueueEntry loadCurrentlyPlaying(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY_CURRENTLY_PLAYING, null);
+        if (json == null) return null;
+        try {
+            JSONObject obj = new JSONObject(json);
+            QueueEntry q = new QueueEntry();
+            q.guid = obj.optString("guid", "");
+            q.downloadUrl = obj.optString("downloadUrl", "");
+            return q;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }
