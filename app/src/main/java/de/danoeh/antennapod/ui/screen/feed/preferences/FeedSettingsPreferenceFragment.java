@@ -332,7 +332,9 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
         FeedPreferences.SkipSilence skipSilence = feedPreferences.getFeedSkipSilence();
         boolean isGlobal = speed == FeedPreferences.SPEED_USE_GLOBAL;
         viewBinding.useGlobalCheckbox.setChecked(isGlobal);
-        viewBinding.seekBar.updateSpeed(isGlobal ? 1 : speed);
+        viewBinding.seekBar.updateSpeed(isGlobal
+                ? de.danoeh.antennapod.storage.preferences.UserPreferences.getPlaybackSpeed()
+                : speed);
         viewBinding.skipSilenceFeed.setChecked(!isGlobal
                 && skipSilence == FeedPreferences.SkipSilence.AGGRESSIVE);
         // Track whether the user actually touched the silence checkbox. The render

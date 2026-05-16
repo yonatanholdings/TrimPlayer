@@ -145,6 +145,13 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                              @Nullable Bundle savedInstanceState) {
         View root = View.inflate(getContext(), R.layout.speed_select_dialog, null);
         speedSeekBar = root.findViewById(R.id.speed_seek_bar);
+        // Seed the seek-bar with the app-wide saved speed immediately. The
+        // underlying SeekBar's intrinsic default is progress=0 which maps to
+        // (0 + 10) / 20 = 0.5×, so without this pre-fill the dialog briefly
+        // displays "0.50" before loadMediaInfo's async IO callback arrives
+        // and corrects it. When a media is playing, loadMediaInfo() later
+        // overwrites this with the resolved per-feed/per-episode value.
+        speedSeekBar.updateSpeed(UserPreferences.getPlaybackSpeed());
         speedSeekBar.setProgressChangedListener(multiplier -> {
             // Use the cached snapshot resolved by loadMediaInfo on the IO thread;
             // calling controller.getMedia() here would trigger a main-thread DB
