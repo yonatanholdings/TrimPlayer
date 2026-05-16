@@ -43,6 +43,20 @@ public class AnalyticsEvent {
         return new AnalyticsEvent("segment_auto_skipped", b);
     }
 
+    /** User seeked backwards into a range we just auto-skipped → false positive. */
+    public static AnalyticsEvent segmentRevertSkip(int revertedSec) {
+        Bundle b = new Bundle();
+        b.putInt("reverted_sec", revertedSec);
+        return new AnalyticsEvent("segment_revert_skip", b);
+    }
+
+    /** User manually skipped a long forward chunk that wasn't flagged → likely a missed ad. */
+    public static AnalyticsEvent segmentMissed(int missedSec) {
+        Bundle b = new Bundle();
+        b.putInt("missed_sec", missedSec);
+        return new AnalyticsEvent("segment_missed", b);
+    }
+
     public static AnalyticsEvent androidAutoConnected() {
         return new AnalyticsEvent("android_auto_session", new Bundle());
     }

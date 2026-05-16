@@ -210,6 +210,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     /** Tracks which indices in currentSegments were auto-skipped during this episode. */
     private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
 
+    // Hit/miss telemetry: rolling window of recent auto-skipped ranges and a
+    // one-shot flag that lets internal callers (auto-skip, sleep timer) ask
+    // seekTo() to skip telemetry attribution for the next seek.
+    // Each entry is [startMs, endMs, systemTimeMs].
+    private final java.util.Deque<long[]> recentAutoSkips = new java.util.ArrayDeque<>();
+    private static final long REVERT_WINDOW_MS = 30_000L;
+    private static final int  MIN_MISS_FORWARD_MS = 15_000;
+    private boolean nextSeekIsInternal = false;
+
 
     /**
      * Used for Lollipop notifications, Android Wear, and Android Auto.
@@ -356,16 +365,28 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     // -------------------------------------------------------------------------
 
     private void trimFetchSegments(FeedMedia media) {
+        trimFetchSegments(media, null);
+    }
+
+    /** Fetch segments. When announceUnlockTitle is non-null AND the response
+     *  contains at least one segment, posts {@link de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent}
+     *  so the UI can tell the user that their analyze just paid off. */
+    private void trimFetchSegments(FeedMedia media, String announceUnlockTitle) {
         String episodeUrl = media.getStreamUrl();
         String episodeGuid = media.getItem() != null ? media.getItem().getItemIdentifier() : null;
 
-        // Capture RSS URL synchronously now — item.getFeed() may return null inside async callbacks
+        // Capture RSS URL and podcast title synchronously now — item.getFeed() may
+        // return null inside async callbacks, and we need the title for the
+        // TrimAnalyzeQueuedEvent / TrimSegmentsUnlockedEvent payloads.
         String rssUrlSync = null;
+        String podcastTitleSync = null;
         if (media.getItem() != null && media.getItem().getFeed() != null) {
             rssUrlSync = media.getItem().getFeed().getDownloadUrl();
+            podcastTitleSync = media.getItem().getFeed().getTitle();
         }
         final String capturedRssUrl = rssUrlSync;
         final String capturedGuid = episodeGuid;
+        final String capturedPodcastTitle = podcastTitleSync;
 
         java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> stub =
                 de.danoeh.antennapod.playback.service.trim.TrimStub.getSegments(this, episodeGuid);
@@ -410,6 +431,10 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                             de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.put(
                                     getApplicationContext(), capturedGuid, currentSegments);
                             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " segments");
+                            if (announceUnlockTitle != null) {
+                                EventBus.getDefault().post(
+                                        new de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent(announceUnlockTitle));
+                            }
                             if (BuildConfig.DEBUG) {
                                 new Handler(Looper.getMainLooper()).post(() ->
                                         Toast.makeText(getApplicationContext(),
@@ -422,7 +447,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                             } else {
                                 Log.d(TAG, "Trim Player: No segments found, triggering analysis");
                                 trimRecordAnalyzeAttempt(capturedGuid, episodeUrl);
-                                trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid);
+                                EventBus.getDefault().post(
+                                        new de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent(capturedPodcastTitle));
+                                trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid, capturedPodcastTitle);
                             }
                         } else {
                             Log.w(TAG, "Trim Player: No segments and no RSS URL available, cannot trigger analysis");
@@ -434,6 +461,20 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                             retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> call,
                             Throwable t) {
                         Log.e(TAG, "Trim Player: Failed to fetch segments", t);
+                        // Server unreachable or returned an error. The empty-segments path also
+                        // kicks /analyze in this case; do the same here so a backend outage
+                        // doesn't leave new episodes permanently unanalyzed on the client.
+                        if (capturedRssUrl != null && !capturedRssUrl.isEmpty()) {
+                            if (trimAnalyzeOnCooldown(capturedGuid, episodeUrl)) {
+                                Log.d(TAG, "Trim Player: segments fetch failed, analyze cooldown active — not re-triggering");
+                            } else {
+                                Log.d(TAG, "Trim Player: segments fetch failed, triggering analysis as fallback");
+                                trimRecordAnalyzeAttempt(capturedGuid, episodeUrl);
+                                EventBus.getDefault().post(
+                                        new de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent(capturedPodcastTitle));
+                                trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid, capturedPodcastTitle);
+                            }
+                        }
                     }
                 });
     }
@@ -535,7 +576,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 .edit().putLong(key, System.currentTimeMillis()).apply();
     }
 
-    private void trimTriggerAnalysis(String rssUrl, String episodeUrl, String episodeGuid) {
+    private void trimTriggerAnalysis(String rssUrl, String episodeUrl, String episodeGuid,
+                                     String podcastTitle) {
         de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
                 .analyze(rssUrl, episodeUrl, episodeGuid)
                 .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.AnalyzeResponse>() {
@@ -546,7 +588,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         if (response.isSuccessful() && response.body() != null
                                 && response.body().job_id != null) {
                             Log.d(TAG, "Trim Player: Analysis started, job=" + response.body().job_id);
-                            trimStartPolling(response.body().job_id, episodeUrl);
+                            trimStartPolling(response.body().job_id, episodeUrl, podcastTitle);
                         }
                     }
 
@@ -559,7 +601,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 });
     }
 
-    private void trimStartPolling(String jobId, String episodeUrl) {
+    private void trimStartPolling(String jobId, String episodeUrl, String announceUnlockTitle) {
         activePollingJobId = jobId;
         final int[] pollsSoFar = {0};
         Runnable[] pollRunnable = new Runnable[1];
@@ -585,7 +627,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     activePollingJobId = null;
                                     trimPollHandler.post(() -> {
                                         if (getPlayable() instanceof FeedMedia) {
-                                            trimFetchSegments((FeedMedia) getPlayable());
+                                            trimFetchSegments((FeedMedia) getPlayable(),
+                                                    announceUnlockTitle);
                                         }
                                     });
                                 } else if ("error".equals(status)) {
@@ -1455,6 +1498,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             mediaPlayer.setVolume(1.0f, 1.0f);
             int newPosition = mediaPlayer.getPosition() - (int) SleepTimer.NOTIFICATION_THRESHOLD / 2;
             newPosition = Math.max(newPosition, 0);
+            nextSeekIsInternal = true;
             seekTo(newPosition);
         } else if (event.getMillisTimeLeft() < SleepTimer.NOTIFICATION_THRESHOLD) {
             final float[] multiplicators = {0.1f, 0.2f, 0.3f, 0.3f, 0.3f, 0.4f, 0.4f, 0.4f, 0.6f, 0.8f};
@@ -2379,9 +2423,82 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     }
 
     public void seekTo(final int t) {
+        boolean internal = nextSeekIsInternal;
+        nextSeekIsInternal = false;
+        int fromPos = getCurrentPosition();
+        if (!internal && fromPos != Playable.INVALID_TIME) {
+            recordSeekTelemetry(fromPos, t);
+        }
         silenceTrackLastPos = -1; // reset silence tracking; seek invalidates the position delta
         mediaPlayer.seekTo(t);
         EventBus.getDefault().post(new PlaybackPositionEvent(t, getDuration()));
+    }
+
+    /** Classify a user-initiated seek as a "revert" (backwards into a recently auto-skipped
+     *  range — likely a false positive) or "miss" (large forward jump through content that
+     *  wasn't flagged as a segment — likely an ad we failed to detect). Both are recorded
+     *  via the existing skip-event pipeline so they get uploaded by TrimEventsUploadWorker. */
+    private void recordSeekTelemetry(int fromMs, int toMs) {
+        de.danoeh.antennapod.model.playback.Playable p = getPlayable();
+        if (!(p instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
+            return;
+        }
+        de.danoeh.antennapod.model.feed.FeedMedia fm =
+                (de.danoeh.antennapod.model.feed.FeedMedia) p;
+        if (fm.getItem() == null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        while (!recentAutoSkips.isEmpty()
+                && now - recentAutoSkips.peekFirst()[2] > REVERT_WINDOW_MS) {
+            recentAutoSkips.removeFirst();
+        }
+
+        // Backward seek into a recently auto-skipped range → revert (false positive)
+        if (toMs < fromMs) {
+            for (long[] entry : recentAutoSkips) {
+                int segStart = (int) entry[0];
+                int segEnd   = (int) entry[1];
+                if (toMs >= segStart && toMs < segEnd) {
+                    int revertedMs = segEnd - toMs;
+                    de.danoeh.antennapod.storage.database.DBWriter.recordSkipEvent(
+                            fm.getItem().getId(), "revert", revertedMs);
+                    EventBus.getDefault().post(
+                            AnalyticsEvent.segmentRevertSkip(revertedMs / 1000));
+                    Log.d(TAG, "Trim Player: revert seek " + revertedMs + " ms back into "
+                            + "auto-skipped range [" + segStart + "," + segEnd + ")");
+                    return;
+                }
+            }
+            return;
+        }
+
+        // Forward seek of ≥ MIN_MISS_FORWARD_MS through non-segment content → miss (false negative)
+        int jumpMs = toMs - fromMs;
+        if (jumpMs >= MIN_MISS_FORWARD_MS
+                && !positionIsInsideKnownSegment(fromMs)
+                && !positionIsInsideKnownSegment(toMs)) {
+            de.danoeh.antennapod.storage.database.DBWriter.recordSkipEvent(
+                    fm.getItem().getId(), "miss", jumpMs);
+            EventBus.getDefault().post(AnalyticsEvent.segmentMissed(jumpMs / 1000));
+            Log.d(TAG, "Trim Player: miss seek " + jumpMs + " ms forward through non-segment content");
+        }
+    }
+
+    private boolean positionIsInsideKnownSegment(int posMs) {
+        List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segs = currentSegments;
+        if (segs == null) {
+            return false;
+        }
+        for (de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg : segs) {
+            int startMs = (int) (seg.start * 1000);
+            int endMs   = (int) (seg.end * 1000);
+            if (posMs >= startMs && posMs < endMs) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void seekDelta(final int d) {
@@ -2499,6 +2616,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                         fm.getItem().getId(), eventType, skippedMs);
                                 EventBus.getDefault().post(AnalyticsEvent.segmentSkipped(
                                         eventType, skippedMs / 1000));
+                                // Track the just-skipped range so a backwards user seek into it
+                                // within REVERT_WINDOW_MS is classified as a revert (false positive).
+                                recentAutoSkips.addLast(
+                                        new long[]{startMs, endMs, System.currentTimeMillis()});
+                                nextSeekIsInternal = true;
                                 seekTo(endMs);
                                 if (firstSkipForThisSegment) {
                                     showSegmentSkipToast(eventType, skippedMs);

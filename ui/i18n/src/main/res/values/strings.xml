@@ -570,6 +570,13 @@
     <string name="trim_skip_toast_ad">Skipped ad · saved %s</string>
     <string name="trim_skip_toast_outro">Skipped outro · saved %s</string>
     <string name="trim_skip_toast_generic">Skipped segment · saved %s</string>
+    <!-- Dialog shown the first time we play an episode from a podcast not in our catalog. -->
+    <string name="trim_analyze_queued_title">You played it, we\'ll trim it.</string>
+    <!-- %1$s is the podcast title. -->
+    <string name="trim_analyze_queued_body">%1$s gets mapped — yours, and everyone\'s.</string>
+    <string name="trim_analyze_queued_fallback_podcast_name">this podcast</string>
+    <!-- Snackbar when analysis completes mid-playback and segments arrive for the current episode. %1$s is the podcast title. -->
+    <string name="trim_segments_unlocked_snackbar">%1$s is trimmed. Outro &amp; ads will skip on their own.</string>
     <!-- End-of-episode summary toast. %1$s is total duration, %2$s is breakdown ("1 intro, 2 ads"). -->
     <string name="trim_summary_with_breakdown">Saved %1$s · %2$s skipped</string>
     <string name="trim_summary_no_breakdown">Saved %1$s</string>

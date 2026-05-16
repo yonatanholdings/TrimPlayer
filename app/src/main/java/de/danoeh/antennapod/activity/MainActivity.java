@@ -36,11 +36,14 @@ import androidx.work.WorkManager;
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.event.EpisodeDownloadEvent;
 import de.danoeh.antennapod.event.FeedUpdateRunningEvent;
 import de.danoeh.antennapod.event.MessageEvent;
+import de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent;
+import de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent;
 import de.danoeh.antennapod.model.download.DownloadStatus;
 import de.danoeh.antennapod.net.download.service.feed.FeedUpdateManagerImpl;
 import de.danoeh.antennapod.net.download.serviceinterface.DownloadServiceInterface;
@@ -669,6 +672,48 @@ public class MainActivity extends CastEnabledActivity {
         if (event.action != null) {
             snackbar.setAction(event.actionText, v -> event.action.accept(this));
         }
+    }
+
+    /**
+     * Fires when PlaybackService asks the backend to map a podcast we haven't
+     * seen before. Show a small explainer dialog so the user understands why
+     * their first play of this show takes a moment to start skipping ads.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTrimAnalyzeQueued(TrimAnalyzeQueuedEvent event) {
+        if (isFinishing() || isDestroyed()) return;
+        String podcast = event.podcastTitle.isEmpty()
+                ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
+                : event.podcastTitle;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.trim_analyze_queued_title)
+                .setMessage(getString(R.string.trim_analyze_queued_body, podcast))
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    /**
+     * Fires when polling-driven refetch sees the first non-empty segment list
+     * for the currently-playing episode — i.e. the analyze the user kicked off
+     * has paid off mid-session. Brief Snackbar acknowledging the unlock.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTrimSegmentsUnlocked(TrimSegmentsUnlockedEvent event) {
+        if (isFinishing() || isDestroyed()) return;
+        String podcast = event.podcastTitle.isEmpty()
+                ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
+                : event.podcastTitle;
+        String msg = getString(R.string.trim_segments_unlocked_snackbar, podcast);
+        Snackbar snackbar;
+        if (getBottomSheet().getState() == BottomSheetBehavior.STATE_COLLAPSED) {
+            snackbar = Snackbar.make(findViewById(R.id.main_content_view), msg, Snackbar.LENGTH_LONG);
+            if (findViewById(R.id.audioplayerFragment).getVisibility() == View.VISIBLE) {
+                snackbar.setAnchorView(findViewById(R.id.audioplayerFragment));
+            }
+        } else {
+            snackbar = Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG);
+        }
+        snackbar.show();
     }
 
     private void handleNavIntent() {
