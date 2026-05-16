@@ -98,7 +98,23 @@ public class PodcastAddictStateWorker extends Worker {
             }
         }
 
-        // ---- Episode states ----
+        // ---- Phase 1: currently-playing (user sees the resume button first) ----
+        boolean currentlyPlayingResolved = false;
+        if (currentlyPlaying != null) {
+            FeedItem item = resolveEntry(currentlyPlaying, itemByGuid, itemByUrl);
+            if (item != null && item.getMedia() != null) {
+                de.danoeh.antennapod.storage.preferences.PlaybackPreferences
+                        .writeMediaPlaying(item.getMedia());
+                currentlyPlayingResolved = true;
+                Log.d(TAG, "Set currently-playing to item " + item.getId());
+            }
+        }
+
+        // ---- Phase 2: queue (user sees their PA queue populate next) ----
+        List<PodcastAddictImporter.QueueEntry> remainingQueue =
+                applyQueue(queueEntries, itemByGuid, itemByUrl);
+
+        // ---- Phase 3: episode states (played / position / favorite — last) ----
         List<PodcastAddictImporter.EpisodeState> remaining = new ArrayList<>(states);
         for (FeedItem item : itemByGuid.values()) {
             PodcastAddictImporter.EpisodeState state = findState(item, byGuid, byUrl);
@@ -110,22 +126,6 @@ public class PodcastAddictStateWorker extends Worker {
         }
         Log.d(TAG, "Applied " + (states.size() - remaining.size()) + " states, "
                 + remaining.size() + " still pending");
-
-        // ---- Queue ----
-        List<PodcastAddictImporter.QueueEntry> remainingQueue =
-                applyQueue(queueEntries, itemByGuid, itemByUrl);
-
-        // ---- Currently-playing ----
-        boolean currentlyPlayingResolved = false;
-        if (currentlyPlaying != null) {
-            FeedItem item = resolveEntry(currentlyPlaying, itemByGuid, itemByUrl);
-            if (item != null && item.getMedia() != null) {
-                de.danoeh.antennapod.storage.preferences.PlaybackPreferences
-                        .writeMediaPlaying(item.getMedia());
-                currentlyPlayingResolved = true;
-                Log.d(TAG, "Set currently-playing to item " + item.getId());
-            }
-        }
 
         // ---- Decide retry vs done ----
         boolean allDone = remaining.isEmpty()

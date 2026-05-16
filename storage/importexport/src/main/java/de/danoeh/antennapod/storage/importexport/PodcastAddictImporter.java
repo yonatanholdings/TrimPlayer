@@ -40,6 +40,8 @@ public class PodcastAddictImporter {
     static final String KEY_EPISODE_STATES = "episode_states";
     static final String KEY_QUEUE = "import_queue";
     static final String KEY_CURRENTLY_PLAYING = "import_currently_playing";
+    /** Stash of PaFeed list + per-feed prefs for the background subscribe worker. */
+    static final String KEY_PENDING_FEEDS = "import_pending_feeds";
 
     public static class EpisodeState {
         public String guid;
@@ -154,55 +156,14 @@ public class PodcastAddictImporter {
      * Must be called off the main thread.
      */
     public static void executeImport(Context context, ImportPreview preview) throws Exception {
-        // Subscribe all feeds, then apply per-podcast playback speed if PA had one.
-        // The subscribe path creates a new Feed with feedPlaybackSpeed=SPEED_USE_GLOBAL,
-        // so we have to fetch the persisted Feed and update its preferences after.
-        for (PaFeed paFeed : preview.feeds) {
-            Feed feed = new Feed(paFeed.url, null, paFeed.title);
-            feed.setItems(Collections.emptyList());
-            Feed persisted = FeedDatabaseWriter.updateFeed(context, feed, false);
-            if (persisted == null || persisted.getPreferences() == null) continue;
-
-            de.danoeh.antennapod.model.feed.FeedPreferences prefs = persisted.getPreferences();
-            boolean dirty = false;
-
-            if (paFeed.playbackSpeed > 0.0f) {
-                prefs.setFeedPlaybackSpeed(paFeed.playbackSpeed);
-                dirty = true;
-            }
-            if (paFeed.skipIntroSec > 0) {
-                prefs.setFeedSkipIntro(paFeed.skipIntroSec);
-                dirty = true;
-            }
-            if (paFeed.skipOutroSec > 0) {
-                prefs.setFeedSkipEnding(paFeed.skipOutroSec);
-                dirty = true;
-            }
-            // PA's category column is a slash-separated list (e.g.
-            // "Technology/Education/How To"). Split into tags so PA users keep
-            // their organizational grouping. Skip empty / "Virtual podcast" /
-            // placeholder values.
-            if (paFeed.category != null && !paFeed.category.trim().isEmpty()
-                    && !"Virtual podcast".equalsIgnoreCase(paFeed.category.trim())) {
-                java.util.Set<String> tags = new java.util.HashSet<>(prefs.getTags());
-                boolean tagsChanged = false;
-                for (String raw : paFeed.category.split("/")) {
-                    String tag = raw.trim();
-                    if (!tag.isEmpty() && tags.add(tag)) {
-                        tagsChanged = true;
-                    }
-                }
-                if (tagsChanged) {
-                    prefs.getTags().clear();
-                    prefs.getTags().addAll(tags);
-                    dirty = true;
-                }
-            }
-
-            if (dirty) {
-                de.danoeh.antennapod.storage.database.DBWriter.setFeedPreferences(prefs);
-            }
-        }
+        // Gradual import: stash everything to SharedPreferences (fast), then enqueue
+        // a background worker that subscribes feeds one-by-one with a progress
+        // notification. The UI dialog can dismiss immediately — the user is free
+        // to navigate the app while feeds, currently-playing, queue, and episode
+        // states materialize in the background in that order.
+        //
+        // The subscribe loop USED to run synchronously here. For ~60 feeds it
+        // took 10-30s during which the UI was modal-blocked.
 
         // Collect states: non-conflicting + user-resolved conflicts
         List<EpisodeState> statesToApply = new ArrayList<>(preview.nonConflictingStates);
@@ -212,10 +173,13 @@ public class PodcastAddictImporter {
             }
         }
 
+        savePendingFeeds(context, preview.feeds);
         saveEpisodeStates(context, statesToApply);
         saveQueueAndCurrentlyPlaying(context, preview.queue, preview.currentlyPlaying);
-        FeedUpdateManager.getInstance().runOnce(context);
-        PodcastAddictStateWorker.enqueue(context);
+        // The subscribe worker kicks FeedUpdateManager.runOnce + the state worker
+        // once it finishes subscribing all feeds. Don't start them from here so
+        // they don't race with the subscribe writes.
+        PodcastAddictSubscribeWorker.enqueue(context);
     }
 
     // -------------------------------------------------------------------------
@@ -659,6 +623,50 @@ public class PodcastAddictImporter {
             }
         } catch (Exception ignored) { }
         return out;
+    }
+
+    /** Stash the list of PaFeeds (with per-feed prefs) for the subscribe worker. */
+    static void savePendingFeeds(Context context, List<PaFeed> feeds) throws Exception {
+        JSONArray array = new JSONArray();
+        for (PaFeed f : feeds) {
+            JSONObject obj = new JSONObject();
+            obj.put("url",            f.url != null ? f.url : "");
+            obj.put("title",          f.title != null ? f.title : "");
+            obj.put("playbackSpeed",  f.playbackSpeed);
+            obj.put("skipIntroSec",   f.skipIntroSec);
+            obj.put("skipOutroSec",   f.skipOutroSec);
+            obj.put("category",       f.category != null ? f.category : "");
+            array.put(obj);
+        }
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putString(KEY_PENDING_FEEDS, array.toString()).apply();
+    }
+
+    public static List<PaFeed> loadPendingFeeds(Context context) {
+        String json = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(KEY_PENDING_FEEDS, null);
+        if (json == null) return Collections.emptyList();
+        List<PaFeed> out = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(json);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.getJSONObject(i);
+                PaFeed f = new PaFeed();
+                f.url           = obj.optString("url", "");
+                f.title         = obj.optString("title", "");
+                f.playbackSpeed = (float) obj.optDouble("playbackSpeed", 0.0);
+                f.skipIntroSec  = obj.optInt("skipIntroSec", 0);
+                f.skipOutroSec  = obj.optInt("skipOutroSec", 0);
+                f.category      = obj.optString("category", "");
+                out.add(f);
+            }
+        } catch (Exception ignored) { }
+        return out;
+    }
+
+    public static void clearPendingFeeds(Context context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().remove(KEY_PENDING_FEEDS).apply();
     }
 
     public static QueueEntry loadCurrentlyPlaying(Context context) {

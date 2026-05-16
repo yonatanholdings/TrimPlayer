@@ -737,16 +737,18 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
 
     private void executeImport(PodcastAddictImporter.ImportPreview preview) {
         progressDialog.show();
+        // The body of executeImport is now a quick stash + enqueue of a
+        // background worker that does the per-feed subscribe work with a
+        // progress notification. The dialog can dismiss after the stash
+        // (~1 second) instead of waiting on the whole 10-30s subscribe loop.
         disposable = io.reactivex.rxjava3.core.Completable
                 .fromAction(() -> PodcastAddictImporter.executeImport(getContext(), preview))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(() -> {
                     progressDialog.dismiss();
-                    int totalStates = preview.nonConflictingStates.size()
-                            + (int) preview.conflicts.stream().filter(c -> c.usePodcastAddict).count();
-                    String msg = getString(R.string.podcast_addict_import_success,
-                            preview.feeds.size(), totalStates);
+                    String msg = getString(R.string.podcast_addict_import_started,
+                            preview.feeds.size());
                     Snackbar.make(getView(), msg, Snackbar.LENGTH_LONG).show();
                 }, error -> {
                     progressDialog.dismiss();

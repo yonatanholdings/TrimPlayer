@@ -744,6 +744,11 @@
     <string name="podcast_addict_import_success">Imported %1$d feeds and %2$d episode states. Feed refresh started — episode states will be applied in the background.</string>
     <string name="podcast_addict_import_error">Import failed: %1$s</string>
     <string name="podcast_addict_import_title">Import from Podcast Addict</string>
+    <!-- Background-import progress + completion. %1$d/%2$d → "Subscribing 12/61". -->
+    <string name="podcast_addict_import_started">Import started in the background — you can keep using the app. %1$d feeds will appear in your subscriptions as they\'re added.</string>
+    <string name="podcast_addict_import_subscribing">Subscribing feed %1$d of %2$d</string>
+    <string name="podcast_addict_import_applying_state">Applying episode states…</string>
+    <string name="podcast_addict_import_notification_title">Importing from Podcast Addict</string>
     <string name="podcast_addict_conflicts_title">Resolve Conflicts (%1$d)</string>
     <string name="podcast_addict_summary">%1$d of %2$d episodes will use Podcast Addict · Toggle right = use Podcast Addict</string>
     <string name="podcast_addict_group_by_podcast">By Podcast</string>
