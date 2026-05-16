@@ -705,8 +705,11 @@ public abstract class UserPreferences {
                 e.printStackTrace();
             }
         }
-        // If this preference hasn't been set yet, return the default options
-        return Arrays.asList(1.0f, 1.25f, 1.5f);
+        // If this preference hasn't been set yet, return the default options.
+        // TrimPlayer presets focus on time-saving speeds; 2.0× is included as a
+        // common power-user target. 4 presets land as a clean 3+1 wrap on a
+        // 3-column grid; no layout pressure on phones.
+        return Arrays.asList(1.0f, 1.25f, 1.5f, 2.0f);
     }
 
     public static int getEpisodeCleanupValue() {
