@@ -20,6 +20,7 @@ import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.event.playback.SpeedChangedEvent;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedMedia;
+import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.playback.service.PlaybackController;
 import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
@@ -46,6 +47,7 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     private PlaybackSpeedSeekBar speedSeekBar;
     private Chip addCurrentSpeedChip;
     private CheckBox skipSilenceCheckbox;
+    private android.widget.CompoundButton.OnCheckedChangeListener skipSilenceUserChangedListener;
     private CheckBox skipIntrosCheckbox;
     private CheckBox skipAdsCheckbox;
     private CheckBox skipOutrosCheckbox;
@@ -113,7 +115,14 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     }
 
     public void updateSkipSilence(boolean skipSilence) {
+        // Programmatic setChecked() fires the OnCheckedChangeListener if the
+        // state actually changes. That listener writes to UserPreferences and
+        // controller, so if the dialog opens with the global value pre-filled
+        // and then this method later sets the resolved per-feed value, an
+        // unintended write happens. Suppress the listener for this update.
+        skipSilenceCheckbox.setOnCheckedChangeListener(null);
         skipSilenceCheckbox.setChecked(skipSilence);
+        skipSilenceCheckbox.setOnCheckedChangeListener(skipSilenceUserChangedListener);
     }
 
     @Nullable
@@ -154,10 +163,32 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
 
         skipSilenceCheckbox = root.findViewById(R.id.skipSilence);
         skipSilenceCheckbox.setChecked(UserPreferences.isSkipSilence());
-        skipSilenceCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            UserPreferences.setSkipSilence(isChecked);
-            controller.setSkipSilence(isChecked);
-        });
+        // When playing a FeedMedia, mirror the per-feed write semantics that the
+        // speed seek-bar uses above: writing the user's intent to the per-feed
+        // preference rather than the app-wide one. Previously this only wrote
+        // to UserPreferences, which silently flipped silence globally and broke
+        // inheritance for other podcasts the user had not configured.
+        skipSilenceUserChangedListener = (buttonView, isChecked) -> {
+            boolean wroteToFeed = false;
+            if (controller != null && controller.getMedia() instanceof FeedMedia) {
+                FeedMedia media = (FeedMedia) controller.getMedia();
+                Feed feed = media.getItem() != null ? media.getItem().getFeed() : null;
+                if (feed != null && feed.getPreferences() != null) {
+                    feed.getPreferences().setFeedSkipSilence(isChecked
+                            ? FeedPreferences.SkipSilence.AGGRESSIVE
+                            : FeedPreferences.SkipSilence.OFF);
+                    DBWriter.setFeedPreferences(feed.getPreferences());
+                    wroteToFeed = true;
+                }
+            }
+            if (!wroteToFeed) {
+                UserPreferences.setSkipSilence(isChecked);
+            }
+            if (controller != null) {
+                controller.setSkipSilence(isChecked);
+            }
+        };
+        skipSilenceCheckbox.setOnCheckedChangeListener(skipSilenceUserChangedListener);
 
         skipIntrosCheckbox = root.findViewById(R.id.skipIntros);
         skipAdsCheckbox    = root.findViewById(R.id.skipAds);

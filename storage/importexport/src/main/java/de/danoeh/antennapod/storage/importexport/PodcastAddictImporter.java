@@ -54,6 +54,10 @@ public class PodcastAddictImporter {
     public static class PaFeed {
         public String url;
         public String title;
+        /** Per-podcast playback speed from PA SharedPreferences, or 0 if PA had no
+         *  custom speed for this feed (inherit our global). Stored as float so
+         *  e.g. 1.25 maps directly to FeedPreferences.feedPlaybackSpeed. */
+        public float playbackSpeed;
     }
 
     /**
@@ -101,11 +105,19 @@ public class PodcastAddictImporter {
      * Must be called off the main thread.
      */
     public static void executeImport(Context context, ImportPreview preview) throws Exception {
-        // Subscribe all feeds
+        // Subscribe all feeds, then apply per-podcast playback speed if PA had one.
+        // The subscribe path creates a new Feed with feedPlaybackSpeed=SPEED_USE_GLOBAL,
+        // so we have to fetch the persisted Feed and update its preferences after.
         for (PaFeed paFeed : preview.feeds) {
             Feed feed = new Feed(paFeed.url, null, paFeed.title);
             feed.setItems(Collections.emptyList());
-            FeedDatabaseWriter.updateFeed(context, feed, false);
+            Feed persisted = FeedDatabaseWriter.updateFeed(context, feed, false);
+            if (paFeed.playbackSpeed > 0.0f && persisted != null
+                    && persisted.getPreferences() != null) {
+                de.danoeh.antennapod.model.feed.FeedPreferences prefs = persisted.getPreferences();
+                prefs.setFeedPlaybackSpeed(paFeed.playbackSpeed);
+                de.danoeh.antennapod.storage.database.DBWriter.setFeedPreferences(prefs);
+            }
         }
 
         // Collect states: non-conflicting + user-resolved conflicts
@@ -166,6 +178,15 @@ public class PodcastAddictImporter {
                     PaFeed paFeed = new PaFeed();
                     paFeed.url = feedUrl;
                     paFeed.title = title != null ? title : "Unknown";
+                    // Per-podcast speed: prefer this podcast's setting, fall back to
+                    // PA's global speed (-1 key). 0 means PA had no speed configured
+                    // at all → leave the new feed inheriting our app-level default.
+                    Float paSpeed = speedByPodcastId.containsKey(id)
+                            ? speedByPodcastId.get(id)
+                            : speedByPodcastId.get(-1L);
+                    if (paSpeed != null && paSpeed > 0.0f) {
+                        paFeed.playbackSpeed = paSpeed;
+                    }
                     preview.feeds.add(paFeed);
                 }
             }

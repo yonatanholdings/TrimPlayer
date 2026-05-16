@@ -335,6 +335,15 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
         viewBinding.seekBar.updateSpeed(isGlobal ? 1 : speed);
         viewBinding.skipSilenceFeed.setChecked(!isGlobal
                 && skipSilence == FeedPreferences.SkipSilence.AGGRESSIVE);
+        // Track whether the user actually touched the silence checkbox. The render
+        // above can't represent GLOBAL when speed is customized — both GLOBAL and
+        // OFF map to "unchecked" — so we must NOT treat "unchecked at save time"
+        // as a definite OFF unless the user actively unchecked it. Without this
+        // flag, opening the dialog on a feed with custom speed and GLOBAL silence
+        // and clicking OK silently demotes silence to per-feed OFF.
+        boolean[] silenceTouched = {false};
+        viewBinding.skipSilenceFeed.setOnCheckedChangeListener((b, c) -> silenceTouched[0] = true);
+        FeedPreferences.SkipSilence originalSkipSilence = skipSilence;
         new MaterialAlertDialogBuilder(getContext())
                 .setTitle(R.string.playback_speed)
                 .setView(viewBinding.getRoot())
@@ -345,10 +354,15 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
                     FeedPreferences.SkipSilence newSkipSilence;
                     if (viewBinding.useGlobalCheckbox.isChecked()) {
                         newSkipSilence = FeedPreferences.SkipSilence.GLOBAL;
-                    } else if (viewBinding.skipSilenceFeed.isChecked()) {
-                        newSkipSilence = FeedPreferences.SkipSilence.AGGRESSIVE;
+                    } else if (silenceTouched[0]) {
+                        newSkipSilence = viewBinding.skipSilenceFeed.isChecked()
+                                ? FeedPreferences.SkipSilence.AGGRESSIVE
+                                : FeedPreferences.SkipSilence.OFF;
                     } else {
-                        newSkipSilence = FeedPreferences.SkipSilence.OFF;
+                        // User didn't touch the silence checkbox — preserve whatever
+                        // the feed already had. Crucially, this preserves GLOBAL when
+                        // the user is only adjusting the speed slider.
+                        newSkipSilence = originalSkipSilence;
                     }
                     feedPreferences.setFeedSkipSilence(newSkipSilence);
                     DBWriter.setFeedPreferences(feedPreferences);
