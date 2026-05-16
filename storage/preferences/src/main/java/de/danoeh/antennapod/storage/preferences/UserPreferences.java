@@ -450,11 +450,14 @@ public abstract class UserPreferences {
 
     public static float getPlaybackSpeed() {
         try {
-            return Float.parseFloat(prefs.getString(PREF_PLAYBACK_SPEED, "1.00"));
+            // TrimPlayer default: 1.25× — the whole product premise is "save time
+            // on intros/ads/silence/speed", so first-run users get a head start.
+            // Existing users who picked 1.00 see no change (their pref is set).
+            return Float.parseFloat(prefs.getString(PREF_PLAYBACK_SPEED, "1.25"));
         } catch (NumberFormatException e) {
             Log.e(TAG, Log.getStackTraceString(e));
-            UserPreferences.setPlaybackSpeed(1.0f);
-            return 1.0f;
+            UserPreferences.setPlaybackSpeed(1.25f);
+            return 1.25f;
         }
     }
 
