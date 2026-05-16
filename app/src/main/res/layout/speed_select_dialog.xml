@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- Header: title left, current speed numeric on the right (just a label,
+         not interactive). The previous Chip-with-plus-close-icon was confused
+         with the seek-bar's increase button directly below it. -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical">
 
         <TextView
             android:layout_width="0dp"
@@ -17,10 +23,14 @@
             android:text="@string/playback_speed"
             style="@style/AntennaPod.TextView.ListItemPrimaryTitle" />
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/add_current_speed_chip"
+        <TextView
+            android:id="@+id/current_speed_label"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorPrimary"
+            android:textFontWeight="600"
+            tools:text="1.25"
+            style="@style/TextAppearance.Material3.TitleMedium" />
 
     </LinearLayout>
 
@@ -30,12 +40,36 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="-8dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Preset section header: title left, "Add current" TextButton right.
+         This action lives next to the preset grid it modifies (Direction B
+         from the UX consult), so its "+" doesn't compete with the seek-bar. -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="@string/speed_presets"
-        style="@style/AntennaPod.TextView.ListItemPrimaryTitle" />
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/speed_presets"
+            style="@style/AntennaPod.TextView.ListItemPrimaryTitle" />
+
+        <Button
+            android:id="@+id/add_current_speed_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingVertical="4dp"
+            android:text="@string/add_preset"
+            app:icon="@drawable/ic_add"
+            app:iconGravity="textStart"
+            app:iconSize="18dp"
+            style="@style/Widget.Material3.Button.TextButton.Icon" />
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/selected_speeds_grid"

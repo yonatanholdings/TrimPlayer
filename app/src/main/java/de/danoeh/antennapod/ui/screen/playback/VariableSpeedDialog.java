@@ -45,7 +45,8 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     private PlaybackController controller;
     private final List<Float> selectedSpeeds;
     private PlaybackSpeedSeekBar speedSeekBar;
-    private Chip addCurrentSpeedChip;
+    private android.widget.TextView currentSpeedLabel;
+    private View addCurrentSpeedButton;
     private CheckBox skipSilenceCheckbox;
     private android.widget.CompoundButton.OnCheckedChangeListener skipSilenceUserChangedListener;
     private CheckBox skipIntrosCheckbox;
@@ -125,7 +126,7 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void updateSpeed(SpeedChangedEvent event) {
         speedSeekBar.updateSpeed(event.getNewSpeed());
-        addCurrentSpeedChip.setText(String.format(Locale.getDefault(), "%1$.2f", event.getNewSpeed()));
+        currentSpeedLabel.setText(String.format(Locale.getDefault(), "%1$.2f×", event.getNewSpeed()));
     }
 
     public void updateSkipSilence(boolean skipSilence) {
@@ -181,12 +182,15 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         adapter.setHasStableIds(true);
         selectedSpeedsGrid.setAdapter(adapter);
 
-        addCurrentSpeedChip = root.findViewById(R.id.add_current_speed_chip);
-        addCurrentSpeedChip.setCloseIconVisible(true);
-        addCurrentSpeedChip.setCloseIconResource(R.drawable.ic_add);
-        addCurrentSpeedChip.setOnCloseIconClickListener(v -> addCurrentSpeed());
-        addCurrentSpeedChip.setCloseIconContentDescription(getString(R.string.add_preset));
-        addCurrentSpeedChip.setOnClickListener(v -> addCurrentSpeed());
+        // Numeric readout of the current speed in the dialog header.
+        currentSpeedLabel = root.findViewById(R.id.current_speed_label);
+        currentSpeedLabel.setText(String.format(Locale.getDefault(), "%1$.2f×",
+                UserPreferences.getPlaybackSpeed()));
+
+        // "+ Add current" TextButton placed next to the Speed presets header so
+        // its plus icon doesn't visually compete with the seek-bar's + button.
+        addCurrentSpeedButton = root.findViewById(R.id.add_current_speed_button);
+        addCurrentSpeedButton.setOnClickListener(v -> addCurrentSpeed());
 
         skipSilenceCheckbox = root.findViewById(R.id.skipSilence);
         skipSilenceCheckbox.setChecked(UserPreferences.isSkipSilence());
@@ -287,7 +291,7 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     private void addCurrentSpeed() {
         float newSpeed = speedSeekBar.getCurrentSpeed();
         if (selectedSpeeds.contains(newSpeed)) {
-            Snackbar.make(addCurrentSpeedChip,
+            Snackbar.make(addCurrentSpeedButton,
                     getString(R.string.preset_already_exists, newSpeed), Snackbar.LENGTH_LONG).show();
         } else {
             selectedSpeeds.add(newSpeed);
