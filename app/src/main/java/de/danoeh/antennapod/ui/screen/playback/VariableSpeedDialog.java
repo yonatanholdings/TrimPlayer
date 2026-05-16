@@ -117,7 +117,15 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                     }
                     cachedMedia = maybe.orElse(null);
                     updateSpeed(new SpeedChangedEvent(controller.getCurrentPlaybackSpeedMultiplier()));
-                    updateSkipSilence(controller.getCurrentPlaybackSkipSilence());
+                    // When no media is playing (Settings entry), the ExoPlayer-backed
+                    // controller.getCurrentPlaybackSkipSilence() returns false (idle
+                    // player default) regardless of the user's saved preference.
+                    // Read from prefs instead so the checkbox reflects the actual
+                    // global setting.
+                    boolean silence = cachedMedia != null
+                            ? controller.getCurrentPlaybackSkipSilence()
+                            : UserPreferences.isSkipSilence();
+                    updateSkipSilence(silence);
                     updateTrimSkipCheckboxes();
                 }, error -> Log.e(TAG, Log.getStackTraceString(error)));
 
