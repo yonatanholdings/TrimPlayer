@@ -11,8 +11,11 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.List;
 
 /**
  * HTTP client and helpers for talking to the TrimBrain backend.
@@ -68,6 +71,78 @@ public final class TrimPrefetcher {
             @Override
             public void onResponse(Call call, Response response) {
                 Log.d(TAG, "Prewarm -> " + response.code());
+                response.close();
+            }
+        });
+    }
+
+    /**
+     * Simple value object describing one queued episode. Fields mirror what
+     * the backend's POST /api/v1/queue expects.
+     */
+    public static final class QueueItem {
+        public final String rssUrl;
+        public final String episodeUrl;
+        public final String episodeGuid;
+
+        public QueueItem(String rssUrl, String episodeUrl, String episodeGuid) {
+            this.rssUrl = rssUrl;
+            this.episodeUrl = episodeUrl;
+            this.episodeGuid = episodeGuid;
+        }
+    }
+
+    /**
+     * Send the user's current playback-queue snapshot to the trim backend so
+     * the analyze pipeline can prioritize episodes about to be played. Fire
+     * and forget — failures are logged at debug level only since the backend
+     * will just fall back to its own popularity heuristics if no queue is
+     * present.
+     */
+    public static void postQueue(String clientId, List<QueueItem> items) {
+        if (clientId == null || clientId.isEmpty()) {
+            return;
+        }
+        String baseUrl = UserPreferences.getTrimServerUrl();
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            return;
+        }
+        String body;
+        try {
+            JSONArray arr = new JSONArray();
+            if (items != null) {
+                for (QueueItem it : items) {
+                    if (it.rssUrl == null || it.episodeUrl == null) continue;
+                    JSONObject o = new JSONObject();
+                    o.put("rss_url", it.rssUrl);
+                    o.put("episode_url", it.episodeUrl);
+                    if (it.episodeGuid != null) {
+                        o.put("episode_guid", it.episodeGuid);
+                    }
+                    arr.put(o);
+                }
+            }
+            JSONObject json = new JSONObject();
+            json.put("client_id", clientId);
+            json.put("items", arr);
+            body = json.toString();
+        } catch (JSONException e) {
+            Log.w(TAG, "Failed to build queue snapshot body", e);
+            return;
+        }
+        Request request = new Request.Builder()
+                .url(baseUrl + "queue")
+                .post(RequestBody.create(body, JSON))
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d(TAG, "postQueue failed: " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) {
+                Log.d(TAG, "postQueue -> " + response.code());
                 response.close();
             }
         });

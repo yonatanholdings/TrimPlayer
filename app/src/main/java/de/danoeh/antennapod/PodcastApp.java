@@ -37,6 +37,7 @@ public class PodcastApp extends Application {
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true);
         EventBus.getDefault().register(new TrimAnalytics(this));
         EventBus.getDefault().register(new TrimPrefetchSubscriber());
+        EventBus.getDefault().register(new TrimQueueSubscriber());
         de.danoeh.antennapod.net.common.TrimPrefetcher.prewarm();
         scheduleTrimEventsUpload();
     }
