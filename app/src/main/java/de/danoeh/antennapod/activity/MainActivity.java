@@ -716,6 +716,60 @@ public class MainActivity extends CastEnabledActivity {
         snackbar.show();
     }
 
+    /**
+     * Auto-boost confirmation: shown when the user double-pressed volume-up at
+     * max (or stepped down past half-max from max) and PlaybackService bumped
+     * the per-feed volumeAdaptionSetting. Snackbar includes an UNDO action that
+     * restores the previous setting — important because the gesture is
+     * implicit and a misfire should be cheap to recover from.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onVolumeBoostAutoChanged(
+            de.danoeh.antennapod.event.VolumeBoostAutoChangedEvent event) {
+        if (isFinishing() || isDestroyed()) return;
+        String podcast = event.podcastTitle.isEmpty()
+                ? getString(R.string.app_action_fallback_podcast_name)
+                : event.podcastTitle;
+        String boostName;
+        switch (event.newSetting) {
+            case OFF:          boostName = getString(R.string.volume_boost_off); break;
+            case LIGHT_BOOST:  boostName = getString(R.string.volume_boost_light); break;
+            case MEDIUM_BOOST: boostName = getString(R.string.volume_boost_medium); break;
+            case HEAVY_BOOST:  boostName = getString(R.string.volume_boost_heavy); break;
+            default:           boostName = event.newSetting.name();
+        }
+        String msg = getString(R.string.volume_boost_auto_changed, podcast, boostName);
+        Snackbar snackbar;
+        if (getBottomSheet().getState() == BottomSheetBehavior.STATE_COLLAPSED) {
+            snackbar = Snackbar.make(findViewById(R.id.main_content_view), msg, Snackbar.LENGTH_LONG);
+            if (findViewById(R.id.audioplayerFragment).getVisibility() == View.VISIBLE) {
+                snackbar.setAnchorView(findViewById(R.id.audioplayerFragment));
+            }
+        } else {
+            snackbar = Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG);
+        }
+        // UNDO: revert to previousSetting. Uses the same broadcast event the
+        // boost ladder uses so PlaybackService applies and persists the revert.
+        final long feedId = event.feedId;
+        final de.danoeh.antennapod.model.feed.VolumeAdaptionSetting revertTo = event.previousSetting;
+        snackbar.setAction(R.string.undo_label, v -> revertVolumeBoost(feedId, revertTo));
+        snackbar.show();
+    }
+
+    /** Revert helper: persist the original setting + tell the running player. */
+    private void revertVolumeBoost(long feedId,
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting revertTo) {
+        io.reactivex.rxjava3.core.Completable.fromAction(() -> {
+            de.danoeh.antennapod.model.feed.Feed feed =
+                    de.danoeh.antennapod.storage.database.DBReader.getFeed(feedId, false, 0, 0);
+            if (feed == null || feed.getPreferences() == null) return;
+            feed.getPreferences().setVolumeAdaptionSetting(revertTo);
+            de.danoeh.antennapod.storage.database.DBWriter.setFeedPreferences(feed.getPreferences());
+            org.greenrobot.eventbus.EventBus.getDefault().post(
+                    new de.danoeh.antennapod.event.settings.VolumeAdaptionChangedEvent(revertTo, feedId));
+        }).subscribeOn(io.reactivex.rxjava3.schedulers.Schedulers.io()).subscribe();
+    }
+
     private void handleNavIntent() {
         Log.d(TAG, "handleNavIntent()");
         Intent intent = getIntent();

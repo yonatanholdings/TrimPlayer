@@ -578,6 +578,7 @@
     <string name="trim_analyze_queued_fallback_podcast_name">this podcast</string>
     <!-- Auto volume-boost feedback. %1$s is the podcast title, %2$s is the new boost level. -->
     <string name="volume_boost_auto_changed">%1$s volume boost: %2$s</string>
+    <string name="undo_label">Undo</string>
     <string name="volume_boost_off">off</string>
     <string name="volume_boost_light">light</string>
     <string name="volume_boost_medium">medium</string>

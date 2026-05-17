@@ -2310,9 +2310,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         if (podcast == null || podcast.isEmpty()) {
             podcast = getString(R.string.app_action_fallback_podcast_name);
         }
+        // Toast fires regardless of whether the app UI is in the foreground —
+        // useful for Bluetooth / locked-screen contexts where the Snackbar
+        // (posted via VolumeBoostAutoChangedEvent below) won't render.
         Toast.makeText(this,
                 getString(R.string.volume_boost_auto_changed, podcast, boostLabel(next)),
                 Toast.LENGTH_SHORT).show();
+        // In-app: MainActivity shows a longer Snackbar with an UNDO action.
+        EventBus.getDefault().post(
+                new de.danoeh.antennapod.event.VolumeBoostAutoChangedEvent(
+                        feedId, podcast, next, current));
         Log.d(TAG, "Auto-adjusted volume boost for feed " + feedId
                 + ": " + current + " → " + next);
     }
