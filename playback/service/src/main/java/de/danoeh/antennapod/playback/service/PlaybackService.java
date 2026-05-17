@@ -197,6 +197,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     private int silenceTrackLastPos = -1;
     private long silenceTrackLastTime = -1;
     private BroadcastReceiver volumeReceiver = null;
+    // Per-podcast auto-boost: track the previous STREAM_MUSIC volume so we can
+    // detect a redundant volume-up press at the ceiling (or volume-down well
+    // below ceiling) and step the current feed's volumeAdaptionSetting up/down
+    // the ladder. Cooldown prevents one rocker hold from skipping multiple
+    // levels.
+    private int autoBoostLastVolume = -1;
+    private int autoBoostMaxVolume = -1;
+    private long autoBoostLastChangeMs = 0;
+    private static final long AUTO_BOOST_COOLDOWN_MS = 2000L;
     private final Handler clickHandler = new Handler(Looper.getMainLooper());
 
     private volatile List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> currentSegments = Collections.emptyList();
@@ -2224,12 +2233,121 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             public void onReceive(Context context, Intent intent) {
                 pauseIfMuted();
                 unpauseIfMuted();
+                maybeAutoAdjustVolumeBoost();
             }
         };
         IntentFilter filter = new IntentFilter();
         filter.addAction("android.media.VOLUME_CHANGED_ACTION");
         filter.addAction("android.media.STREAM_MUTE_CHANGED_ACTION");
         ContextCompat.registerReceiver(this, volumeReceiver, filter, ContextCompat.RECEIVER_EXPORTED);
+    }
+
+    /**
+     * If the user presses volume-up while STREAM_MUSIC is already at max
+     * (the redundant press the OS would normally just ignore), bump the
+     * current podcast's volumeAdaptionSetting up the boost ladder. Symmetric
+     * lower path: when the volume drops from at-max to below half-max while
+     * the feed is currently boosted, step the boost back down one level.
+     *
+     * No-ops when: nothing is playing, the playable isn't a FeedMedia,
+     * boost isn't supported on this device (no LOUDNESS_ENHANCER effect),
+     * Android Auto is connected (car owns its own volume), or the cooldown
+     * window is still open.
+     */
+    private void maybeAutoAdjustVolumeBoost() {
+        if (androidAutoConnected) return;
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if (am == null) return;
+
+        int cur = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+        int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        int prev = autoBoostLastVolume;
+        autoBoostLastVolume = cur;
+        autoBoostMaxVolume  = max;
+
+        // Don't infer intent from the first event after process start —
+        // STREAM_MUSIC could already be at any value.
+        if (prev < 0) return;
+        if (max <= 0) return;
+        if (System.currentTimeMillis() - autoBoostLastChangeMs < AUTO_BOOST_COOLDOWN_MS) return;
+        if (!de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.isBoostSupported()) return;
+
+        Playable p = mediaPlayer != null ? mediaPlayer.getPlayable() : null;
+        if (!(p instanceof FeedMedia)) return;
+        FeedMedia fm = (FeedMedia) p;
+        if (fm.getItem() == null || fm.getItem().getFeed() == null
+                || fm.getItem().getFeed().getPreferences() == null) {
+            return;
+        }
+        de.danoeh.antennapod.model.feed.FeedPreferences prefs =
+                fm.getItem().getFeed().getPreferences();
+        de.danoeh.antennapod.model.feed.VolumeAdaptionSetting current =
+                prefs.getVolumeAdaptionSetting();
+        de.danoeh.antennapod.model.feed.VolumeAdaptionSetting next = null;
+
+        // Redundant volume-up press at the ceiling → step up the boost ladder.
+        if (prev == max && cur == max) {
+            next = stepBoostUp(current);
+        }
+        // User lowered well below the ceiling while boosted → step the boost
+        // back down. The "well below" guard avoids demoting on small accidental
+        // dips (e.g. a brief touch on volume-down).
+        else if (prev == max && cur < max / 2) {
+            next = stepBoostDown(current);
+        }
+
+        if (next == null || next == current) return;
+
+        prefs.setVolumeAdaptionSetting(next);
+        autoBoostLastChangeMs = System.currentTimeMillis();
+        long feedId = fm.getItem().getFeed().getId();
+        // Persist and apply to the running player.
+        de.danoeh.antennapod.storage.database.DBWriter.setFeedPreferences(prefs);
+        EventBus.getDefault().post(
+                new de.danoeh.antennapod.event.settings.VolumeAdaptionChangedEvent(next, feedId));
+
+        String podcast = fm.getItem().getFeed().getTitle();
+        if (podcast == null || podcast.isEmpty()) {
+            podcast = getString(R.string.app_action_fallback_podcast_name);
+        }
+        Toast.makeText(this,
+                getString(R.string.volume_boost_auto_changed, podcast, boostLabel(next)),
+                Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Auto-adjusted volume boost for feed " + feedId
+                + ": " + current + " → " + next);
+    }
+
+    private static de.danoeh.antennapod.model.feed.VolumeAdaptionSetting stepBoostUp(
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting current) {
+        switch (current) {
+            case LIGHT_REDUCTION:
+            case HEAVY_REDUCTION:
+            case OFF:           return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST;
+            case LIGHT_BOOST:   return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.MEDIUM_BOOST;
+            case MEDIUM_BOOST:  return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.HEAVY_BOOST;
+            case HEAVY_BOOST:   return null;  // already at ceiling
+            default:            return null;
+        }
+    }
+
+    private static de.danoeh.antennapod.model.feed.VolumeAdaptionSetting stepBoostDown(
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting current) {
+        switch (current) {
+            case HEAVY_BOOST:   return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.MEDIUM_BOOST;
+            case MEDIUM_BOOST:  return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST;
+            case LIGHT_BOOST:   return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.OFF;
+            default:            return null;  // not boosted → nothing to undo
+        }
+    }
+
+    private String boostLabel(de.danoeh.antennapod.model.feed.VolumeAdaptionSetting setting) {
+        switch (setting) {
+            case OFF:           return getString(R.string.volume_boost_off);
+            case LIGHT_BOOST:   return getString(R.string.volume_boost_light);
+            case MEDIUM_BOOST:  return getString(R.string.volume_boost_medium);
+            case HEAVY_BOOST:   return getString(R.string.volume_boost_heavy);
+            default:            return setting.name();
+        }
     }
 
     private void unregisterVolumeObserver() {

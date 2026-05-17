@@ -576,6 +576,13 @@
     <!-- %1$s is the podcast title. -->
     <string name="trim_analyze_queued_body">%1$s gets mapped — yours, and everyone\'s.</string>
     <string name="trim_analyze_queued_fallback_podcast_name">this podcast</string>
+    <!-- Auto volume-boost feedback. %1$s is the podcast title, %2$s is the new boost level. -->
+    <string name="volume_boost_auto_changed">%1$s volume boost: %2$s</string>
+    <string name="volume_boost_off">off</string>
+    <string name="volume_boost_light">light</string>
+    <string name="volume_boost_medium">medium</string>
+    <string name="volume_boost_heavy">heavy</string>
+    <string name="app_action_fallback_podcast_name">this podcast</string>
     <!-- Snackbar when analysis completes mid-playback and segments arrive for the current episode. %1$s is the podcast title. -->
     <string name="trim_segments_unlocked_snackbar">%1$s is trimmed. Outro &amp; ads will skip on their own.</string>
     <!-- End-of-episode summary toast. %1$s is total duration, %2$s is breakdown ("1 intro, 2 ads"). -->
