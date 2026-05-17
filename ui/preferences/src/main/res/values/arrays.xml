@@ -156,6 +156,7 @@
     <string-array name="mobile_update_default_value">
         <item>images</item>
         <item>sync</item>
+        <item>streaming</item>
     </string-array>
 
     <string-array name="episode_cleanup_entries">

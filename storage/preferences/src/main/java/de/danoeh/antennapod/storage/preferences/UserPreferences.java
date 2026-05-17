@@ -488,6 +488,7 @@ public abstract class UserPreferences {
     private static boolean isAllowMobileFor(String type) {
         HashSet<String> defaultValue = new HashSet<>();
         defaultValue.add("images");
+        defaultValue.add("streaming");
         Set<String> allowed = prefs.getStringSet(PREF_MOBILE_UPDATE, defaultValue);
         return allowed.contains(type);
     }
@@ -519,6 +520,7 @@ public abstract class UserPreferences {
     private static void setAllowMobileFor(String type, boolean allow) {
         HashSet<String> defaultValue = new HashSet<>();
         defaultValue.add("images");
+        defaultValue.add("streaming");
         final Set<String> getValueStringSet = prefs.getStringSet(PREF_MOBILE_UPDATE, defaultValue);
         final Set<String> allowed = new HashSet<>(getValueStringSet);
         if (allow) {
