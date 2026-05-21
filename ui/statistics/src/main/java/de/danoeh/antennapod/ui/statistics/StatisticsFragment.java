@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -35,6 +36,8 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 public class StatisticsFragment extends PagedToolbarFragment {
     public static final String TAG = "StatisticsFragment";
@@ -54,12 +57,15 @@ public class StatisticsFragment extends PagedToolbarFragment {
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
     private MaterialToolbar toolbar;
+    private StatisticsViewModel viewModel;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         setHasOptionsMenu(true);
+
+        viewModel = new ViewModelProvider(this).get(StatisticsViewModel.class);
 
         View rootView = inflater.inflate(R.layout.pager_fragment, container, false);
         viewPager = rootView.findViewById(R.id.viewpager);
@@ -69,9 +75,6 @@ public class StatisticsFragment extends PagedToolbarFragment {
         } else {
             toolbar.setTitle(getString(R.string.statistics_label));
             toolbar.inflateMenu(R.menu.statistics);
-            // Filter is part of an in-progress redesign (see STATS_REDESIGN.md) and
-            // currently has no handler — hide it instead of showing a dead button.
-            toolbar.getMenu().findItem(R.id.statistics_filter).setVisible(false);
             if (BuildConfig.DEBUG || EchoConfig.isCurrentlyVisible()) {
                 toolbar.getMenu().findItem(R.id.show_echo).setVisible(true);
             }
@@ -105,14 +108,54 @@ public class StatisticsFragment extends PagedToolbarFragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onStatisticsEvent(StatisticsEvent event) {
+        if (viewModel != null) {
+            viewModel.refresh();
+        }
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.statistics_reset) {
             confirmResetStatistics();
+            return true;
+        } else if (item.getItemId() == R.id.statistics_filter) {
+            showFilterDialog();
             return true;
         } else if (item.getItemId() == R.id.show_echo) {
             startActivity(new Intent(getContext(), EchoActivity.class));
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /** Open the date-range / include-marked-played filter dialog. The dialog
+     *  persists its selection to SharedPreferences and posts a StatisticsEvent
+     *  on confirm, which {@link #onStatisticsEvent} forwards to the ViewModel
+     *  to trigger a refresh.
+     *
+     *  NOTE: the SharedPreferences keys exist and are honored end-to-end here,
+     *  but the underlying {@link DBReader#getEditorialStats} doesn't yet apply
+     *  a date range to its cursors — that's the open follow-up. The filter UI
+     *  saves user intent so the plumbing change later is observable. */
+    private void showFilterDialog() {
+        // Use a generous oldest-date floor — refining requires a quick DB lookup
+        // for the actual earliest play, which we defer for now. 5 years is enough
+        // for the typical user.
+        long oldest = System.currentTimeMillis() - 5L * 365 * 24 * 3600 * 1000;
+        new de.danoeh.antennapod.ui.statistics.subscriptions.StatisticsFilterDialog(
+                requireContext(), oldest).show();
     }
 
     private void confirmResetStatistics() {

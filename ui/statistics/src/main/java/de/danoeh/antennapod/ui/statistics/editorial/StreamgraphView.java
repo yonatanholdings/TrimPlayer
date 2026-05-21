@@ -36,17 +36,17 @@ public class StreamgraphView extends View {
         strokePaint.setStyle(Paint.Style.STROKE);
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
-        strokePaint.setColor(EditorialTheme.ACCENT);
+        strokePaint.setColor(EditorialTheme.vermilion(getContext()));
         circlePaint.setStyle(Paint.Style.STROKE);
-        circlePaint.setColor(EditorialTheme.ACCENT);
+        circlePaint.setColor(EditorialTheme.vermilion(getContext()));
         circleFill.setStyle(Paint.Style.FILL);
-        circleFill.setColor(EditorialTheme.BG);
+        circleFill.setColor(EditorialTheme.paper(getContext()));
         labelPaint.setTextAlign(Paint.Align.CENTER);
-        labelPaint.setColor(EditorialTheme.INK);
+        labelPaint.setColor(EditorialTheme.ink(getContext()));
         yearPaint.setTextAlign(Paint.Align.CENTER);
-        yearPaint.setColor(EditorialTheme.INK_MUTE);
+        yearPaint.setColor(EditorialTheme.inkMuted(getContext()));
         tickPaint.setTextAlign(Paint.Align.CENTER);
-        tickPaint.setColor(EditorialTheme.ACCENT);
+        tickPaint.setColor(EditorialTheme.vermilion(getContext()));
         fillPaint.setStyle(Paint.Style.FILL);
     }
 
@@ -66,8 +66,8 @@ public class StreamgraphView extends View {
     protected void onSizeChanged(int w, int h, int ow, int oh) {
         float labelH = 24 * getResources().getDisplayMetrics().density;
         fillPaint.setShader(new LinearGradient(0, 0, 0, h - labelH,
-                Color.argb(87, Color.red(EditorialTheme.ACCENT), Color.green(EditorialTheme.ACCENT), Color.blue(EditorialTheme.ACCENT)),
-                Color.argb(5, Color.red(EditorialTheme.ACCENT), Color.green(EditorialTheme.ACCENT), Color.blue(EditorialTheme.ACCENT)),
+                Color.argb(87, Color.red(EditorialTheme.vermilion(getContext())), Color.green(EditorialTheme.vermilion(getContext())), Color.blue(EditorialTheme.vermilion(getContext()))),
+                Color.argb(5, Color.red(EditorialTheme.vermilion(getContext())), Color.green(EditorialTheme.vermilion(getContext())), Color.blue(EditorialTheme.vermilion(getContext()))),
                 Shader.TileMode.CLAMP));
     }
 
@@ -143,10 +143,10 @@ public class StreamgraphView extends View {
 
             // PEAK / YTD tick
             if (isPeak) {
-                tickPaint.setColor(EditorialTheme.ACCENT);
+                tickPaint.setColor(EditorialTheme.vermilion(getContext()));
                 canvas.drawText("PEAK", xs[i], tickH - 3 * d, tickPaint);
             } else if (isLast) {
-                tickPaint.setColor(EditorialTheme.INK_MUTE);
+                tickPaint.setColor(EditorialTheme.inkMuted(getContext()));
                 canvas.drawText("YTD", xs[i], tickH - 3 * d, tickPaint);
             }
         }

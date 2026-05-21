@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Editorial statistics design tokens (dark/night theme).
+  Paper inverts to deep ink; ink inverts to warm cream. Vermilion accent and
+  gold stay roughly the same hue but are lifted slightly for contrast against
+  dark paper. The rule-faint alpha hex carries the ink-color cream channel.
+-->
+<resources>
+    <color name="editorial_paper">#FF15110D</color>
+    <color name="editorial_paper_alt">#FF1F1814</color>
+    <color name="editorial_ink">#FFF5EFE5</color>
+    <color name="editorial_ink_soft">#FFD6CFC2</color>
+    <color name="editorial_ink_caption">#FFB8AFA0</color>
+    <color name="editorial_ink_muted">#FF948A7C</color>
+    <color name="editorial_ink_v_muted">#FF6E635A</color>
+    <color name="editorial_vermilion">#FFD66247</color>
+    <color name="editorial_vermilion_soft">#FF8C3422</color>
+    <color name="editorial_vermilion_tint">#FF5C2415</color>
+    <color name="editorial_gold">#FFD4A359</color>
+    <color name="editorial_gold_soft">#FF6E5022</color>
+    <color name="editorial_rule_thick">#FFF5EFE5</color>
+    <color name="editorial_rule_faint">#1AF5EFE5</color>
+    <color name="editorial_rule_v_faint">#0DF5EFE5</color>
+</resources>

@@ -3,7 +3,6 @@ package de.danoeh.antennapod.ui.statistics.years;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,70 +13,57 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
-
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import de.danoeh.antennapod.event.StatisticsEvent;
 import de.danoeh.antennapod.storage.database.DBReader;
+import de.danoeh.antennapod.storage.database.StatisticsItem;
+import de.danoeh.antennapod.ui.statistics.DemoStats;
 import de.danoeh.antennapod.ui.statistics.R;
+import de.danoeh.antennapod.ui.statistics.StatisticsViewModel;
 import de.danoeh.antennapod.ui.statistics.editorial.EditorialTheme;
 import de.danoeh.antennapod.ui.statistics.editorial.StreamgraphView;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class YearsStatisticsFragment extends Fragment {
-    private static final String TAG = "YearsStatsFragment";
-    private Disposable disposable;
 
     private TextView allTimeHours;
     private TextView allTimeDays;
     private StreamgraphView streamgraph;
     private LinearLayout yearRows;
+    private LinearLayout yearDrilldown;
+    private LinearLayout yearDrilldownRows;
+    private TextView yearDrilldownYear;
+    private Integer selectedYear;
+    private Disposable yearQueryDisposable;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_years_editorial, container, false);
-        allTimeHours = root.findViewById(R.id.all_time_hours);
-        allTimeDays  = root.findViewById(R.id.all_time_days);
-        streamgraph  = root.findViewById(R.id.streamgraph);
-        yearRows     = root.findViewById(R.id.year_rows);
+        allTimeHours       = root.findViewById(R.id.all_time_hours);
+        allTimeDays        = root.findViewById(R.id.all_time_days);
+        streamgraph        = root.findViewById(R.id.streamgraph);
+        yearRows           = root.findViewById(R.id.year_rows);
+        yearDrilldown      = root.findViewById(R.id.year_drilldown);
+        yearDrilldownRows  = root.findViewById(R.id.year_drilldown_rows);
+        yearDrilldownYear  = root.findViewById(R.id.year_drilldown_year);
         allTimeHours.setTypeface(EditorialTheme.getSerif(requireContext()));
+
+        new ViewModelProvider(requireParentFragment())
+                .get(StatisticsViewModel.class)
+                .editorial()
+                .observe(getViewLifecycleOwner(), s -> { if (s != null) bind(s); });
+
         return root;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-        refresh();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        EventBus.getDefault().unregister(this);
-        if (disposable != null) disposable.dispose();
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onStatisticsEvent(StatisticsEvent event) { refresh(); }
-
-    private void refresh() {
-        if (disposable != null) disposable.dispose();
-        disposable = Observable.fromCallable(DBReader::getEditorialStats)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::bind, e -> Log.e(TAG, Log.getStackTraceString(e)));
     }
 
     private void bind(DBReader.EditorialStats s) {
@@ -113,23 +99,31 @@ public class YearsStatisticsFragment extends Fragment {
             lp.setMarginStart(dpToPx(24));
             lp.setMarginEnd(dpToPx(24));
             div.setLayoutParams(lp);
-            div.setBackgroundColor(EditorialTheme.FAINT);
+            div.setBackgroundColor(EditorialTheme.ruleFaint(requireContext()));
             yearRows.addView(div);
         }
     }
 
     private View buildYearRow(Context ctx, DBReader.EditorialStats.YearItem y,
                                float prevHrs, float maxYearHrs) {
+        boolean isSelected = selectedYear != null && selectedYear == y.year;
+        int accent = isSelected ? EditorialTheme.vermilion(ctx) : EditorialTheme.ink(ctx);
+
         LinearLayout row = new LinearLayout(ctx);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(12));
         row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        android.util.TypedValue tv = new android.util.TypedValue();
+        ctx.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, tv, true);
+        row.setBackgroundResource(tv.resourceId);
+        row.setClickable(true);
+        row.setOnClickListener(v -> onYearTap(y.year));
 
         // Year label
         TextView tvYear = new TextView(ctx);
         tvYear.setText(String.valueOf(y.year));
         tvYear.setTextSize(15);
-        tvYear.setTextColor(EditorialTheme.INK);
+        tvYear.setTextColor(accent);
         tvYear.setMinWidth(dpToPx(48));
         row.addView(tvYear);
 
@@ -143,8 +137,8 @@ public class YearsStatisticsFragment extends Fragment {
         bar.setLayoutParams(bLp);
         bar.setMax(1000);
         bar.setProgress((int) (y.hrs / maxYearHrs * 1000));
-        bar.setProgressTintList(android.content.res.ColorStateList.valueOf(EditorialTheme.ACCENT));
-        bar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(EditorialTheme.FAINT));
+        bar.setProgressTintList(android.content.res.ColorStateList.valueOf(EditorialTheme.vermilion(ctx)));
+        bar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(EditorialTheme.ruleFaint(ctx)));
         row.addView(bar);
 
         // Hours
@@ -156,7 +150,7 @@ public class YearsStatisticsFragment extends Fragment {
                 ? String.format(Locale.getDefault(), "%dd %dh", days, hrs)
                 : String.format(Locale.getDefault(), "%dh", yearHoursRounded));
         tvHrs.setTextSize(16);
-        tvHrs.setTextColor(EditorialTheme.INK);
+        tvHrs.setTextColor(accent);
         tvHrs.setTypeface(EditorialTheme.getSerif(ctx));
         tvHrs.setMinWidth(dpToPx(48));
         tvHrs.setGravity(android.view.Gravity.END);
@@ -169,7 +163,7 @@ public class YearsStatisticsFragment extends Fragment {
         tvDelta.setGravity(android.view.Gravity.END);
         if (prevHrs < 0) {
             tvDelta.setText("FIRST");
-            tvDelta.setTextColor(EditorialTheme.INK_MUTE);
+            tvDelta.setTextColor(EditorialTheme.inkMuted(ctx));
         } else if (prevHrs == 0) {
             tvDelta.setText("");
         } else {
@@ -179,12 +173,171 @@ public class YearsStatisticsFragment extends Fragment {
                 tvDelta.setTextColor(0xFF3a7a3a);
             } else {
                 tvDelta.setText("▼ " + Math.abs(delta) + "%");
-                tvDelta.setTextColor(EditorialTheme.ACCENT);
+                tvDelta.setTextColor(EditorialTheme.vermilion(ctx));
             }
         }
         row.addView(tvDelta);
 
         return row;
+    }
+
+    /** Tap-toggle on a year row. Selected year drives the §02 top-shows
+     *  drill-down; re-tapping deselects and collapses the section. */
+    private void onYearTap(int year) {
+        if (selectedYear != null && selectedYear == year) {
+            selectedYear = null;
+            if (yearQueryDisposable != null) yearQueryDisposable.dispose();
+            yearDrilldown.setVisibility(View.GONE);
+        } else {
+            selectedYear = year;
+            loadTopShowsForYear(year);
+        }
+        // Re-render year list so selection visual updates.
+        DBReader.EditorialStats s = new ViewModelProvider(requireParentFragment())
+                .get(StatisticsViewModel.class).editorial().getValue();
+        if (s != null) bind(s);
+    }
+
+    /** Async: fetch top shows for the given year and render up to 5 rows in
+     *  the §02 drill-down section. Brief "LOADING…" caption while in flight. */
+    private void loadTopShowsForYear(int year) {
+        yearDrilldown.setVisibility(View.VISIBLE);
+        yearDrilldownYear.setText("YEAR " + year + " · LOADING…");
+        yearDrilldownRows.removeAllViews();
+        if (DemoStats.ENABLED) {
+            renderTopShows(fakeTopShowsForYear(year), year);
+            return;
+        }
+        long from = startOfYear(year);
+        long to = startOfYear(year + 1) - 1;
+        if (yearQueryDisposable != null) yearQueryDisposable.dispose();
+        yearQueryDisposable = Single
+                .fromCallable(() -> DBReader.getStatistics(false, from, to))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(result -> renderTopShows(result.feedTime, year),
+                        e -> yearDrilldownYear.setText("YEAR " + year + " · UNAVAILABLE"));
+    }
+
+    /** Synthetic top-5 list for demo screenshots — different mix per year so
+     *  drilling into different years feels real, not copy-pasted. */
+    private List<StatisticsItem> fakeTopShowsForYear(int year) {
+        String[][] perYear = {
+                // year offset (year - 2022) -> show titles
+                {"The Daily", "99% Invisible", "Reply All", "Radiolab", "Planet Money"},
+                {"The Daily", "Hard Fork", "Acquired", "99% Invisible", "Conan O'Brien Needs a Friend"},
+                {"Hard Fork", "Lex Fridman Podcast", "The Daily", "Acquired", "Search Engine"},
+                {"Lex Fridman Podcast", "Acquired", "Hard Fork", "Search Engine", "99% Invisible"},
+                {"Hard Fork", "Acquired", "The Daily", "Lex Fridman Podcast", "Search Engine"},
+        };
+        int[][] perYearHrs = {
+                {18, 14, 11,  9,  7},
+                {28, 22, 18, 14, 11},
+                {34, 28, 22, 17, 13},
+                {41, 36, 28, 24, 19},
+                {24, 19, 15, 12,  9},
+        };
+        int idx = Math.max(0, Math.min(perYear.length - 1, year - 2022));
+        String[] titles = perYear[idx];
+        int[] hrs = perYearHrs[idx];
+
+        List<StatisticsItem> items = new java.util.ArrayList<>(titles.length);
+        for (int i = 0; i < titles.length; i++) {
+            de.danoeh.antennapod.model.feed.Feed f =
+                    new de.danoeh.antennapod.model.feed.Feed("", null, titles[i]);
+            long timePlayedSec = hrs[i] * 3600L;
+            items.add(new StatisticsItem(f, timePlayedSec, timePlayedSec,
+                    50, 30, 0, 0, false, timePlayedSec / 8));
+        }
+        return items;
+    }
+
+    /** Render the top 5 shows for the selected year. Empty state if none. */
+    private void renderTopShows(List<StatisticsItem> items, int year) {
+        Context ctx = requireContext();
+        yearDrilldownYear.setText("YEAR " + year);
+        yearDrilldownRows.removeAllViews();
+        List<StatisticsItem> sorted = new java.util.ArrayList<>(items);
+        Collections.sort(sorted, (a, b) -> Long.compare(b.timePlayed, a.timePlayed));
+        long maxPlayed = sorted.isEmpty() ? 1 : Math.max(1, sorted.get(0).timePlayed);
+
+        int count = 0;
+        for (StatisticsItem it : sorted) {
+            if (it.timePlayed <= 0) continue;
+            if (count >= 5) break;
+            yearDrilldownRows.addView(buildTopShowRow(ctx, it, maxPlayed));
+            count++;
+        }
+        if (count == 0) {
+            TextView empty = new TextView(ctx);
+            empty.setText("No listening recorded for this year.");
+            empty.setTextSize(13);
+            empty.setTextColor(EditorialTheme.inkMuted(ctx));
+            empty.setTypeface(null, android.graphics.Typeface.ITALIC);
+            empty.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            yearDrilldownRows.addView(empty);
+        }
+    }
+
+    /** One top-show row inside the year drill-down: title · bar · serif hours. */
+    private View buildTopShowRow(Context ctx, StatisticsItem it, long maxPlayedSec) {
+        LinearLayout row = new LinearLayout(ctx);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, dpToPx(8), 0, dpToPx(8));
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+        TextView title = new TextView(ctx);
+        title.setText(it.feed != null ? it.feed.getTitle() : "—");
+        title.setTextSize(14);
+        title.setTextColor(EditorialTheme.ink(ctx));
+        title.setMaxLines(1);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        title.setLayoutParams(titleLp);
+        row.addView(title);
+
+        ProgressBar bar = new ProgressBar(ctx, null,
+                android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(1000);
+        bar.setProgress(maxPlayedSec > 0 ? (int) (it.timePlayed * 1000 / maxPlayedSec) : 0);
+        bar.setProgressTintList(android.content.res.ColorStateList.valueOf(EditorialTheme.vermilion(ctx)));
+        bar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(EditorialTheme.ruleFaint(ctx)));
+        LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dpToPx(64), dpToPx(3));
+        barLp.setMarginEnd(dpToPx(12));
+        bar.setLayoutParams(barLp);
+        row.addView(bar);
+
+        TextView hrs = new TextView(ctx);
+        long h = it.timePlayed / 3600;
+        long m = (it.timePlayed % 3600) / 60;
+        hrs.setText(h > 0
+                ? String.format(Locale.getDefault(), "%dh %dm", h, m)
+                : String.format(Locale.getDefault(), "%dm", m));
+        hrs.setTextSize(14);
+        hrs.setTextColor(EditorialTheme.ink(ctx));
+        hrs.setTypeface(EditorialTheme.getSerif(ctx));
+        hrs.setGravity(android.view.Gravity.END);
+        hrs.setMinWidth(dpToPx(56));
+        row.addView(hrs);
+
+        return row;
+    }
+
+    private static long startOfYear(int year) {
+        Calendar c = Calendar.getInstance();
+        c.clear();
+        c.set(year, Calendar.JANUARY, 1, 0, 0, 0);
+        return c.getTimeInMillis();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (yearQueryDisposable != null) {
+            yearQueryDisposable.dispose();
+            yearQueryDisposable = null;
+        }
     }
 
     private int dpToPx(int dp) {

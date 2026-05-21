@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white">
+    android:background="@color/editorial_paper">
 
     <!-- Masthead strip -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -13,15 +13,15 @@
             android:layout_weight="1"
             android:text="● TRIM PLAYER STATISTICS"
             android:textSize="9sp" android:letterSpacing="0.15"
-            android:textAllCaps="true" android:textColor="#7A6E60" />
+            android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="WHERE THE HOURS WENT"
             android:textSize="9sp" android:letterSpacing="0.15"
-            android:textAllCaps="true" android:textColor="#7A6E60" />
+            android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0.5dp"
-        android:background="#1A15110D" />
+        android:background="@color/editorial_rule_faint" />
 
     <!-- Donut + top 3 side by side -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -40,13 +40,13 @@
                 <TextView android:id="@+id/donut_kicker"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:textSize="8sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                    android:textColor="#7A6E60" android:gravity="center" />
+                    android:textColor="@color/editorial_ink_muted" android:gravity="center" />
                 <TextView android:id="@+id/donut_center"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="24sp" android:textColor="#15110D" android:gravity="center" />
+                    android:textSize="24sp" android:textColor="@color/editorial_ink" android:gravity="center" />
                 <TextView android:id="@+id/donut_caption"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="9sp" android:textColor="#7A6E60" android:gravity="center" />
+                    android:textSize="9sp" android:textColor="@color/editorial_ink_muted" android:gravity="center" />
             </LinearLayout>
         </FrameLayout>
 
@@ -55,15 +55,15 @@
             android:paddingLeft="16dp">
             <TextView android:id="@+id/top_show_1"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="13sp" android:textColor="#15110D"
+                android:textSize="13sp" android:textColor="@color/editorial_ink"
                 android:paddingTop="4dp" android:paddingBottom="4dp" />
             <TextView android:id="@+id/top_show_2"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="13sp" android:textColor="#15110D"
+                android:textSize="13sp" android:textColor="@color/editorial_ink"
                 android:paddingTop="4dp" android:paddingBottom="4dp" />
             <TextView android:id="@+id/top_show_3"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="13sp" android:textColor="#15110D"
+                android:textSize="13sp" android:textColor="@color/editorial_ink"
                 android:paddingTop="4dp" android:paddingBottom="4dp" />
         </LinearLayout>
 
@@ -77,16 +77,16 @@
             android:layout_weight="1"
             android:text="§ 01  ALL SUBSCRIPTIONS"
             android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-            android:textColor="#7A6E60" />
+            android:textColor="@color/editorial_ink_muted" />
         <TextView android:id="@+id/sort_label"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="SORTED BY HOURS"
             android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-            android:textColor="#7A6E60" />
+            android:textColor="@color/editorial_ink_muted" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0.5dp"
-        android:background="#1A15110D" />
+        android:background="@color/editorial_rule_faint" />
 
     <!-- Feed list -->
     <androidx.recyclerview.widget.RecyclerView

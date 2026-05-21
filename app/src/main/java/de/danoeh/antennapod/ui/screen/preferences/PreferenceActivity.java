@@ -35,6 +35,7 @@ public class PreferenceActivity extends ToolbarActivity implements SearchPrefere
     public static final String OPEN_AUTO_DOWNLOAD_SETTINGS = "OpenAutoDownloadSettings";
     public static final String OPEN_PLAYBACK_SETTINGS = "OpenPlaybackSettings";
     public static final String OPEN_IMPORT_EXPORT = "OpenImportExport";
+    public static final String OPEN_TRIM_PRO_SCREEN = "OpenTrimProScreen";
     public static final String IMPORT_URI = "ImportUri";
     private SettingsActivityBinding binding;
 
@@ -73,6 +74,14 @@ public class PreferenceActivity extends ToolbarActivity implements SearchPrefere
             getSupportFragmentManager().beginTransaction()
                     .replace(binding.settingsContainer.getId(), fragment)
                     .addToBackStack(getString(getTitleOfPage(R.xml.preferences_import_export)))
+                    .commit();
+        }
+        if (intent.getBooleanExtra(OPEN_TRIM_PRO_SCREEN, false)
+                && de.danoeh.antennapod.ui.screen.preferences.pro.TrimProDialogs.isProUiVisible()) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(binding.settingsContainer.getId(),
+                            new de.danoeh.antennapod.ui.screen.preferences.pro.TrimProFragment())
+                    .addToBackStack(getString(R.string.trim_pro_title))
                     .commit();
         }
     }

@@ -40,6 +40,16 @@ public class PodcastApp extends Application {
         EventBus.getDefault().register(new TrimQueueSubscriber());
         de.danoeh.antennapod.net.common.TrimPrefetcher.prewarm();
         scheduleTrimEventsUpload();
+        // Restore Pro entitlement on every cold start so a reinstall or a
+        // device swap recovers Pro without the user re-paying. The call is
+        // a no-op for free users (queryPurchasesAsync returns empty).
+        try {
+            de.danoeh.antennapod.billing.TrimBillingManager.get(this).connect();
+        } catch (Throwable t) {
+            // Defensive: BillingClient construction can fail on devices
+            // without Play Services. Don't crash the app.
+            Log.w(TAG, "Billing init failed (no Play Services?): " + t.getMessage());
+        }
     }
 
     private void scheduleTrimEventsUpload() {

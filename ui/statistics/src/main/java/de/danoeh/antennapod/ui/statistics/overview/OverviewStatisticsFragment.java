@@ -1,7 +1,6 @@
 package de.danoeh.antennapod.ui.statistics.overview;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,30 +9,22 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
-
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
-import de.danoeh.antennapod.event.StatisticsEvent;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.ui.statistics.R;
 import de.danoeh.antennapod.ui.statistics.StatisticsFragment;
+import de.danoeh.antennapod.ui.statistics.StatisticsViewModel;
 import de.danoeh.antennapod.ui.statistics.editorial.EditorialTheme;
 import de.danoeh.antennapod.ui.statistics.editorial.HeatmapView;
 import de.danoeh.antennapod.ui.statistics.editorial.SparklineView;
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class OverviewStatisticsFragment extends Fragment {
-    private static final String TAG = "OverviewStatsFragment";
-    private Disposable disposable;
 
     private TextView heroHours;
     private TextView heroMinutes;
@@ -47,6 +38,9 @@ public class OverviewStatisticsFragment extends Fragment {
     private TextView tocYearsHrs;
     private TextView tocSavedHrs;
     private TextView mastVol;
+    private TextView heatmapDetail;
+    /** Last bound editorial stats — needed by heatmap tap to look up per-cell ms. */
+    private DBReader.EditorialStats currentStats;
 
     @Nullable
     @Override
@@ -66,6 +60,10 @@ public class OverviewStatisticsFragment extends Fragment {
         tocYearsHrs = root.findViewById(R.id.toc_years_hrs);
         tocSavedHrs = root.findViewById(R.id.toc_saved_hrs);
         mastVol = root.findViewById(R.id.masthead_vol);
+        heatmapDetail = root.findViewById(R.id.heatmap_detail);
+
+        // Tap a heatmap cell → reveal the date + listening time underneath.
+        heatmap.setOnCellClickListener(this::onHeatmapCellTap);
 
         // Apply serif typeface to numerals
         heroHours.setTypeface(EditorialTheme.getSerif(requireContext()));
@@ -84,6 +82,11 @@ public class OverviewStatisticsFragment extends Fragment {
         wireToc(root.findViewById(R.id.toc_years), StatisticsFragment.POS_YEARS);
         wireToc(root.findViewById(R.id.toc_saved), StatisticsFragment.POS_TIME_SAVED);
 
+        new ViewModelProvider(requireParentFragment())
+                .get(StatisticsViewModel.class)
+                .editorial()
+                .observe(getViewLifecycleOwner(), s -> { if (s != null) bind(s); });
+
         return root;
     }
 
@@ -98,34 +101,28 @@ public class OverviewStatisticsFragment extends Fragment {
         });
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-        refresh();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        EventBus.getDefault().unregister(this);
-        if (disposable != null) disposable.dispose();
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onStatisticsEvent(StatisticsEvent event) {
-        refresh();
-    }
-
-    private void refresh() {
-        if (disposable != null) disposable.dispose();
-        disposable = Observable.fromCallable(DBReader::getEditorialStats)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::bind, e -> Log.e(TAG, Log.getStackTraceString(e)));
+    /** Heatmap cell tap → format "MMM DD · Xh Ym" (or "MMM DD · NO LISTENING") and
+     *  show in the detail row. Date computed from the cached `heatmapStartMs` so
+     *  no DB lookup is needed. */
+    private void onHeatmapCellTap(int weekIdx, int dayIdx) {
+        if (currentStats == null) return;
+        long dayMs = currentStats.heatmapStartMs + (weekIdx * 7L + dayIdx) * 86_400_000L;
+        java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("MMM d", Locale.getDefault());
+        String date = dateFmt.format(new Date(dayMs)).toUpperCase(Locale.getDefault());
+        long listenedMs = currentStats.heatmapMs[weekIdx][dayIdx];
+        if (listenedMs <= 0) {
+            heatmapDetail.setText(date + " · NO LISTENING");
+            return;
+        }
+        long minutes = listenedMs / 60_000L;
+        long hours = minutes / 60;
+        long mins = minutes % 60;
+        String hm = hours > 0 ? hours + "h " + mins + "m" : mins + "m";
+        heatmapDetail.setText(date + " · " + hm);
     }
 
     private void bind(DBReader.EditorialStats s) {
+        currentStats = s;
         // Year-to-date — show days if ≥ 24 h, else hours
         long ytdMs = 0;
         int curYear = Calendar.getInstance().get(Calendar.YEAR);

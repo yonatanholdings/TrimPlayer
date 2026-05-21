@@ -1744,13 +1744,20 @@ public class PodDBAdapter {
         return db.rawQuery(sql, null);
     }
 
-    /** Global episode play-state counts across all subscribed feeds. */
-    public Cursor getGlobalEpisodeCountsCursor() {
+    /** Global episode play-state counts across all subscribed feeds.
+     *  Splits started-but-not-finished into "active" (touched within the
+     *  abandoned cutoff) and "abandoned" (started but not resumed since).
+     *  @param abandonedCutoffMs epoch ms; episodes last played before this are abandoned. */
+    public Cursor getGlobalEpisodeCountsCursor(long abandonedCutoffMs) {
         String sql = "SELECT"
                 + " COUNT(*) AS total_started,"
                 + " SUM(CASE WHEN " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " = " + FeedItem.PLAYED + " THEN 1 ELSE 0 END) AS completed,"
                 + " SUM(CASE WHEN " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " != " + FeedItem.PLAYED
-                        + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0 THEN 1 ELSE 0 END) AS in_progress"
+                        + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0"
+                        + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " >= " + abandonedCutoffMs + " THEN 1 ELSE 0 END) AS in_progress,"
+                + " SUM(CASE WHEN " + TABLE_NAME_FEED_ITEMS + "." + KEY_READ + " != " + FeedItem.PLAYED
+                        + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0"
+                        + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " < " + abandonedCutoffMs + " THEN 1 ELSE 0 END) AS abandoned"
                 + " FROM " + TABLE_NAME_FEED_ITEMS
                 + JOIN_FEED_ITEM_AND_MEDIA
                 + " INNER JOIN " + TABLE_NAME_FEEDS

@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId "com.trimplayer"
-        versionName "1.0.6-beta1"
+        versionName "1.0.6-beta2"
         versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
@@ -145,6 +145,14 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:34.12.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
+
+    // Google Play Billing — used by app.billing.TrimBillingManager. The
+    // 'free' product flavor is currently vestigial (inherited from AntennaPod
+    // upstream); we ship 'play' to the Play Store. Plain implementation keeps
+    // the build green on both flavors. If F-Droid distribution is ever
+    // pursued, split this into flavor-specific source sets with a no-op
+    // TrimBillingManager under src/free/java/.
+    implementation 'com.android.billingclient:billing:8.0.0'
 
     implementation 'com.github.ByteHamster:SearchPreference:v2.5.0'
     implementation 'com.github.skydoves:balloon:1.5.3'

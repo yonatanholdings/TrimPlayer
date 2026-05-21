@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#FBF8F1">
+    android:background="@color/editorial_paper_alt">
 
     <!-- Header strip -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -14,15 +14,15 @@
             android:layout_weight="1"
             android:text="● DOSSIER"
             android:textSize="9sp" android:letterSpacing="0.15"
-            android:textAllCaps="true" android:textColor="#7A6E60" />
+            android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
         <TextView android:id="@+id/filed_date"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:textSize="9sp" android:letterSpacing="0.15"
-            android:textAllCaps="true" android:textColor="#7A6E60" />
+            android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="1dp"
-        android:background="#15110D" />
+        android:background="@color/editorial_ink" />
 
     <!-- Cover + title -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -39,16 +39,16 @@
             <TextView android:id="@+id/subscribed_since"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="#7A6E60" />
+                android:textColor="@color/editorial_ink_muted" />
             <TextView android:id="@+id/dossier_title"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="20sp" android:textColor="#15110D"
+                android:textSize="20sp" android:textColor="@color/editorial_ink"
                 android:singleLine="true" android:ellipsize="end" />
         </LinearLayout>
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0.5dp"
-        android:background="#1A15110D" />
+        android:background="@color/editorial_rule_faint" />
 
     <!-- 3 big stats -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -59,33 +59,33 @@
             android:layout_weight="1" android:orientation="vertical">
             <TextView android:id="@+id/stat_listened"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="22sp" android:textColor="#15110D" android:text="—" />
+                android:textSize="22sp" android:textColor="@color/editorial_ink" android:text="—" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="listened" android:textSize="10sp" android:textColor="#7A6E60" />
+                android:text="listened" android:textSize="10sp" android:textColor="@color/editorial_ink_muted" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical">
             <TextView android:id="@+id/stat_saved"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="22sp" android:textColor="#15110D" android:text="—" />
+                android:textSize="22sp" android:textColor="@color/editorial_ink" android:text="—" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="saved" android:textSize="10sp" android:textColor="#7A6E60" />
+                android:text="saved" android:textSize="10sp" android:textColor="@color/editorial_ink_muted" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical">
             <TextView android:id="@+id/stat_episodes"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="22sp" android:textColor="#15110D" android:text="—" />
+                android:textSize="22sp" android:textColor="@color/editorial_ink" android:text="—" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="episodes" android:textSize="10sp" android:textColor="#7A6E60" />
+                android:text="episodes" android:textSize="10sp" android:textColor="@color/editorial_ink_muted" />
         </LinearLayout>
 
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0.5dp"
-        android:background="#1A15110D" />
+        android:background="@color/editorial_rule_faint" />
 
     <!-- Sparkline -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -93,7 +93,7 @@
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="LAST 12 WEEKS · HRS"
             android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-            android:textColor="#7A6E60" android:layout_marginBottom="8dp" />
+            android:textColor="@color/editorial_ink_muted" android:layout_marginBottom="8dp" />
         <de.danoeh.antennapod.ui.statistics.editorial.SparklineView
             android:id="@+id/dossier_sparkline"
             android:layout_width="match_parent"
@@ -101,7 +101,7 @@
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0.5dp"
-        android:background="#1A15110D" />
+        android:background="@color/editorial_rule_faint" />
 
     <!-- Action strip -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -112,12 +112,12 @@
             android:layout_weight="1"
             android:text="Open feed"
             style="@style/Widget.AppCompat.Button.Borderless"
-            android:textColor="#15110D" />
+            android:textColor="@color/editorial_ink" />
         <Button android:id="@+id/btn_dismiss"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Close"
-            android:backgroundTint="#15110D"
-            android:textColor="#F4EDE0"
+            android:backgroundTint="@color/editorial_ink"
+            android:textColor="@color/editorial_paper"
             style="@style/Widget.AppCompat.Button" />
     </LinearLayout>
 

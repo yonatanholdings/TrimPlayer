@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Editorial statistics design tokens (light theme).
+  Counterpart file at values-night/colors.xml flips paper ↔ ink for dark mode.
+  Vermilion accent stays the same in both themes (signature color).
+-->
+<resources>
+    <color name="editorial_paper">#FFFFFFFF</color>
+    <color name="editorial_paper_alt">#FFFBF8F1</color>
+    <color name="editorial_ink">#FF15110D</color>
+    <color name="editorial_ink_soft">#FF3A322A</color>
+    <color name="editorial_ink_caption">#FF5C5147</color>
+    <color name="editorial_ink_muted">#FF7A6E60</color>
+    <color name="editorial_ink_v_muted">#FFA29486</color>
+    <color name="editorial_vermilion">#FFB8442E</color>
+    <color name="editorial_vermilion_soft">#FFE8B9A4</color>
+    <color name="editorial_vermilion_tint">#FFF3D6C4</color>
+    <color name="editorial_gold">#FFA47436</color>
+    <color name="editorial_gold_soft">#FFE1C79A</color>
+    <color name="editorial_rule_thick">#FF15110D</color>
+    <color name="editorial_rule_faint">#1A15110D</color>
+    <color name="editorial_rule_v_faint">#0D15110D</color>
+</resources>

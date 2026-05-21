@@ -17,7 +17,7 @@
         android:textSize="9sp"
         android:textAllCaps="true"
         android:letterSpacing="0.15"
-        android:textColor="#7A6E60" />
+        android:textColor="@color/editorial_ink_muted" />
 
     <ImageView
         android:id="@+id/cover_image"
@@ -37,7 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="#15110D"
+            android:textColor="@color/editorial_ink"
             android:singleLine="true"
             android:ellipsize="end" />
 
@@ -48,7 +48,7 @@
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:max="1000"
             android:layout_marginTop="4dp"
-            android:progressBackgroundTint="#1A15110D" />
+            android:progressBackgroundTint="@color/editorial_rule_faint" />
 
     </LinearLayout>
 
@@ -64,14 +64,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="16sp"
-            android:textColor="#15110D" />
+            android:textColor="@color/editorial_ink" />
 
         <TextView
             android:id="@+id/pct_val"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="11sp"
-            android:textColor="#7A6E60" />
+            android:textColor="@color/editorial_ink_muted" />
 
     </LinearLayout>
 

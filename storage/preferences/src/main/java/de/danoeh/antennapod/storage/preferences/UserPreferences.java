@@ -1019,4 +1019,91 @@ public abstract class UserPreferences {
     public static void setLastUploadedSkipEventId(long id) {
         prefs.edit().putLong(PREF_TRIM_LAST_UPLOADED_SKIP_EVENT_ID, id).apply();
     }
+
+    // -----------------------------------------------------------------------
+    // Pro entitlement (Phase 1, 2026-05-19). Cached locally so the UI can
+    // render Pro state without waiting for /segments to come back. Source of
+    // truth is still the backend — these are last-seen values.
+    // -----------------------------------------------------------------------
+    public static final String PREF_TRIM_PRO_STATUS = "prefTrimProStatus";          // ok | quota_exceeded | pro | (absent)
+    public static final String PREF_TRIM_PRO_SOURCE = "prefTrimProSource";          // play_subscription | play_lifetime | beta_grandfather | (absent)
+    public static final String PREF_TRIM_PRO_TOKEN = "prefTrimProToken";            // JWT minted by /billing/verify
+    public static final String PREF_TRIM_PRO_TOKEN_EXPIRES_MS = "prefTrimProTokenExpiresMs";  // unix-ms; 0 = unknown
+    public static final String PREF_TRIM_QUOTA_USED = "prefTrimQuotaUsed";          // free-tier auto-trims used this month
+    public static final String PREF_TRIM_QUOTA_LIMIT = "prefTrimQuotaLimit";        // free-tier monthly quota (server-driven)
+    public static final String PREF_TRIM_QUOTA_RESETS_AT = "prefTrimQuotaResetsAt"; // ISO-8601 string of next reset
+    public static final String PREF_TRIM_BETA_GRANDFATHER_WELCOMED = "prefTrimBetaGrandfatherWelcomed";
+    public static final String PREF_TRIM_PRO_UI_VISIBLE = "prefTrimProUiVisible";   // server-driven kill-switch for Pro UI surfaces
+
+    public static String getTrimProStatus() {
+        return prefs.getString(PREF_TRIM_PRO_STATUS, null);
+    }
+
+    public static String getTrimProSource() {
+        return prefs.getString(PREF_TRIM_PRO_SOURCE, null);
+    }
+
+    public static String getTrimProToken() {
+        return prefs.getString(PREF_TRIM_PRO_TOKEN, null);
+    }
+
+    public static long getTrimProTokenExpiresMs() {
+        return prefs.getLong(PREF_TRIM_PRO_TOKEN_EXPIRES_MS, 0);
+    }
+
+    public static int getTrimQuotaUsed() {
+        return prefs.getInt(PREF_TRIM_QUOTA_USED, 0);
+    }
+
+    public static int getTrimQuotaLimit() {
+        return prefs.getInt(PREF_TRIM_QUOTA_LIMIT, 3);  // mirrors backend FREE_AUTO_TRIM_QUOTA default
+    }
+
+    public static String getTrimQuotaResetsAt() {
+        return prefs.getString(PREF_TRIM_QUOTA_RESETS_AT, null);
+    }
+
+    /** True if we've already shown the one-shot "you're a beta grandfather" dialog. */
+    public static boolean wasBetaGrandfatherWelcomed() {
+        return prefs.getBoolean(PREF_TRIM_BETA_GRANDFATHER_WELCOMED, false);
+    }
+
+    public static void markBetaGrandfatherWelcomed() {
+        prefs.edit().putBoolean(PREF_TRIM_BETA_GRANDFATHER_WELCOMED, true).apply();
+    }
+
+    /** Server-driven flag controlling whether in-app Pro UI surfaces are
+     *  visible. False on first launch (hides everything) until /segments
+     *  returns pro_ui_visible=true. */
+    public static boolean getTrimProUiVisible() {
+        return prefs.getBoolean(PREF_TRIM_PRO_UI_VISIBLE, false);
+    }
+
+    /** Snapshot of last-seen entitlement values, written by EntitlementStore. */
+    public static void writeTrimEntitlementSnapshot(
+            String status, String source,
+            Integer quotaUsed, Integer quotaLimit, String resetsAt,
+            boolean proUiVisible) {
+        android.content.SharedPreferences.Editor e = prefs.edit();
+        if (status == null) e.remove(PREF_TRIM_PRO_STATUS); else e.putString(PREF_TRIM_PRO_STATUS, status);
+        if (source == null) e.remove(PREF_TRIM_PRO_SOURCE); else e.putString(PREF_TRIM_PRO_SOURCE, source);
+        if (quotaUsed != null)  e.putInt(PREF_TRIM_QUOTA_USED,  quotaUsed);
+        if (quotaLimit != null) e.putInt(PREF_TRIM_QUOTA_LIMIT, quotaLimit);
+        if (resetsAt == null) e.remove(PREF_TRIM_QUOTA_RESETS_AT); else e.putString(PREF_TRIM_QUOTA_RESETS_AT, resetsAt);
+        e.putBoolean(PREF_TRIM_PRO_UI_VISIBLE, proUiVisible);
+        e.apply();
+    }
+
+    /** Persist a freshly-minted Pro JWT. tokenExpiresMs may be 0 if unknown. */
+    public static void writeTrimProToken(String token, long tokenExpiresMs) {
+        android.content.SharedPreferences.Editor e = prefs.edit();
+        if (token == null || token.isEmpty()) {
+            e.remove(PREF_TRIM_PRO_TOKEN);
+            e.remove(PREF_TRIM_PRO_TOKEN_EXPIRES_MS);
+        } else {
+            e.putString(PREF_TRIM_PRO_TOKEN, token);
+            e.putLong(PREF_TRIM_PRO_TOKEN_EXPIRES_MS, tokenExpiresMs);
+        }
+        e.apply();
+    }
 }

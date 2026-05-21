@@ -20,6 +20,7 @@ public class PodcastSearcherRegistry {
             searchProviders.add(new SearcherInfo(new PodcastIndexPodcastSearcher(), 1.0f));
             searchProviders.add(new SearcherInfo(new SpotifyPodcastSearcher(), 0.0f));
             searchProviders.add(new SearcherInfo(new YouTubeMusicPodcastSearcher(), 0.0f));
+            searchProviders.add(new SearcherInfo(new SoundCloudPodcastSearcher(), 0.0f));
         }
         return searchProviders;
     }

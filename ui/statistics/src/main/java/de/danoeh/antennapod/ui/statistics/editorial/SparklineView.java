@@ -25,11 +25,11 @@ public class SparklineView extends View {
     private void init() {
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(1.5f);
-        linePaint.setColor(EditorialTheme.ACCENT);
+        linePaint.setColor(EditorialTheme.vermilion(getContext()));
         linePaint.setStrokeCap(Paint.Cap.ROUND);
         linePaint.setStrokeJoin(Paint.Join.ROUND);
         dotPaint.setStyle(Paint.Style.FILL);
-        dotPaint.setColor(EditorialTheme.ACCENT);
+        dotPaint.setColor(EditorialTheme.vermilion(getContext()));
         fillPaint.setStyle(Paint.Style.FILL);
     }
 
@@ -48,7 +48,7 @@ public class SparklineView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int ow, int oh) {
         fillPaint.setShader(new LinearGradient(0, 0, 0, h,
-                EditorialTheme.ACCENT_TINT, 0x00FFFFFF, Shader.TileMode.CLAMP));
+                EditorialTheme.vermilionTint(getContext()), 0x00FFFFFF, Shader.TileMode.CLAMP));
     }
 
     @Override
@@ -87,10 +87,10 @@ public class SparklineView extends View {
         canvas.drawPath(linePath, linePaint);
 
         // Endpoint dots (first + last)
-        dotPaint.setColor(EditorialTheme.BG);
+        dotPaint.setColor(EditorialTheme.paper(getContext()));
         canvas.drawCircle(xs[0], ys[0], dotR, dotPaint);
         canvas.drawCircle(xs[n - 1], ys[n - 1], dotR, dotPaint);
-        dotPaint.setColor(EditorialTheme.ACCENT);
+        dotPaint.setColor(EditorialTheme.vermilion(getContext()));
         canvas.drawCircle(xs[0], ys[0], dotR - d, dotPaint);
         canvas.drawCircle(xs[n - 1], ys[n - 1], dotR - d, dotPaint);
     }

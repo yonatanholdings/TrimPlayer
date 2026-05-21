@@ -177,6 +177,39 @@ public class AudioPlayerFragment extends Fragment implements
         }
 
         sbPosition.setDividerPos(dividerPos);
+        setSegmentMarkers(media);
+    }
+
+    /** Overlay trim segments (intros/outros/ads) on the seek bar. Reads the
+     *  same cache PlaybackService populates so this works as soon as segments
+     *  land — either from the warm-path cache hit on episode load or from the
+     *  /analyze polling response (see {@link #onTrimSegmentsUnlocked}). */
+    private void setSegmentMarkers(Playable media) {
+        if (duration <= 0 || !(media instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
+            sbPosition.setSegments(null, null);
+            return;
+        }
+        de.danoeh.antennapod.model.feed.FeedMedia fm =
+                (de.danoeh.antennapod.model.feed.FeedMedia) media;
+        if (fm.getItem() == null) {
+            sbPosition.setSegments(null, null);
+            return;
+        }
+        String guid = fm.getItem().getItemIdentifier();
+        java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segs =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(requireContext(), guid);
+        if (segs == null || segs.isEmpty()) {
+            sbPosition.setSegments(null, null);
+            return;
+        }
+        float[] starts = new float[segs.size()];
+        float[] ends = new float[segs.size()];
+        for (int i = 0; i < segs.size(); i++) {
+            de.danoeh.antennapod.playback.service.trim.TrimClient.Segment s = segs.get(i);
+            starts[i] = (float) (s.start * 1000.0 / duration);
+            ends[i] = (float) (s.end * 1000.0 / duration);
+        }
+        sbPosition.setSegments(starts, ends);
     }
 
     private void setupControlButtons() {
@@ -301,6 +334,17 @@ public class AudioPlayerFragment extends Fragment implements
         updatePlaybackSpeedButton(new SpeedChangedEvent(PlaybackSpeedUtils.getCurrentPlaybackSpeed(media)));
         setChapterDividers(media);
         setupOptionsMenu(media);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onTrimSegmentsUnlocked(
+            de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent event) {
+        // Segments just landed from a mid-playback /analyze response — refresh
+        // the overlay without waiting for the next loadMediaInfo tick.
+        if (controller != null) {
+            setSegmentMarkers(controller.getMedia());
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -19,9 +19,13 @@ public class ChapterSeekBar extends androidx.appcompat.widget.AppCompatSeekBar {
     private float progressPrimary;
     private float progressSecondary;
     private float[] dividerPos;
+    /** Start/end of each trim segment as fractions [0..1] of the media duration. */
+    private float[] segmentStarts;
+    private float[] segmentEnds;
     private boolean isHighlighted = false;
     private final Paint paintBackground = new Paint();
     private final Paint paintProgressPrimary = new Paint();
+    private final Paint paintSegment = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public ChapterSeekBar(Context context) {
         super(context);
@@ -46,6 +50,24 @@ public class ChapterSeekBar extends androidx.appcompat.widget.AppCompatSeekBar {
         paintBackground.setColor(ThemeUtils.getColorFromAttr(getContext(), R.attr.colorSurfaceVariant));
         paintBackground.setAlpha(128);
         paintProgressPrimary.setColor(ThemeUtils.getColorFromAttr(getContext(), R.attr.colorPrimary));
+        // Amber wash — distinct from the primary progress color, visible against
+        // both the unplayed background and the played foreground.
+        paintSegment.setColor(0xCCFFB300);
+    }
+
+    /**
+     * Mark detected trim segments on the seek bar. Each segment is rendered as
+     * a slightly taller overlay bar at its range, drawn on top of the progress
+     * fill so it stays visible whether the segment is upcoming or already
+     * passed. Pass null arrays to clear.
+     *
+     * @param starts segment start times as fractions [0..1] of media duration
+     * @param ends   segment end times, same units; arrays must align
+     */
+    public void setSegments(final float[] starts, final float[] ends) {
+        this.segmentStarts = starts;
+        this.segmentEnds = ends;
+        invalidate();
     }
 
     /**
@@ -89,7 +111,33 @@ public class ChapterSeekBar extends androidx.appcompat.widget.AppCompatSeekBar {
         } else {
             drawProgressChapters(canvas);
         }
+        drawSegments(canvas);
         drawThumb(canvas);
+    }
+
+    /** Overlay segment ranges on top of whatever's already drawn. Slightly
+     *  taller than the main track (4dp vs 3dp) so segments peek above/below
+     *  and remain identifiable after playback passes them. */
+    private void drawSegments(Canvas canvas) {
+        if (segmentStarts == null || segmentEnds == null || segmentStarts.length == 0) {
+            return;
+        }
+        final int saveCount = canvas.save();
+        canvas.translate(getPaddingLeft(), getPaddingTop());
+        float segTop = center - density * 2.5f;
+        float segBottom = center + density * 2.5f;
+        int count = Math.min(segmentStarts.length, segmentEnds.length);
+        for (int i = 0; i < count; i++) {
+            float a = segmentStarts[i];
+            float b = segmentEnds[i];
+            if (a < 0) a = 0;
+            if (b > 1) b = 1;
+            if (b <= a) continue;
+            float left = a * width;
+            float right = b * width;
+            canvas.drawRect(left, segTop, right, segBottom, paintSegment);
+        }
+        canvas.restoreToCount(saveCount);
     }
 
     private void drawProgress(Canvas canvas) {

@@ -610,6 +610,89 @@
     <string name="pref_trim_skip_ads_sum">Auto-skip detected ad reads and sponsor breaks</string>
     <string name="pref_trim_skip_outros_title">Skip outros</string>
     <string name="pref_trim_skip_outros_sum">Auto-skip detected outro music and end-of-episode wrap-up</string>
+
+    <!-- Pro paywall (Phase 1). -->
+    <string name="trim_pro_title">TrimPlayer Pro</string>
+    <string name="trim_pro_pref_summary">Unlimited auto-trim · Get Pro</string>
+    <string name="trim_pro_pref_summary_active">Pro active</string>
+    <string name="trim_pro_badge">PRO</string>
+    <!-- %1$d = quota used, %2$d = quota limit (e.g. "3/3") -->
+    <string name="trim_pro_quota_used">Auto-trim used: %1$d/%2$d this month</string>
+    <string name="trim_pro_quota_resets_at">Resets %1$s</string>
+
+    <!-- Soft-paywall upsell dialog (fires on quota exhaustion). -->
+    <string name="trim_upsell_title">Auto-trim limit reached</string>
+    <!-- %1$d = monthly quota (e.g. 3) -->
+    <string name="trim_upsell_body">You\'ve used all %1$d free auto-trims this month. Upgrade to TrimPlayer Pro for unlimited auto-trim on every episode.</string>
+    <string name="trim_upsell_cta_get_pro">Get Pro</string>
+    <string name="trim_upsell_cta_later">Maybe later</string>
+
+    <!-- Get Pro settings screen. -->
+    <string name="trim_pro_screen_headline">Skip every intro, ad, and outro — automatically.</string>
+    <string name="trim_pro_screen_features_title">What you get</string>
+    <string name="trim_pro_feature_unlimited">Unlimited auto-trim on every episode</string>
+    <string name="trim_pro_feature_priority">Faster fingerprinting on your queue</string>
+    <string name="trim_pro_feature_early_access">Early access to new features</string>
+    <string name="trim_pro_feature_future_sync">Cross-device sync (coming soon)</string>
+    <string name="trim_pro_pricing_title">Choose a plan</string>
+    <!-- Fallback labels with USD hardcoded. Used until Play returns localized
+         ProductDetails, at which point applyPriceLabels swaps in the formatted
+         price via trim_pro_price_*_label. -->
+    <string name="trim_pro_price_monthly">Monthly · $2.99</string>
+    <string name="trim_pro_price_yearly">Yearly · $19.99 (save 44%)</string>
+    <!-- Localized-price templates. %1$s = Play-formatted price string (e.g. "$2.99", "€2,99"). -->
+    <string name="trim_pro_price_monthly_label">Monthly · %1$s</string>
+    <string name="trim_pro_price_yearly_label">Yearly · %1$s</string>
+    <string name="trim_pro_purchase_success">You\'re Pro — thanks for upgrading.</string>
+    <string name="trim_pro_price_supporter">Supporter · $50 / year</string>
+    <string name="trim_pro_supporter_explainer">Same Pro features as the yearly plan. The extra $30 helps fund development and infra. You\'ll get a permanent Supporter badge and our thanks.</string>
+    <string name="trim_pro_upgrade_button">Upgrade</string>
+    <string name="trim_pro_status_active_title">You\'re Pro</string>
+    <!-- %1$s is the source string e.g. "play_subscription". -->
+    <string name="trim_pro_status_active_subtitle">Source: %1$s</string>
+    <string name="trim_pro_status_supporter_thanks">Thank you for supporting TrimPlayer — your contribution keeps the project running.</string>
+    <string name="trim_pro_badge_supporter">SUPPORTER</string>
+    <string name="trim_pro_billing_unavailable">In-app purchase isn\'t wired up yet — coming soon.</string>
+
+    <!-- Supporter Digest (monthly card inside the Pro screen). -->
+    <string name="trim_digest_title">Supporter Digest</string>
+    <!-- %1$s = period e.g. "May 2026" -->
+    <string name="trim_digest_period">For %1$s</string>
+    <string name="trim_digest_section_community">Community pulse</string>
+    <!-- %1$s = formatted minutes (e.g. "1,240,000") -->
+    <string name="trim_digest_total_minutes">%1$s minutes saved by the community</string>
+    <!-- %1$s = signed percent e.g. "+18%" or "-3%" -->
+    <string name="trim_digest_change_vs_prev">%1$s vs last month</string>
+    <!-- %1$s = formatted minutes -->
+    <string name="trim_digest_avg_listener">Avg listener saved %1$s min</string>
+    <!-- %1$s = minutes, %2$d = percentile -->
+    <string name="trim_digest_your_stats">You saved %1$s min — top %2$d%%</string>
+    <string name="trim_digest_top_podcasts">Top-trimmed podcasts</string>
+    <string name="trim_digest_section_dev">Where your money went</string>
+    <!-- %1$s = formatted USD e.g. "$312", %2$s = server cost, %3$s = dev net -->
+    <string name="trim_digest_funding_line">Supporter income %1$s · Server %2$s · Dev %3$s</string>
+    <string name="trim_digest_shipped">Shipped this month</string>
+    <string name="trim_digest_next">Next month</string>
+    <string name="trim_digest_loading">Loading this month\'s digest…</string>
+    <string name="trim_digest_empty">Your first Supporter Digest arrives at the end of your first full month.</string>
+    <string name="trim_digest_error">Couldn\'t load the digest. Pull-to-refresh or try later.</string>
+
+    <!-- Aggregated insights inside the digest. -->
+    <!-- %1$s = formatted minutes (cumulative all-time, large number), e.g. "4,723,000" -->
+    <string name="trim_digest_cumulative">%1$s minutes saved since launch</string>
+    <!-- %1$d / %2$d / %3$d = ads / intros / outros percent rounded ints -->
+    <string name="trim_digest_skip_breakdown">%1$d%% ads · %2$d%% intros · %3$d%% outros</string>
+    <!-- %1$d = accuracy percent, %2$s = formatted hits, %3$s = formatted misses -->
+    <string name="trim_digest_accuracy">%1$d%% accurate (%2$s hits / %3$s misses)</string>
+    <!-- %1$s = formatted delta (e.g. "+42"), %2$s = formatted total -->
+    <string name="trim_digest_catalog_podcasts">%1$s podcasts this month · %2$s total</string>
+    <!-- %1$s = formatted delta, %2$s = formatted total -->
+    <string name="trim_digest_catalog_segments">%1$s canonical segments this month · %2$s total</string>
+
+    <!-- Beta-grandfather one-shot welcome dialog. -->
+    <string name="trim_grandfather_title">You\'re a founding tester</string>
+    <string name="trim_grandfather_body">Thanks for using TrimPlayer in beta. You get 6 months of Pro on us — unlimited auto-trim, no strings attached.</string>
+    <string name="trim_grandfather_dismiss">Nice, thanks</string>
     <string name="pref_playback_time_respects_speed_title">Adjust media info to playback speed</string>
     <string name="pref_playback_time_respects_speed_sum">Displayed position and duration are adapted to playback speed</string>
     <string name="pref_fast_forward">Fast-forward skip time</string>

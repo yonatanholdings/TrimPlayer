@@ -17,7 +17,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
@@ -219,6 +221,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     /** Tracks which indices in currentSegments were auto-skipped during this episode. */
     private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
 
+    private SoundPool skipCueSoundPool;
+    private int skipCueSoundId = 0;
+    private volatile boolean skipCueLoaded = false;
+    /** Debounce so the cue doesn't double-fire when the position checker ticks
+     *  twice during the seek-completion window of an auto-skip. */
+    private long lastSkipCueTimeMs = 0;
+
     // Hit/miss telemetry: rolling window of recent auto-skipped ranges and a
     // one-shot flag that lets internal callers (auto-skip, sleep timer) ask
     // seekTo() to skip telemetry attribution for the next seek.
@@ -317,6 +326,22 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         registerVolumeObserver();
         EventBus.getDefault().register(this);
         taskManager = new PlaybackServiceTaskManager(this, taskManagerCallback);
+
+        // Skip-cue sound: short bell-chord that plays when a trim segment is auto-skipped.
+        AudioAttributes skipCueAttrs = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        skipCueSoundPool = new SoundPool.Builder()
+                .setMaxStreams(2)
+                .setAudioAttributes(skipCueAttrs)
+                .build();
+        skipCueSoundPool.setOnLoadCompleteListener((pool, sampleId, status) -> {
+            if (status == 0 && sampleId == skipCueSoundId) {
+                skipCueLoaded = true;
+            }
+        });
+        skipCueSoundId = skipCueSoundPool.load(this, R.raw.skip_cue, 1);
 
         recreateMediaSessionIfNeeded();
         castStateListener = new CastStateListener(this) {
@@ -423,13 +448,32 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             return;
         }
 
+        // Pull credentials at request-time (token refresh between calls is
+        // picked up automatically). Only attach the JWT if it isn't already
+        // past its exp — server would 401 anyway, and sending stale tokens
+        // makes server-side debugging harder.
+        String clientIdHeader = de.danoeh.antennapod.storage.preferences.UserPreferences.getOrCreateTrimClientId();
+        String proTokenHeader = de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimProToken();
+        long proTokenExpiresMs = de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimProTokenExpiresMs();
+        if (proTokenHeader != null && proTokenExpiresMs > 0
+                && proTokenExpiresMs <= System.currentTimeMillis()) {
+            proTokenHeader = null;
+        }
+
         de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
-                .getSegments(episodeUrl, episodeGuid)
+                .getSegments(episodeUrl, episodeGuid, clientIdHeader, proTokenHeader)
                 .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse>() {
                     @Override
                     public void onResponse(
                             retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> call,
                             retrofit2.Response<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> response) {
+                        // Update entitlement snapshot regardless of segment count so
+                        // the UI sees quota-exceeded / pro-confirmed transitions
+                        // immediately (even when segments are empty).
+                        if (response.isSuccessful() && response.body() != null) {
+                            de.danoeh.antennapod.playback.service.trim.EntitlementStore.get()
+                                    .updateFromServer(response.body().entitlement);
+                        }
                         if (response.isSuccessful() && response.body() != null
                                 && response.body().segments != null
                                 && !response.body().segments.isEmpty()) {
@@ -486,6 +530,22 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         }
                     }
                 });
+    }
+
+    private void playSkipCue() {
+        SoundPool pool = skipCueSoundPool;
+        if (pool == null || !skipCueLoaded || skipCueSoundId == 0) {
+            return;
+        }
+        // Suppress re-fire within the seek-completion window. After that, every
+        // fresh auto-skip should cue — including when the user rewinds past a
+        // previously-skipped segment and the auto-skip re-fires.
+        long now = System.currentTimeMillis();
+        if (now - lastSkipCueTimeMs < 1500) {
+            return;
+        }
+        lastSkipCueTimeMs = now;
+        pool.play(skipCueSoundId, 0.9f, 0.9f, 1, 0, 1.0f);
     }
 
     private void showSegmentSkipToast(String eventType, int skippedMs) {
@@ -731,6 +791,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         taskManager.shutdown();
         disableSleepTimer();
         EventBus.getDefault().unregister(this);
+        if (skipCueSoundPool != null) {
+            skipCueSoundPool.release();
+            skipCueSoundPool = null;
+            skipCueLoaded = false;
+        }
     }
 
     @Override
@@ -2750,6 +2815,12 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 if (firstSkipForThisSegment) {
                                     showSegmentSkipToast(eventType, skippedMs);
                                 }
+                                // Cue fires on every auto-skip (e.g. user rewinds
+                                // past a previously-skipped segment); internal
+                                // 1500ms debounce in playSkipCue blocks double-
+                                // fires from the position-checker ticking twice
+                                // during seek lag.
+                                playSkipCue();
                                 break;
                             }
                         }

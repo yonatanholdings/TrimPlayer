@@ -24,6 +24,7 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
     private static final String PREF_ABOUT = "prefAbout";
     private static final String PREF_NOTIFICATION = "notifications";
     private static final String PREF_STATISTICS = "prefStatistics";
+    private static final String PREF_TRIM_PRO = "prefTrimPro";
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -79,6 +80,29 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
                     .addToBackStack(getString(R.string.statistics_label)).commit();
             return true;
         });
+        // TrimPlayer Pro entry — summary text reflects current entitlement.
+        // Visibility is server-driven; the preference appears/disappears the
+        // next time the user returns to Settings after a /segments response
+        // changes the pro_ui_visible flag.
+        Preference proPref = findPreference(PREF_TRIM_PRO);
+        if (proPref != null) {
+            if (!de.danoeh.antennapod.ui.screen.preferences.pro.TrimProDialogs.isProUiVisible()) {
+                proPref.setVisible(false);
+            } else {
+                de.danoeh.antennapod.playback.service.trim.EntitlementStore.Snapshot snap =
+                        de.danoeh.antennapod.playback.service.trim.EntitlementStore.get().snapshot();
+                if (snap != null && snap.isPro()) {
+                    proPref.setSummary(R.string.trim_pro_pref_summary_active);
+                }
+                proPref.setOnPreferenceClickListener(preference -> {
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.settingsContainer,
+                                    new de.danoeh.antennapod.ui.screen.preferences.pro.TrimProFragment())
+                            .addToBackStack(getString(R.string.trim_pro_title)).commit();
+                    return true;
+                });
+            }
+        }
     }
 
     private void setupSearch() {

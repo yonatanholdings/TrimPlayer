@@ -572,6 +572,8 @@ public class MainActivity extends CastEnabledActivity {
         }
     }
 
+    private de.danoeh.antennapod.playback.service.trim.EntitlementStore.Listener entitlementListener;
+
     @Override
     public void onStart() {
         super.onStart();
@@ -579,6 +581,32 @@ public class MainActivity extends CastEnabledActivity {
         new RatingDialogManager(this).showIfNeeded();
         getOnBackPressedDispatcher().addCallback(this, openDefaultPageBackPressedCallback);
         getOnBackPressedDispatcher().addCallback(this, bottomSheetBackPressedCallback);
+
+        // Pro paywall surfaces (Phase 1, 2026-05-19): one listener that fires
+        // the upsell on quota_exceeded and the grandfather welcome on first
+        // beta_grandfather confirmation. Both helpers are idempotent so
+        // re-firing on every entitlement change is safe.
+        de.danoeh.antennapod.playback.service.trim.EntitlementStore store =
+                de.danoeh.antennapod.playback.service.trim.EntitlementStore.get();
+        // Apply current snapshot once on resume (in case the listener missed
+        // a transition while the activity was stopped).
+        handleEntitlementSnapshot(store.snapshot());
+        entitlementListener = this::handleEntitlementSnapshot;
+        store.addListener(entitlementListener);
+    }
+
+    private void handleEntitlementSnapshot(
+            de.danoeh.antennapod.playback.service.trim.EntitlementStore.Snapshot snapshot) {
+        if (snapshot == null || isFinishing()) return;
+        runOnUiThread(() -> {
+            if (snapshot.isQuotaExceeded()) {
+                de.danoeh.antennapod.ui.screen.preferences.pro.TrimProDialogs
+                        .showQuotaUpsell(this, snapshot);
+            } else if (snapshot.isBetaGrandfather()) {
+                de.danoeh.antennapod.ui.screen.preferences.pro.TrimProDialogs
+                        .showBetaGrandfatherWelcomeIfNeeded(this, snapshot);
+            }
+        });
     }
 
     @Override
@@ -606,6 +634,11 @@ public class MainActivity extends CastEnabledActivity {
     protected void onStop() {
         super.onStop();
         EventBus.getDefault().unregister(this);
+        if (entitlementListener != null) {
+            de.danoeh.antennapod.playback.service.trim.EntitlementStore.get()
+                    .removeListener(entitlementListener);
+            entitlementListener = null;
+        }
     }
 
     @Override
@@ -770,17 +803,47 @@ public class MainActivity extends CastEnabledActivity {
         }).subscribeOn(io.reactivex.rxjava3.schedulers.Schedulers.io()).subscribe();
     }
 
+    /** Load the feed's items, find the one matching {@code feedItemId}, and push
+     *  ItemPagerFragment on top of the FeedItemlistFragment that was just loaded.
+     *  Used by share-link handlers (e.g. YouTube) that want to deep-link past the
+     *  show page directly to the episode. Silently no-ops if the item is gone. */
+    private void openFeedItemAfterFeed(long feedId, long feedItemId) {
+        io.reactivex.rxjava3.core.Single.<de.danoeh.antennapod.model.feed.Feed>fromCallable(() ->
+                        de.danoeh.antennapod.storage.database.DBReader.getFeed(
+                                feedId, false, 0, Integer.MAX_VALUE))
+                .subscribeOn(io.reactivex.rxjava3.schedulers.Schedulers.io())
+                .observeOn(io.reactivex.rxjava3.android.schedulers.AndroidSchedulers.mainThread())
+                .subscribe(feed -> {
+                    if (feed == null || feed.getItems() == null) return;
+                    de.danoeh.antennapod.model.feed.FeedItem match = null;
+                    for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
+                        if (fi.getId() == feedItemId) {
+                            match = fi;
+                            break;
+                        }
+                    }
+                    if (match == null) return;
+                    loadChildFragment(
+                            de.danoeh.antennapod.ui.screen.episode.ItemPagerFragment
+                                    .newInstance(feed.getItems(), match));
+                }, error -> Log.e(TAG, "openFeedItemAfterFeed failed", error));
+    }
+
     private void handleNavIntent() {
         Log.d(TAG, "handleNavIntent()");
         Intent intent = getIntent();
         if (intent.hasExtra(MainActivityStarter.EXTRA_FEED_ID)) {
             long feedId = intent.getLongExtra(MainActivityStarter.EXTRA_FEED_ID, 0);
+            long feedItemId = intent.getLongExtra(MainActivityStarter.EXTRA_FEED_ITEM_ID, 0);
             Bundle args = intent.getBundleExtra(MainActivityStarter.EXTRA_FRAGMENT_ARGS);
             if (feedId > 0) {
                 if (intent.getBooleanExtra(MainActivityStarter.EXTRA_CLEAR_BACK_STACK, false)) {
                     loadFeedFragmentById(feedId, args);
                 } else {
                     loadChildFragment(FeedItemlistFragment.newInstance(feedId));
+                }
+                if (feedItemId > 0) {
+                    openFeedItemAfterFeed(feedId, feedItemId);
                 }
             }
             sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);

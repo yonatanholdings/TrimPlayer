@@ -56,7 +56,6 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
     private volatile boolean pausedBecauseOfTransientAudiofocusLoss;
     private volatile Pair<Integer, Integer> videoSize;
     private final AudioFocusRequestCompat audioFocusRequest;
-    private final Handler audioFocusCanceller;
     private boolean isShutDown = false;
     private CountDownLatch seekLatch;
     private final Handler speedChangeHandler = new Handler(Looper.getMainLooper());
@@ -71,7 +70,6 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         super(context, callback);
         this.audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         this.startWhenPrepared = new AtomicBoolean(false);
-        audioFocusCanceller = new Handler(Looper.getMainLooper());
         mediaPlayer = null;
         statusBeforeSeeking = null;
         pausedBecauseOfTransientAudiofocusLoss = false;
@@ -650,20 +648,15 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                 return;
             }
 
+            // For both transient loss (e.g. notification) and "permanent" loss
+            // (e.g. phone call), we hold on to the focus request so the system
+            // sends us AUDIOFOCUS_GAIN when the interrupting app abandons it.
+            // Abandoning ourselves would forfeit the auto-resume callback.
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-                // Treat permanent focus loss (e.g. phone call) as recoverable: pause and
-                // auto-resume when focus returns. Show paused UI after 30 s so the user
-                // knows what happened if the interruption is long.
                 Log.d(TAG, "Lost audio focus");
                 if (playerStatus == PlayerStatus.PLAYING) {
                     mediaPlayer.pause();
                     pausedBecauseOfTransientAudiofocusLoss = true;
-                    audioFocusCanceller.removeCallbacksAndMessages(null);
-                    audioFocusCanceller.postDelayed(() -> {
-                        if (pausedBecauseOfTransientAudiofocusLoss) {
-                            pause(true, false);
-                        }
-                    }, 30000);
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
                     && !UserPreferences.shouldPauseForFocusLoss()) {
@@ -678,19 +671,13 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     Log.d(TAG, "Lost audio focus temporarily. Pausing...");
                     mediaPlayer.pause();
                     pausedBecauseOfTransientAudiofocusLoss = true;
-                    audioFocusCanceller.removeCallbacksAndMessages(null);
-                    audioFocusCanceller.postDelayed(() -> {
-                        if (pausedBecauseOfTransientAudiofocusLoss) {
-                            pause(true, false);
-                        }
-                    }, 30000);
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 Log.d(TAG, "Gained audio focus");
-                audioFocusCanceller.removeCallbacksAndMessages(null);
                 if (pausedBecauseOfTransientAudiofocusLoss) {
-                    // Resume ExoPlayer, then sync player status if the 30-second timeout
-                    // had already moved us to a full PAUSED state.
+                    // Resume ExoPlayer. ExoPlayer's state callback will have
+                    // already moved playerStatus to PAUSED on the loss; sync it
+                    // back here so listeners see the PLAYING transition.
                     mediaPlayer.start();
                     if (playerStatus == PlayerStatus.PAUSED) {
                         setPlayerStatus(PlayerStatus.PLAYING, media);

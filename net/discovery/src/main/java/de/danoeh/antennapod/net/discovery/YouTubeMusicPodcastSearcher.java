@@ -25,7 +25,7 @@ public class YouTubeMusicPodcastSearcher implements PodcastSearcher {
     // youtu.be is always a single video id; we follow the redirect to find out what it is.
     private static final Pattern PATTERN_YOUTUBE_URL = Pattern.compile(
             "(?i)https?://("
-                    + "(?:music|www)\\.youtube\\.com/(?:podcast/|playlist\\?|watch\\?)"
+                    + "(?:(?:music|www|m)\\.)?youtube\\.com/(?:podcast/|playlist\\?|watch\\?)"
                     + "|youtu\\.be/"
                     + ")\\S+");
 
@@ -91,21 +91,55 @@ public class YouTubeMusicPodcastSearcher implements PodcastSearcher {
             ResponseBody body = response.body();
             String html = body != null ? body.string() : "";
 
-            // Episode pages: prefer the parent series name over the episode title.
+            String ogTitle = null;
+            Matcher ogMatcher = PATTERN_OG_TITLE.matcher(html);
+            if (ogMatcher.find()) {
+                ogTitle = decodeHtmlEntities(ogMatcher.group(1));
+            }
+            String strippedOgTitle = stripYouTubeSuffix(ogTitle);
+
+            // Stash the full stripped og:title as a deep-link hint regardless of
+            // which show-name branch we take below. OnlineFeedViewActivity does
+            // substring fuzzy-matching against FeedItem titles, which handles
+            // both "<show> | <episode>" and bare "<episode>" hint forms.
+            EpisodeTitleCache.put(youtubeUrl, strippedOgTitle);
+
+            // YouTube Music podcast pages: structured JSON-LD with parent series.
             Matcher m = PATTERN_PART_OF_SERIES.matcher(html);
             if (m.find()) {
                 return decodeHtmlEntities(m.group(1));
             }
-            m = PATTERN_OG_TITLE.matcher(html);
-            if (m.find()) {
-                return decodeHtmlEntities(m.group(1));
+
+            // YouTube watch pages for podcast episodes: the channel name is
+            // baked into og:title as "<show> | <episode> - YouTube". Splitting
+            // on " | " gives iTunes a much cleaner search string than the full
+            // episode-y title (which previously still resolved by accident).
+            if (strippedOgTitle != null) {
+                int sep = strippedOgTitle.indexOf(" | ");
+                if (sep > 0) {
+                    String showName = strippedOgTitle.substring(0, sep).trim();
+                    if (!showName.isEmpty()) {
+                        return showName;
+                    }
+                }
+                return strippedOgTitle;
             }
+
             m = PATTERN_META_TITLE.matcher(html);
             if (m.find()) {
                 return decodeHtmlEntities(m.group(1));
             }
             return null;
         }
+    }
+
+    private static String stripYouTubeSuffix(String ogTitle) {
+        if (ogTitle == null) return null;
+        String t = ogTitle.trim();
+        if (t.endsWith(" - YouTube")) {
+            t = t.substring(0, t.length() - " - YouTube".length()).trim();
+        }
+        return t.isEmpty() ? null : t;
     }
 
     private static String decodeHtmlEntities(String s) {

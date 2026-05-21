@@ -41,6 +41,12 @@
             android:icon="@drawable/ic_chart_box" />
 
     <Preference
+            android:key="prefTrimPro"
+            android:title="@string/trim_pro_title"
+            android:summary="@string/trim_pro_pref_summary"
+            android:icon="@drawable/ic_play_24dp" />
+
+    <Preference
             android:key="notifications"
             android:title="@string/notification_pref_fragment"
             android:icon="@drawable/ic_notifications"/>

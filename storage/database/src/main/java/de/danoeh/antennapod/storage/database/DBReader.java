@@ -882,6 +882,43 @@ public final class DBReader {
         }
     }
 
+    /** Per-type skip-event totals for an arbitrary time window. Subset of
+     *  {@link SkipStatistics} — drops today/week/month + monthly history — for
+     *  cheaper drill-down queries (e.g. "show me 2024 only"). */
+    public static class SkipBreakdown {
+        public long totalMs;
+        public long introMs;
+        public long outroMs;
+        public long adMs;
+        public long silenceMs;
+        public long speedMs;
+    }
+
+    @NonNull
+    public static SkipBreakdown getSkipBreakdown(long from, long to) {
+        SkipBreakdown r = new SkipBreakdown();
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (Cursor c = adapter.getSkipEventStatsCursor(from, to)) {
+            int idxType = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TYPE);
+            int idxTotal = c.getColumnIndexOrThrow("total_ms");
+            while (c.moveToNext()) {
+                String type = c.getString(idxType);
+                long ms = c.getLong(idxTotal);
+                r.totalMs += ms;
+                switch (type) {
+                    case "intro":   r.introMs   = ms; break;
+                    case "outro":   r.outroMs   = ms; break;
+                    case "ad":      r.adMs      = ms; break;
+                    case "silence": r.silenceMs = ms; break;
+                    case "speed":   r.speedMs   = ms; break;
+                }
+            }
+        }
+        adapter.close();
+        return r;
+    }
+
     /**
      * Searches the DB for statistics.
      *
@@ -943,6 +980,8 @@ public final class DBReader {
         public int episodesStarted;
         public int episodesCompleted;
         public int episodesInProgress;
+        /** Started, not completed, last played &gt;= 30 days ago (or never via stats). */
+        public int episodesAbandoned;
         public int streakDays;
         public int topHourLocal;
         /** Minutes listened per hour-of-day, index 0–23. */
@@ -953,6 +992,12 @@ public final class DBReader {
         public float[] weekly = new float[12];
         /** Intensity grid [26 weeks][7 days], 0–4 (oldest week = index 0). */
         public int[][] heatmap = new int[26][7];
+        /** Raw listening ms per cell — same shape as {@link #heatmap}. Used for
+         *  the "tap a cell to see the day" detail label without re-querying. */
+        public long[][] heatmapMs = new long[26][7];
+        /** Epoch ms of the Sunday that the heatmap's week 0 starts on; combined
+         *  with (weekIdx * 7 + dayIdx) gives the calendar date for any cell. */
+        public long heatmapStartMs;
         /** Aggregated hours per year, ascending by year. */
         public List<YearItem> yearly = new ArrayList<>();
         /** Top shows (up to 9, rest collapsed into "Other"). */
@@ -1071,12 +1116,14 @@ public final class DBReader {
         for (long v : dailyMs.values()) if (v > maxDay) maxDay = v;
 
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+        s.heatmapStartMs = cal.getTimeInMillis();
         for (int w = 0; w < 26; w++) {
             for (int d = 0; d < 7; d++) {
                 String key = sdf.format(cal.getTime());
                 long ms = dailyMs.containsKey(key) ? dailyMs.get(key) : 0L;
                 int bucket = ms == 0 ? 0 : (int) Math.min(4, 1 + (ms * 4) / maxDay);
                 s.heatmap[w][d] = bucket;
+                s.heatmapMs[w][d] = ms;
                 cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
             }
         }
@@ -1137,12 +1184,15 @@ public final class DBReader {
             while (c.moveToNext()) s.totalPlayedMs += c.getLong(iMs);
         }
 
-        // Episode counts
-        try (Cursor c = adapter.getGlobalEpisodeCountsCursor()) {
+        // Episode counts. Abandoned = started, not finished, no playback activity
+        // in the last 30 days (keeps in_progress meaning "actively being listened to").
+        long abandonedCutoff = System.currentTimeMillis() - 30L * 24 * 3600 * 1000;
+        try (Cursor c = adapter.getGlobalEpisodeCountsCursor(abandonedCutoff)) {
             if (c.moveToFirst()) {
                 s.episodesStarted  = c.getInt(c.getColumnIndexOrThrow("total_started"));
                 s.episodesCompleted = c.getInt(c.getColumnIndexOrThrow("completed"));
                 s.episodesInProgress = c.getInt(c.getColumnIndexOrThrow("in_progress"));
+                s.episodesAbandoned = c.getInt(c.getColumnIndexOrThrow("abandoned"));
             }
         }
 

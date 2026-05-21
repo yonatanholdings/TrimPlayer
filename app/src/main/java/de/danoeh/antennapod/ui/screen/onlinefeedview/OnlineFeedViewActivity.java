@@ -32,6 +32,7 @@ import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.net.common.UrlChecker;
 import de.danoeh.antennapod.net.discovery.CombinedSearcher;
 import de.danoeh.antennapod.net.discovery.FeedUrlNotFoundException;
+import de.danoeh.antennapod.net.discovery.EpisodeTitleCache;
 import de.danoeh.antennapod.net.discovery.PodcastSearchResult;
 import de.danoeh.antennapod.net.discovery.PodcastSearcherRegistry;
 import de.danoeh.antennapod.net.download.service.feed.remote.Downloader;
@@ -87,6 +88,10 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
     private Disposable download;
     private Disposable parser;
     private OnlinefeedviewActivityBinding viewBinding;
+    // Remembered for share-link deep-linking (e.g. YouTube watch URLs): if the
+    // searcher cached an episode title for this URL, we navigate to the matching
+    // FeedItem instead of just dropping the user on the show's feed list.
+    private String shareSourceUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,7 +122,8 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                 username = savedInstanceState.getString("username");
                 password = savedInstanceState.getString("password");
             }
-            lookupUrlAndDownload(UrlChecker.prepareUrl(feedUrl));
+            shareSourceUrl = UrlChecker.prepareUrl(feedUrl);
+            lookupUrlAndDownload(shareSourceUrl);
         }
     }
 
@@ -236,12 +242,94 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(subscribedFeed -> {
             if (subscribedFeed.getState() == Feed.STATE_NOT_SUBSCRIBED) {
-                showFeedFragment(subscribedFeed.getId());
+                maybeRouteToEpisode(subscribedFeed.getId(),
+                        () -> showFeedFragment(subscribedFeed.getId()));
             } else {
-                openFeed(subscribedFeed.getId());
+                maybeRouteToEpisode(subscribedFeed.getId(),
+                        () -> openFeed(subscribedFeed.getId()));
             }
         }, error -> Log.e(TAG, Log.getStackTraceString(error)), () -> startFeedDownload(url));
         return null;
+    }
+
+    /** If the share URL was a YouTube watch URL (or similar) and the searcher
+     *  stashed an episode title for it, find the matching FeedItem and jump
+     *  straight to the episode in MainActivity. Falls back to {@code fallback}
+     *  if there's no episode hint or no matching item.
+     *
+     *  Why: when the user shares an individual episode link, dropping them on
+     *  the show's feed list is a worse experience than the episode page. */
+    private void maybeRouteToEpisode(long feedId, Runnable fallback) {
+        String episodeTitle = EpisodeTitleCache.consume(shareSourceUrl);
+        Log.i(TAG, "maybeRouteToEpisode feedId=" + feedId + " shareUrl=" + shareSourceUrl
+                + " cachedEpisodeHint=" + episodeTitle);
+        if (episodeTitle == null) {
+            fallback.run();
+            return;
+        }
+        download = io.reactivex.rxjava3.core.Single.<Long>fromCallable(() -> {
+                    Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
+                    if (feed == null || feed.getItems() == null) return 0L;
+                    String wanted = normalizeTitle(episodeTitle);
+                    if (wanted.isEmpty()) return 0L;
+                    // The hint is often "<show> | <episode>" (full og:title) while
+                    // RSS items are bare "<episode>". Substring matching handles
+                    // both directions, but if multiple items match (e.g. "Ep 213"
+                    // and "Ep 213: Intro to Money"), prefer the longest overlap
+                    // so we don't pick the shorter, less-specific sibling.
+                    long bestId = 0L;
+                    int bestScore = 0;
+                    for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
+                        String t = normalizeTitle(fi.getTitle());
+                        if (t.isEmpty()) continue;
+                        int score;
+                        if (t.equals(wanted)) {
+                            score = Integer.MAX_VALUE;
+                        } else if (wanted.contains(t)) {
+                            score = t.length();
+                        } else if (t.contains(wanted)) {
+                            score = wanted.length();
+                        } else {
+                            continue;
+                        }
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestId = fi.getId();
+                        }
+                    }
+                    // Require at least 4 chars of overlap to filter out spurious
+                    // tiny-substring matches (e.g. "Ep 1" matching anything).
+                    Log.i(TAG, "Episode match: wanted=\"" + wanted + "\" itemCount="
+                            + feed.getItems().size() + " bestScore=" + bestScore
+                            + " bestId=" + bestId);
+                    return bestScore >= 4 ? bestId : 0L;
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(matchedItemId -> {
+                    if (matchedItemId == null || matchedItemId == 0L) {
+                        fallback.run();
+                        return;
+                    }
+                    MainActivityStarter starter = new MainActivityStarter(this)
+                            .withOpenFeed(feedId)
+                            .withOpenFeedItem(matchedItemId);
+                    finish();
+                    startActivity(starter.getIntent());
+                }, error -> {
+                    Log.e(TAG, "maybeRouteToEpisode failed", error);
+                    fallback.run();
+                });
+    }
+
+    private static String normalizeTitle(String s) {
+        if (s == null) return "";
+        // Lowercase + collapse non-letter/digit runs to single spaces, then trim.
+        // This makes "Pocket Animals - Episode 213" and "Episode 213: Pocket Animals"
+        // comparable enough for substring matching across YouTube/RSS title styles.
+        return s.toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{Nd}]+", " ")
+                .trim();
     }
 
     private void startFeedDownload(String url) {
@@ -304,7 +392,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         })
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(this::showFeedFragment, error -> {
+        .subscribe(feedId -> maybeRouteToEpisode(feedId, () -> showFeedFragment(feedId)), error -> {
             error.printStackTrace();
             if (error instanceof UnsupportedFeedtypeException
                     && "html".equalsIgnoreCase(((UnsupportedFeedtypeException) error).getRootElement())) {

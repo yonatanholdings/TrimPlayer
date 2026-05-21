@@ -39,7 +39,67 @@ and vermilion accent color.
 
 All colors are in `EditorialTheme.java` (no hardcoded hex in components).
 
+## Recent changes (2026-05-20)
+
+- **Shared ViewModel**: `StatisticsViewModel` scoped to the parent
+  `StatisticsFragment` owns the two heavy queries (`getEditorialStats()` and
+  `getSkipStatistics()`) and exposes them as `LiveData`. All 5 child tabs
+  observe instead of running their own RxJava query on every visit. The
+  EventBus `StatisticsEvent` is consumed once by the parent fragment and
+  forwarded to `viewModel.refresh()`.
+
+- **Abandoned counter**: `EditorialStats.episodesAbandoned` (started, not
+  finished, no play activity in the last 30 days). `getGlobalEpisodeCountsCursor`
+  now takes a cutoff arg and returns both `in_progress` (active) and `abandoned`
+  separately. Activity tab shows it as a 4th counter; the completion-percent
+  was moved into a small caption under Finished.
+
+- **Time Saved redesign**: replaced the AntennaPod-style ProgressBar list with
+  editorial layout — masthead strip, serif total numeral, today/week/month
+  hangs, horizontal stacked bar showing the 5-way proportion (speed / silence /
+  ads / intros / outros), per-type rows with editorial bars, monthly history
+  with mini bars + serif numerals.
+
+- **Dark mode**: every editorial layout uses `@color/editorial_*` resources
+  defined in `values/colors.xml` and `values-night/colors.xml` (paper inverts
+  to deep ink, ink to warm cream, vermilion accent and gold lifted slightly
+  for contrast). `EditorialTheme.java` exposes `ink(ctx)` / `paper(ctx)` /
+  `vermilion(ctx)` etc. getters; chart views (DonutView, HeatmapView,
+  HourBarsView, DayMultiplesView, StreamgraphView, SparklineView) and the
+  Years/TimeSaved fragments' programmatic colors all resolve through these.
+  Legacy `EditorialTheme.INK` etc. constants kept as deprecated for any
+  external callers.
+
+- **Palette colors per feed**: new `FeedColorCache` (in editorial/) extracts
+  the vibrant→muted→dominant color from each feed cover via
+  Glide + AndroidX Palette and caches in a 64-entry LRU. Subscriptions list
+  rows tint their indicator bar with the extracted color; DonutView segments
+  do the same on the next `invalidate()` after extraction completes.
+  Lightness is floored so near-white covers still render against paper bg.
+  Fixed-palette colors remain as the fallback while extraction runs.
+
+- **Filter dialog wired**: the toolbar Filter menu item is now visible and
+  opens the existing `StatisticsFilterDialog`. The dialog persists from/to
+  and the include-marked-played flag to SharedPreferences and posts a
+  `StatisticsEvent`, which the ViewModel observes and refreshes on.
+
 ## Open follow-ups
+
+### Filter date range not yet applied to queries
+The Filter dialog persists from/to to SharedPreferences and the ViewModel
+refreshes when the dialog confirms, but `DBReader.getEditorialStats()` doesn't
+yet take a date-range argument — every cursor (`getByHourCursor`,
+`getByDayCursor`, `getMonthlyStatisticsCursor`, `getStatisticsCursor`,
+`getGlobalEpisodeCountsCursor`, `getDailyListeningCursor`) needs a `WHERE
+last_played_time_statistics BETWEEN from AND to` predicate added, and an
+`getEditorialStats(long from, long to, boolean includeMarkedPlayed)` overload.
+`getDailyListeningCursor` and `getSkipEventStatsCursor` already take from/to;
+the others would follow the same pattern.
+
+The oldest-date floor passed to `StatisticsFilterDialog` is currently a
+5-year hardcoded look-back — replace with a quick `SELECT MIN(last_played_time_statistics)`
+once filtering actually applies, so the spinner shows only months that
+contain data.
 
 ### Fonts not yet bundled
 The design calls for Instrument Serif and IBM Plex Mono. The code falls back to
@@ -52,19 +112,3 @@ The design calls for Instrument Serif and IBM Plex Mono. The code falls back to
    - `instrument_serif_regular.ttf`
    - `ibm_plex_mono_regular.ttf`
 3. Set `FONTS_BUNDLED = true` in `EditorialTheme.java`
-
-### Cover art colors
-Show segments in the donut and per-show rows use a fixed 9-color palette.
-For precise brand colors, integrate Palette API (Glide/Coil) to extract dominant
-colors from each feed's cover image.
-
-### "Abandoned" counter
-The Activity screen shows Started / Finished / In-progress / Completion %.
-A true "Abandoned" count (started but never resumed after a certain date) would
-require a new query comparing `last_played_time` vs episode age.
-
-### Filter chips (Subscriptions)
-The design specifies filter chips (All shows / This year / category tags).
-Currently the list is always sorted by all-time hours. Filtering requires
-wiring the existing `StatisticsFilterDialog` or a new chip UI into the
-`getEditorialStats()` call with appropriate time bounds.
