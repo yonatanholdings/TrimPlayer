@@ -203,6 +203,15 @@ public class ExoPlayerWrapper {
         return exoPlayer.getSkipSilenceEnabled();
     }
 
+    public void setSkipSilenceEnabled(boolean skipSilence) {
+        if (exoPlayer.getSkipSilenceEnabled() != skipSilence) {
+            exoPlayer.setSkipSilenceEnabled(skipSilence);
+        }
+        // Keep the speed-change dance's captured value in sync so an in-flight
+        // dance doesn't re-apply a stale value when it finally completes.
+        pendingSkipSilence = skipSilence;
+    }
+
     public int getDuration() {
         if (exoPlayer.getDuration() == C.TIME_UNSET) {
             return Playable.INVALID_TIME;

@@ -459,6 +459,17 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         displaySpeed = speed;
         // Update UI immediately so the speed display responds to every button press.
         EventBus.getDefault().post(new SpeedChangedEvent(speed));
+        // Apply skip-silence directly without the speed debounce. Skip-silence is a
+        // boolean toggle, not subject to the rapid-tap audio artifacts the debounce
+        // and ExoPlayerWrapper's pause+seek dance are designed to prevent. Routing it
+        // through the dance made initial-play silence-skipping unreliable: the new
+        // ExoPlayer instance starts with skipSilenceEnabled=false, and if the dance
+        // didn't apply (e.g. onPositionDiscontinuity for the +1ms internal seek didn't
+        // fire, or wasPlayingBeforeSpeedChange got stuck), the player kept playing
+        // without skipping silence even though the pref was on.
+        if (mediaPlayer != null) {
+            mediaPlayer.setSkipSilenceEnabled(skipSilence);
+        }
         // Debounce the actual ExoPlayer call: calling setPlaybackParameters on every
         // rapid +/- press flushes the audio renderer each time and produces a beep.
         // Apply only the final value after a short settling period.
