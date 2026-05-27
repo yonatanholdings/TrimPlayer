@@ -167,10 +167,13 @@ public class ExoPlayerWrapper {
                         // The flush-seek is confirmed complete by ExoPlayer — AudioSink.flush()
                         // has already run, SonicAudioProcessor's stale-sample buffer is clear.
                         // Now it is safe to set the new speed and resume.
+                        Log.d(TAG, "speed-change dance: seek complete, applying speed. wasPlayingBeforeSpeedChange="
+                                + wasPlayingBeforeSpeedChange + " playWhenReady=" + exoPlayer.getPlayWhenReady());
                         speedChangeSeeking = false;
                         applySpeedAndSilence(pendingSkipSilence);
                         if (wasPlayingBeforeSpeedChange) {
                             wasPlayingBeforeSpeedChange = false;
+                            Log.d(TAG, "speed-change dance: calling exoPlayer.play()");
                             exoPlayer.play();
                         }
                         return;
@@ -224,6 +227,11 @@ public class ExoPlayerWrapper {
     }
 
     public void pause() {
+        Log.d(TAG, "pause() called. exoPlayer.isPlaying=" + exoPlayer.isPlaying()
+                + " playWhenReady=" + exoPlayer.getPlayWhenReady()
+                + " wasPlayingBeforeSpeedChange=" + wasPlayingBeforeSpeedChange
+                + " speedChangeSeeking=" + speedChangeSeeking
+                + " pendingSpeedApply=" + (pendingSpeedApply != null), new Throwable("pause-caller"));
         exoPlayer.pause();
     }
 
@@ -234,6 +242,10 @@ public class ExoPlayerWrapper {
 
     public void release() {
         bufferingUpdateDisposable.dispose();
+        if (loudnessEnhancer != null) {
+            loudnessEnhancer.release();
+            loudnessEnhancer = null;
+        }
         if (exoPlayer != null) {
             exoPlayer.release();
         }
@@ -250,6 +262,11 @@ public class ExoPlayerWrapper {
 
     public void reset() {
         cancelPendingSpeedChange();
+        bufferingUpdateDisposable.dispose();
+        if (loudnessEnhancer != null) {
+            loudnessEnhancer.release();
+            loudnessEnhancer = null;
+        }
         exoPlayer.release();
         if (simpleCache != null) {
             simpleCache.release();
@@ -322,6 +339,10 @@ public class ExoPlayerWrapper {
     }
 
     public void setPlaybackParams(float speed, boolean skipSilence) {
+        Log.d(TAG, "setPlaybackParams: speed=" + speed + " skipSilence=" + skipSilence
+                + " exoPlayer.isPlaying=" + exoPlayer.isPlaying()
+                + " wasPlayingBeforeSpeedChange=" + wasPlayingBeforeSpeedChange
+                + " speedChangeSeeking=" + speedChangeSeeking);
         playbackParameters = new PlaybackParameters(speed);
         pendingSkipSilence = skipSilence;
 
@@ -398,6 +419,10 @@ public class ExoPlayerWrapper {
     }
 
     public void start() {
+        Log.d(TAG, "start() called. exoPlayer.isPlaying=" + exoPlayer.isPlaying()
+                + " playWhenReady=" + exoPlayer.getPlayWhenReady()
+                + " wasPlayingBeforeSpeedChange=" + wasPlayingBeforeSpeedChange
+                + " speedChangeSeeking=" + speedChangeSeeking, new Throwable("start-caller"));
         exoPlayer.play();
     }
 

@@ -650,6 +650,10 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
 
         @Override
         public void onAudioFocusChange(final int focusChange) {
+            Log.d(TAG, "onAudioFocusChange: focusChange=" + focusChange
+                    + " (GAIN=1, LOSS=-1, LOSS_TRANSIENT=-2, LOSS_TRANSIENT_CAN_DUCK=-3)"
+                    + " playerStatus=" + playerStatus
+                    + " pausedBecauseOfTransient=" + pausedBecauseOfTransientAudiofocusLoss);
             if (isShutDown) {
                 return;
             }
@@ -725,6 +729,7 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             mediaPlayer.reset();
         }
 
+        setPlayerStatus(PlayerStatus.INDETERMINATE, null);
         abandonAudioFocus();
 
         final Playable currentMedia = media;
