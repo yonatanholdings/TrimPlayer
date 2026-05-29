@@ -402,9 +402,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         trimFetchSegments(media, null);
     }
 
-    /** Fetch segments. When announceUnlockTitle is non-null AND the response
-     *  contains at least one segment, posts {@link de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent}
-     *  so the UI can tell the user that their analyze just paid off. */
+    /** Fetch segments. On a cold local cache (no stub, no cached entry) and a
+     *  non-polling call (announceUnlockTitle == null), posts
+     *  {@link de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent} immediately so
+     *  the user sees the "Mapping…" snackbar every time an episode without
+     *  local segments starts — without waiting for the network or cooldown
+     *  gating. When segments subsequently arrive (either from this fetch's
+     *  response or, for polling refetches, with announceUnlockTitle set),
+     *  posts {@link de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent}. */
     private void trimFetchSegments(FeedMedia media, String announceUnlockTitle) {
         String episodeUrl = media.getStreamUrl();
         String episodeGuid = media.getItem() != null ? media.getItem().getItemIdentifier() : null;
@@ -448,6 +453,20 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             return;
         }
 
+        // Surface the "Mapping…" snackbar immediately on cold local cache,
+        // before the network round trip and independent of analyze cooldown.
+        // The user asked for this signal every time an episode starts without
+        // local segments — cooldown still gates the actual /analyze HTTP call
+        // below, so the backend isn't spammed even if the user replays.
+        final boolean firedQueued =
+                announceUnlockTitle == null
+                && capturedRssUrl != null && !capturedRssUrl.isEmpty();
+        if (firedQueued) {
+            EventBus.getDefault().post(
+                    new de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent(
+                            capturedPodcastTitle != null ? capturedPodcastTitle : ""));
+        }
+
         // Pull credentials at request-time (token refresh between calls is
         // picked up automatically). Only attach the JWT if it isn't already
         // past its exp — server would 401 anyway, and sending stale tokens
@@ -484,9 +503,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                             de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.put(
                                     getApplicationContext(), capturedGuid, currentSegments);
                             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " segments");
-                            if (announceUnlockTitle != null) {
+                            // Post unlock for both the polling-driven refetch (announceUnlockTitle != null)
+                            // and the cold path where we just fired the "Mapping…" snackbar — so the
+                            // user sees the Mapping → Trimmed progression instead of a dangling Mapping
+                            // message when the server's already-warm cache returns segments immediately.
+                            String unlockTitle = announceUnlockTitle != null
+                                    ? announceUnlockTitle
+                                    : (firedQueued ? capturedPodcastTitle : null);
+                            if (unlockTitle != null) {
                                 EventBus.getDefault().post(
-                                        new de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent(announceUnlockTitle));
+                                        new de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent(unlockTitle));
                             }
                             if (BuildConfig.DEBUG) {
                                 new Handler(Looper.getMainLooper()).post(() ->
@@ -495,13 +521,43 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                                 Toast.LENGTH_SHORT).show());
                             }
                         } else if (capturedRssUrl != null && !capturedRssUrl.isEmpty()) {
-                            if (trimAnalyzeOnCooldown(capturedGuid, episodeUrl)) {
+                            // Empty segments + analyzed=true means the backend has
+                            // already finished mapping this episode and produced no
+                            // skippable cues. Record that explicitly so the UI badge
+                            // can show "analyzed, nothing to trim" instead of nothing,
+                            // and skip the /analyze re-trigger (it would be a no-op).
+                            boolean analyzedEmpty = response.isSuccessful()
+                                    && response.body() != null
+                                    && Boolean.TRUE.equals(response.body().analyzed);
+                            if (analyzedEmpty) {
+                                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache
+                                        .putAnalyzedEmpty(getApplicationContext(), capturedGuid);
+                                Log.d(TAG, "Trim Player: Server confirmed no segments for this episode");
+                                // Resolve the prior "Mapping…" snackbar (cold path)
+                                // or the polling-started snackbar (announceUnlockTitle != null)
+                                // and let the player badge swap to the analyzed-clean icon
+                                // without waiting for the next loadMediaInfo tick.
+                                String emptyTitle = announceUnlockTitle != null
+                                        ? announceUnlockTitle
+                                        : (firedQueued ? capturedPodcastTitle : null);
+                                if (emptyTitle != null) {
+                                    EventBus.getDefault().post(
+                                            new de.danoeh.antennapod.event.TrimAnalyzedEmptyEvent(emptyTitle));
+                                }
+                            } else if (de.danoeh.antennapod.playback.service.trim
+                                    .EntitlementStore.get().snapshot().isQuotaExceeded()) {
+                                // Don't burn backend fingerprint+match work for a free-tier
+                                // user who can't see the result this month anyway. Once the
+                                // server confirms entitlement.status != "quota_exceeded"
+                                // (either via Pro purchase or monthly reset), the next
+                                // /segments call will refresh EntitlementStore and we'll
+                                // fall through to trigger analysis as normal.
+                                Log.d(TAG, "Trim Player: No segments + quota_exceeded — skipping /analyze");
+                            } else if (trimAnalyzeOnCooldown(capturedGuid, episodeUrl)) {
                                 Log.d(TAG, "Trim Player: No segments, analyze cooldown active — not re-triggering");
                             } else {
                                 Log.d(TAG, "Trim Player: No segments found, triggering analysis");
                                 trimRecordAnalyzeAttempt(capturedGuid, episodeUrl);
-                                EventBus.getDefault().post(
-                                        new de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent(capturedPodcastTitle));
                                 trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid, capturedPodcastTitle);
                             }
                         } else {
@@ -518,13 +574,17 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         // kicks /analyze in this case; do the same here so a backend outage
                         // doesn't leave new episodes permanently unanalyzed on the client.
                         if (capturedRssUrl != null && !capturedRssUrl.isEmpty()) {
-                            if (trimAnalyzeOnCooldown(capturedGuid, episodeUrl)) {
+                            if (de.danoeh.antennapod.playback.service.trim
+                                    .EntitlementStore.get().snapshot().isQuotaExceeded()) {
+                                // Cached entitlement says we're over quota — same rationale
+                                // as the empty-segments branch above. The fallback /analyze
+                                // would also be withheld on the next /segments call.
+                                Log.d(TAG, "Trim Player: segments fetch failed + quota_exceeded — skipping /analyze");
+                            } else if (trimAnalyzeOnCooldown(capturedGuid, episodeUrl)) {
                                 Log.d(TAG, "Trim Player: segments fetch failed, analyze cooldown active — not re-triggering");
                             } else {
                                 Log.d(TAG, "Trim Player: segments fetch failed, triggering analysis as fallback");
                                 trimRecordAnalyzeAttempt(capturedGuid, episodeUrl);
-                                EventBus.getDefault().post(
-                                        new de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent(capturedPodcastTitle));
                                 trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid, capturedPodcastTitle);
                             }
                         }
@@ -1923,7 +1983,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             state = PlaybackStateCompat.STATE_NONE;
         }
 
-        sessionState.setState(state, getCurrentPosition(), getCurrentPlaybackSpeed());
+        float playbackSpeed = (state == PlaybackStateCompat.STATE_PLAYING)
+                ? getCurrentPlaybackSpeed() : 0f;
+        sessionState.setState(state, getCurrentPosition(), playbackSpeed);
         long capabilities = PlaybackStateCompat.ACTION_PLAY
                 | PlaybackStateCompat.ACTION_PLAY_PAUSE
                 | PlaybackStateCompat.ACTION_REWIND

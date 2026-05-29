@@ -152,6 +152,15 @@ public final class TrimPrefetcher {
         if (rssUrl == null || rssUrl.isEmpty() || episodeUrl == null || episodeUrl.isEmpty()) {
             return;
         }
+        // Skip when we're already known to be over the free-tier quota — the
+        // backend would queue a real fingerprint+match job even though the
+        // result will be withheld on the next /segments call. Cached
+        // entitlement state can be slightly stale; reads stop being skipped
+        // as soon as a successful /segments updates the snapshot (Pro purchase
+        // or monthly reset).
+        if ("quota_exceeded".equals(UserPreferences.getTrimProStatus())) {
+            return;
+        }
         String baseUrl = UserPreferences.getTrimServerUrl();
         if (baseUrl == null || baseUrl.isEmpty()) {
             return;
