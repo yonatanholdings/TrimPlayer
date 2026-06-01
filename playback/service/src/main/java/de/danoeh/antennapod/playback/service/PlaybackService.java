@@ -1923,7 +1923,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             state = PlaybackStateCompat.STATE_NONE;
         }
 
-        sessionState.setState(state, getCurrentPosition(), getCurrentPlaybackSpeed());
+        // Android Auto's progress bar reads the position from the media session and
+        // extrapolates it forward (anchorPos + elapsed * speed) while STATE_PLAYING, with no
+        // clamp to the duration. Cap the published position at the duration so the displayed
+        // time can never run past the end of the episode.
+        int sessionPosition = getCurrentPosition();
+        int sessionDuration = getDuration();
+        if (sessionDuration > 0 && sessionPosition > sessionDuration) {
+            sessionPosition = sessionDuration;
+        }
+        sessionState.setState(state, sessionPosition, getCurrentPlaybackSpeed());
         long capabilities = PlaybackStateCompat.ACTION_PLAY
                 | PlaybackStateCompat.ACTION_PLAY_PAUSE
                 | PlaybackStateCompat.ACTION_REWIND
@@ -2757,6 +2766,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(number -> {
                     EventBus.getDefault().post(new PlaybackPositionEvent(getCurrentPosition(), getDuration()));
+                    // Re-anchor the media session position every tick. Android Auto extrapolates the
+                    // position from the last published anchor using the playback speed; since the
+                    // anchor was otherwise only refreshed on status changes/seeks, any drift (e.g.
+                    // buffering stalls or skip-silence advancing audio faster than `speed`) would
+                    // accumulate over an episode and could push the displayed time past the end.
+                    if (mediaPlayer != null) {
+                        updateMediaSession(mediaPlayer.getPlayerStatus());
+                    }
                     if (Build.VERSION.SDK_INT < 29) {
                         notificationBuilder.updatePosition(getCurrentPosition(), getCurrentPlaybackSpeed());
                         NotificationManager notificationManager = (NotificationManager)
