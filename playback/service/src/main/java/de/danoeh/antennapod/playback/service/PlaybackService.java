@@ -2897,6 +2897,12 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             } else if (status == PlayerStatus.INITIALIZED) {
                 setStartWhenPrepared(true);
                 prepare();
+            } else if (getPlayable() == null) {
+                // Nothing loaded in the player (cold Android Auto connect, or after an episode
+                // ended and endPlayback nulled the media). The media-button keycode handler has
+                // this same fallback; the session callback must too, otherwise Android Auto's
+                // play button silently does nothing.
+                startPlayingFromPreferences();
             }
         }
 
@@ -2965,7 +2971,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         }
 
         public void onNextChapter() {
-            List<Chapter> chapters = mediaPlayer.getPlayable().getChapters();
+            Playable playable = mediaPlayer.getPlayable();
+            if (playable == null) {
+                // Nothing loaded — the next-chapter custom action can be invoked against a
+                // stale published session state (e.g. just after an episode ended). Avoid NPE.
+                return;
+            }
+            List<Chapter> chapters = playable.getChapters();
             if (chapters == null) {
                 // No chapters, just fallback to next episode
                 mediaPlayer.skip();
