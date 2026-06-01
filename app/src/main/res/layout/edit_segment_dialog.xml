@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="22dp">
+
+        <!-- Title row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/editSegmentTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/trim_edit_title"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="21sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/closeButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@android:string/cancel"
+                android:src="@drawable/ic_close"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/trim_edit_subtitle"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13.5sp" />
+
+        <de.danoeh.antennapod.ui.screen.playback.audio.BoundaryEditor
+            android:id="@+id/boundaryEditor"
+            android:layout_width="match_parent"
+            android:layout_height="96dp" />
+
+        <!-- Preview transport row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/previewButton"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:contentDescription="@string/trim_edit_preview"
+                app:icon="@drawable/ic_play_24dp"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/jumpToStartButton"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="12dp"
+                android:contentDescription="@string/trim_edit_jump_to_start"
+                app:icon="@drawable/ic_replay"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
+
+            <TextView
+                android:id="@+id/previewPosition"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:fontFeatureSettings="tnum"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="13sp"
+                tools:ignore="UnusedAttribute" />
+
+            <TextView
+                android:id="@+id/lengthChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill"
+                android:fontFeatureSettings="tnum"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="12.5sp"
+                tools:ignore="UnusedAttribute" />
+        </LinearLayout>
+
+        <!-- Nudge card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_nudge_card"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp">
+
+            <include
+                android:id="@+id/nudgeStart"
+                layout="@layout/edit_segment_nudge_row" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="6dp"
+                android:background="?attr/colorOutlineVariant"
+                android:alpha="0.5" />
+
+            <include
+                android:id="@+id/nudgeEnd"
+                layout="@layout/edit_segment_nudge_row" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:letterSpacing="0.08"
+            android:text="@string/trim_edit_label_header"
+            android:textAllCaps="true"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11.5sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/labelChipGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleLine="false"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAd"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/trim_label_ad" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipIntro"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/trim_label_intro" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipOutro"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/trim_label_outro" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/trim_edit_save"
+            app:icon="@drawable/ic_check" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/notASkipButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/trim_edit_not_a_skip"
+            android:textColor="?attr/colorError"
+            app:icon="@drawable/ic_delete"
+            app:iconTint="?attr/colorError" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

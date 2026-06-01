@@ -162,7 +162,7 @@ public class YearsStatisticsFragment extends Fragment {
         tvDelta.setMinWidth(dpToPx(48));
         tvDelta.setGravity(android.view.Gravity.END);
         if (prevHrs < 0) {
-            tvDelta.setText("FIRST");
+            tvDelta.setText("first");
             tvDelta.setTextColor(EditorialTheme.inkMuted(ctx));
         } else if (prevHrs == 0) {
             tvDelta.setText("");
@@ -202,7 +202,7 @@ public class YearsStatisticsFragment extends Fragment {
      *  the §02 drill-down section. Brief "LOADING…" caption while in flight. */
     private void loadTopShowsForYear(int year) {
         yearDrilldown.setVisibility(View.VISIBLE);
-        yearDrilldownYear.setText("YEAR " + year + " · LOADING…");
+        yearDrilldownYear.setText(year + " · loading…");
         yearDrilldownRows.removeAllViews();
         if (DemoStats.ENABLED) {
             renderTopShows(fakeTopShowsForYear(year), year);
@@ -216,7 +216,7 @@ public class YearsStatisticsFragment extends Fragment {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(result -> renderTopShows(result.feedTime, year),
-                        e -> yearDrilldownYear.setText("YEAR " + year + " · UNAVAILABLE"));
+                        e -> yearDrilldownYear.setText(year + " · unavailable"));
     }
 
     /** Synthetic top-5 list for demo screenshots — different mix per year so
@@ -255,7 +255,7 @@ public class YearsStatisticsFragment extends Fragment {
     /** Render the top 5 shows for the selected year. Empty state if none. */
     private void renderTopShows(List<StatisticsItem> items, int year) {
         Context ctx = requireContext();
-        yearDrilldownYear.setText("YEAR " + year);
+        yearDrilldownYear.setText(String.valueOf(year));
         yearDrilldownRows.removeAllViews();
         List<StatisticsItem> sorted = new java.util.ArrayList<>(items);
         Collections.sort(sorted, (a, b) -> Long.compare(b.timePlayed, a.timePlayed));

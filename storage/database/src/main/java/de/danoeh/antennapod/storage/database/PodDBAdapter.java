@@ -1626,6 +1626,17 @@ public class PodDBAdapter {
         return db.rawQuery(sql, null);
     }
 
+    /** Skip totals grouped by day-of-week (0=Sun…6=Sat, localtime) and skip type. */
+    public Cursor getSkipEventStatsByDayCursor() {
+        String sql = "SELECT"
+                + " CAST(strftime('%w', " + KEY_SKIP_TIMESTAMP + " / 1000, 'unixepoch', 'localtime') AS INTEGER) AS dow,"
+                + " " + KEY_SKIP_TYPE + ","
+                + " SUM(" + KEY_SKIP_DURATION_MS + ") AS total_ms"
+                + " FROM " + TABLE_NAME_SKIP_EVENTS
+                + " GROUP BY dow, " + KEY_SKIP_TYPE;
+        return db.rawQuery(sql, null);
+    }
+
     public Cursor getSkipEventsMonthlyCursor() {
         String sql = "SELECT"
                 + " CAST(strftime('%Y', " + KEY_SKIP_TIMESTAMP + " / 1000, 'unixepoch') AS INTEGER) AS year,"
@@ -1722,6 +1733,16 @@ public class PodDBAdapter {
                 + " AND " + KEY_PLAYED_DURATION + " > 0"
                 + " GROUP BY day ORDER BY day";
         return db.rawQuery(sql, null);
+    }
+
+    /** Feed items whose last-played timestamp falls in [fromMs, toMs), most recent first. */
+    public Cursor getFeedItemsPlayedInPeriodCursor(long fromMs, long toMs) {
+        final String query = SELECT_FEED_ITEMS_AND_MEDIA
+                + " WHERE " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " >= " + fromMs
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " < " + toMs
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0"
+                + " ORDER BY " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " DESC";
+        return db.rawQuery(query, null);
     }
 
     /** Daily listening ms for a single feed over the given period. */

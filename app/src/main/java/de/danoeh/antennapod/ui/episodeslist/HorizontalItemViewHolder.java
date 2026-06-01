@@ -29,6 +29,8 @@ public class HorizontalItemViewHolder extends RecyclerView.ViewHolder {
     private final SquareImageView cover;
     private final TextView title;
     private final TextView date;
+    private final ImageView ivTrimSegments;
+    private final ImageView ivTrimClean;
     private final ProgressBar progressBar;
     private final CircularProgressBar circularProgressBar;
     private final View progressBarReplacementSpacer;
@@ -44,6 +46,8 @@ public class HorizontalItemViewHolder extends RecyclerView.ViewHolder {
         cover = itemView.findViewById(R.id.cover);
         title = itemView.findViewById(R.id.titleLabel);
         date = itemView.findViewById(R.id.dateLabel);
+        ivTrimSegments = itemView.findViewById(R.id.ivTrimSegments);
+        ivTrimClean = itemView.findViewById(R.id.ivTrimClean);
         secondaryActionIcon = itemView.findViewById(R.id.secondaryActionIcon);
         circularProgressBar = itemView.findViewById(R.id.circularProgressBar);
         progressBar = itemView.findViewById(R.id.progressBar);
@@ -64,6 +68,15 @@ public class HorizontalItemViewHolder extends RecyclerView.ViewHolder {
         title.setText(item.getTitle());
         date.setText(DateFormatter.formatAbbrev(activity, item.getPubDate()));
         date.setContentDescription(DateFormatter.formatForAccessibility(item.getPubDate()));
+        de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State trimState =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache
+                        .getState(activity, item.getItemIdentifier());
+        ivTrimSegments.setVisibility(
+                trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.HAS_SEGMENTS
+                        ? View.VISIBLE : View.GONE);
+        ivTrimClean.setVisibility(
+                trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.ANALYZED_EMPTY
+                        ? View.VISIBLE : View.GONE);
         ItemActionButton actionButton = ItemActionButton.forItem(item);
         actionButton.configure(secondaryActionIcon, secondaryActionIcon, activity);
         secondaryActionIcon.setFocusable(false);
@@ -107,6 +120,8 @@ public class HorizontalItemViewHolder extends RecyclerView.ViewHolder {
         title.setText("████ █████");
         date.setText("███");
         secondaryActionIcon.setImageDrawable(null);
+        ivTrimSegments.setVisibility(View.GONE);
+        ivTrimClean.setVisibility(View.GONE);
         circularProgressBar.setPercentage(0, null);
         circularProgressBar.setIndeterminate(false);
         setProgressBar(true, 50);

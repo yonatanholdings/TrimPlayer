@@ -31,6 +31,17 @@
                 android:summary="@string/opml_export_summary"/>
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/portcast">
+        <Preference
+                android:key="prefComingFromSpotify"
+                android:title="@string/coming_from_spotify_title"
+                android:summary="@string/coming_from_spotify_summary"/>
+        <Preference
+                android:key="prefPortcastExport"
+                android:title="@string/portcast_export_label"
+                android:summary="@string/portcast_export_summary"/>
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/html">
         <Preference
                 android:key="prefHtmlExport"

@@ -58,6 +58,8 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
     public final ImageView isFavorite;
     private final ImageView ivPlayed;
     private final ImageView isStubbed;
+    private final ImageView ivTrimSegments;
+    private final ImageView ivTrimClean;
     private final View playedOverlay;
     private final ProgressBar progressBar;
     public final View secondaryActionButton;
@@ -91,6 +93,8 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
         isFavorite = itemView.findViewById(R.id.isFavorite);
         ivPlayed = itemView.findViewById(R.id.ivPlayed);
         isStubbed = itemView.findViewById(R.id.ivStubbed);
+        ivTrimSegments = itemView.findViewById(R.id.ivTrimSegments);
+        ivTrimClean = itemView.findViewById(R.id.ivTrimClean);
         playedOverlay = itemView.findViewById(R.id.playedOverlay);
         size = itemView.findViewById(R.id.size);
         separatorIcons = itemView.findViewById(R.id.separatorIcons);
@@ -123,6 +127,18 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
         } else {
             isStubbed.setVisibility(View.GONE);
         }
+        // Trim analysis badge: scissors when the backend has handed us segments
+        // for this episode, dimmed check-circle when it analyzed and produced
+        // nothing to skip. UNKNOWN (never played / cache expired) shows neither.
+        de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State trimState =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache
+                        .getState(activity, item.getItemIdentifier());
+        ivTrimSegments.setVisibility(
+                trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.HAS_SEGMENTS
+                        ? View.VISIBLE : View.GONE);
+        ivTrimClean.setVisibility(
+                trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.ANALYZED_EMPTY
+                        ? View.VISIBLE : View.GONE);
         boolean played = item.isPlayed();
         playedOverlay.setVisibility(played ? View.VISIBLE : View.GONE);
         ivPlayed.setVisibility(played ? View.VISIBLE : View.GONE);
@@ -294,7 +310,9 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
                 || isVideo.getVisibility() == View.VISIBLE
                 || isFavorite.getVisibility() == View.VISIBLE
                 || isInbox.getVisibility() == View.VISIBLE
-                || isStubbed.getVisibility() == View.VISIBLE;
+                || isStubbed.getVisibility() == View.VISIBLE
+                || ivTrimSegments.getVisibility() == View.VISIBLE
+                || ivTrimClean.getVisibility() == View.VISIBLE;
         separatorIcons.setVisibility(hasIcons ? View.VISIBLE : View.GONE);
     }
 }

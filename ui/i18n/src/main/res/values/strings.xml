@@ -571,10 +571,10 @@
     <string name="trim_skip_toast_ad">Skipped ad · saved %s</string>
     <string name="trim_skip_toast_outro">Skipped outro · saved %s</string>
     <string name="trim_skip_toast_generic">Skipped segment · saved %s</string>
-    <!-- Dialog shown the first time we play an episode from a podcast not in our catalog. -->
-    <string name="trim_analyze_queued_title">You played it, we\'ll trim it.</string>
-    <!-- %1$s is the podcast title. -->
-    <string name="trim_analyze_queued_body">%1$s gets mapped — yours, and everyone\'s.</string>
+    <!-- Snackbar shown the first time we play an episode from a podcast not in our catalog.
+         Title takes %1$s = podcast title; body is shown beneath as supporting text. -->
+    <string name="trim_analyze_queued_title">Mapping %1$s</string>
+    <string name="trim_analyze_queued_body">Outro &amp; ads will skip once it\'s ready.</string>
     <string name="trim_analyze_queued_fallback_podcast_name">this podcast</string>
     <!-- Auto volume-boost feedback. %1$s is the podcast title, %2$s is the new boost level. -->
     <string name="volume_boost_auto_changed">%1$s volume boost: %2$s</string>
@@ -584,8 +584,45 @@
     <string name="volume_boost_medium">medium</string>
     <string name="volume_boost_heavy">heavy</string>
     <string name="app_action_fallback_podcast_name">this podcast</string>
-    <!-- Snackbar when analysis completes mid-playback and segments arrive for the current episode. %1$s is the podcast title. -->
-    <string name="trim_segments_unlocked_snackbar">%1$s is trimmed. Outro &amp; ads will skip on their own.</string>
+    <!-- Snackbar when analysis completes mid-playback and segments arrive for the current episode.
+         Same two-line layout as trim_analyze_queued_*. %1$s = podcast title. -->
+    <string name="trim_segments_unlocked_title">%1$s is trimmed</string>
+    <string name="trim_segments_unlocked_body">Outro &amp; ads will skip on their own.</string>
+    <!-- Episode-list badge content descriptions. Shown next to other status icons
+         (inbox / video / favorite / queued / played). -->
+    <string name="trim_badge_has_segments">Trim segments available</string>
+    <string name="trim_badge_analyzed_clean">Analyzed — nothing to trim</string>
+    <!-- Snackbar that resolves a "Mapping…" message when the backend confirms
+         the episode has been analyzed and has no skippable segments. Mirrors
+         trim_segments_unlocked_* in shape so the two outcomes look symmetric.
+         %1$s = podcast title. -->
+    <string name="trim_analyzed_empty_title">%1$s runs clean</string>
+    <string name="trim_analyzed_empty_body">TrimPlayer found nothing to skip on this one.</string>
+    <!-- Local segment-edit sheet. Lets the listener drag a skip's edges, relabel it,
+         or remove it ("Not a skip"). Changes apply to this device only. -->
+    <string name="trim_edit_title">Edit this skip</string>
+    <string name="trim_edit_subtitle">Play it back and drag the edges to fix where it starts and ends, change the label, or remove it.</string>
+    <string name="trim_edit_start">Start</string>
+    <string name="trim_edit_end">End</string>
+    <string name="trim_edit_nudge_step">½s</string>
+    <string name="trim_edit_label_header">Label</string>
+    <string name="trim_edit_save">Save changes</string>
+    <string name="trim_edit_not_a_skip">Not a skip</string>
+    <string name="trim_edit_preview">Preview</string>
+    <string name="trim_edit_jump_to_start">Jump to start of skip</string>
+    <string name="trim_edit_saved">Changes saved</string>
+    <string name="trim_edit_removed">Skip removed</string>
+    <string name="trim_label_ad">Ad break</string>
+    <string name="trim_label_intro">Intro</string>
+    <string name="trim_label_outro">Outro</string>
+    <!-- Segment-list sheet: "Trimmed in this episode" surface, opened from the player overflow menu. -->
+    <string name="trim_segments_menu">Trimmed segments</string>
+    <string name="trim_segment_list_title">Trimmed in this episode</string>
+    <string name="trim_segment_list_subtitle">Tap a skip to adjust its edges or remove it.</string>
+    <string name="trim_segment_list_empty">Nothing trimmed in this episode yet.</string>
+    <string name="trim_mark_missing">Mark a skip we missed</string>
+    <!-- %1$s = start time, %2$s = end time, %3$s = duration (e.g. "5:18 – 6:48 · 1m 30s"). -->
+    <string name="trim_segment_row_range">%1$s – %2$s · %3$s</string>
     <!-- End-of-episode summary toast. %1$s is total duration, %2$s is breakdown ("1 intro, 2 ads"). -->
     <string name="trim_summary_with_breakdown">Saved %1$s · %2$s skipped</string>
     <string name="trim_summary_no_breakdown">Saved %1$s</string>
@@ -768,6 +805,10 @@
     <!-- About screen -->
     <string name="about_pref">About</string>
     <string name="antennapod_version">TrimPlayer version</string>
+    <!-- Tap-to-copy row for the anonymous backend client UUID. Surfaced so the
+         developer can grant Pro manually against this device's identifier. -->
+    <string name="about_trim_client_id_title">Trim client ID</string>
+    <string name="about_trim_client_id_summary">Tap to copy</string>
     <string name="contributors">Contributors</string>
     <string name="contributors_summary">Everyone can help to make TrimPlayer better - with code, translations or by helping users in our forum</string>
     <string name="developers">Developers</string>
@@ -811,6 +852,42 @@
     <string name="select_all_label">Select all</string>
     <string name="deselect_all_label">Deselect all</string>
     <string name="opml_export_label">OPML export</string>
+    <string name="portcast">PortCast</string>
+    <string name="portcast_export_label">PortCast export</string>
+    <string name="portcast_export_summary">Export subscriptions, episode state, queue, and preferences in the open PortCast format (portcast.org)</string>
+    <string name="portcast_import_title">PortCast import</string>
+    <string name="portcast_import_error">PortCast import failed: %1$s</string>
+    <string name="portcast_import_notification_title">Importing PortCast data</string>
+    <string name="portcast_import_subscribing">Subscribing %1$d of %2$d</string>
+    <string name="portcast_import_conflicts_title">Resolve %1$d conflicting episodes</string>
+    <string name="portcast_import_started">Importing %1$d feeds in the background</string>
+    <string name="portcast_import_started_with_unresolved">Importing %1$d feeds in the background. %2$d couldn\'t be matched and were skipped.</string>
+    <string name="portcast_import_activity_title">Import from PortCast</string>
+    <string name="portcast_import_activity_button">Import</string>
+    <string name="portcast_import_parsing">Reading file…</string>
+    <string name="portcast_import_resolving">Looking up shows… %1$d of %2$d</string>
+    <string name="portcast_import_confirmation">Import %1$d shows? Resume positions for %2$d episodes will be applied.</string>
+    <string name="portcast_import_unresolved_warning">%1$d shows couldn\'t be matched and will be skipped. Re-run the import after subscribing to them manually if needed.</string>
+    <string name="portcast_import_conflicts_note">%1$d episodes have local play data. You\'ll be asked to review each one before importing.</string>
+    <string name="coming_from_spotify_title">Coming from Spotify?</string>
+    <string name="coming_from_spotify_summary">Move your followed shows and resume positions from Spotify to TrimPlayer.</string>
+    <string name="coming_from_spotify_body">Sign in to Spotify here and TrimPlayer will fetch your library directly. If you already have a .portcast.json file from a desktop tool, tap \"I have a PortCast file\" instead.\n\nWhat gets imported:\n  • Followed shows\n  • Resume positions for saved episodes\n\nSpotify doesn\'t expose play history, so completed-episode marks aren\'t carried over.</string>
+    <string name="coming_from_spotify_have_file">I have a PortCast file</string>
+    <string name="coming_from_spotify_sign_in">Sign in to Spotify here</string>
+    <string name="spotify_migration_title">Migrate from Spotify</string>
+    <string name="spotify_migration_signin_prompt">Sign in to Spotify, then open Your Library.</string>
+    <string name="spotify_migration_ready">Ready — tap Fetch library.</string>
+    <string name="spotify_migration_fetch_button">Fetch library</string>
+    <string name="spotify_migration_fetching">Fetching your library…</string>
+    <string name="spotify_migration_fetching_progress">Fetched %1$d of %2$d shows…</string>
+    <string name="spotify_migration_building">Preparing import…</string>
+    <string name="spotify_migration_not_signed_in">You\'re not signed in to Spotify in this view. Sign in above, then tap Fetch library again.</string>
+    <string name="spotify_migration_error">Spotify migration failed: %1$s</string>
+    <string name="spotify_migration_handing_off">Library captured. Opening import…</string>
+    <string name="spotify_migration_oauth_blocked_title">Use email and password</string>
+    <string name="spotify_migration_oauth_blocked_body">Google, Facebook, and Apple block their sign-in inside embedded browsers like this one — that\'s why \"Continue with Google\" leads to a loop.\n\nUse your Spotify email and password instead. If you signed up with Google or Facebook, you can set a password at accounts.spotify.com in your normal browser, then come back here.</string>
+    <string name="import_section_all_source">all %1$s</string>
+    <string name="import_summary_source">%1$d of %2$d will use %3$s · Toggle right = use %3$s</string>
     <string name="html_export_label">HTML export</string>
     <string name="database_export_label">Database export</string>
     <string name="automatic_database_export_label">Automatic database export</string>

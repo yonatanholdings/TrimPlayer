@@ -91,7 +91,7 @@ public class SubscriptionStatisticsFragment extends Fragment {
         // Donut center text
         float totalHrs = 0;
         for (DBReader.EditorialStats.ShowItem sh : s.shows) totalHrs += sh.hrs;
-        donutKicker.setText("TOTAL");
+        donutKicker.setText("Total");
         donutCenter.setText(String.format(Locale.getDefault(), "%.0fh", totalHrs));
         donutCaption.setText(s.shows.size() + " shows");
 

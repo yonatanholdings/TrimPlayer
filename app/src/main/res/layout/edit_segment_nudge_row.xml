@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/nudgeLabel"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        tools:text="Start" />
+
+    <TextView
+        android:id="@+id/nudgeTime"
+        android:layout_width="56dp"
+        android:layout_height="wrap_content"
+        android:fontFeatureSettings="tnum"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        tools:ignore="UnusedAttribute"
+        tools:text="5:18" />
+
+    <TextView
+        android:id="@+id/nudgeDelta"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFeatureSettings="tnum"
+        android:textSize="12sp"
+        tools:ignore="UnusedAttribute"
+        tools:text="−1.5s" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1" />
+
+    <ImageButton
+        android:id="@+id/nudgeMinus"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/trim_edit_start"
+        android:src="@drawable/ic_minus"
+        app:tint="?attr/colorOnSurface" />
+
+    <TextView
+        android:layout_width="20dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/trim_edit_nudge_step"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="11sp" />
+
+    <ImageButton
+        android:id="@+id/nudgePlus"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/trim_edit_end"
+        android:src="@drawable/ic_add"
+        app:tint="?attr/colorOnSurface" />
+</LinearLayout>

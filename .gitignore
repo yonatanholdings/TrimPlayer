@@ -45,3 +45,6 @@ libs
 gradle.properties
 *.keystore
 *.p12
+
+# Claude Code local runtime (harness locks, scheduled tasks)
+.claude/

@@ -977,6 +977,8 @@ public final class DBReader {
         public long savedSpeedMs;
         public long savedSilenceMs;
         public long savedIntrosMs;
+        public long savedOutrosMs;
+        public long savedAdsMs;
         public int episodesStarted;
         public int episodesCompleted;
         public int episodesInProgress;
@@ -988,6 +990,9 @@ public final class DBReader {
         public long[] byHour = new long[24];
         /** Minutes listened per weekday, index 0=Sun…6=Sat. */
         public long[] byDay = new long[7];
+        /** Skip ms per weekday × category, [dow][cat] where cat is
+         *  0=speed, 1=silence, 2=ads, 3=intros, 4=outros. */
+        public long[][] byDaySaved = new long[7][5];
         /** Hours listened per week, last 12 weeks (index 0 = oldest). */
         public float[] weekly = new float[12];
         /** Intensity grid [26 weeks][7 days], 0–4 (oldest week = index 0). */
@@ -1174,7 +1179,24 @@ public final class DBReader {
                     case "speed":   s.savedSpeedMs   = ms; break;
                     case "silence": s.savedSilenceMs = ms; break;
                     case "intro":   s.savedIntrosMs  = ms; break;
+                    case "outro":   s.savedOutrosMs  = ms; break;
+                    case "ad":      s.savedAdsMs     = ms; break;
                 }
+            }
+        }
+
+        // Skip statistics broken down by day-of-week × category, so the
+        // Activity tab's "tap a day" interaction can filter the Time Saved card.
+        try (Cursor c = adapter.getSkipEventStatsByDayCursor()) {
+            int iDow = c.getColumnIndexOrThrow("dow");
+            int iType = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TYPE);
+            int iMs = c.getColumnIndexOrThrow("total_ms");
+            while (c.moveToNext()) {
+                int dow = c.getInt(iDow);
+                if (dow < 0 || dow > 6) continue;
+                int cat = skipCategoryIndex(c.getString(iType));
+                if (cat < 0) continue;
+                s.byDaySaved[dow][cat] = c.getLong(iMs);
             }
         }
 
@@ -1242,6 +1264,19 @@ public final class DBReader {
         return s;
     }
 
+    /** Maps the skip_type string to the byDaySaved column index. -1 if unknown. */
+    private static int skipCategoryIndex(String type) {
+        if (type == null) return -1;
+        switch (type) {
+            case "speed":   return 0;
+            case "silence": return 1;
+            case "ad":      return 2;
+            case "intro":   return 3;
+            case "outro":   return 4;
+            default:        return -1;
+        }
+    }
+
     @NonNull
     public static FeedDetail getFeedDetail(long feedId) {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
@@ -1299,6 +1334,22 @@ public final class DBReader {
         adapter.close();
         return new FeedDetail(feedId, feed.getTitle(), feed.getImageUrl(), color,
                 subscribedMs, totalEp, playedEp, hrsListened, hrsSaved, weekly);
+    }
+
+    /** Episodes whose last-played time falls in [fromMs, toMs), most recent first.
+     *  Each item's Feed is populated; queue/favorite tags are not. */
+    @NonNull
+    public static List<FeedItem> getEpisodesPlayedInPeriod(long fromMs, long toMs) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (FeedItemCursor cursor = new FeedItemCursor(
+                adapter.getFeedItemsPlayedInPeriodCursor(fromMs, toMs))) {
+            List<FeedItem> items = extractItemlistFromCursor(cursor);
+            loadFeedDataOfFeedItemList(items);
+            return items;
+        } finally {
+            adapter.close();
+        }
     }
 
     public static long getTimeBetweenReleaseAndPlayback(long timeFilterFrom, long timeFilterTo) {

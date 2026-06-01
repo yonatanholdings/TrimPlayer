@@ -33,15 +33,22 @@ public class ActivityStatisticsFragment extends Fragment {
     private TextView dayDetail;
     /** Cached last-bound stats so chart taps can look up per-bucket values. */
     private DBReader.EditorialStats currentStats;
+    /** Day-of-week the Time Saved card is filtered to, or -1 for all-time. */
+    private int selectedDay = -1;
+    private TextView savedSectionLabel;
     private TextView savedTotal;
     private TextView savedPctLabel;
     private TextView savedSpeedVal;
     private TextView savedSpeedDetail;
     private TextView savedSilenceVal;
+    private TextView savedAdsVal;
     private TextView savedIntrosVal;
+    private TextView savedOutrosVal;
     private ProgressBar barSpeed;
     private ProgressBar barSilence;
+    private ProgressBar barAds;
     private ProgressBar barIntros;
+    private ProgressBar barOutros;
 
     @Nullable
     @Override
@@ -61,15 +68,20 @@ public class ActivityStatisticsFragment extends Fragment {
 
         hourBars.setOnHourClickListener(this::onHourTap);
         dayMultiples.setOnDayClickListener(this::onDayTap);
+        savedSectionLabel = root.findViewById(R.id.saved_section_label);
         savedTotal        = root.findViewById(R.id.saved_total);
         savedPctLabel     = root.findViewById(R.id.saved_pct_label);
         savedSpeedVal     = root.findViewById(R.id.saved_speed_val);
         savedSpeedDetail  = root.findViewById(R.id.saved_speed_detail);
         savedSilenceVal   = root.findViewById(R.id.saved_silence_val);
+        savedAdsVal       = root.findViewById(R.id.saved_ads_val);
         savedIntrosVal    = root.findViewById(R.id.saved_intros_val);
+        savedOutrosVal    = root.findViewById(R.id.saved_outros_val);
         barSpeed          = root.findViewById(R.id.bar_speed);
         barSilence        = root.findViewById(R.id.bar_silence);
+        barAds            = root.findViewById(R.id.bar_ads);
         barIntros         = root.findViewById(R.id.bar_intros);
+        barOutros         = root.findViewById(R.id.bar_outros);
 
         countStarted.setTypeface(EditorialTheme.getSerif(requireContext()));
         countFinished.setTypeface(EditorialTheme.getSerif(requireContext()));
@@ -85,34 +97,38 @@ public class ActivityStatisticsFragment extends Fragment {
         return root;
     }
 
-    /** Hour-of-day tap → "9PM · 2H 14M" or "9PM · NO LISTENING". Hour labels in
+    /** Hour-of-day tap → "9pm · 2h 14m" or "9pm · no listening". Hour labels in
      *  12-hour clock to match how the user thinks about their listening. */
     private void onHourTap(int hour) {
         if (currentStats == null) return;
         long minutes = currentStats.byHour[hour];
         String hourLabel;
-        if (hour == 0) hourLabel = "12AM";
-        else if (hour < 12) hourLabel = hour + "AM";
-        else if (hour == 12) hourLabel = "12PM";
-        else hourLabel = (hour - 12) + "PM";
+        if (hour == 0) hourLabel = "12am";
+        else if (hour < 12) hourLabel = hour + "am";
+        else if (hour == 12) hourLabel = "12pm";
+        else hourLabel = (hour - 12) + "pm";
         hourDetail.setText(hourLabel + " · " + formatMinutes(minutes));
     }
 
-    /** Day-of-week tap → "FRIDAY · 8H 20M". Maps 0=Sun … 6=Sat to full names. */
+    /** Day-of-week tap → "Friday · 8h 20m", and filters the Time Saved card to
+     *  that weekday. Tapping the same day again clears the filter. */
     private void onDayTap(int day) {
         if (currentStats == null) return;
-        String[] names = {"SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY",
-                          "THURSDAY", "FRIDAY", "SATURDAY"};
+        String[] names = {"Sunday", "Monday", "Tuesday", "Wednesday",
+                          "Thursday", "Friday", "Saturday"};
         long minutes = currentStats.byDay[day];
         dayDetail.setText(names[day] + " · " + formatMinutes(minutes));
+
+        selectedDay = (selectedDay == day) ? -1 : day;
+        renderSavedCard(currentStats);
     }
 
     private static String formatMinutes(long minutes) {
-        if (minutes <= 0) return "NO LISTENING";
+        if (minutes <= 0) return "no listening";
         long h = minutes / 60;
         long m = minutes % 60;
-        if (h > 0) return h + "H " + m + "M";
-        return m + "M";
+        if (h > 0) return h + "h " + m + "m";
+        return m + "m";
     }
 
     private void bind(DBReader.EditorialStats s) {
@@ -124,29 +140,64 @@ public class ActivityStatisticsFragment extends Fragment {
 
         int pct = s.episodesStarted > 0
                 ? (int) Math.round(100.0 * s.episodesCompleted / s.episodesStarted) : 0;
-        countCompletedPct.setText(pct + "% COMPLETION");
+        countCompletedPct.setText(pct + "% completion");
 
         hourBars.setData(s.byHour);
         dayMultiples.setData(s.byDay);
 
-        // Time saved section
-        savedTotal.setText(fmtHours(s.totalSavedMs));
+        renderSavedCard(s);
+    }
 
-        if (s.totalPlayedMs > 0) {
-            int savedPct = (int) Math.round(100.0 * s.totalSavedMs / (s.totalPlayedMs + s.totalSavedMs));
-            savedPctLabel.setText(savedPct + "% OF AUDIO");
+    /** Renders the Time Saved card from either all-time totals or the
+     *  per-day-of-week breakdown when {@link #selectedDay} is set. */
+    private void renderSavedCard(DBReader.EditorialStats s) {
+        long speed, silence, ads, intros, outros, played;
+        String sectionLabel;
+        if (selectedDay >= 0) {
+            long[] row = s.byDaySaved[selectedDay];
+            speed = row[0]; silence = row[1]; ads = row[2]; intros = row[3]; outros = row[4];
+            // byDay holds NET listening minutes for that weekday; use it as
+            // the "played" base so the % stays comparable to the all-time view.
+            played = s.byDay[selectedDay] * 60_000L;
+            String[] caps = {"SUNDAYS", "MONDAYS", "TUESDAYS", "WEDNESDAYS",
+                             "THURSDAYS", "FRIDAYS", "SATURDAYS"};
+            sectionLabel = "Time saved · " + caps[selectedDay];
+        } else {
+            speed = s.savedSpeedMs;
+            silence = s.savedSilenceMs;
+            ads = s.savedAdsMs;
+            intros = s.savedIntrosMs;
+            outros = s.savedOutrosMs;
+            played = s.totalPlayedMs;
+            sectionLabel = "Time saved";
+        }
+        long total = speed + silence + ads + intros + outros;
+
+        savedSectionLabel.setText(sectionLabel);
+        savedTotal.setText(fmtHours(total));
+
+        if (played + total > 0) {
+            int savedPct = (int) Math.round(100.0 * total / (played + total));
+            savedPctLabel.setText(savedPct + "% of audio");
+        } else {
+            savedPctLabel.setText("");
         }
 
-        long maxSaved = Math.max(1, Math.max(s.savedSpeedMs, Math.max(s.savedSilenceMs, s.savedIntrosMs)));
-        savedSpeedVal.setText(fmtHours(s.savedSpeedMs));
-        savedSilenceVal.setText(fmtHours(s.savedSilenceMs));
-        savedIntrosVal.setText(fmtHours(s.savedIntrosMs));
-        int speedPct = s.totalSavedMs > 0 ? (int) Math.round(100.0 * s.savedSpeedMs / s.totalSavedMs) : 0;
+        long maxSaved = Math.max(1, Math.max(speed,
+                Math.max(silence, Math.max(ads, Math.max(intros, outros)))));
+        savedSpeedVal.setText(fmtHours(speed));
+        savedSilenceVal.setText(fmtHours(silence));
+        savedAdsVal.setText(fmtHours(ads));
+        savedIntrosVal.setText(fmtHours(intros));
+        savedOutrosVal.setText(fmtHours(outros));
+        int speedPct = total > 0 ? (int) Math.round(100.0 * speed / total) : 0;
         savedSpeedDetail.setText(speedPct + "% of total time saved");
 
-        barSpeed.setProgress((int) (s.savedSpeedMs * 1000 / maxSaved));
-        barSilence.setProgress((int) (s.savedSilenceMs * 1000 / maxSaved));
-        barIntros.setProgress((int) (s.savedIntrosMs * 1000 / maxSaved));
+        barSpeed.setProgress((int) (speed * 1000 / maxSaved));
+        barSilence.setProgress((int) (silence * 1000 / maxSaved));
+        barAds.setProgress((int) (ads * 1000 / maxSaved));
+        barIntros.setProgress((int) (intros * 1000 / maxSaved));
+        barOutros.setProgress((int) (outros * 1000 / maxSaved));
     }
 
     private static String fmtHours(long ms) {

@@ -122,6 +122,7 @@ public class CoverFragment extends Fragment {
                 + "・"
                 + "\u00A0"
                 + StringUtils.replace(StringUtils.stripToEmpty(pubDateStr), " ", "\u00A0"));
+        updateTrimBadge(media);
         if (media instanceof FeedMedia) {
             viewBinding.txtvPodcastTitle.setOnClickListener(v -> openFeed(((FeedMedia) media).getItem().getFeed()));
         } else {
@@ -161,6 +162,62 @@ public class CoverFragment extends Fragment {
         displayedChapterIndex = -1;
         refreshChapterData(Chapter.getAfterPosition(media.getChapters(), media.getPosition()));
         updateChapterControlVisibility();
+    }
+
+    /** Mirrors the badges on episode-list rows onto the player. Reads the
+     *  same TrimSegmentCache state and renders it as a leading compound
+     *  drawable on the podcast-title line, so no layout restructuring is
+     *  needed and the badge sits next to the existing podcast text without
+     *  pushing the cover or episode title around. */
+    private void updateTrimBadge(@NonNull Playable media) {
+        if (viewBinding == null || getContext() == null) {
+            return;
+        }
+        String guid = null;
+        if (media instanceof FeedMedia) {
+            FeedMedia fm = (FeedMedia) media;
+            if (fm.getItem() != null) {
+                guid = fm.getItem().getItemIdentifier();
+            }
+        }
+        de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State state =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.getState(getContext(), guid);
+        int drawableRes = 0;
+        int tintAttr = 0;
+        float alpha = 1f;
+        switch (state) {
+            case HAS_SEGMENTS:
+                drawableRes = R.drawable.ic_content_cut;
+                tintAttr = R.attr.colorAccent;
+                break;
+            case ANALYZED_EMPTY:
+                drawableRes = R.drawable.ic_check_circle_outline;
+                tintAttr = android.R.attr.textColorSecondary;
+                alpha = 0.7f;
+                break;
+            case UNKNOWN:
+            default:
+                viewBinding.txtvPodcastTitle.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                        0, 0, 0, 0);
+                return;
+        }
+        Drawable badge = ContextCompat.getDrawable(getContext(), drawableRes);
+        if (badge == null) {
+            return;
+        }
+        badge = badge.mutate();
+        int tintColor = de.danoeh.antennapod.ui.common.ThemeUtils.getColorFromAttr(getContext(), tintAttr);
+        badge.setColorFilter(BlendModeColorFilterCompat
+                .createBlendModeColorFilterCompat(tintColor, BlendModeCompat.SRC_IN));
+        badge.setAlpha((int) (alpha * 255));
+        // Size the badge to match the title's text height-ish so it doesn't
+        // tower over the line. textColorSecondary lookups already pick up
+        // theme changes via the activity, so no listener needed.
+        int size = (int) (16 * getResources().getDisplayMetrics().density);
+        badge.setBounds(0, 0, size, size);
+        viewBinding.txtvPodcastTitle.setCompoundDrawablesRelative(badge, null, null, null);
+        viewBinding.txtvPodcastTitle.setCompoundDrawablePadding(
+                (int) (4 * getResources().getDisplayMetrics().density));
     }
 
     private void openFeed(Feed feed) {
@@ -277,6 +334,28 @@ public class CoverFragment extends Fragment {
         int newChapterIndex = Chapter.getAfterPosition(media.getChapters(), event.getPosition());
         if (newChapterIndex > -1 && newChapterIndex != displayedChapterIndex) {
             refreshChapterData(newChapterIndex);
+        }
+    }
+
+    /** Segments just landed from a polling /analyze response — refresh the
+     *  badge so the user sees the state change without waiting for the next
+     *  loadMediaInfo tick. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onTrimSegmentsUnlocked(de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent event) {
+        if (media != null) {
+            updateTrimBadge(media);
+        }
+    }
+
+    /** Mirrors {@link #onTrimSegmentsUnlocked} for the "analyzed → nothing to
+     *  trim" outcome so the dimmed check-circle replaces the empty badge slot
+     *  the moment the backend confirms a clean episode. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onTrimAnalyzedEmpty(de.danoeh.antennapod.event.TrimAnalyzedEmptyEvent event) {
+        if (media != null) {
+            updateTrimBadge(media);
         }
     }
 

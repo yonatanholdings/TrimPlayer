@@ -80,6 +80,14 @@
     </item>
 
     <item
+        android:id="@+id/trim_segments_item"
+        android:icon="@drawable/ic_content_cut"
+        android:title="@string/trim_segments_menu"
+        android:visible="false"
+        custom:showAsAction="never">
+    </item>
+
+    <item
         android:id="@+id/open_social_interact_url"
         android:icon="@drawable/ic_chat"
         custom:showAsAction="never"

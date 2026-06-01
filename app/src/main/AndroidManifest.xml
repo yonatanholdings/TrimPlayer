@@ -56,6 +56,64 @@
             </intent-filter>
         </activity>
 
+        <!-- v2 in-app Spotify migration. Entry point is the
+             "Coming from Spotify?" sheet in Import/Export preferences. -->
+        <activity
+            android:name="de.danoeh.antennapod.migration.SpotifyMigrationActivity"
+            android:exported="false"
+            android:label="@string/spotify_migration_title" />
+
+        <!-- Tap-to-import target for .portcast.json files arriving from
+             Gmail/Drive/Files/share-sheet. See brief §1.2.1 for the
+             rationale behind the redundant MIME entries: Gmail and many
+             file managers attach application/json (or octet-stream when
+             the extension is unknown), so we narrow back to our files
+             via pathPattern. android:host="*" is required for pathPattern
+             to be evaluated. -->
+        <activity
+            android:name="de.danoeh.antennapod.portcast.PortcastImportActivity"
+            android:exported="true"
+            android:label="@string/portcast_import_activity_title">
+
+            <!-- Tap-to-open with structured-syntax MIME (rare in the wild
+                 but cheap to claim). -->
+            <intent-filter android:label="@string/portcast_import_activity_title">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/vnd.portcast+json" />
+            </intent-filter>
+
+            <!-- Tap-to-open with the common fallback MIME types, narrowed
+                 by pathPattern so we don't claim every .json file. -->
+            <intent-filter android:label="@string/portcast_import_activity_title">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/json"
+                      android:pathPattern=".*\\.portcast\\.json" />
+                <data android:mimeType="application/octet-stream"
+                      android:pathPattern=".*\\.portcast\\.json" />
+                <data android:mimeType="text/plain"
+                      android:pathPattern=".*\\.portcast\\.json" />
+            </intent-filter>
+
+            <!-- Share-sheet: Gmail's "Share attachment" → SEND with a
+                 content URI in EXTRA_STREAM. -->
+            <intent-filter android:label="@string/portcast_import_activity_title">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/vnd.portcast+json" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
+
         <meta-data android:name="android.webkit.WebView.MetricsOptOut"
             android:value="true"/>
         <meta-data android:name="com.google.android.gms.car.notification.SmallIcon"

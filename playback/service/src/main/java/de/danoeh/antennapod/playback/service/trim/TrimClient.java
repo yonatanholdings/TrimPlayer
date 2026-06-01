@@ -67,6 +67,13 @@ public class TrimClient {
         return api.analyze(new AnalyzeRequest(rssUrl, episodeUrl, episodeGuid));
     }
 
+    /** Report a correction to a served segment (Scope B). Fire-and-forget from
+     *  the edit sheet — the backend queues the report for manual review; it only
+     *  affects future /segments responses once an admin approves it. */
+    public Call<SegmentReportResponse> reportSegment(SegmentReportRequest request) {
+        return api.reportSegment(request);
+    }
+
     public Call<JobStatusResponse> getJobStatus(String jobId) {
         return api.getJobStatus(jobId);
     }
@@ -90,6 +97,9 @@ public class TrimClient {
         @POST("analyze")
         Call<AnalyzeResponse> analyze(@Body AnalyzeRequest request);
 
+        @POST("segments/report")
+        Call<SegmentReportResponse> reportSegment(@Body SegmentReportRequest request);
+
         @GET("job/{job_id}")
         Call<JobStatusResponse> getJobStatus(@Path("job_id") String jobId);
     }
@@ -101,6 +111,11 @@ public class TrimClient {
         // Soft-paywall signal added 2026-05-19. May be null on responses from
         // older backends (and on responses where we didn't send X-Client-Id).
         public EntitlementStatus entitlement;
+        // True when the backend has finished analyzing this episode, regardless
+        // of whether any skippable segments were found. Null on responses from
+        // pre-2026-05-29 backends — the client treats null as "unknown" so old
+        // servers never paint the "analyzed, nothing to trim" badge.
+        public Boolean analyzed;
     }
 
     /** Mirrors backend EntitlementStatus. status is the discriminator:
@@ -139,9 +154,24 @@ public class TrimClient {
     }
 
     public static class Segment {
+        /** Stable per-episode identifier. The backend may populate this in the
+         *  future (episode_segments.id); until then {@link TrimSegmentCache}
+         *  synthesizes one from type+start so local edits can target a segment. */
+        public String id;
         public float start;
         public float end;
         public String type;
+        /** Pipeline confidence (Scope B field). Null on responses from older backends. */
+        public Float confidence;
+
+        /** Deterministic local id so the same segment keeps its identity across
+         *  cache round-trips even when the server doesn't send one. */
+        public String stableId() {
+            if (id != null && !id.isEmpty()) {
+                return id;
+            }
+            return (type != null ? type : "seg") + "@" + Math.round(start);
+        }
     }
 
     public static class AnalyzeRequest {
@@ -159,6 +189,27 @@ public class TrimClient {
     public static class AnalyzeResponse {
         public String status;
         public String job_id;
+    }
+
+    /** Mirrors backend SegmentReportRequest. orig_start/orig_end are the served
+     *  segment bounds the user acted on (used by the backend to cluster the
+     *  report onto a segment); new_start/new_end carry the proposed bounds for
+     *  action="adjust". action is one of confirm | adjust | remove | missing. */
+    public static class SegmentReportRequest {
+        public String client_id;
+        public String episode_url;
+        public String episode_guid;
+        public float orig_start;
+        public float orig_end;
+        public String type;
+        public String action;
+        public Float new_start;
+        public Float new_end;
+    }
+
+    public static class SegmentReportResponse {
+        /** "pending" — the report was queued for manual review. */
+        public String status;
     }
 
     public static class JobStatusResponse {

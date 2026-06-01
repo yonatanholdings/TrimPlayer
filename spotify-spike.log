@@ -1,0 +1,13 @@
+--------- beginning of main
+06-01 22:38:12.767 D/PortcastImporter(15786): Parsing PortCast 0.2.0
+06-01 22:38:13.212 D/PortcastImporter(15786): Resolving 2 Spotify-sourced subscriptions
+06-01 22:38:14.057 D/PodcastIndexResolver(15786): candidate title=1.00 author=1.00 combined=1.00 for query="חיות כיס Hayot Kiss כאן | Kan" -> https://www.omnycontent.com/d/playlist/23f697a0-7e6a-4e96-a223-a82c00962b12/dbe32976-5401-4c93-87ed-a919008d58ae/1ea69f94-8d46-4ff2-aaca-a919008d58b8/podcast.rss
+06-01 22:38:14.060 D/PodcastIndexResolver(15786): candidate title=1.00 author=1.00 combined=1.00 for query="Acquired Ben Gilbert and David Rosenthal" -> https://feeds.transistor.fm/acquired
+06-01 22:38:14.060 D/PortcastImporter(15786): Parsed: 2 feeds, 0 states (0 conflicts), 0 queue
+06-01 22:38:14.182 D/PortcastSubscribeWorker(15786): Subscribing 2 feeds in the background
+06-01 22:40:36.822 D/PortcastImporter(15786): Parsing PortCast 0.2.0
+06-01 22:40:37.101 D/PortcastImporter(15786): Resolving 2 Spotify-sourced subscriptions
+06-01 22:40:37.558 D/PodcastIndexResolver(15786): candidate title=1.00 author=1.00 combined=1.00 for query="Acquired Ben Gilbert and David Rosenthal" -> https://feeds.transistor.fm/acquired
+06-01 22:40:37.559 D/PodcastIndexResolver(15786): candidate title=1.00 author=1.00 combined=1.00 for query="חיות כיס Hayot Kiss כאן | Kan" -> https://www.omnycontent.com/d/playlist/23f697a0-7e6a-4e96-a223-a82c00962b12/dbe32976-5401-4c93-87ed-a919008d58ae/1ea69f94-8d46-4ff2-aaca-a919008d58b8/podcast.rss
+06-01 22:40:37.560 D/PortcastImporter(15786): Parsed: 2 feeds, 0 states (0 conflicts), 0 queue
+06-01 22:40:37.666 D/PortcastSubscribeWorker(15786): Subscribing 2 feeds in the background

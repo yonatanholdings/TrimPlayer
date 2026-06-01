@@ -1563,6 +1563,29 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         }
     }
 
+    /** The local edit sheet changed a segment in the cache. If it's for the
+     *  episode we're playing, refresh the in-memory snapshot the auto-skip loop
+     *  reads so dragged boundaries / removals take effect immediately. Clearing
+     *  skippedSegmentIndices lets a now-moved segment re-evaluate this session. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void trimSegmentsEdited(de.danoeh.antennapod.event.TrimSegmentsEditedEvent event) {
+        Playable playable = getPlayable();
+        if (!(playable instanceof FeedMedia) || ((FeedMedia) playable).getItem() == null) {
+            return;
+        }
+        String guid = ((FeedMedia) playable).getItem().getItemIdentifier();
+        if (guid == null || !guid.equals(event.episodeGuid)) {
+            return;
+        }
+        List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> edited =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(getApplicationContext(), guid);
+        currentSegments = edited != null ? edited : Collections.emptyList();
+        skippedSegmentIndices.clear();
+        debugLastSegments = currentSegments;
+        Log.d(TAG, "Trim Player: reloaded " + currentSegments.size() + " segments after local edit");
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     @SuppressWarnings("unused")
     public void sleepTimerUpdate(SleepTimerUpdatedEvent event) {

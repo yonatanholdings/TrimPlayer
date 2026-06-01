@@ -158,6 +158,25 @@
                     app:srcCompat="@drawable/ic_bug"
                     app:tint="?attr/colorAccent" />
 
+                <ImageView
+                    android:id="@+id/ivTrimSegments"
+                    android:layout_width="14sp"
+                    android:layout_height="14sp"
+                    android:contentDescription="@string/trim_badge_has_segments"
+                    android:visibility="gone"
+                    app:srcCompat="@drawable/ic_content_cut"
+                    app:tint="?attr/colorAccent" />
+
+                <ImageView
+                    android:id="@+id/ivTrimClean"
+                    android:layout_width="14sp"
+                    android:layout_height="14sp"
+                    android:contentDescription="@string/trim_badge_analyzed_clean"
+                    android:visibility="gone"
+                    android:alpha="0.6"
+                    app:srcCompat="@drawable/ic_check_circle_outline"
+                    app:tint="?android:attr/textColorSecondary" />
+
                 <TextView
                     android:id="@+id/separatorIcons"
                     android:layout_width="wrap_content"

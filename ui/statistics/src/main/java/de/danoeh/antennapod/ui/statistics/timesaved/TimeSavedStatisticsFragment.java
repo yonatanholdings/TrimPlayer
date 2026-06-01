@@ -143,18 +143,17 @@ public class TimeSavedStatisticsFragment extends Fragment {
             loadYearBreakdownAndApply(selectedYear);
         } else {
             applyTypeBreakdown(stats.totalMs, stats.introMs, stats.outroMs, stats.adMs,
-                    stats.silenceMs, stats.speedMs, "ALL-TIME");
+                    stats.silenceMs, stats.speedMs, "All time");
         }
 
         bindYearlyHistory(stats, ctx);
     }
 
-    /** Push a set of per-type totals into the §01 stacked bar + §02 per-type
-     *  rows + §01 subheader. The {@code scope} label appears in "<scope> · BY
-     *  CATEGORY" — e.g. "ALL-TIME" or "YEAR 2025". */
+    /** Push a set of per-type totals into the stacked bar + per-type rows + subheader.
+     *  The {@code scope} label appears in the section subheader — e.g. "All time" or "2025". */
     private void applyTypeBreakdown(long totalMs, long introMs, long outroMs, long adMs,
                                      long silenceMs, long speedMs, String scope) {
-        categorySubheader.setText(scope + " · BY CATEGORY");
+        categorySubheader.setText(scope);
 
         // Stacked bar segments by share of total
         long stackTotal = Math.max(1, totalMs);
@@ -167,7 +166,7 @@ public class TimeSavedStatisticsFragment extends Fragment {
             stackedCaption.setText("");
         } else {
             stackedCaption.setText(String.format(Locale.getDefault(),
-                    "SPEED %d%% · SILENCE %d%% · ADS %d%% · INTROS %d%% · OUTROS %d%%",
+                    "Speed %d%% · Silence %d%% · Ads %d%% · Intros %d%% · Outros %d%%",
                     pct(speedMs, stackTotal),
                     pct(silenceMs, stackTotal),
                     pct(adMs, stackTotal),
@@ -187,7 +186,7 @@ public class TimeSavedStatisticsFragment extends Fragment {
     }
 
     /** Drill the by-type breakdown into the given calendar year. Async query;
-     *  the §01 subheader briefly reads "YEAR <n> · LOADING…" while in flight. */
+     *  the subheader briefly reads "<year> · loading…" while in flight. */
     private void loadYearBreakdownAndApply(int year) {
         if (DemoStats.ENABLED && allTimeStats != null) {
             // Scale the all-time breakdown by the selected year's share of the
@@ -205,19 +204,19 @@ public class TimeSavedStatisticsFragment extends Fragment {
                     (long) (allTimeStats.adMs      * frac),
                     (long) (allTimeStats.silenceMs * frac),
                     (long) (allTimeStats.speedMs   * frac),
-                    "YEAR " + year);
+                    String.valueOf(year));
             return;
         }
         long from = startOfYear(year);
         long to = startOfYear(year + 1) - 1;
-        categorySubheader.setText("YEAR " + year + " · LOADING…");
+        categorySubheader.setText(year + " · loading…");
         if (yearQueryDisposable != null) yearQueryDisposable.dispose();
         yearQueryDisposable = Single.fromCallable(() -> DBReader.getSkipBreakdown(from, to))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(r -> applyTypeBreakdown(r.totalMs, r.introMs, r.outroMs, r.adMs,
-                                r.silenceMs, r.speedMs, "YEAR " + year),
-                        e -> applyTypeBreakdown(0, 0, 0, 0, 0, 0, "YEAR " + year));
+                                r.silenceMs, r.speedMs, String.valueOf(year)),
+                        e -> applyTypeBreakdown(0, 0, 0, 0, 0, 0, String.valueOf(year)));
     }
 
     private static long startOfYear(int year) {
@@ -341,7 +340,7 @@ public class TimeSavedStatisticsFragment extends Fragment {
             if (yearQueryDisposable != null) yearQueryDisposable.dispose();
             applyTypeBreakdown(allTimeStats.totalMs, allTimeStats.introMs,
                     allTimeStats.outroMs, allTimeStats.adMs,
-                    allTimeStats.silenceMs, allTimeStats.speedMs, "ALL-TIME");
+                    allTimeStats.silenceMs, allTimeStats.speedMs, "All time");
         } else {
             selectedYear = year;
             loadYearBreakdownAndApply(year);

@@ -10,11 +10,13 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
@@ -36,13 +38,13 @@ import androidx.work.WorkManager;
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.event.EpisodeDownloadEvent;
 import de.danoeh.antennapod.event.FeedUpdateRunningEvent;
 import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.event.TrimAnalyzeQueuedEvent;
+import de.danoeh.antennapod.event.TrimAnalyzedEmptyEvent;
 import de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent;
 import de.danoeh.antennapod.model.download.DownloadStatus;
 import de.danoeh.antennapod.net.download.service.feed.FeedUpdateManagerImpl;
@@ -709,8 +711,9 @@ public class MainActivity extends CastEnabledActivity {
 
     /**
      * Fires when PlaybackService asks the backend to map a podcast we haven't
-     * seen before. Show a small explainer dialog so the user understands why
-     * their first play of this show takes a moment to start skipping ads.
+     * seen before. Surfaced as a custom Snackbar so the user understands their
+     * first play of this show takes a moment to start skipping ads, without
+     * interrupting playback.
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTrimAnalyzeQueued(TrimAnalyzeQueuedEvent event) {
@@ -718,17 +721,18 @@ public class MainActivity extends CastEnabledActivity {
         String podcast = event.podcastTitle.isEmpty()
                 ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
                 : event.podcastTitle;
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.trim_analyze_queued_title)
-                .setMessage(getString(R.string.trim_analyze_queued_body, podcast))
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
+        showTrimStatusSnackbar(
+                getString(R.string.trim_analyze_queued_title, podcast),
+                getString(R.string.trim_analyze_queued_body),
+                R.drawable.ic_content_cut,
+                R.color.trim_badge_pending);
     }
 
     /**
      * Fires when polling-driven refetch sees the first non-empty segment list
      * for the currently-playing episode — i.e. the analyze the user kicked off
-     * has paid off mid-session. Brief Snackbar acknowledging the unlock.
+     * has paid off mid-session. Shares the queued snackbar's layout so the two
+     * states feel like one progression (mapping → mapped) with a distinct icon.
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTrimSegmentsUnlocked(TrimSegmentsUnlockedEvent event) {
@@ -736,16 +740,64 @@ public class MainActivity extends CastEnabledActivity {
         String podcast = event.podcastTitle.isEmpty()
                 ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
                 : event.podcastTitle;
-        String msg = getString(R.string.trim_segments_unlocked_snackbar, podcast);
+        showTrimStatusSnackbar(
+                getString(R.string.trim_segments_unlocked_title, podcast),
+                getString(R.string.trim_segments_unlocked_body),
+                R.drawable.ic_check_circle_outline,
+                R.color.trim_badge_done);
+    }
+
+    /**
+     * Resolves a prior "Mapping…" snackbar when the backend confirms the
+     * episode has been analyzed but produced no skippable segments — same
+     * shape as the unlocked path, distinct copy so the user sees the actual
+     * outcome instead of being left hanging on "Mapping…".
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTrimAnalyzedEmpty(TrimAnalyzedEmptyEvent event) {
+        if (isFinishing() || isDestroyed()) return;
+        String podcast = event.podcastTitle.isEmpty()
+                ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
+                : event.podcastTitle;
+        showTrimStatusSnackbar(
+                getString(R.string.trim_analyzed_empty_title, podcast),
+                getString(R.string.trim_analyzed_empty_body),
+                R.drawable.ic_check_circle_outline,
+                R.color.trim_badge_done);
+    }
+
+    /**
+     * Build a two-line Snackbar (icon badge + bold title + supporting body) on
+     * top of the standard Material rounded background. The default TextView is
+     * left in place (invisible) so the SnackbarContentLayout still measures
+     * itself correctly; our custom view is overlaid on the snackbar's frame.
+     */
+    private void showTrimStatusSnackbar(String title, String body, int iconRes, int badgeTintRes) {
         Snackbar snackbar;
         if (getBottomSheet().getState() == BottomSheetBehavior.STATE_COLLAPSED) {
-            snackbar = Snackbar.make(findViewById(R.id.main_content_view), msg, Snackbar.LENGTH_LONG);
+            snackbar = Snackbar.make(findViewById(R.id.main_content_view), " ", Snackbar.LENGTH_LONG);
             if (findViewById(R.id.audioplayerFragment).getVisibility() == View.VISIBLE) {
                 snackbar.setAnchorView(findViewById(R.id.audioplayerFragment));
             }
         } else {
-            snackbar = Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG);
+            snackbar = Snackbar.make(findViewById(android.R.id.content), " ", Snackbar.LENGTH_LONG);
         }
+        snackbar.setDuration(5000);
+
+        Snackbar.SnackbarLayout snackbarLayout = (Snackbar.SnackbarLayout) snackbar.getView();
+        TextView defaultText = snackbarLayout.findViewById(com.google.android.material.R.id.snackbar_text);
+        if (defaultText != null) {
+            defaultText.setVisibility(View.INVISIBLE);
+        }
+        View custom = LayoutInflater.from(this)
+                .inflate(R.layout.snackbar_trim_analyze, snackbarLayout, false);
+        ((TextView) custom.findViewById(R.id.snackTitle)).setText(title);
+        ((TextView) custom.findViewById(R.id.snackBody)).setText(body);
+        ((android.widget.ImageView) custom.findViewById(R.id.snackIcon)).setImageResource(iconRes);
+        custom.findViewById(R.id.snackBadge).setBackgroundTintList(
+                androidx.core.content.ContextCompat.getColorStateList(this, badgeTintRes));
+        snackbarLayout.addView(custom, 0);
+
         snackbar.show();
     }
 

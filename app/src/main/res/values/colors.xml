@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Status-pill colors for the trim-mapping snackbar. Solid hex on purpose
+         so the badge stays legible under Material You dynamic theming. -->
+    <color name="trim_badge_pending">#F59F00</color>
+    <color name="trim_badge_done">#008537</color>
+</resources>

@@ -15,6 +15,7 @@ dependencies {
     implementation project(':ui:i18n')
     implementation project(':ui:notifications')
     implementation project(':model')
+    implementation project(':net:discovery')
     implementation project(':net:download:service-interface')
 
     annotationProcessor "androidx.annotation:annotation:$annotationVersion"
@@ -27,4 +28,8 @@ dependencies {
     implementation "io.reactivex.rxjava3:rxjava:$rxJavaVersion"
     implementation "org.greenrobot:eventbus:$eventbusVersion"
     implementation "com.google.guava:guava:31.0.1-android"
+
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "androidx.test:core:$testCoreVersion"
+    testImplementation "org.robolectric:robolectric:$robolectricVersion"
 }

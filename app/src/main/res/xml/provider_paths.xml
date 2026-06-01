@@ -3,5 +3,6 @@
     <external-path name="external_storage" path="." />
     <external-files-path name="external_file_storage" path="." />
     <files-path name="name" path="." />
+    <cache-path name="cache" path="." />
     <root-path name="root" path="." />
 </paths>

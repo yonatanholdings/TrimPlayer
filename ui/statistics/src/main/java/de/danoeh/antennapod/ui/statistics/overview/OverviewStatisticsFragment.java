@@ -4,25 +4,34 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.viewpager2.widget.ViewPager2;
+
+import com.bumptech.glide.Glide;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
+import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.storage.database.DBReader;
+import de.danoeh.antennapod.ui.statistics.DemoStats;
 import de.danoeh.antennapod.ui.statistics.R;
-import de.danoeh.antennapod.ui.statistics.StatisticsFragment;
 import de.danoeh.antennapod.ui.statistics.StatisticsViewModel;
 import de.danoeh.antennapod.ui.statistics.editorial.EditorialTheme;
 import de.danoeh.antennapod.ui.statistics.editorial.HeatmapView;
 import de.danoeh.antennapod.ui.statistics.editorial.SparklineView;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class OverviewStatisticsFragment extends Fragment {
 
@@ -33,14 +42,14 @@ public class OverviewStatisticsFragment extends Fragment {
     private TextView hangStreak;
     private SparklineView sparkline;
     private HeatmapView heatmap;
-    private TextView tocSubHrs;
-    private TextView tocActPct;
-    private TextView tocYearsHrs;
-    private TextView tocSavedHrs;
-    private TextView mastVol;
     private TextView heatmapDetail;
+    private View playedSection;
+    private LinearLayout playedList;
+    private TextView playedEmpty;
     /** Last bound editorial stats — needed by heatmap tap to look up per-cell ms. */
     private DBReader.EditorialStats currentStats;
+    /** In-flight per-day episode query; cancelled when a new cell is tapped. */
+    private Disposable playedDisposable;
 
     @Nullable
     @Override
@@ -55,32 +64,17 @@ public class OverviewStatisticsFragment extends Fragment {
         hangStreak = root.findViewById(R.id.hang_streak_val);
         sparkline = root.findViewById(R.id.hero_sparkline);
         heatmap = root.findViewById(R.id.heatmap);
-        tocSubHrs = root.findViewById(R.id.toc_sub_hrs);
-        tocActPct = root.findViewById(R.id.toc_act_pct);
-        tocYearsHrs = root.findViewById(R.id.toc_years_hrs);
-        tocSavedHrs = root.findViewById(R.id.toc_saved_hrs);
-        mastVol = root.findViewById(R.id.masthead_vol);
         heatmapDetail = root.findViewById(R.id.heatmap_detail);
+        playedSection = root.findViewById(R.id.played_episodes_section);
+        playedList = root.findViewById(R.id.played_episodes_list);
+        playedEmpty = root.findViewById(R.id.played_episodes_empty);
 
-        // Tap a heatmap cell → reveal the date + listening time underneath.
         heatmap.setOnCellClickListener(this::onHeatmapCellTap);
 
-        // Apply serif typeface to numerals
         heroHours.setTypeface(EditorialTheme.getSerif(requireContext()));
         hangTrimmed.setTypeface(EditorialTheme.getSerif(requireContext()));
         hangFinished.setTypeface(EditorialTheme.getSerif(requireContext()));
         hangStreak.setTypeface(EditorialTheme.getSerif(requireContext()));
-
-        // masthead issue number from year
-        int year = Calendar.getInstance().get(Calendar.YEAR);
-        int issue = Calendar.getInstance().get(Calendar.MONTH) + 1;
-        mastVol.setText(String.format(Locale.getDefault(), "VOL. %02d · ISSUE %02d", year - 2020, issue));
-
-        // TOC row taps navigate to sibling tabs
-        wireToc(root.findViewById(R.id.toc_subscriptions), StatisticsFragment.POS_SUBSCRIPTIONS);
-        wireToc(root.findViewById(R.id.toc_activity), StatisticsFragment.POS_ACTIVITY);
-        wireToc(root.findViewById(R.id.toc_years), StatisticsFragment.POS_YEARS);
-        wireToc(root.findViewById(R.id.toc_saved), StatisticsFragment.POS_TIME_SAVED);
 
         new ViewModelProvider(requireParentFragment())
                 .get(StatisticsViewModel.class)
@@ -90,35 +84,116 @@ public class OverviewStatisticsFragment extends Fragment {
         return root;
     }
 
-    private void wireToc(View row, int tabPos) {
-        row.setOnClickListener(v -> {
-            Fragment parent = getParentFragment();
-            if (parent != null) {
-                ViewPager2 pager = parent.getView() != null
-                        ? parent.getView().findViewById(R.id.viewpager) : null;
-                if (pager != null) pager.setCurrentItem(tabPos, true);
-            }
-        });
-    }
-
-    /** Heatmap cell tap → format "MMM DD · Xh Ym" (or "MMM DD · NO LISTENING") and
-     *  show in the detail row. Date computed from the cached `heatmapStartMs` so
-     *  no DB lookup is needed. */
+    /** Heatmap cell tap → "Mar 5 · 2h 14m" (or "Mar 5 · no listening"). Date computed
+     *  from the cached `heatmapStartMs` so no DB lookup is needed. Also loads the
+     *  list of episodes played that day into the section below. */
     private void onHeatmapCellTap(int weekIdx, int dayIdx) {
         if (currentStats == null) return;
         long dayMs = currentStats.heatmapStartMs + (weekIdx * 7L + dayIdx) * 86_400_000L;
         java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("MMM d", Locale.getDefault());
-        String date = dateFmt.format(new Date(dayMs)).toUpperCase(Locale.getDefault());
+        String date = dateFmt.format(new Date(dayMs));
         long listenedMs = currentStats.heatmapMs[weekIdx][dayIdx];
         if (listenedMs <= 0) {
-            heatmapDetail.setText(date + " · NO LISTENING");
+            heatmapDetail.setText(date + " · no listening");
+        } else {
+            long minutes = listenedMs / 60_000L;
+            long hours = minutes / 60;
+            long mins = minutes % 60;
+            String hm = hours > 0 ? hours + "h " + mins + "m" : mins + "m";
+            heatmapDetail.setText(date + " · " + hm);
+        }
+        loadEpisodesForDay(dayMs, date, weekIdx, dayIdx, listenedMs);
+    }
+
+    private void loadEpisodesForDay(long dayStartMs, String dateLabel,
+                                    int weekIdx, int dayIdx, long listenedMs) {
+        if (playedDisposable != null) playedDisposable.dispose();
+        playedSection.setVisibility(View.VISIBLE);
+        playedList.removeAllViews();
+        playedEmpty.setVisibility(View.GONE);
+        ((TextView) playedSection.findViewById(R.id.played_episodes_title))
+                .setText("Episodes played · " + dateLabel);
+
+        // Demo mode: heatmap data is synthetic so the DB is empty — render
+        // synthetic episodes that match the cell's listening total.
+        if (DemoStats.ENABLED) {
+            renderDemoEpisodes(DemoStats.fakeEpisodesForDay(weekIdx, dayIdx, listenedMs));
             return;
         }
-        long minutes = listenedMs / 60_000L;
+
+        long dayEndMs = dayStartMs + 86_400_000L;
+        playedDisposable = Observable.fromCallable(
+                        () -> DBReader.getEpisodesPlayedInPeriod(dayStartMs, dayEndMs))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::renderPlayedEpisodes,
+                        e -> playedEmpty.setVisibility(View.VISIBLE));
+    }
+
+    private void renderPlayedEpisodes(List<FeedItem> items) {
+        playedList.removeAllViews();
+        if (items.isEmpty()) {
+            playedEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
+        for (FeedItem item : items) {
+            View row = inflater.inflate(R.layout.row_played_episode, playedList, false);
+            ImageView cover = row.findViewById(R.id.cover_image);
+            TextView title = row.findViewById(R.id.episode_title);
+            TextView feedTitle = row.findViewById(R.id.feed_title);
+            TextView played = row.findViewById(R.id.played_val);
+
+            title.setText(item.getTitle());
+            feedTitle.setText(item.getFeed() != null ? item.getFeed().getTitle() : "");
+            played.setText(formatPlayed(item.getMedia() != null
+                    ? item.getMedia().getPlayedDuration() : 0));
+
+            Glide.with(requireContext())
+                    .load(item.getImageLocation())
+                    .placeholder(new android.graphics.drawable.ColorDrawable(0xFFE9E4DA))
+                    .error(new android.graphics.drawable.ColorDrawable(0xFFE9E4DA))
+                    .into(cover);
+
+            playedList.addView(row);
+        }
+    }
+
+    private void renderDemoEpisodes(List<DemoStats.FakeEpisode> fakes) {
+        playedList.removeAllViews();
+        if (fakes.isEmpty()) {
+            playedEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
+        for (DemoStats.FakeEpisode ep : fakes) {
+            View row = inflater.inflate(R.layout.row_played_episode, playedList, false);
+            ImageView cover = row.findViewById(R.id.cover_image);
+            TextView title = row.findViewById(R.id.episode_title);
+            TextView feedTitle = row.findViewById(R.id.feed_title);
+            TextView played = row.findViewById(R.id.played_val);
+
+            title.setText(ep.episodeTitle);
+            feedTitle.setText(ep.feedTitle);
+            played.setText(formatPlayed(ep.playedMs));
+            cover.setImageDrawable(new android.graphics.drawable.ColorDrawable(0xFFE9E4DA));
+
+            playedList.addView(row);
+        }
+    }
+
+    private static String formatPlayed(long playedMs) {
+        long minutes = playedMs / 60_000L;
         long hours = minutes / 60;
         long mins = minutes % 60;
-        String hm = hours > 0 ? hours + "h " + mins + "m" : mins + "m";
-        heatmapDetail.setText(date + " · " + hm);
+        if (hours > 0) return hours + "h " + mins + "m";
+        return mins + "m";
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (playedDisposable != null) playedDisposable.dispose();
     }
 
     private void bind(DBReader.EditorialStats s) {
@@ -143,30 +218,12 @@ public class OverviewStatisticsFragment extends Fragment {
                     "and %d %s.", ytdMins, ytdMins == 1 ? "minute" : "minutes"));
         }
 
-        // Hang stats
         hangTrimmed.setText(formatHM(s.totalSavedMs));
         hangFinished.setText(String.valueOf(s.episodesCompleted));
         hangStreak.setText(String.valueOf(s.streakDays));
 
-        // Sparkline
         sparkline.setData(s.weekly);
-
-        // Heatmap
         heatmap.setData(s.heatmap);
-
-        // TOC values
-        float totalHrs = s.totalPlayedMs / 3_600_000f;
-        long totalDays = (long) (totalHrs / 24);
-        tocYearsHrs.setText(totalDays > 0 ? totalDays + "d" : Math.round(totalHrs) + "h");
-        tocSavedHrs.setText(Math.round(s.totalSavedMs / 3_600_000f) + "h");
-
-        float subHrs = 0;
-        for (DBReader.EditorialStats.ShowItem sh : s.shows) subHrs += sh.hrs;
-        tocSubHrs.setText(Math.round(subHrs) + "h");
-
-        int pct = s.episodesStarted > 0
-                ? (int) Math.round(100.0 * s.episodesCompleted / s.episodesStarted) : 0;
-        tocActPct.setText(pct + "%");
     }
 
     private static String formatHM(long ms) {

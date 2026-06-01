@@ -79,6 +79,31 @@
                             app:tint="?attr/colorOnPrimary"
                             app:tintMode="src_atop" />
 
+                        <ImageView
+                            android:id="@+id/ivTrimSegments"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="top|end"
+                            android:layout_margin="6dp"
+                            android:visibility="gone"
+                            android:contentDescription="@string/trim_badge_has_segments"
+                            app:srcCompat="@drawable/ic_content_cut"
+                            app:tint="?attr/colorOnPrimary"
+                            app:tintMode="src_atop" />
+
+                        <ImageView
+                            android:id="@+id/ivTrimClean"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="top|end"
+                            android:layout_margin="6dp"
+                            android:alpha="0.7"
+                            android:visibility="gone"
+                            android:contentDescription="@string/trim_badge_analyzed_clean"
+                            app:srcCompat="@drawable/ic_check_circle_outline"
+                            app:tint="?attr/colorOnPrimary"
+                            app:tintMode="src_atop" />
+
                     </FrameLayout>
 
                     <com.google.android.material.progressindicator.LinearProgressIndicator

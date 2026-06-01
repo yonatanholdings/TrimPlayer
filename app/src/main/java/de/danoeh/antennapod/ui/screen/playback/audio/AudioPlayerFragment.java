@@ -1,10 +1,12 @@
 package de.danoeh.antennapod.ui.screen.playback.audio;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -85,6 +87,11 @@ public class AudioPlayerFragment extends Fragment implements
     private TextView txtvPosition;
     private TextView txtvLength;
     private ChapterSeekBar sbPosition;
+    /** Trim segments currently overlaid on the seek bar, kept so a long-press
+     *  can resolve which segment was touched and open the edit sheet. */
+    private java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> lastSegments;
+    /** Fraction [0..1] of the last down-touch on the seek bar. */
+    private float lastSeekTouchFraction = -1;
     private ImageButton butRev;
     private TextView txtvRev;
     private PlayButton butPlay;
@@ -140,6 +147,7 @@ public class AudioPlayerFragment extends Fragment implements
         setupControlButtons();
         butPlaybackSpeed.setOnClickListener(v -> new VariableSpeedDialog().show(getChildFragmentManager(), null));
         sbPosition.setOnSeekBarChangeListener(this);
+        setupSegmentEditEntry();
 
         pager = root.findViewById(R.id.pager);
         pager.setAdapter(new AudioPlayerPagerAdapter(this));
@@ -185,6 +193,7 @@ public class AudioPlayerFragment extends Fragment implements
      *  land — either from the warm-path cache hit on episode load or from the
      *  /analyze polling response (see {@link #onTrimSegmentsUnlocked}). */
     private void setSegmentMarkers(Playable media) {
+        lastSegments = null;
         if (duration <= 0 || !(media instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
             sbPosition.setSegments(null, null);
             return;
@@ -202,6 +211,7 @@ public class AudioPlayerFragment extends Fragment implements
             sbPosition.setSegments(null, null);
             return;
         }
+        lastSegments = segs;
         float[] starts = new float[segs.size()];
         float[] ends = new float[segs.size()];
         for (int i = 0; i < segs.size(); i++) {
@@ -210,6 +220,54 @@ public class AudioPlayerFragment extends Fragment implements
             ends[i] = (float) (s.end * 1000.0 / duration);
         }
         sbPosition.setSegments(starts, ends);
+    }
+
+    /** Long-press a trim segment on the seek bar to open the local edit sheet.
+     *  We record the down-touch fraction (an OnTouchListener that returns false
+     *  so normal seeking is unaffected) and, on long-press, resolve which
+     *  segment sits under that point. */
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupSegmentEditEntry() {
+        sbPosition.setLongClickable(true);
+        sbPosition.setOnTouchListener((v, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                int usable = sbPosition.getWidth() - sbPosition.getPaddingLeft() - sbPosition.getPaddingRight();
+                if (usable > 0) {
+                    lastSeekTouchFraction = Math.max(0f, Math.min(1f,
+                            (event.getX() - sbPosition.getPaddingLeft()) / usable));
+                }
+            }
+            return false;
+        });
+        sbPosition.setOnLongClickListener(v -> openSegmentEditAtTouch());
+    }
+
+    private boolean openSegmentEditAtTouch() {
+        if (lastSegments == null || lastSegments.isEmpty() || duration <= 0 || lastSeekTouchFraction < 0
+                || controller == null
+                || !(controller.getMedia() instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
+            return false;
+        }
+        de.danoeh.antennapod.model.feed.FeedMedia fm =
+                (de.danoeh.antennapod.model.feed.FeedMedia) controller.getMedia();
+        if (fm.getItem() == null) {
+            return false;
+        }
+        float touchedSec = lastSeekTouchFraction * duration / 1000f;
+        de.danoeh.antennapod.playback.service.trim.TrimClient.Segment hit = null;
+        for (de.danoeh.antennapod.playback.service.trim.TrimClient.Segment s : lastSegments) {
+            if (touchedSec >= s.start && touchedSec < s.end) {
+                hit = s;
+                break;
+            }
+        }
+        if (hit == null) {
+            return false;
+        }
+        EditSegmentDialog.newInstance(fm.getItem().getItemIdentifier(), fm.getStreamUrl(),
+                        hit, duration / 1000f, false)
+                .show(getChildFragmentManager(), "EditSegmentDialog");
+        return true;
     }
 
     private void setupControlButtons() {
@@ -252,6 +310,15 @@ public class AudioPlayerFragment extends Fragment implements
         }
         updatePosition(new PlaybackPositionEvent(controller.getPosition(),
                 controller.getDuration()));
+    }
+
+    /** A local segment edit changed the cache — repaint the seek-bar overlay. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onTrimSegmentsEdited(de.danoeh.antennapod.event.TrimSegmentsEditedEvent event) {
+        if (controller != null && controller.getMedia() != null) {
+            setSegmentMarkers(controller.getMedia());
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -523,6 +590,14 @@ public class AudioPlayerFragment extends Fragment implements
         toolbar.getMenu().findItem(R.id.set_sleeptimer_item).setVisible(!controller.sleepTimerActive());
         toolbar.getMenu().findItem(R.id.disable_sleeptimer_item).setVisible(controller.sleepTimerActive());
 
+        // Trim segment list: only when this episode has segments to edit.
+        String trimGuid = isFeedMedia && ((FeedMedia) media).getItem() != null
+                ? ((FeedMedia) media).getItem().getItemIdentifier() : null;
+        boolean hasSegments = de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.getState(
+                getContext(), trimGuid)
+                == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.HAS_SEGMENTS;
+        toolbar.getMenu().findItem(R.id.trim_segments_item).setVisible(hasSegments);
+
         ((CastEnabledActivity) getActivity()).requestCastButton(toolbar.getMenu());
     }
 
@@ -548,6 +623,14 @@ public class AudioPlayerFragment extends Fragment implements
         } else if (itemId == R.id.transcript_item) {
             new TranscriptDialogFragment().show(
                     getActivity().getSupportFragmentManager(), TranscriptDialogFragment.TAG);
+            return true;
+        } else if (itemId == R.id.trim_segments_item) {
+            if (feedItem != null) {
+                String url = media instanceof FeedMedia ? ((FeedMedia) media).getStreamUrl() : null;
+                SegmentListDialog.newInstance(feedItem.getItemIdentifier(), url,
+                                media.getDuration() / 1000f)
+                        .show(getChildFragmentManager(), "SegmentListDialog");
+            }
             return true;
         } else if (itemId == R.id.open_feed_item) {
             if (feedItem != null) {

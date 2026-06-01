@@ -43,6 +43,22 @@ public class AboutFragment extends AnimatedPreferenceFragment {
             }
             return true;
         });
+
+        // Trim backend client ID — shown so the developer can grant Pro manually
+        // against this device. Reading via getOrCreateTrimClientId materializes
+        // the UUID on first install if it hasn't been generated yet.
+        String clientId = de.danoeh.antennapod.storage.preferences.UserPreferences
+                .getOrCreateTrimClientId();
+        findPreference("about_trim_client_id").setSummary(clientId);
+        findPreference("about_trim_client_id").setOnPreferenceClickListener((preference) -> {
+            ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            clipboard.setPrimaryClip(ClipData.newPlainText(
+                    getString(R.string.about_trim_client_id_title), clientId));
+            if (Build.VERSION.SDK_INT <= 32) {
+                Snackbar.make(getView(), R.string.copied_to_clipboard, Snackbar.LENGTH_SHORT).show();
+            }
+            return true;
+        });
     }
 
     @Override

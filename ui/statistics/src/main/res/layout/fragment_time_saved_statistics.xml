@@ -9,42 +9,28 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
 
-        <!-- ─── Masthead strip ─── -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:padding="8dp"
-            android:paddingLeft="24dp" android:paddingRight="24dp">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="● TRIM PLAYER STATISTICS"
-                android:textSize="9sp" android:letterSpacing="0.15"
-                android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="TIME RECOVERED"
-                android:textSize="9sp" android:letterSpacing="0.15"
-                android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
-        </LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:background="@color/editorial_rule_faint" />
-
-        <!-- ─── Hero block ─── -->
+        <!-- Hero -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="14dp" android:paddingBottom="14dp">
+            android:paddingTop="24dp" android:paddingBottom="14dp">
 
             <TextView
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="TOTAL TIME RECOVERED"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:text="Total time recovered"
+                android:textSize="12sp"
+                android:letterSpacing="0.08"
+                android:textAllCaps="true"
                 android:textColor="@color/editorial_ink_muted" />
 
             <TextView
                 android:id="@+id/total_saved_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="56sp"
+                android:textSize="60sp"
                 android:textColor="@color/editorial_ink"
                 android:includeFontPadding="false"
                 android:layout_marginTop="4dp"
@@ -53,75 +39,87 @@
             <TextView
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="From speed, silence, intros, outros and ads."
-                android:textSize="13sp" android:textColor="@color/editorial_ink_soft"
-                android:textStyle="italic"
-                android:layout_marginTop="4dp" />
+                android:textSize="14sp"
+                android:textColor="@color/editorial_ink_soft"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
 
         <!-- Thick rule -->
         <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="@color/editorial_ink" android:layout_marginBottom="14dp" />
+            android:background="@color/editorial_ink" android:layout_marginBottom="18dp" />
 
-        <!-- ─── Three-column hangs: today / week / month ─── -->
+        <!-- Today / week / month -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="20dp">
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical">
                 <TextView android:id="@+id/period_today_value"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="22sp" android:textColor="@color/editorial_ink"
+                    android:textSize="24sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/editorial_ink"
                     android:text="—" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="TODAY" android:textSize="8sp" android:textAllCaps="true"
-                    android:letterSpacing="0.15" android:textColor="@color/editorial_ink_muted" />
+                    android:text="Today" android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical">
                 <TextView android:id="@+id/period_week_value"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="22sp" android:textColor="@color/editorial_ink"
+                    android:textSize="24sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/editorial_ink"
                     android:text="—" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="THIS WEEK" android:textSize="8sp" android:textAllCaps="true"
-                    android:letterSpacing="0.15" android:textColor="@color/editorial_ink_muted" />
+                    android:text="This week" android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical">
                 <TextView android:id="@+id/period_month_value"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="22sp" android:textColor="@color/editorial_ink"
+                    android:textSize="24sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/editorial_ink"
                     android:text="—" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="THIS MONTH" android:textSize="8sp" android:textAllCaps="true"
-                    android:letterSpacing="0.15" android:textColor="@color/editorial_ink_muted" />
+                    android:text="This month" android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ─── §01 Proportion stacked bar ─── -->
+        <!-- Where time went -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp" android:gravity="center_vertical">
+            android:orientation="horizontal"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingBottom="10dp"
+            android:gravity="bottom">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="§ 01  WHERE TIME WENT"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
+                android:text="Where time went"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
             <TextView android:id="@+id/category_subheader"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="ALL-TIME · BY CATEGORY"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:text="All time"
+                android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
         </LinearLayout>
         <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:background="@color/editorial_rule_faint" />
 
         <!-- Horizontal stacked bar — segments get weight set programmatically. -->
         <LinearLayout android:id="@+id/stacked_bar"
             android:layout_width="match_parent" android:layout_height="14dp"
             android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="16dp"
             android:orientation="horizontal"
             android:weightSum="1000">
             <View android:id="@+id/stack_speed"   android:layout_width="0dp" android:layout_height="match_parent"
@@ -136,148 +134,164 @@
                 android:layout_weight="1" android:background="@color/editorial_ink_v_muted" />
         </LinearLayout>
 
-        <!-- Legend caption -->
         <TextView android:id="@+id/stacked_caption"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+            android:textSize="11sp"
             android:textColor="@color/editorial_ink_muted"
             android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
-            android:layout_marginTop="6dp"
-            tools:text="SPEED 41% · SILENCE 19% · ADS 22% · INTROS 12% · OUTROS 6%" />
+            android:layout_marginTop="8dp"
+            tools:text="Speed 41% · Silence 19% · Ads 22% · Intros 12% · Outros 6%" />
 
-        <!-- ─── §02 By type — individual rows ─── -->
+        <!-- By type -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="22dp" android:paddingBottom="8dp" android:gravity="center_vertical">
+            android:orientation="horizontal"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingTop="26dp" android:paddingBottom="10dp"
+            android:gravity="bottom">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="§ 02  BY TYPE"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="RECOVERED"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
+                android:text="By type"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
         </LinearLayout>
         <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:background="@color/editorial_rule_faint" />
 
         <!-- Speed row -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="12dp" android:paddingBottom="6dp"
+            android:paddingTop="14dp" android:paddingBottom="8dp"
             android:gravity="center_vertical">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Faster playback"
-                android:textSize="14sp" android:textColor="@color/editorial_ink" />
+                android:textSize="15sp" android:textColor="@color/editorial_ink" />
             <TextView android:id="@+id/value_speed"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink" android:layout_marginEnd="12dp"
+                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:layout_marginEnd="12dp"
                 tools:text="8m" />
             <ProgressBar android:id="@+id/bar_speed"
-                android:layout_width="80dp" android:layout_height="3dp"
+                android:layout_width="84dp" android:layout_height="3dp"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:max="1000" android:progressTint="@color/editorial_vermilion" android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:max="1000"
+                android:progressTint="@color/editorial_vermilion"
+                android:progressBackgroundTint="@color/editorial_rule_faint" />
         </LinearLayout>
 
         <!-- Silence row -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:paddingTop="8dp" android:paddingBottom="8dp"
             android:gravity="center_vertical">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip silence"
-                android:textSize="14sp" android:textColor="@color/editorial_ink" />
+                android:textSize="15sp" android:textColor="@color/editorial_ink" />
             <TextView android:id="@+id/value_silence"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink" android:layout_marginEnd="12dp"
+                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:layout_marginEnd="12dp"
                 tools:text="2m 10s" />
             <ProgressBar android:id="@+id/bar_silence"
-                android:layout_width="80dp" android:layout_height="3dp"
+                android:layout_width="84dp" android:layout_height="3dp"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:max="1000" android:progressTint="@color/editorial_gold" android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:max="1000"
+                android:progressTint="@color/editorial_gold"
+                android:progressBackgroundTint="@color/editorial_rule_faint" />
         </LinearLayout>
 
         <!-- Ads row -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:paddingTop="8dp" android:paddingBottom="8dp"
             android:gravity="center_vertical">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip ads"
-                android:textSize="14sp" android:textColor="@color/editorial_ink" />
+                android:textSize="15sp" android:textColor="@color/editorial_ink" />
             <TextView android:id="@+id/value_ads"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink" android:layout_marginEnd="12dp"
+                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:layout_marginEnd="12dp"
                 tools:text="34m" />
             <ProgressBar android:id="@+id/bar_ads"
-                android:layout_width="80dp" android:layout_height="3dp"
+                android:layout_width="84dp" android:layout_height="3dp"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:max="1000" android:progressTint="@color/editorial_ink" android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:max="1000"
+                android:progressTint="@color/editorial_ink"
+                android:progressBackgroundTint="@color/editorial_rule_faint" />
         </LinearLayout>
 
         <!-- Intros row -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:paddingTop="8dp" android:paddingBottom="8dp"
             android:gravity="center_vertical">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip intros"
-                android:textSize="14sp" android:textColor="@color/editorial_ink" />
+                android:textSize="15sp" android:textColor="@color/editorial_ink" />
             <TextView android:id="@+id/value_intro"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink" android:layout_marginEnd="12dp"
+                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:layout_marginEnd="12dp"
                 tools:text="12m" />
             <ProgressBar android:id="@+id/bar_intro"
-                android:layout_width="80dp" android:layout_height="3dp"
+                android:layout_width="84dp" android:layout_height="3dp"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:max="1000" android:progressTint="@color/editorial_ink_caption" android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:max="1000"
+                android:progressTint="@color/editorial_ink_caption"
+                android:progressBackgroundTint="@color/editorial_rule_faint" />
         </LinearLayout>
 
         <!-- Outros row -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="6dp" android:paddingBottom="12dp"
+            android:paddingTop="8dp" android:paddingBottom="14dp"
             android:gravity="center_vertical">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip outros"
-                android:textSize="14sp" android:textColor="@color/editorial_ink" />
+                android:textSize="15sp" android:textColor="@color/editorial_ink" />
             <TextView android:id="@+id/value_outro"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink" android:layout_marginEnd="12dp"
+                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:layout_marginEnd="12dp"
                 tools:text="5m" />
             <ProgressBar android:id="@+id/bar_outro"
-                android:layout_width="80dp" android:layout_height="3dp"
+                android:layout_width="84dp" android:layout_height="3dp"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:max="1000" android:progressTint="@color/editorial_ink_v_muted" android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:max="1000"
+                android:progressTint="@color/editorial_ink_v_muted"
+                android:progressBackgroundTint="@color/editorial_rule_faint" />
         </LinearLayout>
 
-        <!-- ─── §03 Yearly history ─── -->
+        <!-- Yearly history -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="22dp" android:paddingBottom="8dp" android:gravity="center_vertical">
+            android:orientation="horizontal"
+            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingTop="22dp" android:paddingBottom="10dp"
+            android:gravity="bottom">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="§ 03  YEARLY HISTORY"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
+                android:text="Yearly history"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="BY CALENDAR YEAR"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:text="By year"
+                android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
         </LinearLayout>
         <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:background="@color/editorial_rule_faint" />
 
         <LinearLayout
             android:id="@+id/yearly_container"
@@ -285,7 +299,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="16dp" />
+            android:paddingTop="8dp" />
 
         <!-- Empty state -->
         <TextView
@@ -300,9 +314,6 @@
             android:paddingBottom="32dp"
             android:text="@string/time_saved_empty"
             android:visibility="gone" />
-
-        <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="@color/editorial_ink" android:layout_marginBottom="32dp" />
 
     </LinearLayout>
 </ScrollView>

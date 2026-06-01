@@ -8,4 +8,9 @@
             android:icon="@drawable/ic_star"
             android:summary="1.7.2 (asd8qs)"/>
 
+    <Preference
+            android:key="about_trim_client_id"
+            android:title="@string/about_trim_client_id_title"
+            android:summary="@string/about_trim_client_id_summary"/>
+
 </PreferenceScreen>

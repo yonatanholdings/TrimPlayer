@@ -17,7 +17,7 @@ public final class DemoStats {
 
     /** Master switch — set to true to populate the Statistics screens with
      *  synthetic data, false to use real DB-backed stats. */
-    public static final boolean ENABLED = true;
+    public static final boolean ENABLED = false;
 
     private DemoStats() {}
 
@@ -26,10 +26,13 @@ public final class DemoStats {
 
         // ── Totals ───────────────────────────────────────────────────────────
         s.totalPlayedMs = hoursToMs(412.5);
-        s.totalSavedMs  = hoursToMs(58.2);
         s.savedSpeedMs   = hoursToMs(31.4);
         s.savedSilenceMs = hoursToMs(13.7);
-        s.savedIntrosMs  = hoursToMs(8.1);
+        s.savedAdsMs     = hoursToMs(7.2);
+        s.savedIntrosMs  = hoursToMs(4.4);
+        s.savedOutrosMs  = hoursToMs(1.5);
+        s.totalSavedMs   = s.savedSpeedMs + s.savedSilenceMs + s.savedAdsMs
+                + s.savedIntrosMs + s.savedOutrosMs;
 
         // ── Episode counters ────────────────────────────────────────────────
         s.episodesStarted    = 438;
@@ -51,6 +54,19 @@ public final class DemoStats {
 
         // ── Day-of-week (Sun=0 … Sat=6, minutes per day) ────────────────────
         s.byDay = new long[] { 142, 88, 96, 124, 101, 78, 167 };
+
+        // ── Per-day skip totals [dow][cat] where cat is
+        //    0=speed, 1=silence, 2=ads, 3=intros, 4=outros ──────────────────
+        // Weighted by byDay so heavy listening days have heavier saved time.
+        long byDayTotal = 0;
+        for (long m : s.byDay) byDayTotal += m;
+        long[] saved = { s.savedSpeedMs, s.savedSilenceMs, s.savedAdsMs,
+                         s.savedIntrosMs, s.savedOutrosMs };
+        for (int d = 0; d < 7; d++) {
+            for (int cat = 0; cat < 5; cat++) {
+                s.byDaySaved[d][cat] = saved[cat] * s.byDay[d] / byDayTotal;
+            }
+        }
 
         // ── Weekly hours (12 weeks, oldest first) ───────────────────────────
         s.weekly = new float[] {
@@ -115,6 +131,68 @@ public final class DemoStats {
                 -1, "Other", null, 11.6f, 0, 0xFF9aa0a6));
 
         return s;
+    }
+
+    /** A single synthetic episode row for the "episodes played that day" list,
+     *  used when {@link #ENABLED} short-circuits the real DB query. */
+    public static final class FakeEpisode {
+        public final String episodeTitle;
+        public final String feedTitle;
+        public final long playedMs;
+        public FakeEpisode(String episodeTitle, String feedTitle, long playedMs) {
+            this.episodeTitle = episodeTitle;
+            this.feedTitle = feedTitle;
+            this.playedMs = playedMs;
+        }
+    }
+
+    /** Returns synthetic episode rows whose minutes add up to roughly
+     *  {@code listenedMs}. Deterministic per (weekIdx, dayIdx) so the same
+     *  cell shows the same rows across taps. */
+    public static java.util.List<FakeEpisode> fakeEpisodesForDay(int weekIdx, int dayIdx, long listenedMs) {
+        java.util.List<FakeEpisode> out = new java.util.ArrayList<>();
+        if (listenedMs <= 0) return out;
+
+        String[] feedTitles = {
+                "The Daily", "Hard Fork", "Lex Fridman Podcast",
+                "Acquired", "99% Invisible", "Conan O'Brien Needs a Friend",
+                "Search Engine", "Reply All"
+        };
+        String[] topics = {
+                "What the new chip tariffs really mean",
+                "Why everyone is talking about agents",
+                "Inside the world's largest battery factory",
+                "The interview: A skeptic's case for optimism",
+                "The accidental empire of suburban malls",
+                "Listener questions: jet lag, parking, and pickle juice",
+                "Did the algorithm change, or did we?",
+                "An oral history of the open office",
+                "How a small town learned to love its trains",
+                "The case for boring software"
+        };
+
+        // Seed per cell so tapping the same day always renders identically.
+        java.util.Random rnd = new java.util.Random(20260520L ^ (weekIdx * 17L + dayIdx));
+        int count = 1 + rnd.nextInt(listenedMs > 2 * 3600_000L ? 4 : (listenedMs > 3600_000L ? 3 : 2));
+
+        // Split listenedMs across `count` episodes with mild jitter.
+        long remaining = listenedMs;
+        for (int i = 0; i < count; i++) {
+            long slice;
+            if (i == count - 1) {
+                slice = remaining;
+            } else {
+                double frac = 0.4 + rnd.nextDouble() * 0.5; // 40–90% of remaining
+                slice = Math.max(60_000L, (long) (remaining * frac / (count - i)));
+                slice = Math.min(slice, remaining - 60_000L * (count - i - 1));
+            }
+            remaining -= slice;
+            out.add(new FakeEpisode(
+                    topics[rnd.nextInt(topics.length)],
+                    feedTitles[rnd.nextInt(feedTitles.length)],
+                    slice));
+        }
+        return out;
     }
 
     public static DBReader.SkipStatistics fakeSkip() {

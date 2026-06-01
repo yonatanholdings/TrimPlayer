@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded square behind a segment-type icon in the segment list. The fill
+     color is set at runtime (backgroundTint) to the segment type's tint. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="13dp" />
+</shape>

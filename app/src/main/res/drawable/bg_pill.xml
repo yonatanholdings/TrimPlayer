@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded "chip"-style pill background for read-only labels (e.g. segment length). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/colorSurfaceContainerHigh" />
+    <corners android:radius="100dp" />
+</shape>

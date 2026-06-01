@@ -5,29 +5,15 @@
     android:orientation="vertical"
     android:background="@color/editorial_paper">
 
-    <!-- Masthead strip -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:padding="8dp"
-        android:paddingLeft="24dp" android:paddingRight="24dp">
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="● TRIM PLAYER STATISTICS"
-            android:textSize="9sp" android:letterSpacing="0.15"
-            android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="WHERE THE HOURS WENT"
-            android:textSize="9sp" android:letterSpacing="0.15"
-            android:textAllCaps="true" android:textColor="@color/editorial_ink_muted" />
-    </LinearLayout>
-
-    <View android:layout_width="match_parent" android:layout_height="0.5dp"
-        android:background="@color/editorial_rule_faint" />
-
-    <!-- Donut + top 3 side by side -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+    <!-- Donut + top 3 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingLeft="24dp" android:paddingRight="24dp"
-        android:paddingTop="16dp" android:paddingBottom="12dp"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="16dp"
         android:gravity="center_vertical">
 
         <FrameLayout android:layout_width="wrap_content" android:layout_height="wrap_content">
@@ -35,18 +21,25 @@
                 android:id="@+id/donut_chart"
                 android:layout_width="160dp"
                 android:layout_height="160dp" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:orientation="vertical" android:gravity="center">
                 <TextView android:id="@+id/donut_kicker"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="8sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                    android:textSize="11sp"
+                    android:includeFontPadding="false"
                     android:textColor="@color/editorial_ink_muted" android:gravity="center" />
                 <TextView android:id="@+id/donut_center"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="24sp" android:textColor="@color/editorial_ink" android:gravity="center" />
+                    android:textSize="26sp" android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false"
+                    android:paddingTop="2dp" android:paddingBottom="2dp"
+                    android:gravity="center" />
                 <TextView android:id="@+id/donut_caption"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="9sp" android:textColor="@color/editorial_ink_muted" android:gravity="center" />
+                    android:textSize="11sp" android:textColor="@color/editorial_ink_muted"
+                    android:includeFontPadding="false"
+                    android:gravity="center" />
             </LinearLayout>
         </FrameLayout>
 
@@ -55,45 +48,52 @@
             android:paddingLeft="16dp">
             <TextView android:id="@+id/top_show_1"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="13sp" android:textColor="@color/editorial_ink"
+                android:textSize="14sp" android:textColor="@color/editorial_ink"
                 android:paddingTop="4dp" android:paddingBottom="4dp" />
             <TextView android:id="@+id/top_show_2"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="13sp" android:textColor="@color/editorial_ink"
+                android:textSize="14sp" android:textColor="@color/editorial_ink"
                 android:paddingTop="4dp" android:paddingBottom="4dp" />
             <TextView android:id="@+id/top_show_3"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="13sp" android:textColor="@color/editorial_ink"
+                android:textSize="14sp" android:textColor="@color/editorial_ink"
                 android:paddingTop="4dp" android:paddingBottom="4dp" />
         </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Section label -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:paddingLeft="24dp" android:paddingRight="24dp"
-        android:paddingTop="8dp" android:paddingBottom="8dp" android:gravity="center_vertical">
+    <!-- Section header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingBottom="10dp"
+        android:gravity="bottom">
         <TextView android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="§ 01  ALL SUBSCRIPTIONS"
-            android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-            android:textColor="@color/editorial_ink_muted" />
+            android:text="All subscriptions"
+            android:textSize="15sp"
+            android:textColor="@color/editorial_ink" />
         <TextView android:id="@+id/sort_label"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="SORTED BY HOURS"
-            android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+            android:text="Sorted by hours"
+            android:textSize="12sp"
             android:textColor="@color/editorial_ink_muted" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0.5dp"
+        android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
         android:background="@color/editorial_rule_faint" />
 
-    <!-- Feed list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/subscriptions_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:paddingTop="4dp"
+        android:clipToPadding="false" />
 
     <ProgressBar
         android:id="@+id/progress_bar"

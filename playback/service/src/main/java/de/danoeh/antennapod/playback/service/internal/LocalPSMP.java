@@ -470,6 +470,34 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         if (mediaPlayer != null) {
             mediaPlayer.setSkipSilenceEnabled(skipSilence);
         }
+
+        // Skip the 150 ms rapid-tap debounce when the player isn't rendering audio
+        // yet. The debounce exists to coalesce user +/- speed taps mid-playback, but
+        // it was firing 150 ms AFTER mediaPlayer.start() on new-episode-start
+        // (playMediaObject sets params before prepare, then resume() reschedules the
+        // debounce — by the time it fires, exoPlayer.isPlaying() is true, so
+        // ExoPlayerWrapper enters the pause+seek dance mid-playback and the
+        // seek-triggered AudioSink.flush() emits an audible burst (white noise on
+        // every new stream). Applying immediately while the player is still
+        // INITIALIZING/PREPARED/PAUSED routes through the wrapper's
+        // !exoPlayer.isPlaying() fast-path → params take effect before start() so
+        // there's no mid-playback flush.
+        boolean preStart = playerStatus == PlayerStatus.INITIALIZING
+                || playerStatus == PlayerStatus.INITIALIZED
+                || playerStatus == PlayerStatus.PREPARING
+                || playerStatus == PlayerStatus.PREPARED
+                || playerStatus == PlayerStatus.PAUSED;
+        if (preStart) {
+            if (pendingSpeedChange != null) {
+                speedChangeHandler.removeCallbacks(pendingSpeedChange);
+                pendingSpeedChange = null;
+            }
+            if (mediaPlayer != null) {
+                mediaPlayer.setPlaybackParams(speed, skipSilence);
+            }
+            return;
+        }
+
         // Debounce the actual ExoPlayer call: calling setPlaybackParameters on every
         // rapid +/- press flushes the audio renderer each time and produces a beep.
         // Apply only the final value after a short settling period.

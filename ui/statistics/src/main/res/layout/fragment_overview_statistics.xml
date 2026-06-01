@@ -8,139 +8,33 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
 
-        <!-- ─── Masthead ─── -->
-        <LinearLayout
-            android:id="@+id/masthead"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@color/editorial_paper">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:paddingLeft="24dp"
-                android:paddingRight="24dp"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="● TRIM PLAYER STATISTICS"
-                    android:textSize="9sp"
-                    android:letterSpacing="0.15"
-                    android:textAllCaps="true"
-                    android:textColor="@color/editorial_ink_muted" />
-
-                <TextView
-                    android:id="@+id/masthead_vol"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="9sp"
-                    android:letterSpacing="0.15"
-                    android:textAllCaps="true"
-                    android:textColor="@color/editorial_ink_muted"
-                    android:text="VOL. 01 · ISSUE 01" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="@color/editorial_rule_faint" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingLeft="24dp"
-                android:paddingRight="24dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="6dp">
-
-                <TextView
-                    android:id="@+id/kicker"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="THE YEAR SO FAR"
-                    android:textSize="10sp"
-                    android:textAllCaps="true"
-                    android:letterSpacing="0.1"
-                    android:textColor="@color/editorial_vermilion"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="A reader's log."
-                    android:textSize="42sp"
-                    android:textColor="@color/editorial_ink"
-                    android:lineSpacingMultiplier="0.94"
-                    android:layout_marginTop="6dp" />
-
-                <TextView
-                    android:id="@+id/lede"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="@color/editorial_ink_soft"
-                    android:lineSpacingMultiplier="1.55"
-                    android:layout_marginTop="14dp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- ─── Hero stat block ─── -->
+        <!-- Hero: year-to-date listening -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingLeft="24dp"
             android:paddingRight="24dp"
-            android:paddingTop="14dp">
+            android:paddingTop="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Year to date"
+                android:textSize="12sp"
+                android:letterSpacing="0.08"
+                android:textAllCaps="true"
+                android:textColor="@color/editorial_ink_muted" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/listened_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="LISTENED, YEAR-TO-DATE"
-                    android:textSize="9sp"
-                    android:textAllCaps="true"
-                    android:letterSpacing="0.15"
-                    android:textColor="@color/editorial_ink_muted" />
-
-                <TextView
-                    android:id="@+id/yoy_chip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="8sp"
-                    android:textAllCaps="true"
-                    android:letterSpacing="0.12"
-                    android:textColor="@color/editorial_vermilion"
-                    android:visibility="gone" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
+                android:gravity="bottom"
+                android:layout_marginTop="6dp">
 
                 <TextView
                     android:id="@+id/hero_hours"
@@ -154,8 +48,9 @@
 
                 <de.danoeh.antennapod.ui.statistics.editorial.SparklineView
                     android:id="@+id/hero_sparkline"
-                    android:layout_width="80dp"
-                    android:layout_height="36dp" />
+                    android:layout_width="96dp"
+                    android:layout_height="40dp"
+                    android:layout_marginBottom="10dp" />
 
             </LinearLayout>
 
@@ -163,231 +58,157 @@
                 android:id="@+id/hero_minutes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textColor="@color/editorial_ink_soft"
-                android:textStyle="italic"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="2dp" />
 
         </LinearLayout>
 
-        <!-- ─── Thick rule ─── -->
+        <!-- Thick rule -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="14dp"
+            android:layout_marginTop="22dp"
+            android:layout_marginBottom="18dp"
             android:background="@color/editorial_ink" />
 
-        <!-- ─── Three-column hangs ─── -->
+        <!-- Three-column key stats -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp"
             android:paddingRight="24dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="20dp">
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical">
                 <TextView android:id="@+id/hang_trimmed_val"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="28sp" android:textColor="@color/editorial_ink" android:text="—" />
+                    android:textSize="30sp" android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false" android:text="—" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="TRIMMED" android:textSize="8sp" android:textAllCaps="true"
-                    android:letterSpacing="0.15" android:textColor="@color/editorial_ink_muted" />
+                    android:text="Trimmed" android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical">
                 <TextView android:id="@+id/hang_finished_val"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="28sp" android:textColor="@color/editorial_ink" android:text="—" />
+                    android:textSize="30sp" android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false" android:text="—" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="FINISHED" android:textSize="8sp" android:textAllCaps="true"
-                    android:letterSpacing="0.15" android:textColor="@color/editorial_ink_muted" />
+                    android:text="Finished" android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical">
                 <TextView android:id="@+id/hang_streak_val"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="28sp" android:textColor="@color/editorial_ink" android:text="—" />
+                    android:textSize="30sp" android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false" android:text="—" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="DAY STREAK" android:textSize="8sp" android:textAllCaps="true"
-                    android:letterSpacing="0.15" android:textColor="@color/editorial_ink_muted" />
+                    android:text="Day streak" android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- ─── Section §01 Heatmap ─── -->
+        <!-- Heatmap section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="24dp"
             android:paddingRight="24dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:gravity="center_vertical">
+            android:paddingBottom="10dp"
+            android:gravity="bottom">
 
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="§ 01  WHEN YOU LISTENED"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
+                android:text="When you listened"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
 
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="LAST 26 WEEKS"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
+                android:text="Last 26 weeks"
+                android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
 
         </LinearLayout>
 
         <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
+            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:background="@color/editorial_rule_faint" />
 
         <de.danoeh.antennapod.ui.statistics.editorial.HeatmapView
             android:id="@+id/heatmap"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:layout_marginBottom="6dp" />
 
-        <!-- Detail row populated when the user taps a heatmap cell. -->
+        <!-- Detail row — placeholder hint until a cell is tapped. -->
         <TextView android:id="@+id/heatmap_detail"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:textSize="11sp" android:textAllCaps="true" android:letterSpacing="0.15"
+            android:textSize="12sp"
             android:textColor="@color/editorial_ink_muted"
+            android:textStyle="italic"
             android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
-            android:layout_marginBottom="12dp"
-            android:text="TAP A CELL FOR DETAIL" />
+            android:layout_marginBottom="8dp"
+            android:text="Tap a day for details" />
 
-        <!-- ─── Section §02 Table of contents ─── -->
+        <!-- Episodes played on the tapped day. Hidden until a cell is tapped. -->
         <LinearLayout
+            android:id="@+id/played_episodes_section"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingLeft="24dp"
-            android:paddingRight="24dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="8dp"
-            android:gravity="center_vertical">
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="12dp">
 
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="§ 02  IN THIS ISSUE"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
+            <TextView
+                android:id="@+id/played_episodes_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Episodes played"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:paddingBottom="6dp" />
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="PAGES 02 — 18"
-                android:textSize="9sp" android:textAllCaps="true" android:letterSpacing="0.15"
-                android:textColor="@color/editorial_ink_muted" />
+            <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+                android:background="@color/editorial_rule_faint" />
+
+            <LinearLayout
+                android:id="@+id/played_episodes_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/played_episodes_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/editorial_ink_muted"
+                android:textStyle="italic"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:visibility="gone"
+                android:text="No episodes recorded for this day" />
 
         </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
-
-        <LinearLayout android:id="@+id/toc_subscriptions"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:padding="14dp"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:background="?android:attr/selectableItemBackground">
-            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
-                android:text="01" android:textSize="9sp" android:textColor="@color/editorial_ink_muted"
-                android:textAllCaps="true" android:letterSpacing="0.15" />
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Subscriptions" android:textSize="16sp" android:textColor="@color/editorial_ink" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Where the hours went, ranked." android:textSize="12sp"
-                    android:textColor="@color/editorial_ink_muted" />
-            </LinearLayout>
-            <TextView android:id="@+id/toc_sub_hrs"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink"
-                android:layout_gravity="center_vertical" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
-
-        <LinearLayout android:id="@+id/toc_activity"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:padding="14dp"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:background="?android:attr/selectableItemBackground">
-            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
-                android:text="02" android:textSize="9sp" android:textColor="@color/editorial_ink_muted"
-                android:textAllCaps="true" android:letterSpacing="0.15" />
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Activity" android:textSize="16sp" android:textColor="@color/editorial_ink" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Started, finished, abandoned." android:textSize="12sp"
-                    android:textColor="@color/editorial_ink_muted" />
-            </LinearLayout>
-            <TextView android:id="@+id/toc_act_pct"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink"
-                android:layout_gravity="center_vertical" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
-
-        <LinearLayout android:id="@+id/toc_years"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:padding="14dp"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:background="?android:attr/selectableItemBackground">
-            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
-                android:text="03" android:textSize="9sp" android:textColor="@color/editorial_ink_muted"
-                android:textAllCaps="true" android:letterSpacing="0.15" />
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Years" android:textSize="16sp" android:textColor="@color/editorial_ink" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="A reading list, by year." android:textSize="12sp"
-                    android:textColor="@color/editorial_ink_muted" />
-            </LinearLayout>
-            <TextView android:id="@+id/toc_years_hrs"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink"
-                android:layout_gravity="center_vertical" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp" android:background="@color/editorial_rule_faint" />
-
-        <LinearLayout android:id="@+id/toc_saved"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:padding="14dp"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:background="?android:attr/selectableItemBackground">
-            <TextView android:layout_width="24dp" android:layout_height="wrap_content"
-                android:text="04" android:textSize="9sp" android:textColor="@color/editorial_ink_muted"
-                android:textAllCaps="true" android:letterSpacing="0.15" />
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Time Saved" android:textSize="16sp" android:textColor="@color/editorial_ink" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Speed, silence, intros." android:textSize="12sp"
-                    android:textColor="@color/editorial_ink_muted" />
-            </LinearLayout>
-            <TextView android:id="@+id/toc_saved_hrs"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:textColor="@color/editorial_ink"
-                android:layout_gravity="center_vertical" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="@color/editorial_ink" android:layout_marginBottom="32dp" />
 
     </LinearLayout>
 </ScrollView>
