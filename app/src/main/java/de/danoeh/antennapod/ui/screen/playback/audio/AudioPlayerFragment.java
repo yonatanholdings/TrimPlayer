@@ -194,7 +194,15 @@ public class AudioPlayerFragment extends Fragment implements
      *  /analyze polling response (see {@link #onTrimSegmentsUnlocked}). */
     private void setSegmentMarkers(Playable media) {
         lastSegments = null;
-        if (duration <= 0 || !(media instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
+        // The duration field is seeded from controller.getDuration(), which routes
+        // to the live player and returns INVALID_TIME until the episode finishes
+        // preparing. On the warm-cache path nothing re-runs this once it resolves,
+        // so an early call would clear the overlay permanently. Fall back to the
+        // media's stored (feed/DB) duration, which is stable from load time.
+        int effectiveDuration = duration > 0 ? duration : (media != null ? media.getDuration() : 0);
+        if (effectiveDuration <= 0 || !(media instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
+            Log.d(TAG, "setSegmentMarkers: no valid duration (field=" + duration
+                    + ", media=" + (media != null ? media.getDuration() : -1) + ") - clearing overlay");
             sbPosition.setSegments(null, null);
             return;
         }
@@ -208,6 +216,7 @@ public class AudioPlayerFragment extends Fragment implements
         java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segs =
                 de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(requireContext(), guid);
         if (segs == null || segs.isEmpty()) {
+            Log.d(TAG, "setSegmentMarkers: cache empty for guid=" + guid + " - clearing overlay");
             sbPosition.setSegments(null, null);
             return;
         }
@@ -216,9 +225,11 @@ public class AudioPlayerFragment extends Fragment implements
         float[] ends = new float[segs.size()];
         for (int i = 0; i < segs.size(); i++) {
             de.danoeh.antennapod.playback.service.trim.TrimClient.Segment s = segs.get(i);
-            starts[i] = (float) (s.start * 1000.0 / duration);
-            ends[i] = (float) (s.end * 1000.0 / duration);
+            starts[i] = (float) (s.start * 1000.0 / effectiveDuration);
+            ends[i] = (float) (s.end * 1000.0 / effectiveDuration);
         }
+        Log.d(TAG, "setSegmentMarkers: applied " + segs.size() + " segments (effDuration="
+                + effectiveDuration + ", field=" + duration + ")");
         sbPosition.setSegments(starts, ends);
     }
 
@@ -481,6 +492,15 @@ public class AudioPlayerFragment extends Fragment implements
         if (currentPosition == Playable.INVALID_TIME || duration == Playable.INVALID_TIME) {
             Log.w(TAG, "Could not react to position observer update because of invalid time");
             return;
+        }
+        // updateUi() seeds the duration field from controller.getDuration(), which is
+        // INVALID_TIME until the player prepares. Once a valid live duration arrives,
+        // backfill the field and re-apply the chapter/segment overlays — setChapterDividers
+        // (and setSegmentMarkers) had bailed on the invalid duration with no other retry on
+        // the warm-cache path. Fires at most once per loaded episode.
+        if (AudioPlayerFragment.this.duration <= 0 && event.getDuration() > 0 && media != null) {
+            AudioPlayerFragment.this.duration = event.getDuration();
+            setChapterDividers(media);
         }
         txtvPosition.setText(Converter.getDurationStringLong(currentPosition));
         txtvPosition.setContentDescription(getString(R.string.position,
