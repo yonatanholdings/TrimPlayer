@@ -28,6 +28,10 @@ import de.danoeh.antennapod.event.TrimSegmentsEditedEvent;
 import de.danoeh.antennapod.playback.service.PlaybackController;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.playback.service.trim.TrimSegmentCache;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 /**
  * "Trimmed in this episode" bottom sheet — the Android implementation of the
@@ -46,6 +50,10 @@ public class SegmentListDialog extends BottomSheetDialogFragment {
 
     private SegmentListDialogBinding viewBinding;
     private PlaybackController controller;
+    private Disposable mediaWarmup;
+    /** True once the controller's media is cached off-thread, so the "mark
+     *  missing" position read doesn't trigger a main-thread DB read (crash). */
+    private boolean mediaReady;
     private String guid;
     private String episodeUrl;
     private float episodeDuration;
@@ -79,11 +87,21 @@ public class SegmentListDialog extends BottomSheetDialogFragment {
         };
         controller.init();
         EventBus.getDefault().register(this);
+        // Warm media off the main thread so markMissing()'s getPosition() doesn't
+        // trigger a main-thread DB read (see EditSegmentDialog for the rationale).
+        mediaWarmup = Single.fromCallable(() -> controller.getMedia() != null)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(ready -> mediaReady = ready, error -> mediaReady = false);
     }
 
     @Override
     public void onStop() {
         super.onStop();
+        if (mediaWarmup != null) {
+            mediaWarmup.dispose();
+            mediaWarmup = null;
+        }
         if (controller != null) {
             controller.release();
             controller = null;
@@ -149,7 +167,7 @@ public class SegmentListDialog extends BottomSheetDialogFragment {
     }
 
     private void markMissing() {
-        float pos = controller != null ? controller.getPosition() / 1000f : 0f;
+        float pos = (controller != null && mediaReady) ? controller.getPosition() / 1000f : 0f;
         TrimClient.Segment seg = new TrimClient.Segment();
         seg.start = Math.max(0f, pos);
         seg.end = episodeDuration > 0

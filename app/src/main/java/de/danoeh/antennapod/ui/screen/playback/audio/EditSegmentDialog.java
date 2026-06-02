@@ -26,6 +26,10 @@ import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.playback.service.trim.TrimReportClient;
 import de.danoeh.antennapod.playback.service.trim.TrimSegmentCache;
 import de.danoeh.antennapod.R;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 /**
  * Local segment-edit bottom sheet — the Android implementation of the design's
@@ -52,6 +56,10 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
 
     private EditSegmentDialogBinding viewBinding;
     private PlaybackController controller;
+    private Disposable mediaWarmup;
+    /** True once the controller's media is cached off-thread, so main-thread
+     *  seekTo/getPosition won't trigger a DB read (which hard-crashes the app). */
+    private boolean mediaReady;
 
     private String guid;
     private String episodeUrl;
@@ -116,14 +124,40 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
             @Override
             public void loadMediaInfo() {
             }
+
+            // Drive the preview icon from the real status callback. This fires
+            // synchronously on every PLAYING/PAUSED/PREPARING/STOPPED transition,
+            // unlike PlaybackPositionEvent which the service stops emitting the
+            // moment playback pauses (so the icon used to freeze on "pause").
+            @Override
+            protected void updatePlayButtonShowsPlay(boolean showPlay) {
+                if (viewBinding != null) {
+                    viewBinding.previewButton.setIconResource(
+                            showPlay ? R.drawable.ic_play_24dp : R.drawable.ic_pause);
+                }
+            }
         };
         controller.init();
         EventBus.getDefault().register(this);
+
+        // Warm the controller's media off the main thread. getMedia() lazily
+        // reads the DB on first call; doing that on the main thread (e.g. from a
+        // preview tap before the service finishes binding) hard-crashes on the
+        // app's main-thread-I/O guard. Caching it here makes later seekTo/
+        // getPosition calls safe.
+        mediaWarmup = Single.fromCallable(() -> controller.getMedia() != null)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(ready -> mediaReady = ready, error -> mediaReady = false);
     }
 
     @Override
     public void onStop() {
         super.onStop();
+        if (mediaWarmup != null) {
+            mediaWarmup.dispose();
+            mediaWarmup = null;
+        }
         if (controller != null) {
             controller.release();
             controller = null;
@@ -138,6 +172,10 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         viewBinding = EditSegmentDialogBinding.inflate(inflater, container, false);
 
         viewBinding.boundaryEditor.setWindow(winStart, winEnd);
+        // Let handles reach anywhere in the episode (the window auto-pans); fall
+        // back to a generous cap when the duration is unknown.
+        float limitEnd = episodeDuration > 0 ? episodeDuration : origEnd + 600f;
+        viewBinding.boundaryEditor.setLimits(0f, limitEnd);
         viewBinding.boundaryEditor.setBounds(boundStart, boundEnd);
         viewBinding.boundaryEditor.setType(type);
         viewBinding.boundaryEditor.setOnBoundsChangeListener((start, end) -> {
@@ -146,7 +184,7 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
             refresh();
         });
         viewBinding.boundaryEditor.setOnScrubListener(seconds -> {
-            if (controller != null) {
+            if (controller != null && mediaReady) {
                 controller.seekTo(Math.round(seconds * 1000));
             }
         });
@@ -154,7 +192,7 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         viewBinding.closeButton.setOnClickListener(v -> dismiss());
 
         viewBinding.previewButton.setOnClickListener(v -> {
-            if (controller == null) {
+            if (controller == null || !mediaReady) {
                 return;
             }
             if (controller.getStatus() != PlayerStatus.PLAYING) {
@@ -163,7 +201,7 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
             controller.playPause();
         });
         viewBinding.jumpToStartButton.setOnClickListener(v -> {
-            if (controller != null) {
+            if (controller != null && mediaReady) {
                 controller.seekTo(Math.round(boundStart * 1000));
             }
         });
@@ -303,10 +341,13 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         }
         float pos = event.getPosition() / 1000f;
         viewBinding.boundaryEditor.setPlayhead(pos);
+        // Denominator is the episode length (stable) rather than the window end,
+        // which now moves as the editor auto-pans.
+        float total = episodeDuration > 0 ? episodeDuration : winEnd;
         viewBinding.previewPosition.setText(
-                String.format(Locale.getDefault(), "%s / %s", fmtTime(pos), fmtTime(winEnd)));
-        boolean playing = controller != null && controller.getStatus() == PlayerStatus.PLAYING;
-        viewBinding.previewButton.setIconResource(playing ? R.drawable.ic_pause : R.drawable.ic_play_24dp);
+                String.format(Locale.getDefault(), "%s / %s", fmtTime(pos), fmtTime(total)));
+        // The play/pause icon is driven by updatePlayButtonShowsPlay (status
+        // callback), not here — position events stop arriving once paused.
     }
 
     private static String fmtTime(float seconds) {

@@ -4,7 +4,10 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,6 +27,9 @@ import androidx.annotation.Nullable;
 public class BoundaryEditor extends View {
     private static final int BARS = 60;
     private static final float MIN_GAP_SEC = 1f;
+    /** Dragging a handle within this many dp of an edge auto-scrolls the window. */
+    private static final float EDGE_PAN_MARGIN_DP = 28f;
+    private static final long PAN_TICK_MS = 16L;
 
     /** Window (zoomed view range) and current selection, in seconds. */
     private float winStart = 0f;
@@ -33,6 +39,10 @@ public class BoundaryEditor extends View {
     private float playhead = Float.NaN;
     private String type = "ad";
 
+    /** Hard episode bounds the window/handles can never cross (pan stops here). */
+    private float limitStart = 0f;
+    private float limitEnd = Float.MAX_VALUE;
+
     private float density;
     private float[] amps = new float[BARS];
 
@@ -41,7 +51,9 @@ public class BoundaryEditor extends View {
     private final Paint paintHandle = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paintHandleTick = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paintPlayhead = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint paintEdgeHint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF tmpRect = new RectF();
+    private final Path tmpPath = new Path();
 
     private boolean dark;
     private int colorOutlineVar;
@@ -50,6 +62,14 @@ public class BoundaryEditor extends View {
     /** Which element the active pointer grabbed. */
     private enum Drag { NONE, START, END, SCRUB }
     private Drag drag = Drag.NONE;
+
+    /** Auto-pan loop: +1 pans the window right, -1 left, 0 idle. */
+    private final Handler panHandler = new Handler(Looper.getMainLooper());
+    private int panDir = 0;
+    /** Last touch x while a handle is held, so the auto-pan keeps the dragged
+     *  handle pinned under the (stationary) finger as the window slides. */
+    private float panTouchX = 0f;
+    private final Runnable panRunnable = this::panTick;
 
     public interface OnBoundsChangeListener {
         void onBoundsChange(float start, float end);
@@ -87,6 +107,7 @@ public class BoundaryEditor extends View {
         colorOnSurf = dark ? 0xFFE3E4E0 : 0xFF1A1C1A;
         paintPlayhead.setColor(colorOnSurf);
         paintHandleTick.setColor(0xD9FFFFFF);
+        paintEdgeHint.setColor(colorOnSurf);
     }
 
     public void setOnBoundsChangeListener(@Nullable OnBoundsChangeListener l) {
@@ -102,6 +123,15 @@ public class BoundaryEditor extends View {
         this.winStart = startSec;
         this.winEnd = Math.max(startSec + MIN_GAP_SEC, endSec);
         regenWave();
+        invalidate();
+    }
+
+    /** Hard episode bounds. Handles clamp here (not to the window), and the
+     *  auto-pan stops here, so a boundary can be dragged anywhere in the episode
+     *  even though only a zoomed slice is visible. */
+    public void setLimits(float minSec, float maxSec) {
+        this.limitStart = minSec;
+        this.limitEnd = Math.max(minSec + MIN_GAP_SEC, maxSec);
         invalidate();
     }
 
@@ -130,17 +160,20 @@ public class BoundaryEditor extends View {
         return boundEnd;
     }
 
-    /** Nudge the start edge by {@code deltaSec}, clamped to the window and min gap. */
+    /** Nudge the start edge by {@code deltaSec}, clamped to the episode and min
+     *  gap. Pans the window if the new edge falls outside the visible slice. */
     public void nudgeStart(float deltaSec) {
-        float v = clampToWindow(boundStart + deltaSec);
+        float v = clampToLimits(boundStart + deltaSec);
         boundStart = Math.min(v, boundEnd - MIN_GAP_SEC);
+        panWindowToContain(boundStart);
         emitBounds();
         invalidate();
     }
 
     public void nudgeEnd(float deltaSec) {
-        float v = clampToWindow(boundEnd + deltaSec);
+        float v = clampToLimits(boundEnd + deltaSec);
         boundEnd = Math.max(v, boundStart + MIN_GAP_SEC);
+        panWindowToContain(boundEnd);
         emitBounds();
         invalidate();
     }
@@ -151,6 +184,36 @@ public class BoundaryEditor extends View {
 
     private float clampToWindow(float v) {
         return Math.max(winStart, Math.min(winEnd, v));
+    }
+
+    private float clampToLimits(float v) {
+        return Math.max(limitStart, Math.min(limitEnd, v));
+    }
+
+    /** Shift the visible window (keeping its span) so {@code t} sits just inside
+     *  the nearer edge, clamped to the episode limits. No-op if already visible. */
+    private void panWindowToContain(float t) {
+        float sp = span();
+        float edge = sp * 0.1f;
+        float newStart = winStart;
+        if (t < winStart + edge) {
+            newStart = t - edge;
+        } else if (t > winEnd - edge) {
+            newStart = t + edge - sp;
+        } else {
+            return;
+        }
+        newStart = Math.max(limitStart, newStart);
+        float newEnd = newStart + sp;
+        if (newEnd > limitEnd) {
+            newEnd = limitEnd;
+            newStart = Math.max(limitStart, newEnd - sp);
+        }
+        if (newStart != winStart || newEnd != winEnd) {
+            winStart = newStart;
+            winEnd = newEnd;
+            regenWave();
+        }
     }
 
     /** Seconds → x pixel within the content box. */
@@ -237,6 +300,30 @@ public class BoundaryEditor extends View {
         // Handles.
         drawHandle(canvas, timeToX(boundStart), midY, h, solid);
         drawHandle(canvas, timeToX(boundEnd), midY, h, solid);
+
+        // Edge affordance: a faint chevron when more episode exists beyond a
+        // visible edge, hinting the window scrolls when a handle is dragged there.
+        if (winStart > limitStart + 0.05f) {
+            drawEdgeChevron(canvas, left + density * 6, midY, -1);
+        }
+        if (winEnd < limitEnd - 0.05f) {
+            drawEdgeChevron(canvas, left + w - density * 6, midY, 1);
+        }
+    }
+
+    private void drawEdgeChevron(Canvas canvas, float tipX, float midY, int dir) {
+        float wdt = density * 5;
+        float hgt = density * 7;
+        paintEdgeHint.setAlpha(110);
+        tmpPath.reset();
+        tmpPath.moveTo(tipX, midY);
+        tmpPath.lineTo(tipX - dir * wdt, midY - hgt);
+        tmpPath.moveTo(tipX, midY);
+        tmpPath.lineTo(tipX - dir * wdt, midY + hgt);
+        paintEdgeHint.setStyle(Paint.Style.STROKE);
+        paintEdgeHint.setStrokeWidth(density * 2);
+        paintEdgeHint.setStrokeCap(Paint.Cap.ROUND);
+        canvas.drawPath(tmpPath, paintEdgeHint);
     }
 
     private void drawHandle(Canvas canvas, float x, float midY, float h, int color) {
@@ -270,6 +357,7 @@ public class BoundaryEditor extends View {
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                stopPan();
                 drag = Drag.NONE;
                 getParent().requestDisallowInterceptTouchEvent(false);
                 return true;
@@ -299,11 +387,13 @@ public class BoundaryEditor extends View {
                 boundStart = Math.min(t, boundEnd - MIN_GAP_SEC);
                 emitBounds();
                 invalidate();
+                updatePanForEdge(x);
                 break;
             case END:
                 boundEnd = Math.max(t, boundStart + MIN_GAP_SEC);
                 emitBounds();
                 invalidate();
+                updatePanForEdge(x);
                 break;
             case SCRUB:
                 if (scrubListener != null) {
@@ -313,6 +403,82 @@ public class BoundaryEditor extends View {
             default:
                 break;
         }
+    }
+
+    /** Either handle, held within the edge margin, auto-scrolls the window that
+     *  way: the left margin scrolls earlier, the right margin scrolls later. So
+     *  a boundary can be dragged past the visible slice in <em>both</em>
+     *  directions regardless of which handle it is. */
+    private void updatePanForEdge(float x) {
+        float margin = density * EDGE_PAN_MARGIN_DP;
+        panTouchX = x;
+        if (x <= getPaddingLeft() + margin && winStart > limitStart) {
+            setPanDir(-1);
+        } else if (x >= getWidth() - getPaddingRight() - margin && winEnd < limitEnd) {
+            setPanDir(1);
+        } else {
+            setPanDir(0);
+        }
+    }
+
+    private void setPanDir(int dir) {
+        if (dir == panDir) {
+            return;
+        }
+        panDir = dir;
+        panHandler.removeCallbacks(panRunnable);
+        if (dir != 0) {
+            panHandler.post(panRunnable);
+        }
+    }
+
+    private void stopPan() {
+        panDir = 0;
+        panHandler.removeCallbacks(panRunnable);
+    }
+
+    /** One auto-scroll step: shift the window in {@link #panDir} and drag the
+     *  active handle along with the moving edge. Reschedules until the finger
+     *  leaves the margin (panDir==0) or the window reaches the episode limit. */
+    private void panTick() {
+        if (panDir == 0) {
+            return;
+        }
+        float step = Math.max(0.08f, span() * 0.02f) * panDir;
+        float newStart = winStart + step;
+        float newEnd = winEnd + step;
+        if (newStart < limitStart) {
+            newEnd += limitStart - newStart;
+            newStart = limitStart;
+        } else if (newEnd > limitEnd) {
+            newStart -= newEnd - limitEnd;
+            newEnd = limitEnd;
+        }
+        if (newStart == winStart && newEnd == winEnd) {
+            stopPan();
+            return;
+        }
+        winStart = newStart;
+        winEnd = newEnd;
+        // Keep the dragged handle under the stationary finger as the window
+        // slides. xToTime clamps to the (just-moved) window, so the handle rides
+        // the edge the finger is held against — in either direction.
+        float t = xToTime(panTouchX);
+        if (drag == Drag.START) {
+            boundStart = Math.min(t, boundEnd - MIN_GAP_SEC);
+        } else if (drag == Drag.END) {
+            boundEnd = Math.max(t, boundStart + MIN_GAP_SEC);
+        }
+        regenWave();
+        emitBounds();
+        invalidate();
+        panHandler.postDelayed(panRunnable, PAN_TICK_MS);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        stopPan();
     }
 
     private void emitBounds() {
