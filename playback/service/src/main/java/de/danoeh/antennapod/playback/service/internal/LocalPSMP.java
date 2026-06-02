@@ -359,15 +359,18 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             t = 0;
         }
 
-        if (t >= getDuration()) {
-            Log.d(TAG, "Seek reached end of file, skipping to next episode");
-            endPlayback(true, true, true, true);
-            return;
-        }
-
         if (playerStatus == PlayerStatus.PLAYING
                 || playerStatus == PlayerStatus.PAUSED
                 || playerStatus == PlayerStatus.PREPARED) {
+            if (t >= getDuration()) {
+                // Only honor a seek-past-end as end-of-playback while the player is
+                // actively playing/paused/prepared. Otherwise an onPrepared() resume-seek
+                // to a saved position >= duration (an already-finished queued episode)
+                // fires endPlayback during PREPARING and cascade-skips the whole queue.
+                Log.d(TAG, "Seek reached end of file, skipping to next episode");
+                endPlayback(true, true, true, true);
+                return;
+            }
             // If a previous seek is still pending, skip this seek rather than blocking
             // the main thread — ExoPlayer delivers its seek-complete callback on the main
             // thread, so awaiting here would deadlock.
@@ -757,10 +760,15 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             mediaPlayer.reset();
         }
 
+        // Capture the current media BEFORE setPlayerStatus(INDETERMINATE, null):
+        // setPlayerStatus() calls setPlayable(newMedia), so passing null nulls out
+        // `media`. Capturing after would make currentMedia null, so getNextInQueue()
+        // would bail ("not an instance of FeedMedia") and playback would stop instead
+        // of advancing to the next queued episode.
+        final Playable currentMedia = media;
+
         setPlayerStatus(PlayerStatus.INDETERMINATE, null);
         abandonAudioFocus();
-
-        final Playable currentMedia = media;
 
         // we should continue to next episode if we were told to continue and we're allowed to (by sleep timer)
         final boolean finalShouldContinue = shouldContinue & callback.shouldContinueToNextEpisode();
