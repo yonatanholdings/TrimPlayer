@@ -1,27 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    One chat bubble inside an expanded thread.
+
+      User msg (right-aligned):       Dev reply (left-aligned):
+           ┌──────────────┐               ┌──────────────┐
+           │ You · 3m ago │               │ TrimPlayer   │
+           ├──────────────┤               │ team · 2m ago│
+           │ message text │               ├──────────────┤
+           └──────────────┘               │ message text │
+                                          └──────────────┘
+
+    The fragment swaps the background drawable + alignment + label depending
+    on `sender`. The wrapper LinearLayout uses gravity to push the bubble
+    to the correct side; max-width keeps long messages from spanning the
+    whole thread card.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/messageRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:layout_marginBottom="6dp">
+    android:layout_marginBottom="8dp">
 
     <TextView
         android:id="@+id/messageSender"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="3dp"
         android:textColor="?android:attr/textColorSecondary"
         android:textSize="11sp"
-        tools:text="TrimPlayer dev · 3 min ago" />
+        tools:text="TrimPlayer team · 3 min ago" />
 
     <TextView
         android:id="@+id/messageBody"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:padding="8dp"
-        android:background="@drawable/feedback_message_bg"
+        android:maxWidth="280dp"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp"
+        android:background="@drawable/feedback_bubble_admin"
         style="@style/TextAppearance.Material3.BodyMedium"
-        tools:text="Thanks for the report — fixed in the next build." />
+        tools:text="Thanks for the report — fix is going out in the next build." />
 
 </LinearLayout>

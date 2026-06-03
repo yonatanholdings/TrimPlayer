@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Subtle pill used for the thread's status badge. Background is the
+     secondary container so the text reads on both light and dark themes
+     without per-status color overrides; status semantics are carried by
+     the leading dot character ("● Awaiting reply") rather than by hue. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/colorSecondaryContainer" />
+    <corners android:radius="10dp" />
+</shape>

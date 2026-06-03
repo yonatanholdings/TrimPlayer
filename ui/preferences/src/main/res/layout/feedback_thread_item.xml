@@ -1,82 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    A single conversation card in the inbox.
+
+      ┌──┬────────────────────────────────┐
+      │█ │ Title                ● Pending │   ← color bar on the left edge
+      │█ │ Bug · 2 messages · 3 min ago  │     swapped by category in code
+      │█ │                                │
+      │█ │ [tap to expand → bubbles]      │
+      └──┴────────────────────────────────┘
+
+    The card uses MaterialCardView's stroke for the border and a left-side
+    View whose tint is set at bind time so each category gets its own accent.
+    Expanding the card swaps in a vertical stack of message bubbles.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="12dp"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="14dp"
     app:cardElevation="0dp"
-    app:strokeWidth="1dp">
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
+        android:orientation="horizontal">
+
+        <!-- Color bar: width fixed, height matches the card content. -->
+        <View
+            android:id="@+id/threadColorBar"
+            android:layout_width="4dp"
+            android:layout_height="match_parent"
+            android:background="?attr/colorPrimary"
+            tools:background="#ef4444" />
 
         <LinearLayout
-            android:id="@+id/threadHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="?attr/selectableItemBackground">
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:id="@+id/threadHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:id="@+id/threadTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textStyle="bold"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    tools:text="Skip-silence cuts the first word of intros" />
+
+                <View
+                    android:id="@+id/threadUnreadDot"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/feedback_unread_pill"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/threadTitle"
-                android:layout_width="0dp"
+                android:id="@+id/threadMeta"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                style="@style/TextAppearance.Material3.TitleSmall"
-                tools:text="Skip-silence cuts the first word" />
+                android:layout_marginTop="4dp"
+                android:textColor="?android:attr/textColorSecondary"
+                style="@style/TextAppearance.Material3.BodySmall"
+                tools:text="🐞 Bug · 2 messages · 3 min ago" />
 
-            <com.google.android.material.chip.Chip
+            <TextView
                 android:id="@+id/threadStatusChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:clickable="false"
-                android:focusable="false"
-                style="@style/Widget.Material3.Chip.Assist"
-                tools:text="Open" />
-
-            <TextView
-                android:id="@+id/threadUnreadDot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:textColor="?attr/colorOnPrimary"
+                android:layout_marginTop="8dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:background="@drawable/feedback_status_pill"
+                android:textColor="?attr/colorOnSecondaryContainer"
                 android:textSize="11sp"
-                android:background="@drawable/feedback_unread_pill"
+                android:textStyle="bold"
+                tools:text="● AWAITING REPLY" />
+
+            <LinearLayout
+                android:id="@+id/threadMessageList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
                 android:visibility="gone"
-                tools:visibility="visible"
-                tools:text="@string/feedback_new_reply" />
+                tools:visibility="visible" />
 
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/threadMeta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp"
-            tools:text="Bug · 2 messages · updated 3 min ago" />
-
-        <LinearLayout
-            android:id="@+id/threadMessageList"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible" />
 
     </LinearLayout>
 

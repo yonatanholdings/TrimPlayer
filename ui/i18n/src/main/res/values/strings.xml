@@ -791,7 +791,7 @@
     <string name="episode_information">Episode information</string>
 
     <!-- Report bug / send feedback -->
-    <string name="report_bug_title">Send feedback</string>
+    <string name="report_bug_title">Talk to us</string>
     <string name="report_bug_message">Tell us what happened, what you wish worked differently, or anything else. We read every message and reply right here in the app.</string>
     <string name="report_bug_device_info_title">Device</string>
     <string name="report_bug_attrib_app_version">App version</string>
@@ -803,27 +803,38 @@
     <string name="report_bug_github_title">GitHub</string>
 
     <!-- In-app feedback form -->
+    <string name="feedback_headline">What\'s on your mind?</string>
+    <string name="feedback_subheadline">A real human reads every message. Reply lands right here in the app.</string>
+    <string name="feedback_category_section">Pick one</string>
     <string name="feedback_category_bug">Bug</string>
-    <string name="feedback_category_feature">Feature request</string>
+    <string name="feedback_category_bug_sub">Something broke</string>
+    <string name="feedback_category_feature">Idea</string>
+    <string name="feedback_category_feature_sub">A wish or fix</string>
     <string name="feedback_category_other">Other</string>
-    <string name="feedback_title_hint">Short summary (e.g. "Skip-silence cuts the first word")</string>
-    <string name="feedback_body_hint">Describe what happened, what you expected, or what you\'d like to see.</string>
-    <string name="feedback_attach_device">Attach device info</string>
-    <string name="feedback_attach_crash">Attach last crash log</string>
+    <string name="feedback_category_other_sub">Question or praise</string>
+    <string name="feedback_body_section">Your message</string>
+    <string name="feedback_body_hint">What happened, what you expected, what you\'d love to see…</string>
+    <string name="feedback_extras_section">Send along</string>
+    <string name="feedback_attach_device">Device &amp; app info</string>
+    <string name="feedback_attach_device_sub">Helps us reproduce. Version + model, no personal data.</string>
+    <string name="feedback_attach_crash">Last crash log</string>
+    <string name="feedback_attach_crash_sub">The stack trace from when it broke.</string>
     <string name="feedback_send">Send</string>
-    <string name="feedback_sent">Sent — we\'ll reply right here when we look at it.</string>
+    <string name="feedback_sent">Got it — we\'ll reply right here.</string>
     <string name="feedback_send_failed">Couldn\'t send right now. Check your connection and try again.</string>
-    <string name="feedback_body_required">Please describe the issue before sending.</string>
+    <string name="feedback_body_required">A few words so we can help?</string>
+    <string name="feedback_sending">Sending…</string>
 
     <!-- In-app feedback inbox -->
-    <string name="feedback_inbox_title">Your messages</string>
-    <string name="feedback_inbox_empty">No messages yet. Anything you send will show up here so you can follow the reply.</string>
-    <string name="feedback_status_open">Open</string>
+    <string name="feedback_inbox_title">Your conversations</string>
+    <string name="feedback_inbox_subtitle">We\'ll reply here.</string>
+    <string name="feedback_inbox_empty">Nothing yet. Whatever you send lands here — and so does our reply.</string>
+    <string name="feedback_status_open">Awaiting reply</string>
     <string name="feedback_status_resolved">Resolved</string>
     <string name="feedback_status_closed">Closed</string>
     <string name="feedback_new_reply">New reply</string>
     <string name="feedback_sender_user">You</string>
-    <string name="feedback_sender_admin">TrimPlayer dev</string>
+    <string name="feedback_sender_admin">TrimPlayer team</string>
     <string name="feedback_inbox_refreshing">Checking for replies…</string>
     <plurals name="feedback_unread_summary">
         <item quantity="one">%d new reply</item>
@@ -894,9 +905,13 @@
     <string name="portcast_import_activity_button">Import</string>
     <string name="portcast_import_parsing">Reading file…</string>
     <string name="portcast_import_resolving">Looking up shows… %1$d of %2$d</string>
-    <string name="portcast_import_confirmation">Import %1$d shows? Resume positions for %2$d episodes will be applied.</string>
+    <string name="portcast_import_confirmation">Import %1$d shows? Episode state for %2$d episodes — resume points, played status, favorites, and queue order — will be applied where available.</string>
     <string name="portcast_import_unresolved_warning">%1$d shows couldn\'t be matched and will be skipped. Re-run the import after subscribing to them manually if needed.</string>
     <string name="portcast_import_conflicts_note">%1$d episodes have local play data. You\'ll be asked to review each one before importing.</string>
+    <string name="import_status_subscribing">Importing podcasts… %1$d of %2$d</string>
+    <string name="import_status_subscribing_indeterminate">Importing podcasts…</string>
+    <string name="import_status_applying">Applying your listening history…</string>
+    <string name="import_status_dismiss">Dismiss</string>
     <string name="coming_from_spotify_title">Coming from Spotify?</string>
     <string name="coming_from_spotify_summary">Move your followed shows and resume positions from Spotify to TrimPlayer.</string>
     <string name="coming_from_spotify_body">Sign in to Spotify here and TrimPlayer will fetch your library directly. If you already have a .portcast.json file from a desktop tool, tap \"I have a PortCast file\" instead.\n\nWhat gets imported:\n  • Followed shows\n  • Resume positions for saved episodes\n\nSpotify doesn\'t expose play history, so completed-episode marks aren\'t carried over.</string>
@@ -1208,6 +1223,7 @@
     <string name="share_dialog_media_address">Media address</string>
     <string name="share_dialog_media_file_label">Media file</string>
     <string name="share_starting_position_label">Starting from</string>
+    <string name="share_dialog_trimplayer_branding">Shared via TrimPlayer — open in the app:</string>
 
     <!-- Audio controls -->
     <string name="audio_controls">Audio controls</string>

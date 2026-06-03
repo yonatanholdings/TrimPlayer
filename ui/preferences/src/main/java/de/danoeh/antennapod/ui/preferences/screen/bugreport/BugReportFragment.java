@@ -4,6 +4,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,26 +35,67 @@ import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.common.AnimatedFragment;
 import de.danoeh.antennapod.ui.preferences.R;
 import de.danoeh.antennapod.ui.preferences.databinding.BugReportFragmentBinding;
+import de.danoeh.antennapod.ui.preferences.databinding.FeedbackCategoryCardBinding;
 import de.danoeh.antennapod.ui.preferences.databinding.FeedbackMessageBubbleBinding;
 import de.danoeh.antennapod.ui.preferences.databinding.FeedbackThreadItemBinding;
 
 /**
- * Send-feedback / bug-report screen.
+ * Talk-to-us / feedback screen.
  *
- * <p>The user picks a category (bug / feature request / other), writes a title
- * + body, optionally attaches device info + the latest crash log, and the form
- * POSTs to the backend's /feedback endpoint. Replies from the dev are polled
- * via /feedback/threads and surfaced above the form as an inbox.
+ * <p>The redesign treats this as a real conversation surface, not a bug report
+ * form. Layout, top to bottom:
  *
- * <p>The old copy-to-clipboard / "open in GitHub" affordances are gone — the
- * thread itself is the conversation channel now. The overflow menu still
- * offers "Export logs" so a user (or support) can grab a full logcat dump.
+ * <pre>
+ *   ┌─────────────────────────────────────────┐
+ *   │  What's on your mind?                   │ ← hero
+ *   │  A real human reads every message.      │
+ *   │                                         │
+ *   │  YOUR CONVERSATIONS         (refreshing)│ ← inbox, hidden on first run
+ *   │  ┃ ▌  Skip-silence cuts intro    ●     │
+ *   │  ┃ ▌  🐞 Bug · 2 msgs · 3m              │
+ *   │                                         │
+ *   │  PICK ONE                               │
+ *   │  ┌───────┐  ┌───────┐  ┌───────┐         │ ← category cards
+ *   │  │  🐞   │  │  💡   │  │  💬   │         │
+ *   │  │  Bug  │  │ Idea  │  │ Other │         │
+ *   │  └───────┘  └───────┘  └───────┘         │
+ *   │                                         │
+ *   │  YOUR MESSAGE                           │ ← body field is the hero
+ *   │  ┌─────────────────────────────────┐   │
+ *   │  │                                 │   │
+ *   │  └─────────────────────────────────┘   │
+ *   │                                         │
+ *   │  SEND ALONG                          ▼  │ ← collapsed extras
+ *   ├─────────────────────────────────────────┤
+ *   │ [          Send                ]        │ ← pinned CTA
+ *   └─────────────────────────────────────────┘
+ * </pre>
+ *
+ * <p>The old chip group / title field / always-visible device-info preview are
+ * gone. The selected category is held in a field (no chip checked-id), the
+ * title is auto-derived from the first body line on submit, and the device /
+ * crash-log attachments live behind a "Send along" expander so the form
+ * doesn't open with dev noise.
  */
 public class BugReportFragment extends AnimatedFragment {
     private static final String TAG = "BugReportFragment";
 
+    private static final String CATEGORY_BUG = "bug";
+    private static final String CATEGORY_FEATURE = "feature";
+    private static final String CATEGORY_OTHER = "other";
+
+    // Accent colors keyed off the category. Picked for legibility against both
+    // the surface-container background of the inbox card AND the secondary
+    // container background of the status pill — saturated enough to read as
+    // "this one's a bug" without becoming louder than the title text.
+    private static final int CATEGORY_COLOR_BUG = 0xFFE53935;       // material red 600
+    private static final int CATEGORY_COLOR_FEATURE = 0xFF3B82F6;   // sky 500
+    private static final int CATEGORY_COLOR_OTHER = 0xFF6B7280;     // slate 500
+
     private BugReportFragmentBinding viewBinding;
     private BugReportViewModel viewModel;
+    private String selectedCategory = CATEGORY_BUG;
+    private boolean extrasExpanded = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,6 +121,8 @@ public class BugReportFragment extends AnimatedFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         setupContextMenu();
+        setupCategoryCards();
+        setupExtrasExpander();
 
         viewModel.getState().observe(getViewLifecycleOwner(), uiState -> {
             bindAttachments(uiState);
@@ -99,45 +143,88 @@ public class BugReportFragment extends AnimatedFragment {
     }
 
     // ---------------------------------------------------------------------
-    // Attachments — display previews of what the toggles will include.
+    // Category picker — 3 tap cards instead of filter chips.
+    // ---------------------------------------------------------------------
+
+    private void setupCategoryCards() {
+        bindCategoryCard(viewBinding.categoryBug, "🐞",
+                R.string.feedback_category_bug, R.string.feedback_category_bug_sub,
+                CATEGORY_BUG);
+        bindCategoryCard(viewBinding.categoryFeature, "💡",
+                R.string.feedback_category_feature, R.string.feedback_category_feature_sub,
+                CATEGORY_FEATURE);
+        bindCategoryCard(viewBinding.categoryOther, "💬",
+                R.string.feedback_category_other, R.string.feedback_category_other_sub,
+                CATEGORY_OTHER);
+        applyCategorySelection();
+    }
+
+    private void bindCategoryCard(@NonNull FeedbackCategoryCardBinding card,
+                                  @NonNull String emoji,
+                                  int labelRes, int sublabelRes,
+                                  @NonNull String value) {
+        card.categoryIcon.setText(emoji);
+        card.categoryLabel.setText(labelRes);
+        card.categorySublabel.setText(sublabelRes);
+        card.getRoot().setOnClickListener(v -> {
+            if (!value.equals(selectedCategory)) {
+                selectedCategory = value;
+                applyCategorySelection();
+            }
+        });
+    }
+
+    private void applyCategorySelection() {
+        viewBinding.categoryBug.getRoot()
+                .setSelected(CATEGORY_BUG.equals(selectedCategory));
+        viewBinding.categoryFeature.getRoot()
+                .setSelected(CATEGORY_FEATURE.equals(selectedCategory));
+        viewBinding.categoryOther.getRoot()
+                .setSelected(CATEGORY_OTHER.equals(selectedCategory));
+    }
+
+    // ---------------------------------------------------------------------
+    // "Send along" expander — collapses the attach toggles.
+    // ---------------------------------------------------------------------
+
+    private void setupExtrasExpander() {
+        viewBinding.extrasHeader.setOnClickListener(v -> {
+            extrasExpanded = !extrasExpanded;
+            viewBinding.extrasBody.setVisibility(extrasExpanded ? View.VISIBLE : View.GONE);
+            viewBinding.extrasChevron.animate()
+                    .rotation(extrasExpanded ? 180f : 0f)
+                    .setDuration(180)
+                    .start();
+        });
+    }
+
+    // ---------------------------------------------------------------------
+    // Attachments — wire toggles + show/hide crash row depending on whether
+    // a stacktrace is on record.
     // ---------------------------------------------------------------------
 
     private void bindAttachments(@NonNull BugReportViewModel.UiState uiState) {
+        // devicePreview / crashPreview remain in the layout as hidden 0-sized
+        // views so the existing binding fields don't error; we don't render
+        // their content anywhere in the new design.
         viewBinding.devicePreview.setText(uiState.getEnvironmentInfoWithMarkup());
 
         BugReportViewModel.CrashLogInfo crash = uiState.getCrashLogInfo();
         if (crash.isAvailable()) {
-            String createdAt = uiState.getFormattedCrashLogTimestamp();
-            viewBinding.attachCrashSwitch.setText(
-                    getString(R.string.feedback_attach_crash) + " · " + createdAt);
-            viewBinding.attachCrashSwitch.setVisibility(View.VISIBLE);
+            viewBinding.crashRow.setVisibility(View.VISIBLE);
+            String when = uiState.getFormattedCrashLogTimestamp();
+            viewBinding.crashSubtitle.setText(
+                    getString(R.string.feedback_attach_crash_sub) + " · " + when);
             viewBinding.attachCrashSwitch.setChecked(true);
             viewBinding.crashPreview.setText(crash.getContent());
-            viewBinding.crashPreview.setVisibility(View.VISIBLE);
-            viewBinding.attachCrashSwitch.setOnCheckedChangeListener((b, checked) ->
-                    viewBinding.crashPreview.setVisibility(checked ? View.VISIBLE : View.GONE));
         } else {
-            viewBinding.attachCrashSwitch.setVisibility(View.GONE);
-            viewBinding.crashPreview.setVisibility(View.GONE);
+            viewBinding.crashRow.setVisibility(View.GONE);
         }
-
-        viewBinding.attachDeviceSwitch.setOnCheckedChangeListener((b, checked) ->
-                viewBinding.devicePreview.setVisibility(checked ? View.VISIBLE : View.GONE));
     }
 
     // ---------------------------------------------------------------------
     // Form submission.
     // ---------------------------------------------------------------------
-
-    private String selectedCategory() {
-        int checkedId = viewBinding.categoryChipGroup.getCheckedChipId();
-        if (checkedId == R.id.chipFeature) {
-            return "feature";
-        } else if (checkedId == R.id.chipOther) {
-            return "other";
-        }
-        return "bug";
-    }
 
     private void submitForm() {
         Log.d(TAG, "submitForm: click received");
@@ -158,15 +245,10 @@ public class BugReportFragment extends AnimatedFragment {
         String body = viewBinding.feedbackBodyInput.getText() == null ? ""
                 : viewBinding.feedbackBodyInput.getText().toString().trim();
 
-        // Clear any stale error first so a successful submit doesn't leave the
-        // red underline behind.
         viewBinding.feedbackBodyLayout.setError(null);
 
         if (body.isEmpty()) {
             Log.d(TAG, "submitForm: empty body, prompting user");
-            // setError on the layout (not the inner EditText) — the inner one
-            // shows a tiny tooltip that's easy to miss; the layout shows a red
-            // helper line below the field. Snackbar is the belt-and-braces.
             viewBinding.feedbackBodyLayout.setError(getString(R.string.feedback_body_required));
             viewBinding.feedbackBodyInput.requestFocus();
             Snackbar.make(viewBinding.getRoot(),
@@ -184,18 +266,17 @@ public class BugReportFragment extends AnimatedFragment {
 
         String envJson = viewBinding.attachDeviceSwitch.isChecked()
                 ? uiState.getEnvironmentInfoWithMarkup() : null;
-        String crashLog = (viewBinding.attachCrashSwitch.getVisibility() == View.VISIBLE
+        String crashLog = (viewBinding.crashRow.getVisibility() == View.VISIBLE
                 && viewBinding.attachCrashSwitch.isChecked())
                 ? uiState.getCrashInfoWithMarkup() : null;
 
-        String category = selectedCategory();
-        Log.d(TAG, "submitForm: category=" + category + " bodyLen=" + body.length()
+        Log.d(TAG, "submitForm: category=" + selectedCategory + " bodyLen=" + body.length()
                 + " envAttached=" + (envJson != null) + " crashAttached=" + (crashLog != null));
 
         viewBinding.sendFeedbackButton.setEnabled(false);
-        viewBinding.sendFeedbackButton.setText(R.string.feedback_inbox_refreshing);
+        viewBinding.sendFeedbackButton.setText(R.string.feedback_sending);
         TrimFeedbackClient.submit(requireContext().getApplicationContext(),
-                category, title, body, envJson, crashLog,
+                selectedCategory, title, body, envJson, crashLog,
                 new TrimFeedbackClient.SubmitCallback() {
                     @Override
                     public void onSuccess(long threadId) {
@@ -242,7 +323,6 @@ public class BugReportFragment extends AnimatedFragment {
 
     private void refreshInbox() {
         viewBinding.inboxProgress.setVisibility(View.VISIBLE);
-        viewBinding.inboxEmpty.setVisibility(View.GONE);
         TrimFeedbackClient.fetchThreads(requireContext().getApplicationContext(),
                 new TrimFeedbackClient.FetchCallback() {
                     @Override
@@ -260,10 +340,8 @@ public class BugReportFragment extends AnimatedFragment {
                             return;
                         }
                         viewBinding.inboxProgress.setVisibility(View.GONE);
-                        // Leave whatever was there alone; just hide the spinner.
-                        if (viewBinding.inboxThreadList.getChildCount() == 0) {
-                            viewBinding.inboxEmpty.setVisibility(View.VISIBLE);
-                        }
+                        // Leave whatever was there alone; the next refresh will
+                        // reconcile. Don't flip to the empty state mid-session.
                     }
                 });
     }
@@ -271,9 +349,13 @@ public class BugReportFragment extends AnimatedFragment {
     private void renderThreads(@NonNull List<TrimClient.FeedbackThread> threads) {
         viewBinding.inboxThreadList.removeAllViews();
         if (threads.isEmpty()) {
-            viewBinding.inboxEmpty.setVisibility(View.VISIBLE);
+            viewBinding.inboxHeaderRow.setVisibility(View.GONE);
+            viewBinding.inboxBottomGap.setVisibility(View.GONE);
+            viewBinding.inboxEmpty.setVisibility(View.GONE);
             return;
         }
+        viewBinding.inboxHeaderRow.setVisibility(View.VISIBLE);
+        viewBinding.inboxBottomGap.setVisibility(View.VISIBLE);
         viewBinding.inboxEmpty.setVisibility(View.GONE);
         LayoutInflater inflater = LayoutInflater.from(requireContext());
         for (TrimClient.FeedbackThread t : threads) {
@@ -288,24 +370,20 @@ public class BugReportFragment extends AnimatedFragment {
                                 @NonNull TrimClient.FeedbackThread thread,
                                 @NonNull LayoutInflater inflater) {
         item.threadTitle.setText(thread.title);
-        item.threadStatusChip.setText(statusLabel(thread.status));
+        item.threadColorBar.setBackgroundColor(categoryColor(thread.category));
+        item.threadStatusChip.setText(statusBadge(thread.status));
         item.threadMeta.setText(formatMeta(thread));
-        if (thread.unread_for_user > 0) {
-            item.threadUnreadDot.setText(R.string.feedback_new_reply);
-            item.threadUnreadDot.setVisibility(View.VISIBLE);
-        } else {
-            item.threadUnreadDot.setVisibility(View.GONE);
-        }
+        item.threadUnreadDot.setVisibility(
+                thread.unread_for_user > 0 ? View.VISIBLE : View.GONE);
 
-        // Render all messages once so the toggle is a pure visibility swap;
-        // threads are short, so the cost of inflating up-front is negligible.
+        // Render all messages once so the expand toggle is a pure visibility
+        // swap; threads are short so the cost of inflating up-front is fine.
         item.threadMessageList.removeAllViews();
         if (thread.messages != null) {
             for (TrimClient.FeedbackMessage m : thread.messages) {
                 FeedbackMessageBubbleBinding bubble = FeedbackMessageBubbleBinding.inflate(
                         inflater, item.threadMessageList, false);
-                bubble.messageSender.setText(senderLine(m));
-                bubble.messageBody.setText(m.body);
+                bindBubble(bubble, m);
                 item.threadMessageList.addView(bubble.getRoot());
             }
         }
@@ -323,6 +401,37 @@ public class BugReportFragment extends AnimatedFragment {
                 TrimFeedbackClient.markRead(requireContext().getApplicationContext(), thread.id);
             }
         });
+    }
+
+    /** Render one message as either a user (right, primary tint) bubble or a
+     *  dev (left, neutral) bubble — flipping the row's gravity + the bubble's
+     *  background drawable + the leading "sender · time" label alignment. */
+    private void bindBubble(@NonNull FeedbackMessageBubbleBinding bubble,
+                            @NonNull TrimClient.FeedbackMessage m) {
+        bubble.messageSender.setText(senderLine(m));
+        bubble.messageBody.setText(m.body);
+        boolean isAdmin = "admin".equals(m.sender);
+        int gravity = isAdmin ? Gravity.START : Gravity.END;
+        bubble.messageRow.setGravity(gravity);
+        bubble.messageBody.setBackgroundResource(
+                isAdmin ? R.drawable.feedback_bubble_admin : R.drawable.feedback_bubble_user);
+        bubble.messageSender.setGravity(gravity);
+    }
+
+    private int categoryColor(@Nullable String category) {
+        if ("feature".equals(category)) {
+            return CATEGORY_COLOR_FEATURE;
+        }
+        if ("other".equals(category)) {
+            return CATEGORY_COLOR_OTHER;
+        }
+        return CATEGORY_COLOR_BUG;
+    }
+
+    /** Tiny status pill text. The leading "●" doubles as a visual indicator
+     *  without forcing per-status background colors that fight the theme. */
+    private String statusBadge(@Nullable String status) {
+        return "●  " + statusLabel(status).toUpperCase(Locale.getDefault());
     }
 
     private String statusLabel(@Nullable String status) {
@@ -350,15 +459,28 @@ public class BugReportFragment extends AnimatedFragment {
 
     private String formatMeta(@NonNull TrimClient.FeedbackThread t) {
         int msgs = t.messages == null ? 0 : t.messages.size();
-        String category = categoryLabel(t.category);
+        String emoji = categoryEmoji(t.category);
+        String label = categoryLabel(t.category);
         long updated = parseIsoMs(t.updated_at);
         String when = updated > 0
                 ? DateUtils.getRelativeTimeSpanString(
                         updated, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
                 : "";
+        String msgsLabel = msgs == 1 ? "1 message" : msgs + " messages";
         return when.isEmpty()
-                ? String.format(Locale.getDefault(), "%s · %d", category, msgs)
-                : String.format(Locale.getDefault(), "%s · %d · %s", category, msgs, when);
+                ? String.format(Locale.getDefault(), "%s %s · %s", emoji, label, msgsLabel)
+                : String.format(Locale.getDefault(), "%s %s · %s · %s",
+                        emoji, label, msgsLabel, when);
+    }
+
+    private String categoryEmoji(@Nullable String category) {
+        if ("feature".equals(category)) {
+            return "💡";
+        }
+        if ("other".equals(category)) {
+            return "💬";
+        }
+        return "🐞";
     }
 
     private String categoryLabel(@Nullable String category) {
@@ -378,9 +500,6 @@ public class BugReportFragment extends AnimatedFragment {
         if (iso == null || iso.isEmpty()) {
             return 0L;
         }
-        // pg serializes as "2026-06-03T12:34:56.789012+00:00" — drop the
-        // sub-second precision past millis (java.text can't take 6-digit
-        // fractional seconds) and normalize the timezone for SDF.
         String normalized = iso;
         int dot = normalized.indexOf('.');
         if (dot >= 0) {
@@ -388,12 +507,9 @@ public class BugReportFragment extends AnimatedFragment {
             while (end < normalized.length() && Character.isDigit(normalized.charAt(end))) {
                 end++;
             }
-            // Keep up to 3 fractional digits, drop the rest.
             int keep = Math.min(end, dot + 4);
             normalized = normalized.substring(0, keep) + normalized.substring(end);
         }
-        // Append Z for trailing "+00:00" → SDF "Z" wants "+0000" style; just
-        // try the simplest "yyyy-MM-dd'T'HH:mm:ss.SSSXXX" first.
         String[] patterns = {
                 "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
                 "yyyy-MM-dd'T'HH:mm:ssXXX",

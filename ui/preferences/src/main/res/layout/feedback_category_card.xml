@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Single category picker tile. Three of these are stamped via <include> in
+    bug_report_fragment.xml. The fragment swaps the emoji + labels at runtime
+    and toggles isSelected to drive the background drawable's state.
+
+    Why a LinearLayout with explicit background instead of MaterialCardView:
+    setSelected on a card view doesn't always propagate to its drawable in
+    the way we need — a plain background drawable selector is the most
+    reliable way to render the "chosen" state across Material library minor
+    versions.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="14dp"
+    android:background="@drawable/feedback_category_card_bg"
+    android:clickable="true"
+    android:focusable="true"
+    android:duplicateParentState="false">
+
+    <TextView
+        android:id="@+id/categoryIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="28sp"
+        tools:text="🐞" />
+
+    <TextView
+        android:id="@+id/categoryLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textStyle="bold"
+        style="@style/TextAppearance.Material3.TitleSmall"
+        tools:text="Bug" />
+
+    <TextView
+        android:id="@+id/categorySublabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
+        android:textColor="?android:attr/textColorSecondary"
+        style="@style/TextAppearance.Material3.BodySmall"
+        tools:text="Something broke" />
+
+</LinearLayout>

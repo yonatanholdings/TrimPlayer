@@ -1,123 +1,194 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Talk-to-us / feedback screen.
+
+    Layout intent:
+      - The screen opens with a warm hero (headline + subhead) instead of the
+        old debug-style instructions, so the user sees a real conversation,
+        not a bug report form.
+      - The conversation inbox sits ABOVE the form so a returning user sees
+        the dev's reply first; for first-time users the section is hidden via
+        a Group so the form feels uncluttered.
+      - The body field is the visual centerpiece. Title is dropped (we auto-
+        derive it from the first body line).
+      - The attachment toggles are tucked under a "Send along" expander so
+        the screen never opens with raw device-info or crash-log text.
+      - The Send CTA is full-width and pinned outside the ScrollView so it's
+        always reachable, even when the IME is up.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/feedbackScroll"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="12dp"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="16dp"
             android:paddingBottom="24dp">
 
-            <!-- ============== Your messages (inbox) ============== -->
+            <!-- =================== HERO =================== -->
 
             <TextView
-                android:id="@+id/inboxTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/feedback_inbox_title"
-                style="@style/TextAppearance.Material3.TitleMedium" />
-
-            <ProgressBar
-                android:id="@+id/inboxProgress"
+                android:id="@+id/heroHeadline"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_gravity="center_horizontal"
-                android:visibility="gone"
-                style="?android:attr/progressBarStyleSmall"
-                tools:visibility="visible" />
+                android:text="@string/feedback_headline"
+                style="@style/TextAppearance.Material3.HeadlineSmall"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/inboxEmpty"
+                android:id="@+id/heroSubhead"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/feedback_inbox_empty"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="20dp"
+                android:text="@string/feedback_subheadline"
                 android:textColor="?android:attr/textColorSecondary"
                 style="@style/TextAppearance.Material3.BodyMedium" />
+
+            <!-- =================== INBOX =================== -->
+
+            <LinearLayout
+                android:id="@+id/inboxHeaderRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/inboxTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/feedback_inbox_title"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/inboxSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/feedback_inbox_subtitle"
+                        android:textColor="?android:attr/textColorSecondary"
+                        style="@style/TextAppearance.Material3.BodySmall" />
+
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/inboxProgress"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/inboxThreadList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:orientation="vertical" />
 
-            <com.google.android.material.divider.MaterialDivider
+            <View
+                android:id="@+id/inboxBottomGap"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- Empty-state shown only on first run (no threads on record). -->
+            <TextView
+                android:id="@+id/inboxEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp" />
+                android:text="@string/feedback_inbox_empty"
+                android:layout_marginBottom="20dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                style="@style/TextAppearance.Material3.BodySmall" />
 
-            <!-- ============== New message form ============== -->
+            <!-- =================== CATEGORY =================== -->
 
             <TextView
+                android:id="@+id/categorySectionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/feedback_category_section"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textAllCaps="true"
+                android:letterSpacing="0.08"
+                style="@style/TextAppearance.Material3.LabelSmall" />
+
+            <!-- Three equal-weight cards. The selected state is driven by
+                 setSelected(true) on the chosen card from the fragment;
+                 background drawable reacts to the state. -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/report_bug_message"
-                style="@style/TextAppearance.Material3.BodyMedium" />
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:baselineAligned="false"
+                android:weightSum="3">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/categoryChipGroup"
-                android:layout_width="match_parent"
+                <include
+                    android:id="@+id/categoryBug"
+                    layout="@layout/feedback_category_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp" />
+
+                <include
+                    android:id="@+id/categoryFeature"
+                    layout="@layout/feedback_category_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="4dp" />
+
+                <include
+                    android:id="@+id/categoryOther"
+                    layout="@layout/feedback_category_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+            <!-- =================== BODY =================== -->
+
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:selectionRequired="true"
-                app:singleSelection="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipBug"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/feedback_category_bug"
-                    android:checked="true"
-                    style="@style/Widget.Material3.Chip.Filter" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipFeature"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/feedback_category_feature"
-                    style="@style/Widget.Material3.Chip.Filter" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipOther"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/feedback_category_other"
-                    style="@style/Widget.Material3.Chip.Filter" />
-
-            </com.google.android.material.chip.ChipGroup>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="@string/feedback_title_hint"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/feedbackTitleInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textCapSentences"
-                    android:maxLength="120"
-                    android:maxLines="1" />
-
-            </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginTop="24dp"
+                android:text="@string/feedback_body_section"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textAllCaps="true"
+                android:letterSpacing="0.08"
+                style="@style/TextAppearance.Material3.LabelSmall" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/feedbackBodyLayout"
@@ -125,6 +196,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:hint="@string/feedback_body_hint"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -133,64 +208,179 @@
                     android:layout_height="wrap_content"
                     android:gravity="top|start"
                     android:inputType="textMultiLine|textCapSentences"
-                    android:minLines="5"
-                    android:maxLength="8000" />
+                    android:minLines="6"
+                    android:maxLength="8000"
+                    android:padding="14dp" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/attachDeviceSwitch"
+            <!-- Hidden title field — kept for backwards-compatible auto-fill
+                 from any future bridge code, never shown in the new design.
+                 The fragment continues to read its content if present. -->
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/feedbackTitleInput"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/feedback_attach_device"
-                android:checked="true" />
+                android:layout_height="0dp"
+                android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/devicePreview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textSize="12sp"
-                android:typeface="monospace"
-                tools:text="TrimPlayer 1.2.3\nAndroid 14\nPixel 7" />
+            <!-- =================== EXTRAS =================== -->
 
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/attachCrashSwitch"
+            <LinearLayout
+                android:id="@+id/extrasHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/feedback_attach_crash"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/feedback_extras_section"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08"
+                    style="@style/TextAppearance.Material3.LabelSmall" />
+
+                <ImageView
+                    android:id="@+id/extrasChevron"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_down"
+                    android:contentDescription="@null"
+                    app:tint="?android:attr/textColorSecondary" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/extrasBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:visibility="gone"
-                tools:visibility="visible" />
+                tools:visibility="visible">
 
-            <TextView
-                android:id="@+id/crashPreview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textSize="12sp"
-                android:typeface="monospace"
-                android:maxLines="3"
-                android:ellipsize="end"
-                android:visibility="gone"
-                tools:visibility="visible"
-                tools:text="java.lang.NullPointerException…" />
+                <!-- Device + app info row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:padding="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-            <Button
-                android:id="@+id/sendFeedbackButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/feedback_send"
-                style="@style/Widget.Material3.Button" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/feedback_attach_device"
+                            style="@style/TextAppearance.Material3.BodyMedium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/feedback_attach_device_sub"
+                            android:layout_marginTop="2dp"
+                            android:textColor="?android:attr/textColorSecondary"
+                            style="@style/TextAppearance.Material3.BodySmall" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/attachDeviceSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+
+                </LinearLayout>
+
+                <!-- Crash log row — hidden if no crash on record. -->
+                <LinearLayout
+                    android:id="@+id/crashRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/feedback_attach_crash"
+                            style="@style/TextAppearance.Material3.BodyMedium" />
+
+                        <TextView
+                            android:id="@+id/crashSubtitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/feedback_attach_crash_sub"
+                            android:layout_marginTop="2dp"
+                            android:textColor="?android:attr/textColorSecondary"
+                            style="@style/TextAppearance.Material3.BodySmall" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/attachCrashSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+
+                </LinearLayout>
+
+                <!-- Hidden previews — the fragment still references these
+                     binding fields to keep the existing wiring working. -->
+                <TextView
+                    android:id="@+id/devicePreview"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/crashPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- ============== STICKY SEND BAR ============== -->
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/sendFeedbackButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="12dp"
+        android:text="@string/feedback_send"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:cornerRadius="16dp"
+        android:minHeight="52dp"
+        style="@style/Widget.Material3.Button" />
 
 </LinearLayout>
