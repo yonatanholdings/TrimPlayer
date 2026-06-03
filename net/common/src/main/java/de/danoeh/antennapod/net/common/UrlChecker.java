@@ -72,6 +72,33 @@ public final class UrlChecker {
         }
     }
 
+    /**
+     * Extracts the most relevant feed URL from arbitrary shared text. A SEND
+     * text/plain payload is often more than a bare URL — e.g. TrimPlayer's own
+     * "social message" share, or another app sharing "Title &lt;url&gt;". Treating the
+     * whole blob as a URL (as the old code did) always failed for such shares.
+     *
+     * <p>Prefers a TrimPlayer subscribe deep link (which carries the exact feed
+     * URL), then the first http(s) token. Falls back to the trimmed input if no
+     * URL-looking token is present, preserving the old behaviour for bare URLs.
+     */
+    public static String findFirstUrl(String text) {
+        if (text == null) {
+            return null;
+        }
+        String firstHttpUrl = null;
+        for (String token : text.split("\\s+")) {
+            String lower = token.toLowerCase(Locale.ROOT);
+            if (lower.contains(AP_SUBSCRIBE_DEEPLINK)) {
+                return token; // deep link wins regardless of position
+            }
+            if (firstHttpUrl == null && (lower.startsWith("http://") || lower.startsWith("https://"))) {
+                firstHttpUrl = token;
+            }
+        }
+        return firstHttpUrl != null ? firstHttpUrl : text.trim();
+    }
+
     public static boolean isDeeplinkWithoutUrl(String url) {
         return url.toLowerCase(Locale.ROOT).contains(AP_SUBSCRIBE_DEEPLINK)
                 && Uri.parse(url).getQueryParameter("url") == null;

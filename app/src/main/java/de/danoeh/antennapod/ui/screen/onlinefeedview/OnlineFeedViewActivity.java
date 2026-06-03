@@ -108,7 +108,9 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         if (getIntent().hasExtra(ARG_FEEDURL)) {
             feedUrl = getIntent().getStringExtra(ARG_FEEDURL);
         } else if (TextUtils.equals(getIntent().getAction(), Intent.ACTION_SEND)) {
-            feedUrl = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+            // Shared text/plain is rarely a bare URL (e.g. TrimPlayer's own social
+            // message, or "Title <url>" from another app), so pull the URL out.
+            feedUrl = UrlChecker.findFirstUrl(getIntent().getStringExtra(Intent.EXTRA_TEXT));
         } else if (TextUtils.equals(getIntent().getAction(), Intent.ACTION_VIEW)) {
             feedUrl = getIntent().getDataString();
         }

@@ -11,6 +11,7 @@ import androidx.core.content.FileProvider;
 
 import de.danoeh.antennapod.ui.common.Converter;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import de.danoeh.antennapod.R;
@@ -85,7 +86,37 @@ public class ShareUtils {
                 text += "#t=" + item.getMedia().getPosition() / 1000;
             }
         }
+
+        // TrimPlayer branding + a subscribe deep link so a recipient can open the
+        // show straight in TrimPlayer. The link round-trips through
+        // OnlineFeedViewActivity, which extracts it from the shared text again.
+        String deepLink = trimPlayerDeepLink(item);
+        if (deepLink != null) {
+            text += "\n\n" + context.getResources().getString(R.string.share_dialog_trimplayer_branding) + "\n";
+            if (abbreviate && deepLink.length() > ABBREVIATE_MAX_LENGTH) {
+                text += deepLink.substring(0, ABBREVIATE_MAX_LENGTH) + "…";
+            } else {
+                text += deepLink;
+            }
+        }
         return text;
+    }
+
+    /**
+     * Builds a {@code https://trimplayer.com/deeplink/subscribe?url=…} link for the
+     * episode's podcast feed, or {@code null} if the feed URL is unknown. The feed
+     * URL is what lets the receiving TrimPlayer resolve and open the show.
+     */
+    private static String trimPlayerDeepLink(FeedItem item) {
+        if (item.getFeed() == null || item.getFeed().getDownloadUrl() == null) {
+            return null;
+        }
+        String feedUrl = item.getFeed().getDownloadUrl();
+        try {
+            return "https://trimplayer.com/deeplink/subscribe?url=" + URLEncoder.encode(feedUrl, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return "https://trimplayer.com/deeplink/subscribe?url=" + feedUrl;
+        }
     }
 
     public static void shareFeedItemFile(Context context, FeedMedia media) {
