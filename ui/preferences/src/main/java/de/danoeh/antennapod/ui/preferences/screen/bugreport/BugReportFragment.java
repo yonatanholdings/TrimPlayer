@@ -220,17 +220,17 @@ public class BugReportFragment extends AnimatedFragment {
                         }
                         viewBinding.sendFeedbackButton.setEnabled(true);
                         viewBinding.sendFeedbackButton.setText(R.string.feedback_send);
-                        // Include the reason in the snackbar so a network /
-                        // SSL / serialization failure can be diagnosed without
-                        // needing logcat. The base string already invites a
-                        // retry; the suffix names the cause.
-                        String msg = getString(R.string.feedback_send_failed);
+                        // AlertDialog instead of Snackbar so the exception
+                        // class name is fully readable. Snackbar truncates to
+                        // an ellipsis past ~2 lines when an action is present.
+                        String full = getString(R.string.feedback_send_failed);
                         if (reason != null && !reason.isEmpty()) {
-                            msg = msg + "\n(" + reason + ")";
+                            full = full + "\n\n" + reason;
                         }
-                        Snackbar.make(viewBinding.getRoot(), msg,
-                                Snackbar.LENGTH_INDEFINITE)
-                                .setAction(R.string.confirm_label, v -> {})
+                        new MaterialAlertDialogBuilder(requireContext())
+                                .setTitle(R.string.report_bug_title)
+                                .setMessage(full)
+                                .setPositiveButton(R.string.confirm_label, null)
                                 .show();
                     }
                 });
