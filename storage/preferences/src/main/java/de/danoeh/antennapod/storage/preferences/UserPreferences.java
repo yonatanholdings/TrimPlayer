@@ -1020,6 +1020,19 @@ public abstract class UserPreferences {
         prefs.edit().putLong(PREF_TRIM_LAST_UPLOADED_SKIP_EVENT_ID, id).apply();
     }
 
+    // Cached count of unread admin replies across all in-app feedback threads.
+    // Refreshed by TrimFeedbackClient.fetchThreads* whenever the report screen
+    // opens or the upload worker piggybacks a poll; drives the Settings badge.
+    public static final String PREF_TRIM_FEEDBACK_UNREAD = "prefTrimFeedbackUnreadCount";
+
+    public static int getFeedbackUnreadCount() {
+        return prefs.getInt(PREF_TRIM_FEEDBACK_UNREAD, 0);
+    }
+
+    public static void setFeedbackUnreadCount(int count) {
+        prefs.edit().putInt(PREF_TRIM_FEEDBACK_UNREAD, Math.max(0, count)).apply();
+    }
+
     // -----------------------------------------------------------------------
     // Pro entitlement (Phase 1, 2026-05-19). Cached locally so the UI can
     // render Pro state without waiting for /segments to come back. Source of

@@ -26,6 +26,7 @@ dependencies {
     implementation project(":event")
     implementation project(":net:common")
     implementation project(":net:sync:gpoddernet")
+    implementation project(":playback:service")
     implementation project(":storage:preferences")
     implementation project(":storage:importexport")
     implementation project(':system')

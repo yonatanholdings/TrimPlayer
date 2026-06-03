@@ -74,6 +74,23 @@ public class TrimClient {
         return api.reportSegment(request);
     }
 
+    /** Submit an in-app bug report / feature request / general feedback. The
+     *  backend opens a thread; replies come back via {@link #getFeedbackThreads}. */
+    public Call<FeedbackSubmitResponse> submitFeedback(FeedbackSubmitRequest request) {
+        return api.submitFeedback(request);
+    }
+
+    /** Poll every thread this install has opened, with its full message history.
+     *  Used by the in-app inbox and by the unread-count badge on Settings. */
+    public Call<FeedbackThreadsResponse> getFeedbackThreads(String clientId) {
+        return api.getFeedbackThreads(clientId);
+    }
+
+    /** Acknowledge dev replies on a thread so its unread counter resets. */
+    public Call<Void> markFeedbackThreadRead(long threadId, MarkReadRequest body) {
+        return api.markFeedbackThreadRead(threadId, body);
+    }
+
     public Call<JobStatusResponse> getJobStatus(String jobId) {
         return api.getJobStatus(jobId);
     }
@@ -99,6 +116,16 @@ public class TrimClient {
 
         @POST("segments/report")
         Call<SegmentReportResponse> reportSegment(@Body SegmentReportRequest request);
+
+        @POST("feedback")
+        Call<FeedbackSubmitResponse> submitFeedback(@Body FeedbackSubmitRequest request);
+
+        @GET("feedback/threads")
+        Call<FeedbackThreadsResponse> getFeedbackThreads(@Query("client_id") String clientId);
+
+        @POST("feedback/threads/{thread_id}/read")
+        Call<Void> markFeedbackThreadRead(@Path("thread_id") long threadId,
+                                          @Body MarkReadRequest body);
 
         @GET("job/{job_id}")
         Call<JobStatusResponse> getJobStatus(@Path("job_id") String jobId);
@@ -295,5 +322,57 @@ public class TrimClient {
         public List<String> shipped;           // bullet items, dev-curated
         public List<String> next;              // bullet items, dev-curated
         public String note;                    // optional short paragraph
+    }
+
+    // -----------------------------------------------------------------------
+    // In-app feedback (POST /feedback, GET /feedback/threads).
+    // Replaces the old copy-to-clipboard + external email flow.
+    // -----------------------------------------------------------------------
+
+    public static class FeedbackSubmitRequest {
+        public String client_id;
+        public String category;                // bug | feature | other
+        public String title;
+        public String body;
+        /** Optional device/app info blob the user opted to attach. Free-form
+         *  text — server stores it verbatim and never parses it. */
+        public String env_json;
+        /** Optional crash log the user opted to attach, if one is available. */
+        public String crash_log;
+    }
+
+    public static class FeedbackSubmitResponse {
+        public long thread_id;
+        public String status;                  // "received"
+    }
+
+    public static class FeedbackMessage {
+        public long id;
+        public String sender;                  // user | admin
+        public String body;
+        public String created_at;              // ISO-8601 UTC
+    }
+
+    public static class FeedbackThread {
+        public long id;
+        public String category;
+        public String title;
+        public String status;                  // open | resolved | closed
+        public int unread_for_user;
+        public String created_at;
+        public String updated_at;
+        public List<FeedbackMessage> messages;
+    }
+
+    public static class FeedbackThreadsResponse {
+        public List<FeedbackThread> threads;
+    }
+
+    public static class MarkReadRequest {
+        public String client_id;
+
+        public MarkReadRequest(String clientId) {
+            this.client_id = clientId;
+        }
     }
 }

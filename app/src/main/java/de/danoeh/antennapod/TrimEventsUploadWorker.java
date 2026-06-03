@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import de.danoeh.antennapod.net.common.TrimPrefetcher;
+import de.danoeh.antennapod.playback.service.trim.TrimFeedbackClient;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import java.io.IOException;
@@ -45,6 +46,12 @@ public class TrimEventsUploadWorker extends Worker {
         String url = baseUrl + "events";
         String clientId = UserPreferences.getOrCreateTrimClientId();
         OkHttpClient client = TrimPrefetcher.client();  // shared pool + X-Api-Key interceptor
+
+        // Piggyback a poll of the in-app feedback inbox so the unread badge
+        // on Settings > Send feedback stays fresh between visits. Failures
+        // are silent — the screen itself re-polls on open, and the badge
+        // just keeps showing the last known count until the next worker run.
+        TrimFeedbackClient.fetchThreadsSync(getApplicationContext());
 
         long highWater = UserPreferences.getLastUploadedSkipEventId();
         int batches = 0;

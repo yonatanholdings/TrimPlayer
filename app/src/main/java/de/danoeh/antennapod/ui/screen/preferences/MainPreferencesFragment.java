@@ -9,6 +9,7 @@ import com.bytehamster.lib.preferencesearch.SearchConfiguration;
 import com.bytehamster.lib.preferencesearch.SearchPreference;
 
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
 import de.danoeh.antennapod.ui.preferences.screen.about.AboutFragment;
 import de.danoeh.antennapod.ui.preferences.screen.bugreport.BugReportFragment;
@@ -37,6 +38,24 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
     public void onStart() {
         super.onStart();
         ((PreferenceActivity) getActivity()).getSupportActionBar().setTitle(R.string.settings_label);
+        refreshBugReportBadge();
+    }
+
+    /** Refresh the "Send feedback" row summary so unread dev replies are
+     *  visible without opening the screen. The unread count is cached locally
+     *  and refreshed by the upload worker / by the feedback screen itself. */
+    private void refreshBugReportBadge() {
+        Preference bugPref = findPreference(PREF_SEND_BUG_REPORT);
+        if (bugPref == null) {
+            return;
+        }
+        int unread = UserPreferences.getFeedbackUnreadCount();
+        if (unread > 0) {
+            bugPref.setSummary(getResources().getQuantityString(
+                    R.plurals.feedback_unread_summary, unread, unread));
+        } else {
+            bugPref.setSummary(null);
+        }
     }
 
     private void setupMainScreen() {

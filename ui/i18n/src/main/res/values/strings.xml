@@ -790,9 +790,9 @@
     <string name="pref_new_episodes_action_sum">Action to take for new episodes</string>
     <string name="episode_information">Episode information</string>
 
-    <!-- Report bug -->
-    <string name="report_bug_title">Report bug</string>
-    <string name="report_bug_message">Sorry to hear something isn’t working. Please copy the information below and send it to support so we can investigate.</string>
+    <!-- Report bug / send feedback -->
+    <string name="report_bug_title">Send feedback</string>
+    <string name="report_bug_message">Tell us what happened, what you wish worked differently, or anything else. We read every message and reply right here in the app.</string>
     <string name="report_bug_device_info_title">Device</string>
     <string name="report_bug_attrib_app_version">App version</string>
     <string name="report_bug_attrib_android_version">Android version</string>
@@ -801,6 +801,34 @@
     <string name="report_bug_crash_log_message">Created: %1$s.</string>
     <string name="report_bug_forum_title">Forum</string>
     <string name="report_bug_github_title">GitHub</string>
+
+    <!-- In-app feedback form -->
+    <string name="feedback_category_bug">Bug</string>
+    <string name="feedback_category_feature">Feature request</string>
+    <string name="feedback_category_other">Other</string>
+    <string name="feedback_title_hint">Short summary (e.g. "Skip-silence cuts the first word")</string>
+    <string name="feedback_body_hint">Describe what happened, what you expected, or what you\'d like to see.</string>
+    <string name="feedback_attach_device">Attach device info</string>
+    <string name="feedback_attach_crash">Attach last crash log</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_sent">Sent — we\'ll reply right here when we look at it.</string>
+    <string name="feedback_send_failed">Couldn\'t send right now. Check your connection and try again.</string>
+    <string name="feedback_body_required">Please describe the issue before sending.</string>
+
+    <!-- In-app feedback inbox -->
+    <string name="feedback_inbox_title">Your messages</string>
+    <string name="feedback_inbox_empty">No messages yet. Anything you send will show up here so you can follow the reply.</string>
+    <string name="feedback_status_open">Open</string>
+    <string name="feedback_status_resolved">Resolved</string>
+    <string name="feedback_status_closed">Closed</string>
+    <string name="feedback_new_reply">New reply</string>
+    <string name="feedback_sender_user">You</string>
+    <string name="feedback_sender_admin">TrimPlayer dev</string>
+    <string name="feedback_inbox_refreshing">Checking for replies…</string>
+    <plurals name="feedback_unread_summary">
+        <item quantity="one">%d new reply</item>
+        <item quantity="other">%d new replies</item>
+    </plurals>
 
     <!-- About screen -->
     <string name="about_pref">About</string>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <LinearLayout
+            android:id="@+id/threadHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground">
+
+            <TextView
+                android:id="@+id/threadTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                tools:text="Skip-silence cuts the first word" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/threadStatusChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:clickable="false"
+                android:focusable="false"
+                style="@style/Widget.Material3.Chip.Assist"
+                tools:text="Open" />
+
+            <TextView
+                android:id="@+id/threadUnreadDot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="11sp"
+                android:background="@drawable/feedback_unread_pill"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:text="@string/feedback_new_reply" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/threadMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp"
+            tools:text="Bug · 2 messages · updated 3 min ago" />
+
+        <LinearLayout
+            android:id="@+id/threadMessageList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

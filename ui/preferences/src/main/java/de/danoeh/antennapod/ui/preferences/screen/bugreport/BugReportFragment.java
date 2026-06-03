@@ -2,13 +2,13 @@ package de.danoeh.antennapod.ui.preferences.screen.bugreport;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,16 +23,30 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
+import de.danoeh.antennapod.playback.service.trim.TrimClient;
+import de.danoeh.antennapod.playback.service.trim.TrimFeedbackClient;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.common.AnimatedFragment;
-import de.danoeh.antennapod.ui.common.ClipboardUtils;
 import de.danoeh.antennapod.ui.preferences.R;
 import de.danoeh.antennapod.ui.preferences.databinding.BugReportFragmentBinding;
+import de.danoeh.antennapod.ui.preferences.databinding.FeedbackMessageBubbleBinding;
+import de.danoeh.antennapod.ui.preferences.databinding.FeedbackThreadItemBinding;
 
 /**
- * UI fragment to allow the user to submit a bug report via the TrimPlayer GitHub page.
+ * Send-feedback / bug-report screen.
+ *
+ * <p>The user picks a category (bug / feature request / other), writes a title
+ * + body, optionally attaches device info + the latest crash log, and the form
+ * POSTs to the backend's /feedback endpoint. Replies from the dev are polled
+ * via /feedback/threads and surfaced above the form as an inbox.
+ *
+ * <p>The old copy-to-clipboard / "open in GitHub" affordances are gone — the
+ * thread itself is the conversation channel now. The overflow menu still
+ * offers "Export logs" so a user (or support) can grab a full logcat dump.
  */
 public class BugReportFragment extends AnimatedFragment {
 
@@ -65,36 +79,13 @@ public class BugReportFragment extends AnimatedFragment {
         setupContextMenu();
 
         viewModel.getState().observe(getViewLifecycleOwner(), uiState -> {
-            refreshEnvironmentInfo(uiState.getEnvironmentInfo());
-            refreshCrashLogInfo(uiState);
-
+            bindAttachments(uiState);
             startPostponedEnterTransition();
         });
 
-        viewBinding.expandCrashLogButton.setOnClickListener(v -> {
-            switch (viewModel.requireCurrentState().getCrashLogState()) {
-                case SHOWN_COLLAPSED:
-                    viewModel.setCrashLogState(BugReportViewModel.UiState.CrashLogState.SHOWN_EXPANDED);
-                    break;
-                case SHOWN_EXPANDED:
-                    viewModel.setCrashLogState(BugReportViewModel.UiState.CrashLogState.SHOWN_COLLAPSED);
-                    break;
-                default:    // UNAVAILABLE
-                    break;
-            }
-        });
-        viewBinding.attribAppVersionLabel.setOnClickListener(v ->
-                ClipboardUtils.copyText((TextView) v, R.string.report_bug_attrib_app_version));
-        viewBinding.attribAndroidVersionLabel.setOnClickListener(v ->
-                ClipboardUtils.copyText((TextView) v, R.string.report_bug_attrib_android_version));
-        viewBinding.attribDeviceNameLabel.setOnClickListener(v ->
-                ClipboardUtils.copyText((TextView) v, R.string.report_bug_attrib_device_name));
-        viewBinding.crashLogContentText.setOnClickListener(v ->
-                ClipboardUtils.copyText(v, R.string.report_bug_title,
-                        viewModel.requireCurrentState().getCrashInfoWithMarkup()));
-        viewBinding.copyToClipboardButton.setOnClickListener(v ->
-                ClipboardUtils.copyText(v, R.string.report_bug_title,
-                        viewModel.requireCurrentState().getBugReportWithMarkup()));
+        viewBinding.sendFeedbackButton.setOnClickListener(v -> submitForm());
+
+        refreshInbox();
     }
 
     @Override
@@ -105,37 +96,279 @@ public class BugReportFragment extends AnimatedFragment {
                 .setTitle(R.string.report_bug_title);
     }
 
-    private void refreshEnvironmentInfo(@NonNull BugReportViewModel.EnvironmentInfo info) {
-        viewBinding.attribAppVersionLabel.setText(info.applicationVersion);
-        viewBinding.attribAndroidVersionLabel.setText(info.androidVersion);
-        viewBinding.attribDeviceNameLabel.setText(info.getFriendlyDeviceName());
+    // ---------------------------------------------------------------------
+    // Attachments — display previews of what the toggles will include.
+    // ---------------------------------------------------------------------
+
+    private void bindAttachments(@NonNull BugReportViewModel.UiState uiState) {
+        viewBinding.devicePreview.setText(uiState.getEnvironmentInfoWithMarkup());
+
+        BugReportViewModel.CrashLogInfo crash = uiState.getCrashLogInfo();
+        if (crash.isAvailable()) {
+            String createdAt = uiState.getFormattedCrashLogTimestamp();
+            viewBinding.attachCrashSwitch.setText(
+                    getString(R.string.feedback_attach_crash) + " · " + createdAt);
+            viewBinding.attachCrashSwitch.setVisibility(View.VISIBLE);
+            viewBinding.attachCrashSwitch.setChecked(true);
+            viewBinding.crashPreview.setText(crash.getContent());
+            viewBinding.crashPreview.setVisibility(View.VISIBLE);
+            viewBinding.attachCrashSwitch.setOnCheckedChangeListener((b, checked) ->
+                    viewBinding.crashPreview.setVisibility(checked ? View.VISIBLE : View.GONE));
+        } else {
+            viewBinding.attachCrashSwitch.setVisibility(View.GONE);
+            viewBinding.crashPreview.setVisibility(View.GONE);
+        }
+
+        viewBinding.attachDeviceSwitch.setOnCheckedChangeListener((b, checked) ->
+                viewBinding.devicePreview.setVisibility(checked ? View.VISIBLE : View.GONE));
     }
 
-    private void refreshCrashLogInfo(@NonNull BugReportViewModel.UiState uiState) {
-        BugReportViewModel.UiState.CrashLogState state = uiState.getCrashLogState();
-        BugReportViewModel.CrashLogInfo crashLogInfo = uiState.getCrashLogInfo();
+    // ---------------------------------------------------------------------
+    // Form submission.
+    // ---------------------------------------------------------------------
 
-        switch (state) {
-            case SHOWN_COLLAPSED:
-            case SHOWN_EXPANDED:
-                viewBinding.crashLogToggleGroup.setVisibility(View.VISIBLE);
-                viewBinding.crashLogContentText.setText(crashLogInfo.getContent());
-                viewBinding.crashLogMessageLabel.setText(getString(
-                        R.string.report_bug_crash_log_message, uiState.getFormattedCrashLogTimestamp()));
+    private String selectedCategory() {
+        int checkedId = viewBinding.categoryChipGroup.getCheckedChipId();
+        if (checkedId == R.id.chipFeature) {
+            return "feature";
+        } else if (checkedId == R.id.chipOther) {
+            return "other";
+        }
+        return "bug";
+    }
 
-                if (state == BugReportViewModel.UiState.CrashLogState.SHOWN_COLLAPSED) {
-                    viewBinding.expandCrashLogButton.setText(R.string.general_expand_button);
-                    viewBinding.crashLogContentText.setMaxLines(4);
-                } else {
-                    viewBinding.expandCrashLogButton.setText(R.string.general_collapse_button);
-                    viewBinding.crashLogContentText.setMaxLines(Integer.MAX_VALUE);
-                }
-                break;
-            default:    // UNAVAILABLE
-                viewBinding.crashLogToggleGroup.setVisibility(View.GONE);
-                break;
+    private void submitForm() {
+        BugReportViewModel.UiState uiState = viewModel.requireCurrentState();
+        String title = viewBinding.feedbackTitleInput.getText() == null ? ""
+                : viewBinding.feedbackTitleInput.getText().toString().trim();
+        String body = viewBinding.feedbackBodyInput.getText() == null ? ""
+                : viewBinding.feedbackBodyInput.getText().toString().trim();
+        if (body.isEmpty()) {
+            viewBinding.feedbackBodyInput.setError(getString(R.string.feedback_body_required));
+            viewBinding.feedbackBodyInput.requestFocus();
+            return;
+        }
+        if (title.isEmpty()) {
+            // Fall back to first line of the body so the inbox header isn't blank.
+            int nl = body.indexOf('\n');
+            title = (nl < 0 ? body : body.substring(0, nl)).trim();
+            if (title.length() > 80) {
+                title = title.substring(0, 80);
+            }
+        }
+
+        String envJson = viewBinding.attachDeviceSwitch.isChecked()
+                ? uiState.getEnvironmentInfoWithMarkup() : null;
+        String crashLog = (viewBinding.attachCrashSwitch.getVisibility() == View.VISIBLE
+                && viewBinding.attachCrashSwitch.isChecked())
+                ? uiState.getCrashInfoWithMarkup() : null;
+
+        viewBinding.sendFeedbackButton.setEnabled(false);
+        TrimFeedbackClient.submit(requireContext().getApplicationContext(),
+                selectedCategory(), title, body, envJson, crashLog,
+                new TrimFeedbackClient.SubmitCallback() {
+                    @Override
+                    public void onSuccess(long threadId) {
+                        if (viewBinding == null) {
+                            return;
+                        }
+                        viewBinding.feedbackTitleInput.setText("");
+                        viewBinding.feedbackBodyInput.setText("");
+                        viewBinding.sendFeedbackButton.setEnabled(true);
+                        Snackbar.make(viewBinding.getRoot(), R.string.feedback_sent,
+                                Snackbar.LENGTH_LONG).show();
+                        refreshInbox();
+                    }
+
+                    @Override
+                    public void onFailure(@Nullable String reason) {
+                        if (viewBinding == null) {
+                            return;
+                        }
+                        viewBinding.sendFeedbackButton.setEnabled(true);
+                        Snackbar.make(viewBinding.getRoot(), R.string.feedback_send_failed,
+                                Snackbar.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    // ---------------------------------------------------------------------
+    // Inbox — polls /feedback/threads and renders one card per thread.
+    // ---------------------------------------------------------------------
+
+    private void refreshInbox() {
+        viewBinding.inboxProgress.setVisibility(View.VISIBLE);
+        viewBinding.inboxEmpty.setVisibility(View.GONE);
+        TrimFeedbackClient.fetchThreads(requireContext().getApplicationContext(),
+                new TrimFeedbackClient.FetchCallback() {
+                    @Override
+                    public void onThreads(@NonNull List<TrimClient.FeedbackThread> threads) {
+                        if (viewBinding == null) {
+                            return;
+                        }
+                        viewBinding.inboxProgress.setVisibility(View.GONE);
+                        renderThreads(threads);
+                    }
+
+                    @Override
+                    public void onFailure() {
+                        if (viewBinding == null) {
+                            return;
+                        }
+                        viewBinding.inboxProgress.setVisibility(View.GONE);
+                        // Leave whatever was there alone; just hide the spinner.
+                        if (viewBinding.inboxThreadList.getChildCount() == 0) {
+                            viewBinding.inboxEmpty.setVisibility(View.VISIBLE);
+                        }
+                    }
+                });
+    }
+
+    private void renderThreads(@NonNull List<TrimClient.FeedbackThread> threads) {
+        viewBinding.inboxThreadList.removeAllViews();
+        if (threads.isEmpty()) {
+            viewBinding.inboxEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+        viewBinding.inboxEmpty.setVisibility(View.GONE);
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
+        for (TrimClient.FeedbackThread t : threads) {
+            FeedbackThreadItemBinding item = FeedbackThreadItemBinding.inflate(
+                    inflater, viewBinding.inboxThreadList, false);
+            bindThreadItem(item, t, inflater);
+            viewBinding.inboxThreadList.addView(item.getRoot());
         }
     }
+
+    private void bindThreadItem(@NonNull FeedbackThreadItemBinding item,
+                                @NonNull TrimClient.FeedbackThread thread,
+                                @NonNull LayoutInflater inflater) {
+        item.threadTitle.setText(thread.title);
+        item.threadStatusChip.setText(statusLabel(thread.status));
+        item.threadMeta.setText(formatMeta(thread));
+        if (thread.unread_for_user > 0) {
+            item.threadUnreadDot.setText(R.string.feedback_new_reply);
+            item.threadUnreadDot.setVisibility(View.VISIBLE);
+        } else {
+            item.threadUnreadDot.setVisibility(View.GONE);
+        }
+
+        // Render all messages once so the toggle is a pure visibility swap;
+        // threads are short, so the cost of inflating up-front is negligible.
+        item.threadMessageList.removeAllViews();
+        if (thread.messages != null) {
+            for (TrimClient.FeedbackMessage m : thread.messages) {
+                FeedbackMessageBubbleBinding bubble = FeedbackMessageBubbleBinding.inflate(
+                        inflater, item.threadMessageList, false);
+                bubble.messageSender.setText(senderLine(m));
+                bubble.messageBody.setText(m.body);
+                item.threadMessageList.addView(bubble.getRoot());
+            }
+        }
+
+        item.threadHeader.setOnClickListener(v -> {
+            boolean expanded = item.threadMessageList.getVisibility() == View.VISIBLE;
+            item.threadMessageList.setVisibility(expanded ? View.GONE : View.VISIBLE);
+            if (!expanded && thread.unread_for_user > 0) {
+                // Optimistic: clear the badge locally; the server-side ack
+                // happens fire-and-forget and the next poll reconciles.
+                item.threadUnreadDot.setVisibility(View.GONE);
+                int currentUnread = UserPreferences.getFeedbackUnreadCount();
+                UserPreferences.setFeedbackUnreadCount(currentUnread - thread.unread_for_user);
+                thread.unread_for_user = 0;
+                TrimFeedbackClient.markRead(requireContext().getApplicationContext(), thread.id);
+            }
+        });
+    }
+
+    private String statusLabel(@Nullable String status) {
+        if ("resolved".equals(status)) {
+            return getString(R.string.feedback_status_resolved);
+        }
+        if ("closed".equals(status)) {
+            return getString(R.string.feedback_status_closed);
+        }
+        return getString(R.string.feedback_status_open);
+    }
+
+    private String senderLine(@NonNull TrimClient.FeedbackMessage m) {
+        String who = "admin".equals(m.sender)
+                ? getString(R.string.feedback_sender_admin)
+                : getString(R.string.feedback_sender_user);
+        long when = parseIsoMs(m.created_at);
+        if (when <= 0) {
+            return who;
+        }
+        CharSequence rel = DateUtils.getRelativeTimeSpanString(
+                when, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);
+        return who + " · " + rel;
+    }
+
+    private String formatMeta(@NonNull TrimClient.FeedbackThread t) {
+        int msgs = t.messages == null ? 0 : t.messages.size();
+        String category = categoryLabel(t.category);
+        long updated = parseIsoMs(t.updated_at);
+        String when = updated > 0
+                ? DateUtils.getRelativeTimeSpanString(
+                        updated, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+                : "";
+        return when.isEmpty()
+                ? String.format(Locale.getDefault(), "%s · %d", category, msgs)
+                : String.format(Locale.getDefault(), "%s · %d · %s", category, msgs, when);
+    }
+
+    private String categoryLabel(@Nullable String category) {
+        if ("feature".equals(category)) {
+            return getString(R.string.feedback_category_feature);
+        }
+        if ("other".equals(category)) {
+            return getString(R.string.feedback_category_other);
+        }
+        return getString(R.string.feedback_category_bug);
+    }
+
+    /** Best-effort ISO-8601 → epoch-ms. Returns 0 when the input isn't parseable
+     *  so callers fall back to a relative-time-free label. Uses SimpleDateFormat
+     *  to stay under minSdk 23 (java.time.Instant.parse needs API 26). */
+    private static long parseIsoMs(@Nullable String iso) {
+        if (iso == null || iso.isEmpty()) {
+            return 0L;
+        }
+        // pg serializes as "2026-06-03T12:34:56.789012+00:00" — drop the
+        // sub-second precision past millis (java.text can't take 6-digit
+        // fractional seconds) and normalize the timezone for SDF.
+        String normalized = iso;
+        int dot = normalized.indexOf('.');
+        if (dot >= 0) {
+            int end = dot + 1;
+            while (end < normalized.length() && Character.isDigit(normalized.charAt(end))) {
+                end++;
+            }
+            // Keep up to 3 fractional digits, drop the rest.
+            int keep = Math.min(end, dot + 4);
+            normalized = normalized.substring(0, keep) + normalized.substring(end);
+        }
+        // Append Z for trailing "+00:00" → SDF "Z" wants "+0000" style; just
+        // try the simplest "yyyy-MM-dd'T'HH:mm:ss.SSSXXX" first.
+        String[] patterns = {
+                "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+                "yyyy-MM-dd'T'HH:mm:ssXXX",
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        };
+        for (String p : patterns) {
+            try {
+                java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat(p, Locale.US);
+                return fmt.parse(normalized).getTime();
+            } catch (Exception ignored) {
+                // Try the next pattern.
+            }
+        }
+        return 0L;
+    }
+
+    // ---------------------------------------------------------------------
+    // Overflow menu (Export logs).
+    // ---------------------------------------------------------------------
 
     private void setupContextMenu() {
         requireActivity().addMenuProvider(new MenuProvider() {
@@ -170,7 +403,6 @@ public class BugReportFragment extends AnimatedFragment {
             String cmd = "logcat -d -f " + filename.getAbsolutePath();
             Runtime.getRuntime().exec(cmd);
 
-            //share file
             try {
                 String authority = getString(R.string.provider_authority);
                 Uri fileUri = FileProvider.getUriForFile(requireContext(), authority, filename);
@@ -180,14 +412,13 @@ public class BugReportFragment extends AnimatedFragment {
                         .addStream(fileUri)
                         .setChooserTitle(R.string.share_file_label)
                         .startChooser();
-
             } catch (Exception e) {
                 e.printStackTrace();
-                Snackbar.make(viewBinding.getRoot(), R.string.log_file_share_exception, Snackbar.LENGTH_LONG).show();
+                Snackbar.make(viewBinding.getRoot(), R.string.log_file_share_exception,
+                        Snackbar.LENGTH_LONG).show();
             }
         } catch (IOException e) {
             e.printStackTrace();
-
             Snackbar.make(viewBinding.getRoot(), e.getMessage(), Snackbar.LENGTH_LONG).show();
         }
     }
