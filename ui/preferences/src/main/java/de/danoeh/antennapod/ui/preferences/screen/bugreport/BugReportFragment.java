@@ -3,6 +3,7 @@ package de.danoeh.antennapod.ui.preferences.screen.bugreport;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -49,6 +50,7 @@ import de.danoeh.antennapod.ui.preferences.databinding.FeedbackThreadItemBinding
  * offers "Export logs" so a user (or support) can grab a full logcat dump.
  */
 public class BugReportFragment extends AnimatedFragment {
+    private static final String TAG = "BugReportFragment";
 
     private BugReportFragmentBinding viewBinding;
     private BugReportViewModel viewModel;
@@ -138,14 +140,37 @@ public class BugReportFragment extends AnimatedFragment {
     }
 
     private void submitForm() {
-        BugReportViewModel.UiState uiState = viewModel.requireCurrentState();
+        Log.d(TAG, "submitForm: click received");
+
+        // ViewModel does file I/O on a background thread; on a slow boot the
+        // user can land on Send before the state arrives. Don't crash — show a
+        // snackbar so they know to retry.
+        BugReportViewModel.UiState uiState = viewModel.getState().getValue();
+        if (uiState == null) {
+            Log.w(TAG, "submitForm: uiState not loaded yet");
+            Snackbar.make(viewBinding.getRoot(),
+                    R.string.feedback_inbox_refreshing, Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
         String title = viewBinding.feedbackTitleInput.getText() == null ? ""
                 : viewBinding.feedbackTitleInput.getText().toString().trim();
         String body = viewBinding.feedbackBodyInput.getText() == null ? ""
                 : viewBinding.feedbackBodyInput.getText().toString().trim();
+
+        // Clear any stale error first so a successful submit doesn't leave the
+        // red underline behind.
+        viewBinding.feedbackBodyLayout.setError(null);
+
         if (body.isEmpty()) {
-            viewBinding.feedbackBodyInput.setError(getString(R.string.feedback_body_required));
+            Log.d(TAG, "submitForm: empty body, prompting user");
+            // setError on the layout (not the inner EditText) — the inner one
+            // shows a tiny tooltip that's easy to miss; the layout shows a red
+            // helper line below the field. Snackbar is the belt-and-braces.
+            viewBinding.feedbackBodyLayout.setError(getString(R.string.feedback_body_required));
             viewBinding.feedbackBodyInput.requestFocus();
+            Snackbar.make(viewBinding.getRoot(),
+                    R.string.feedback_body_required, Snackbar.LENGTH_SHORT).show();
             return;
         }
         if (title.isEmpty()) {
@@ -163,18 +188,25 @@ public class BugReportFragment extends AnimatedFragment {
                 && viewBinding.attachCrashSwitch.isChecked())
                 ? uiState.getCrashInfoWithMarkup() : null;
 
+        String category = selectedCategory();
+        Log.d(TAG, "submitForm: category=" + category + " bodyLen=" + body.length()
+                + " envAttached=" + (envJson != null) + " crashAttached=" + (crashLog != null));
+
         viewBinding.sendFeedbackButton.setEnabled(false);
+        viewBinding.sendFeedbackButton.setText(R.string.feedback_inbox_refreshing);
         TrimFeedbackClient.submit(requireContext().getApplicationContext(),
-                selectedCategory(), title, body, envJson, crashLog,
+                category, title, body, envJson, crashLog,
                 new TrimFeedbackClient.SubmitCallback() {
                     @Override
                     public void onSuccess(long threadId) {
+                        Log.d(TAG, "submitForm: thread=" + threadId);
                         if (viewBinding == null) {
                             return;
                         }
                         viewBinding.feedbackTitleInput.setText("");
                         viewBinding.feedbackBodyInput.setText("");
                         viewBinding.sendFeedbackButton.setEnabled(true);
+                        viewBinding.sendFeedbackButton.setText(R.string.feedback_send);
                         Snackbar.make(viewBinding.getRoot(), R.string.feedback_sent,
                                 Snackbar.LENGTH_LONG).show();
                         refreshInbox();
@@ -182,10 +214,12 @@ public class BugReportFragment extends AnimatedFragment {
 
                     @Override
                     public void onFailure(@Nullable String reason) {
+                        Log.w(TAG, "submitForm: failed: " + reason);
                         if (viewBinding == null) {
                             return;
                         }
                         viewBinding.sendFeedbackButton.setEnabled(true);
+                        viewBinding.sendFeedbackButton.setText(R.string.feedback_send);
                         Snackbar.make(viewBinding.getRoot(), R.string.feedback_send_failed,
                                 Snackbar.LENGTH_LONG).show();
                     }
