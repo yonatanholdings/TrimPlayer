@@ -220,8 +220,18 @@ public class BugReportFragment extends AnimatedFragment {
                         }
                         viewBinding.sendFeedbackButton.setEnabled(true);
                         viewBinding.sendFeedbackButton.setText(R.string.feedback_send);
-                        Snackbar.make(viewBinding.getRoot(), R.string.feedback_send_failed,
-                                Snackbar.LENGTH_LONG).show();
+                        // Include the reason in the snackbar so a network /
+                        // SSL / serialization failure can be diagnosed without
+                        // needing logcat. The base string already invites a
+                        // retry; the suffix names the cause.
+                        String msg = getString(R.string.feedback_send_failed);
+                        if (reason != null && !reason.isEmpty()) {
+                            msg = msg + "\n(" + reason + ")";
+                        }
+                        Snackbar.make(viewBinding.getRoot(), msg,
+                                Snackbar.LENGTH_INDEFINITE)
+                                .setAction(R.string.confirm_label, v -> {})
+                                .show();
                     }
                 });
     }

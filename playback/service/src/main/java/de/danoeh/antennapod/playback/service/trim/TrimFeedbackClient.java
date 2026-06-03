@@ -76,8 +76,15 @@ public final class TrimFeedbackClient {
 
                     @Override
                     public void onFailure(Call<TrimClient.FeedbackSubmitResponse> call, Throwable t) {
-                        Log.w(TAG, "Feedback submit failed: " + t.getMessage());
-                        callback.onFailure(t.getMessage());
+                        // t.getMessage() is null for many low-level exceptions
+                        // (SSL, socket reset). Bubble the class name too so the
+                        // snackbar tells the user something useful.
+                        String msg = t.getClass().getSimpleName();
+                        if (t.getMessage() != null) {
+                            msg = msg + ": " + t.getMessage();
+                        }
+                        Log.w(TAG, "Feedback submit failed: " + msg, t);
+                        callback.onFailure(msg);
                     }
                 });
     }
