@@ -932,11 +932,24 @@ public abstract class UserPreferences {
     }
 
     public static final String PREF_TRIM_SERVER_URL = "prefTrimServerUrl";
+    public static final String DEFAULT_TRIM_SERVER_URL = "https://api.trimplayer.com/api/v1/";
+    /** The XML preference's defaultValue prior to commit 6dad0f4a8 was the
+     *  emulator-to-host loopback, which AndroidX persists to SharedPreferences
+     *  the first time the Downloads preference screen is shown. Real-device
+     *  installs that opened that screen got the bad URL stuck and never reach
+     *  the backend. Rewrite that exact stuck value on read so existing installs
+     *  self-heal on next launch without a manual pref edit or app-data wipe. */
+    private static final String LEGACY_EMULATOR_TRIM_SERVER_URL = "http://10.0.2.2:8000/api/v1/";
 
     public static String getTrimServerUrl() {
-        String url = prefs.getString(PREF_TRIM_SERVER_URL, "https://api.trimplayer.com/api/v1/");
-        if (url == null || url.trim().isEmpty()) {
-            return "https://api.trimplayer.com/api/v1/";
+        String url = prefs.getString(PREF_TRIM_SERVER_URL, DEFAULT_TRIM_SERVER_URL);
+        if (url == null || url.trim().isEmpty()
+                || LEGACY_EMULATOR_TRIM_SERVER_URL.equals(url.trim())) {
+            // Repersist so the Downloads preference screen also shows the
+            // corrected value — leaving the pref alone would let it show the
+            // bad URL next time the user opens the dialog.
+            setTrimServerUrl(DEFAULT_TRIM_SERVER_URL);
+            return DEFAULT_TRIM_SERVER_URL;
         }
         return url.endsWith("/") ? url : url + "/";
     }
