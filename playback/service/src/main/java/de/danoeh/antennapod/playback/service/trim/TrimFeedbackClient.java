@@ -117,6 +117,38 @@ public final class TrimFeedbackClient {
                 });
     }
 
+    public interface DeleteCallback {
+        @MainThread void onDeleted();
+
+        @MainThread void onFailure();
+    }
+
+    /** Soft-delete a thread from the inbox. The card-removal animation in the
+     *  UI runs in the success callback; on failure we surface a snackbar so
+     *  the user can retry instead of being left with a half-disappeared card. */
+    public static void deleteThread(@NonNull Context ctx, long threadId,
+                                    @NonNull DeleteCallback callback) {
+        String clientId = UserPreferences.getOrCreateTrimClientId();
+        TrimClient.getInstance().deleteFeedbackThread(threadId, clientId).enqueue(
+                new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        if (response.isSuccessful()) {
+                            callback.onDeleted();
+                        } else {
+                            Log.w(TAG, "deleteThread rejected: " + response.code());
+                            callback.onFailure();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Log.w(TAG, "deleteThread failed: " + t.getMessage());
+                        callback.onFailure();
+                    }
+                });
+    }
+
     /** Fire-and-forget mark-read. The cached unread count is decremented on
      *  the next successful fetch — no need to optimistically adjust it here. */
     public static void markRead(@NonNull Context ctx, long threadId) {

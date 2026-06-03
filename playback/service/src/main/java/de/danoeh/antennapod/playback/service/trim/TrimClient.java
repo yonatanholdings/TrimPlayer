@@ -6,6 +6,7 @@ import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
@@ -91,6 +92,12 @@ public class TrimClient {
         return api.markFeedbackThreadRead(threadId, body);
     }
 
+    /** Soft-delete a thread from the user's inbox. The admin queue still sees
+     *  it; only the user-facing list filters it out. Idempotent on the server. */
+    public Call<Void> deleteFeedbackThread(long threadId, String clientId) {
+        return api.deleteFeedbackThread(threadId, clientId);
+    }
+
     public Call<JobStatusResponse> getJobStatus(String jobId) {
         return api.getJobStatus(jobId);
     }
@@ -126,6 +133,10 @@ public class TrimClient {
         @POST("feedback/threads/{thread_id}/read")
         Call<Void> markFeedbackThreadRead(@Path("thread_id") long threadId,
                                           @Body MarkReadRequest body);
+
+        @DELETE("feedback/threads/{thread_id}")
+        Call<Void> deleteFeedbackThread(@Path("thread_id") long threadId,
+                                        @Query("client_id") String clientId);
 
         @GET("job/{job_id}")
         Call<JobStatusResponse> getJobStatus(@Path("job_id") String jobId);

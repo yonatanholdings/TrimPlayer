@@ -390,7 +390,11 @@ public class BugReportFragment extends AnimatedFragment {
 
         item.threadHeader.setOnClickListener(v -> {
             boolean expanded = item.threadMessageList.getVisibility() == View.VISIBLE;
-            item.threadMessageList.setVisibility(expanded ? View.GONE : View.VISIBLE);
+            int next = expanded ? View.GONE : View.VISIBLE;
+            item.threadMessageList.setVisibility(next);
+            // Delete button only appears when the thread is open, so the
+            // inbox doesn't shout "delete" at the user for every collapsed row.
+            item.threadDeleteButton.setVisibility(next);
             if (!expanded && thread.unread_for_user > 0) {
                 // Optimistic: clear the badge locally; the server-side ack
                 // happens fire-and-forget and the next poll reconciles.
@@ -401,6 +405,60 @@ public class BugReportFragment extends AnimatedFragment {
                 TrimFeedbackClient.markRead(requireContext().getApplicationContext(), thread.id);
             }
         });
+
+        item.threadDeleteButton.setOnClickListener(v ->
+                confirmAndDelete(item.getRoot(), thread));
+    }
+
+    /** Two-step delete: confirmation dialog, then optimistic card removal
+     *  with a fade-out while the network call runs. If the request fails the
+     *  card is restored and a snackbar invites a retry. */
+    private void confirmAndDelete(@NonNull View card,
+                                  @NonNull TrimClient.FeedbackThread thread) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.feedback_delete_confirm_title)
+                .setMessage(R.string.feedback_delete_confirm_message)
+                .setNegativeButton(R.string.cancel_label, null)
+                .setPositiveButton(R.string.feedback_delete_confirm_button,
+                        (dialog, which) -> performDelete(card, thread))
+                .show();
+    }
+
+    private void performDelete(@NonNull View card,
+                               @NonNull TrimClient.FeedbackThread thread) {
+        // Fade the card out optimistically so the tap feels instant; we still
+        // wait for the server before removing it from the layout so a failure
+        // can restore the view in place.
+        card.animate().alpha(0.4f).setDuration(150).start();
+        TrimFeedbackClient.deleteThread(requireContext().getApplicationContext(),
+                thread.id, new TrimFeedbackClient.DeleteCallback() {
+                    @Override
+                    public void onDeleted() {
+                        if (viewBinding == null) {
+                            return;
+                        }
+                        ViewGroup parent = (ViewGroup) card.getParent();
+                        if (parent != null) {
+                            parent.removeView(card);
+                        }
+                        // If that was the last thread, swap to the empty state.
+                        if (viewBinding.inboxThreadList.getChildCount() == 0) {
+                            viewBinding.inboxHeaderRow.setVisibility(View.GONE);
+                            viewBinding.inboxBottomGap.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure() {
+                        if (viewBinding == null) {
+                            return;
+                        }
+                        card.animate().alpha(1f).setDuration(150).start();
+                        Snackbar.make(viewBinding.getRoot(),
+                                R.string.feedback_delete_failed,
+                                Snackbar.LENGTH_LONG).show();
+                    }
+                });
     }
 
     /** Render one message as either a user (right, primary tint) bubble or a

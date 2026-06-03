@@ -836,6 +836,11 @@
     <string name="feedback_sender_user">You</string>
     <string name="feedback_sender_admin">TrimPlayer team</string>
     <string name="feedback_inbox_refreshing">Checking for replies…</string>
+    <string name="feedback_delete_thread">Delete this conversation</string>
+    <string name="feedback_delete_confirm_title">Delete this conversation?</string>
+    <string name="feedback_delete_confirm_message">It\'ll disappear from your inbox. We still keep your original message in case it helps us improve.</string>
+    <string name="feedback_delete_confirm_button">Delete</string>
+    <string name="feedback_delete_failed">Couldn\'t delete just now. Check your connection and try again.</string>
     <plurals name="feedback_unread_summary">
         <item quantity="one">%d new reply</item>
         <item quantity="other">%d new replies</item>

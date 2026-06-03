@@ -105,6 +105,22 @@
                 android:visibility="gone"
                 tools:visibility="visible" />
 
+            <!-- Destructive action — only shown when the thread is expanded
+                 so the inbox stays calm at a glance. Themed as a borderless
+                 text button in the error tint so it reads as "this removes
+                 something" without shouting from the list. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/threadDeleteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/feedback_delete_thread"
+                android:textColor="?attr/colorError"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                style="@style/Widget.Material3.Button.TextButton" />
+
         </LinearLayout>
 
     </LinearLayout>
