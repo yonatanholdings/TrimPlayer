@@ -58,7 +58,7 @@
                 android:key="prefTrimServerUrl"
                 android:title="@string/trim_server_url_title"
                 android:summary="@string/trim_server_url_sum"
-                android:defaultValue="http://10.0.2.2:8000/api/v1/"
+                android:defaultValue="https://api.trimplayer.com/api/v1/"
                 android:inputType="textUri"/>
     </PreferenceCategory>
 </PreferenceScreen>

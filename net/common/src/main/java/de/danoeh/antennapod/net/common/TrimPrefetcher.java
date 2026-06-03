@@ -3,10 +3,8 @@ package de.danoeh.antennapod.net.common;
 import android.util.Log;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.ConnectionPool;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -41,20 +39,6 @@ public final class TrimPrefetcher {
                     return chain.proceed(request);
                 }
             })
-            // Mobile NAT / carrier proxies routinely drop idle TCP sockets
-            // without sending RST; OkHttp's default 5-minute pool keepalive
-            // then hands the dead connection to the next request, which writes
-            // into a black hole and dies on the 10s read timeout. The symptom
-            // was: /analyze succeeded at 14:52, then a /feedback POST hours
-            // later hit a stale pooled connection and the request never even
-            // landed on nginx — only a SocketTimeoutException came back.
-            // A 30-second pool keepalive forces a fresh handshake for any
-            // request more than half a minute after the previous one, which
-            // is cheap on a warm TLS 1.3 session and survives mobile NAT
-            // timeouts (typically 60-120s). pingInterval keeps any longer-
-            // lived HTTP/2 connection actively probed for liveness.
-            .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
-            .pingInterval(20, TimeUnit.SECONDS)
             .build();
 
     private TrimPrefetcher() { }
