@@ -60,36 +60,10 @@ public class ShareUtils {
             text +=  Converter.getDurationStringLong(item.getMedia().getPosition());
         }
 
-        if (hasLinkToShare(item)) {
-            if (!abbreviate) {
-                text += "\n";
-            }
-            text +=  "\n" + context.getResources().getString(R.string.share_dialog_episode_website_label) + ": ";
-            if (abbreviate && item.getLinkWithFallback().length() > ABBREVIATE_MAX_LENGTH) {
-                text += item.getLinkWithFallback().substring(0, ABBREVIATE_MAX_LENGTH) + "…";
-            } else {
-                text += item.getLinkWithFallback();
-            }
-        }
-
-        if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
-            if (!abbreviate) {
-                text += "\n";
-            }
-            text += "\n" + context.getResources().getString(R.string.share_dialog_media_file_label) + ": ";
-            if (abbreviate && item.getMedia().getDownloadUrl().length() > ABBREVIATE_MAX_LENGTH) {
-                text += item.getMedia().getDownloadUrl().substring(0, ABBREVIATE_MAX_LENGTH) + "…";
-            } else {
-                text += item.getMedia().getDownloadUrl();
-            }
-            if (withPosition) {
-                text += "#t=" + item.getMedia().getPosition() / 1000;
-            }
-        }
-
-        // TrimPlayer branding + a subscribe deep link so a recipient can open the
-        // show straight in TrimPlayer. The link round-trips through
-        // OnlineFeedViewActivity, which extracts it from the shared text again.
+        // A single TrimPlayer deep link replaces the inherited "Episode webpage"
+        // and "Media file" links: it opens the exact episode in the app (and falls
+        // back to the web for non-users). OnlineFeedViewActivity extracts it from
+        // the shared text again on the receiving side.
         String deepLink = trimPlayerDeepLink(item);
         if (deepLink != null) {
             text += "\n\n" + context.getResources().getString(R.string.share_dialog_trimplayer_branding) + "\n";
@@ -103,19 +77,41 @@ public class ShareUtils {
     }
 
     /**
-     * Builds a {@code https://trimplayer.com/deeplink/subscribe?url=…} link for the
-     * episode's podcast feed, or {@code null} if the feed URL is unknown. The feed
-     * URL is what lets the receiving TrimPlayer resolve and open the show.
+     * Builds a {@code https://trimplayer.com/deeplink/subscribe?url=…&episode=…}
+     * link for the episode, or {@code null} if the feed URL is unknown. The
+     * {@code url} param lets the receiving TrimPlayer resolve the show; the
+     * {@code episode} param (the RSS GUID, falling back to the media URL) lets it
+     * open the exact episode instead of dropping the user on the feed list.
      */
     private static String trimPlayerDeepLink(FeedItem item) {
         if (item.getFeed() == null || item.getFeed().getDownloadUrl() == null) {
             return null;
         }
-        String feedUrl = item.getFeed().getDownloadUrl();
+        String link = "https://trimplayer.com/deeplink/subscribe?url=" + encode(item.getFeed().getDownloadUrl());
+        String episodeId = episodeIdentifier(item);
+        if (episodeId != null) {
+            link += "&episode=" + encode(episodeId);
+        }
+        return link;
+    }
+
+    /** RSS GUID is the most stable cross-device episode key; fall back to the
+     *  enclosure URL when a feed omits guids. */
+    private static String episodeIdentifier(FeedItem item) {
+        if (item.getItemIdentifier() != null && !item.getItemIdentifier().isEmpty()) {
+            return item.getItemIdentifier();
+        }
+        if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
+            return item.getMedia().getDownloadUrl();
+        }
+        return null;
+    }
+
+    private static String encode(String value) {
         try {
-            return "https://trimplayer.com/deeplink/subscribe?url=" + URLEncoder.encode(feedUrl, "UTF-8");
+            return URLEncoder.encode(value, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            return "https://trimplayer.com/deeplink/subscribe?url=" + feedUrl;
+            return value;
         }
     }
 

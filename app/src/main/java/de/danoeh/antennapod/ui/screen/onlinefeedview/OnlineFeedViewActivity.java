@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.Spannable;
@@ -92,6 +93,9 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
     // searcher cached an episode title for this URL, we navigate to the matching
     // FeedItem instead of just dropping the user on the show's feed list.
     private String shareSourceUrl;
+    // From TrimPlayer's own share deep link (...&episode=<guid|mediaUrl>): an exact
+    // episode key that lets us open the specific episode rather than the feed.
+    private String shareEpisodeId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,6 +128,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                 username = savedInstanceState.getString("username");
                 password = savedInstanceState.getString("password");
             }
+            shareEpisodeId = extractEpisodeId(feedUrl);
             shareSourceUrl = UrlChecker.prepareUrl(feedUrl);
             lookupUrlAndDownload(shareSourceUrl);
         }
@@ -261,7 +266,24 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
      *
      *  Why: when the user shares an individual episode link, dropping them on
      *  the show's feed list is a worse experience than the episode page. */
+    /** Pull the {@code episode} query param out of a TrimPlayer subscribe deep
+     *  link. Returns null for any other URL (Uri.getQueryParameter decodes for us). */
+    private static String extractEpisodeId(String url) {
+        try {
+            String id = Uri.parse(url).getQueryParameter("episode");
+            return (id == null || id.isEmpty()) ? null : id;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private void maybeRouteToEpisode(long feedId, Runnable fallback) {
+        // TrimPlayer's own deep link carries an exact episode key — prefer it over
+        // the title-cache heuristic used for searcher-resolved share links.
+        if (shareEpisodeId != null) {
+            routeToEpisodeById(feedId, shareEpisodeId, fallback);
+            return;
+        }
         String episodeTitle = EpisodeTitleCache.consume(shareSourceUrl);
         Log.i(TAG, "maybeRouteToEpisode feedId=" + feedId + " shareUrl=" + shareSourceUrl
                 + " cachedEpisodeHint=" + episodeTitle);
@@ -320,6 +342,45 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                     startActivity(starter.getIntent());
                 }, error -> {
                     Log.e(TAG, "maybeRouteToEpisode failed", error);
+                    fallback.run();
+                });
+    }
+
+    /** Open the episode whose RSS GUID (or, as a fallback, enclosure URL) matches
+     *  the deep link's {@code episode} key. Falls back to the feed list if the
+     *  episode can't be found (e.g. it has since dropped out of the feed). */
+    private void routeToEpisodeById(long feedId, String episodeId, Runnable fallback) {
+        download = io.reactivex.rxjava3.core.Single.<Long>fromCallable(() -> {
+                    Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
+                    if (feed == null || feed.getItems() == null) {
+                        return 0L;
+                    }
+                    for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
+                        boolean guidMatch = episodeId.equals(fi.getItemIdentifier());
+                        boolean mediaMatch = fi.getMedia() != null
+                                && episodeId.equals(fi.getMedia().getDownloadUrl());
+                        if (guidMatch || mediaMatch) {
+                            return fi.getId();
+                        }
+                    }
+                    return 0L;
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(itemId -> {
+                    Log.i(TAG, "routeToEpisodeById feedId=" + feedId + " episodeId=" + episodeId
+                            + " matchedItemId=" + itemId);
+                    if (itemId == null || itemId == 0L) {
+                        fallback.run();
+                        return;
+                    }
+                    MainActivityStarter starter = new MainActivityStarter(this)
+                            .withOpenFeed(feedId)
+                            .withOpenFeedItem(itemId);
+                    finish();
+                    startActivity(starter.getIntent());
+                }, error -> {
+                    Log.e(TAG, "routeToEpisodeById failed", error);
                     fallback.run();
                 });
     }
