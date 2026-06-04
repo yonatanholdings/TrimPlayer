@@ -77,11 +77,12 @@ public class ShareUtils {
     }
 
     /**
-     * Builds a {@code https://trimplayer.com/deeplink/subscribe?url=…&episode=…}
+     * Builds a {@code https://trimplayer.com/deeplink/subscribe?url=…&episode=…&web=…}
      * link for the episode, or {@code null} if the feed URL is unknown. The
      * {@code url} param lets the receiving TrimPlayer resolve the show; the
      * {@code episode} param (the RSS GUID, falling back to the media URL) lets it
-     * open the exact episode instead of dropping the user on the feed list.
+     * open the exact episode; the {@code web} param (the episode webpage) gives
+     * the landing page an external link for recipients without the app.
      */
     private static String trimPlayerDeepLink(FeedItem item) {
         if (item.getFeed() == null || item.getFeed().getDownloadUrl() == null) {
@@ -91,6 +92,9 @@ public class ShareUtils {
         String episodeId = episodeIdentifier(item);
         if (episodeId != null) {
             link += "&episode=" + encode(episodeId);
+        }
+        if (item.getLinkWithFallback() != null && !item.getLinkWithFallback().isEmpty()) {
+            link += "&web=" + encode(item.getLinkWithFallback());
         }
         return link;
     }
