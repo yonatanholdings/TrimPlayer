@@ -25,6 +25,12 @@ import java.util.regex.Pattern;
 public class SoundCloudPodcastSearcher implements PodcastSearcher {
     private static final Pattern PATTERN_SOUNDCLOUD_URL = Pattern.compile(
             "(?i)https?://(?:(?:www|m)\\.)?soundcloud\\.com/[^/\\s]+/\\S+");
+    // SoundCloud's mobile "Share" produces on.soundcloud.com short links
+    // (e.g. https://on.soundcloud.com/AbC123). They 302 to the canonical
+    // soundcloud.com/<user>/<track> page, which the OkHttp client follows, so
+    // the og:title extraction below still works once we agree to look them up.
+    private static final Pattern PATTERN_SOUNDCLOUD_SHORT_URL = Pattern.compile(
+            "(?i)https?://on\\.soundcloud\\.com/\\S+");
     private static final Pattern PATTERN_OG_TITLE = Pattern.compile(
             "<meta[^>]+property=\"og:title\"[^>]+content=\"([^\"]+)\"",
             Pattern.CASE_INSENSITIVE);
@@ -62,7 +68,9 @@ public class SoundCloudPodcastSearcher implements PodcastSearcher {
 
     @Override
     public boolean urlNeedsLookup(String url) {
-        return url != null && PATTERN_SOUNDCLOUD_URL.matcher(url).matches();
+        return url != null
+                && (PATTERN_SOUNDCLOUD_URL.matcher(url).matches()
+                    || PATTERN_SOUNDCLOUD_SHORT_URL.matcher(url).matches());
     }
 
     @Override
