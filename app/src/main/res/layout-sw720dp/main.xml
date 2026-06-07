@@ -53,6 +53,50 @@
 
     </LinearLayout>
 
+    <!-- Non-blocking in-app status for a running PortCast / Spotify import.
+         Driven by PortcastImportProgress (WorkManager) from MainActivity. -->
+    <LinearLayout
+        android:id="@+id/importStatusBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="?attr/colorSurfaceContainer"
+        android:elevation="8dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ProgressBar
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            style="?android:attr/progressBarStyleSmall"
+            android:indeterminate="true" />
+
+        <TextView
+            android:id="@+id/importStatusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="14sp"
+            tools:text="Importing podcasts… 3 of 12" />
+
+        <ImageButton
+            android:id="@+id/importStatusDismiss"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_close"
+            android:contentDescription="@string/import_status_dismiss"
+            app:tint="?android:attr/textColorSecondary" />
+
+    </LinearLayout>
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="match_parent"

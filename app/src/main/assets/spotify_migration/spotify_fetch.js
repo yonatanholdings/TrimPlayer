@@ -27,6 +27,15 @@
       "973e511ca44261fda7eebac8b653155e7caee3675abb4fb110cc1b8c78b091c3";
     const PODCAST_FILTER_ID = "Podcasts & Shows";
     const PAGE_LIMIT = 50;
+    // Per-show episode operation. Spotify exposes per-episode playedState
+    // (NOT_STARTED / STARTED / COMPLETED + playPositionMilliseconds) only
+    // through this op — it's our resume-position source. The old saved-only
+    // /me/episodes approach left episodes[] empty (most users never "save"
+    // individual episodes). Hash verified live 2026-06-01 against /show/{id}.
+    const EPISODES_OP = "queryPodcastEpisodes";
+    const EPISODES_HASH =
+      "06046f9b939d56c8eb7cdbb687da938de1164c006871aec91dc26e4dc7d8eb08";
+    const EPISODES_PER_SHOW_CAP = 500;
 
     function progress(phase, count, done) {
       bridge('onProgress', { phase: phase, count: count, done: done });
@@ -312,8 +321,125 @@
       }
       progress("shows", savedShows.length, true);
 
+      // --- episodes per show (queryPodcastEpisodes) ---
+      // For each subscribed show, fetch its episodes and rewrite the GraphQL
+      // shape to the REST shape episodeFromSavedEpisode() expects:
+      //   { added_at, episode: { id, name, duration_ms, release_date,
+      //       release_date_precision, resume_point:{fully_played,
+      //       resume_position_ms}, show:{id} } }
+      function episodesBody(showUri, offset) {
+        return {
+          variables: {
+            uri: showUri,
+            offset: offset,
+            limit: PAGE_LIMIT,
+            includeEpisodeContentRatingsV2: false,
+          },
+          operationName: EPISODES_OP,
+          extensions: {
+            persistedQuery: { version: 1, sha256Hash: EPISODES_HASH },
+          },
+        };
+      }
+
+      function mapEpisodeItem(it, showId) {
+        const e = (it && it.entity && it.entity.data) || {};
+        const uri = e.uri || (it.entity && it.entity._uri) || null;
+        const epId = uri ? String(uri).split(":").pop() : e.id || null;
+        if (!epId) return null;
+
+        const durationMs = (e.duration && e.duration.totalMilliseconds) || null;
+        // releaseDate.isoString is full ISO; take the date portion so the
+        // builder's "day"-precision path handles it.
+        const iso = (e.releaseDate && e.releaseDate.isoString) || null;
+        const datePart = iso ? iso.slice(0, 10) : null;
+
+        const ps = e.playedState || {};
+        const fullyPlayed = ps.state === "COMPLETED";
+        const resumeMs = ps.playPositionMilliseconds || 0;
+
+        return {
+          added_at: null,
+          episode: {
+            id: epId,
+            name: e.name || null,
+            release_date: datePart,
+            release_date_precision: "day",
+            duration_ms: durationMs,
+            resume_point: {
+              fully_played: fullyPlayed,
+              resume_position_ms: resumeMs,
+            },
+            show: { id: showId },
+          },
+        };
+      }
+
       progress("episodes", 0);
       const savedEpisodes = [];
+      const episodeFetchDiagnostics = [];
+      const stateCounts = {};
+      for (let s = 0; s < savedShows.length; s++) {
+        const show = savedShows[s];
+        const showId = show.show && show.show.id;
+        if (!showId) {
+          episodeFetchDiagnostics.push({ showIdx: s, reason: "no showId" });
+          continue;
+        }
+        const showUri = "spotify:show:" + showId;
+        let eOffset = 0;
+        let eGuard = 0;
+        let pagesFetched = 0;
+        let episodesFromThisShow = 0;
+        let lastErr = null;
+        while (eOffset < EPISODES_PER_SHOW_CAP && eGuard < 20) {
+          eGuard += 1;
+          let j;
+          try {
+            j = await pathfinder(episodesBody(showUri, eOffset));
+          } catch (err) {
+            lastErr = String((err && err.message) || err);
+            break;
+          }
+          const items =
+            (j && j.data && j.data.podcastUnionV2 &&
+              j.data.podcastUnionV2.episodesV2 &&
+              j.data.podcastUnionV2.episodesV2.items) || [];
+          if (items.length === 0) {
+            if (pagesFetched === 0) {
+              lastErr = "empty items[] at offset 0; data keys = "
+                + JSON.stringify(Object.keys((j && j.data) || {}));
+            }
+            break;
+          }
+          pagesFetched += 1;
+          for (let k = 0; k < items.length; k++) {
+            const it = items[k];
+            const ps = it && it.entity && it.entity.data
+              && it.entity.data.playedState;
+            const stateKey = (ps && ps.state) || "MISSING";
+            stateCounts[stateKey] = (stateCounts[stateKey] || 0) + 1;
+            const mapped = mapEpisodeItem(it, showId);
+            if (mapped) {
+              savedEpisodes.push(mapped);
+              episodesFromThisShow += 1;
+            }
+          }
+          progress("episodes", savedEpisodes.length, false, {
+            showIdx: s + 1,
+            showCount: savedShows.length,
+          });
+          if (items.length < PAGE_LIMIT) break;
+          eOffset += PAGE_LIMIT;
+          await new Promise(function (res) { setTimeout(res, 200); });
+        }
+        episodeFetchDiagnostics.push({
+          showId: showId,
+          pagesFetched: pagesFetched,
+          episodes: episodesFromThisShow,
+          lastErr: lastErr,
+        });
+      }
       progress("episodes", savedEpisodes.length, true);
 
       clearCapturedState();
@@ -322,6 +448,8 @@
         savedShows: savedShows,
         savedEpisodes: savedEpisodes,
         tokenSource: tk.source,
+        episodeFetchDiagnostics: episodeFetchDiagnostics,
+        playedStateCounts: stateCounts,
       });
     } catch (err) {
       clearCapturedState();

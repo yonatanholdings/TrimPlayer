@@ -80,10 +80,33 @@ public class ClockSleepTimer implements SleepTimer {
             vibrate();
             hasVibrated = true;
         }
-        // start listening for shakes if shake to reset is enabled
+        // Fallback for timer types that only listen near expiry (episode timers). Clock
+        // timers already started listening in start(); this is a no-op for them.
+        ensureShakeListener();
+    }
+
+    /**
+     * Creates the shake-to-reset accelerometer listener if the preference is enabled and one
+     * isn't already running. Guarded so a device without an accelerometer logs instead of
+     * crashing the running timer.
+     */
+    private void ensureShakeListener() {
         if (shakeListener == null && SleepTimerPreferences.shakeToReset()) {
-            shakeListener = new ShakeListener(getContext(), this);
+            try {
+                shakeListener = new ShakeListener(getContext(), this);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not start shake-to-reset listener: " + e.getMessage());
+            }
         }
+    }
+
+    /**
+     * Whether shake-to-reset listens for the whole timer duration. True for clock timers (the
+     * only type that exposes the option in the UI); episode timers keep the near-expiry-only
+     * window via {@link #notifyAboutExpiry()}.
+     */
+    protected boolean shakeListensForFullDuration() {
+        return true;
     }
 
     @Override
@@ -104,6 +127,12 @@ public class ClockSleepTimer implements SleepTimer {
         EventBus.getDefault().postSticky(SleepTimerUpdatedEvent.updated(left));
 
         isRunning = true;
+
+        // Listen for shake-to-reset across the entire timer, not just the final
+        // NOTIFICATION_THRESHOLD window, so a shake resets the timer at any time.
+        if (shakeListensForFullDuration()) {
+            ensureShakeListener();
+        }
     }
 
     @Override

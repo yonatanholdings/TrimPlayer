@@ -22,6 +22,7 @@ import de.danoeh.antennapod.event.TrimSegmentsEditedEvent;
 import de.danoeh.antennapod.event.playback.PlaybackPositionEvent;
 import de.danoeh.antennapod.playback.base.PlayerStatus;
 import de.danoeh.antennapod.playback.service.PlaybackController;
+import de.danoeh.antennapod.playback.service.PlaybackService;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.playback.service.trim.TrimReportClient;
 import de.danoeh.antennapod.playback.service.trim.TrimSegmentCache;
@@ -60,6 +61,12 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
     /** True once the controller's media is cached off-thread, so main-thread
      *  seekTo/getPosition won't trigger a DB read (which hard-crashes the app). */
     private boolean mediaReady;
+    /** True while a preview is playing the segment, so we can auto-stop at its
+     *  end instead of letting playback run away past the region being edited. */
+    private boolean previewing;
+    /** Armed once the playhead has been seen inside the segment, so a stale
+     *  pre-seek position report can't trip the auto-stop immediately. */
+    private boolean previewEntered;
 
     private String guid;
     private String episodeUrl;
@@ -151,9 +158,18 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
                 .subscribe(ready -> mediaReady = ready, error -> mediaReady = false);
     }
 
+    /** End a preview: stop watching for the auto-stop and re-arm the service's
+     *  auto-skip (which we suppressed while auditioning the segment). */
+    private void stopPreview() {
+        previewing = false;
+        PlaybackService.trimSegmentEditPreviewActive = false;
+    }
+
     @Override
     public void onStop() {
         super.onStop();
+        // Safety net: never leave auto-skip suppressed once the sheet is gone.
+        PlaybackService.trimSegmentEditPreviewActive = false;
         if (mediaWarmup != null) {
             mediaWarmup.dispose();
             mediaWarmup = null;
@@ -185,6 +201,11 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         });
         viewBinding.boundaryEditor.setOnScrubListener(seconds -> {
             if (controller != null && mediaReady) {
+                // Manual scrub takes over: drop the preview auto-stop so it
+                // doesn't pause out from under the user. Auto-skip stays
+                // suppressed (still cleared on pause/close) so a scrub through
+                // the segment doesn't get skipped either.
+                previewing = false;
                 controller.seekTo(Math.round(seconds * 1000));
             }
         });
@@ -195,10 +216,19 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
             if (controller == null || !mediaReady) {
                 return;
             }
-            if (controller.getStatus() != PlayerStatus.PLAYING) {
+            if (controller.getStatus() == PlayerStatus.PLAYING) {
+                stopPreview();
+                controller.playPause(); // pause
+            } else {
+                // Start the preview from the segment start and arm the auto-stop.
+                // Suppress the service's auto-skip first so the segment we're
+                // auditioning plays through instead of being skipped past.
+                PlaybackService.trimSegmentEditPreviewActive = true;
                 controller.seekTo(Math.round(boundStart * 1000));
+                previewing = true;
+                previewEntered = false;
+                controller.playPause(); // play
             }
-            controller.playPause();
         });
         viewBinding.jumpToStartButton.setOnClickListener(v -> {
             if (controller != null && mediaReady) {
@@ -341,6 +371,22 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         }
         float pos = event.getPosition() / 1000f;
         viewBinding.boundaryEditor.setPlayhead(pos);
+
+        // Auto-stop the preview at the segment end so playback stays on the
+        // region being edited instead of running away toward the episode end.
+        // Arm only after the playhead has entered the segment, so a stale
+        // pre-seek position can't pause us before playback even starts.
+        if (previewing) {
+            if (pos < boundEnd - 0.05f) {
+                previewEntered = true;
+            } else if (previewEntered && pos >= boundEnd) {
+                stopPreview();
+                if (controller != null && controller.getStatus() == PlayerStatus.PLAYING) {
+                    controller.playPause(); // pause at the segment end
+                }
+            }
+        }
+
         // Denominator is the episode length (stable) rather than the window end,
         // which now moves as the editor auto-pans.
         float total = episodeDuration > 0 ? episodeDuration : winEnd;

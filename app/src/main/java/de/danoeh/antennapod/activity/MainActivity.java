@@ -15,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
@@ -53,6 +54,7 @@ import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.net.sync.serviceinterface.SynchronizationQueue;
 import de.danoeh.antennapod.playback.cast.CastEnabledActivity;
 import de.danoeh.antennapod.playback.service.PlaybackServiceInterface;
+import de.danoeh.antennapod.portcast.PortcastImportProgress;
 import de.danoeh.antennapod.storage.databasemaintenanceservice.DatabaseMaintenanceWorker;
 import de.danoeh.antennapod.storage.importexport.AutomaticDatabaseExportWorker;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
@@ -116,6 +118,9 @@ public class MainActivity extends CastEnabledActivity {
     private final RecyclerView.RecycledViewPool recycledViewPool = new RecyclerView.RecycledViewPool();
     private int lastTheme = 0;
     private Insets systemBarInsets = Insets.NONE;
+    /** True once the user closes the import status banner; reset when the import
+     *  ends so a later import shows the banner again. */
+    private boolean importBannerDismissed = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -220,6 +225,7 @@ public class MainActivity extends CastEnabledActivity {
                     }
                     EventBus.getDefault().postSticky(new FeedUpdateRunningEvent(isRefreshingFeeds));
                 });
+        setupImportStatusBanner();
         WorkManager.getInstance(this)
                 .getWorkInfosByTagLiveData(DownloadServiceInterface.WORK_TAG)
                 .observe(this, workInfos -> {
@@ -317,6 +323,42 @@ public class MainActivity extends CastEnabledActivity {
 
             audioPlayer.fadePlayerToToolbar(slideOffset);
         }
+    }
+
+    /** Wire the non-blocking in-app banner that reflects a running PortCast /
+     *  Spotify import. WorkManager is the single source of truth, so the banner
+     *  survives process death and reappears if the user relaunches mid-import. */
+    private void setupImportStatusBanner() {
+        View bar = findViewById(R.id.importStatusBar);
+        findViewById(R.id.importStatusDismiss).setOnClickListener(v -> {
+            importBannerDismissed = true;
+            bar.setVisibility(View.GONE);
+        });
+        PortcastImportProgress.observe(this).observe(this, this::updateImportBanner);
+    }
+
+    private void updateImportBanner(@Nullable PortcastImportProgress progress) {
+        View bar = findViewById(R.id.importStatusBar);
+        if (progress == null) {
+            // Import finished (or none running): clear the dismiss latch so the
+            // next import surfaces the banner again.
+            importBannerDismissed = false;
+            bar.setVisibility(View.GONE);
+            return;
+        }
+        if (importBannerDismissed) {
+            return;
+        }
+        TextView text = findViewById(R.id.importStatusText);
+        if (progress.getPhase() == PortcastImportProgress.Phase.SUBSCRIBING) {
+            text.setText(progress.hasCount()
+                    ? getString(R.string.import_status_subscribing,
+                            progress.getCurrent(), progress.getTotal())
+                    : getString(R.string.import_status_subscribing_indeterminate));
+        } else {
+            text.setText(R.string.import_status_applying);
+        }
+        bar.setVisibility(View.VISIBLE);
     }
 
     public void setupToolbarToggle(@NonNull MaterialToolbar toolbar, boolean displayUpArrow) {

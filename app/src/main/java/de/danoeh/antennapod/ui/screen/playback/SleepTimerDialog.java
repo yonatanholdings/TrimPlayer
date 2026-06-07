@@ -330,11 +330,18 @@ public class SleepTimerDialog extends BottomSheetDialogFragment {
                     viewBinding.sleepTimerHintText.setVisibility(View.GONE);
                 }
             } else {
-                // for time sleep timers check if the selected value exceeds the remaining play time in the episode
-                final int remaining = controller != null ? controller.getDuration() - controller.getPosition() :
-                        Integer.MAX_VALUE;
+                // For time sleep timers, check if the selected value exceeds the remaining play time.
+                // Only query duration/position while actually PLAYING: that guarantees the controller
+                // is bound to the playback service, so getDuration()/getPosition() read from the service
+                // rather than falling back to a synchronous DBReader.getFeedMedia() on the main thread —
+                // which PodDBAdapter.open() turns into a fatal "I/O on main thread" crash in debug builds
+                // (and is a UI-thread jank/ANR hazard in release). Before the service binds, status is
+                // STOPPED and we skip the hint.
+                boolean playing = controller != null && controller.getStatus() == PlayerStatus.PLAYING;
+                final int remaining = playing ? controller.getDuration() - controller.getPosition()
+                        : Integer.MAX_VALUE;
                 final long timer = TimeUnit.MINUTES.toMillis(selectedSleepTime);
-                if ((timer > remaining) && !UserPreferences.isFollowQueue()) {
+                if (playing && (timer > remaining) && !UserPreferences.isFollowQueue()) {
                     final int remainingMinutes = Math.toIntExact(TimeUnit.MILLISECONDS.toMinutes(remaining));
                     viewBinding.sleepTimerHintText
                             .setText(getResources().getQuantityString(

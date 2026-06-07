@@ -1,5 +1,6 @@
 package de.danoeh.antennapod;
 
+import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -41,6 +42,11 @@ public class TrimQueueSubscriber {
 
     private final Timer debounceTimer = new Timer("trim-queue-debounce", true);
     private TimerTask pendingTask = null;
+    private final Context context;
+
+    public TrimQueueSubscriber(Context context) {
+        this.context = context.getApplicationContext();
+    }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onQueueEvent(@NonNull QueueEvent ev) {
@@ -92,6 +98,8 @@ public class TrimQueueSubscriber {
                 } catch (Exception e) {
                     Log.d(TAG, "snapshot post failed: " + e.getMessage());
                 }
+                // Re-warm the prefix cache for the (possibly reordered) top of the queue.
+                QueuePrefetchManager.prefetchTopOfQueue(context);
             }
         };
         debounceTimer.schedule(pendingTask, DEBOUNCE_MS);

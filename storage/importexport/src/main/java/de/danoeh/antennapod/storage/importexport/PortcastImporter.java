@@ -100,6 +100,16 @@ public class PortcastImporter {
         public String guid;
         public String enclosureUrl;
         public String feedUrl; // for resolving subscriptionRef
+        /** Episode title. Always carried; for Spotify-sourced episodes (no
+         *  guid/enclosureUrl) it's the only join key, matched against the
+         *  materialized feed's items in {@link PortcastStateWorker}. */
+        public String title = "";
+        /** Transient: the {@code spotify:show:<id>} URN from
+         *  {@code subscriptionRef.platformRefs}, set during parsing when the
+         *  episode carries no feedUrl. {@link #previewImport} maps it to a
+         *  resolved {@link #feedUrl} via the resolved subscriptions, then it's
+         *  no longer used (not persisted to SharedPreferences). */
+        public String showRef = "";
         /** "unplayed" | "in_progress" | "completed" | "archived" */
         public String status;
         public int positionMs;
@@ -217,23 +227,58 @@ public class PortcastImporter {
         resolveFeeds(context, preview, progress);
 
         // Populate the feedTitleByUrl map AFTER resolution so episode rows
-        // for newly-resolved Spotify feeds get the right label.
+        // for newly-resolved Spotify feeds get the right label. Also build a
+        // Spotify-show-id → resolved feedUrl map so episodes carrying only a
+        // subscriptionRef.platformRefs (spotify:show:<id>) can be scoped to
+        // the feed they'll match against by title.
+        Map<String, String> feedUrlByShowId = new HashMap<>();
         for (PortFeed pf : preview.feeds) {
             if (pf.feedUrl != null && !pf.feedUrl.isEmpty()) {
                 feedTitleByUrl.put(pf.feedUrl, pf.title);
+                String showId = spotifyShowIdFrom(pf.platformRefs);
+                if (showId != null) {
+                    feedUrlByShowId.put(showId, pf.feedUrl);
+                }
             }
         }
 
         JSONArray episodes = root.optJSONArray("episodes");
+        Log.d(TAG, "Document has 'episodes' array: "
+                + (episodes != null ? "yes, length=" + episodes.length() : "no / null"));
+        int kept = 0;
+        int droppedByParser = 0;
+        int droppedUnresolvedShow = 0;
         if (episodes != null) {
             for (int i = 0; i < episodes.length(); i++) {
-                EpisodeState state = parseEpisode(episodes.getJSONObject(i));
-                if (state == null) continue;
+                JSONObject epJson = episodes.getJSONObject(i);
+                EpisodeState state = parseEpisode(epJson);
+                if (state == null) {
+                    droppedByParser++;
+                    continue;
+                }
+                // Spotify-sourced episode: map its show ref to the resolved
+                // feedUrl so the state worker can join by feed+title. If the
+                // show didn't resolve to a feed (unsubscribed), the episode is
+                // unmatchable — drop it rather than persist dead state.
+                if (state.feedUrl.isEmpty() && !state.showRef.isEmpty()) {
+                    String showId = spotifyShowIdFrom(
+                            Collections.singletonList(state.showRef));
+                    String resolved = showId != null ? feedUrlByShowId.get(showId) : null;
+                    if (resolved != null) {
+                        state.feedUrl = resolved;
+                    }
+                }
+                if (state.guid.isEmpty() && state.enclosureUrl.isEmpty()
+                        && state.feedUrl.isEmpty()) {
+                    droppedUnresolvedShow++;
+                    continue;
+                }
+                kept++;
                 FeedItem apItem = findApItem(state, apByGuid, apByUrl);
                 if (apItem != null && hasApPlayData(apItem)) {
                     ConflictEpisode conflict = new ConflictEpisode();
                     conflict.incomingState = state;
-                    conflict.episodeTitle = stateTitle(episodes.getJSONObject(i), state);
+                    conflict.episodeTitle = stateTitle(epJson, state);
                     conflict.feedTitle = feedTitleByUrl.getOrDefault(state.feedUrl, "Unknown Feed");
                     conflict.apStateDescription = describeApState(apItem);
                     preview.conflicts.add(conflict);
@@ -241,6 +286,9 @@ public class PortcastImporter {
                     preview.nonConflictingStates.add(state);
                 }
             }
+            Log.d(TAG, "Episode parse summary: kept=" + kept
+                    + " droppedByParser=" + droppedByParser
+                    + " droppedUnresolvedShow=" + droppedUnresolvedShow);
         }
 
         JSONArray queue = root.optJSONArray("queue");
@@ -344,6 +392,68 @@ public class PortcastImporter {
         return pf;
     }
 
+    /** Returns the first {@code spotify:show:<id>} URN in a JSON platformRefs
+     *  array, or "" if none. Used to scope a Spotify-sourced episode (which
+     *  carries no feedUrl) to its show so the importer can map it to the
+     *  resolved feed URL. */
+    static String firstShowRef(@Nullable JSONArray platformRefs) {
+        if (platformRefs == null) return "";
+        for (int i = 0; i < platformRefs.length(); i++) {
+            String ref = platformRefs.optString(i, "");
+            if (ref.startsWith("spotify:show:")) return ref;
+        }
+        return "";
+    }
+
+    /** Normalizes an episode title for cross-source matching: lowercased,
+     *  trimmed, internal whitespace collapsed, and surrounding punctuation
+     *  stripped. Spotify and RSS titles for the same episode are normally
+     *  identical; this just absorbs casing/whitespace drift. Package-static so
+     *  {@link PortcastStateWorker} shares the exact rule. */
+    static String normalizeTitle(@Nullable String title) {
+        if (title == null) return "";
+        String s = title.toLowerCase(Locale.US).trim();
+        s = s.replaceAll("\\s+", " ");
+        s = s.replaceAll("^[\\p{Punct}\\s]+|[\\p{Punct}\\s]+$", "");
+        return s;
+    }
+
+    /** Loose feed-URL key so a resolved feed URL still matches the URL AP
+     *  stored after subscribe/refresh — scheme, {@code www.}, and trailing
+     *  slash drift are common between the two. Package-static so
+     *  {@link PortcastStateWorker} shares the exact rule. */
+    static String normalizeFeedUrl(@Nullable String url) {
+        if (url == null) return "";
+        String s = url.trim().toLowerCase(Locale.US);
+        s = s.replaceFirst("^https?://", "");
+        s = s.replaceFirst("^www\\.", "");
+        s = s.replaceAll("/+$", "");
+        return s;
+    }
+
+    /**
+     * The feed+title join used by {@link PortcastStateWorker} to attach a
+     * Spotify-sourced episode state (which has no guid/enclosureUrl) to a
+     * materialized item. Looks up {@code indexByFeedKey} with the normalized
+     * feed URL, then the normalized title, and {@code remove}s the hit so two
+     * states can't claim the same item and a retry re-evaluates cleanly.
+     *
+     * <p>Generic over the item handle so the matching is unit-testable without
+     * an Android {@code FeedItem}. The worker passes the real items; tests pass
+     * lightweight stand-ins. Returns null when {@code feedUrl}/{@code title} is
+     * blank or nothing matches.
+     */
+    @Nullable
+    public static <T> T matchByFeedAndTitle(@Nullable String feedUrl, @Nullable String title,
+            Map<String, Map<String, T>> indexByFeedKey) {
+        if (feedUrl == null || feedUrl.isEmpty() || title == null || title.isEmpty()) {
+            return null;
+        }
+        Map<String, T> titleMap = indexByFeedKey.get(normalizeFeedUrl(feedUrl));
+        if (titleMap == null) return null;
+        return titleMap.remove(normalizeTitle(title));
+    }
+
     /** Extracts the Spotify show ID from a list of platformRefs URNs.
      *  Returns null if no spotify:show: ref is present. */
     @Nullable
@@ -427,13 +537,27 @@ public class PortcastImporter {
     static EpisodeState parseEpisode(JSONObject ep) {
         String guid = ep.optString("guid", "");
         String enclosureUrl = ep.optString("enclosureUrl", "");
-        if (guid.isEmpty() && enclosureUrl.isEmpty()) return null;
+        String title = ep.optString("title", "");
+        JSONObject ref = ep.optJSONObject("subscriptionRef");
+        String feedUrl = ref != null ? ref.optString("feedUrl", "") : "";
+        // Spotify-sourced episodes carry no guid/enclosureUrl — only a title
+        // and a show reference (subscriptionRef.platformRefs = spotify:show:id).
+        // Accept them when there's a title plus something to scope it to (a
+        // feedUrl now, or a show ref the caller will resolve to a feedUrl).
+        // The actual join to a materialized FeedItem happens by feed+title in
+        // PortcastStateWorker. RSS-sourced episodes still take the guid/url path.
+        String showRef = feedUrl.isEmpty() && ref != null
+                ? firstShowRef(ref.optJSONArray("platformRefs")) : "";
+        boolean hasIdentity = !guid.isEmpty() || !enclosureUrl.isEmpty()
+                || (!title.isEmpty() && (!feedUrl.isEmpty() || !showRef.isEmpty()));
+        if (!hasIdentity) return null;
 
         EpisodeState state = new EpisodeState();
         state.guid = guid;
         state.enclosureUrl = enclosureUrl;
-        JSONObject ref = ep.optJSONObject("subscriptionRef");
-        state.feedUrl = ref != null ? ref.optString("feedUrl", "") : "";
+        state.title = title;
+        state.feedUrl = feedUrl;
+        state.showRef = showRef;
         state.status = ep.optString("status", "unplayed");
         state.positionMs = (int) Math.round(ep.optDouble("positionSeconds", 0) * 1000);
         state.starred = ep.optBoolean("starred", false);
@@ -554,13 +678,14 @@ public class PortcastImporter {
         prefs(context).edit().remove(KEY_PENDING_FEEDS).apply();
     }
 
-    static void saveEpisodeStates(Context context, List<EpisodeState> states) throws Exception {
+    public static void saveEpisodeStates(Context context, List<EpisodeState> states) throws Exception {
         JSONArray arr = new JSONArray();
         for (EpisodeState s : states) {
             JSONObject o = new JSONObject();
             o.put("guid", s.guid != null ? s.guid : "");
             o.put("enclosureUrl", s.enclosureUrl != null ? s.enclosureUrl : "");
             o.put("feedUrl", s.feedUrl != null ? s.feedUrl : "");
+            o.put("title", s.title != null ? s.title : "");
             o.put("status", s.status != null ? s.status : "unplayed");
             o.put("positionMs", s.positionMs);
             o.put("starred", s.starred);
@@ -583,6 +708,7 @@ public class PortcastImporter {
                 s.guid = o.optString("guid", "");
                 s.enclosureUrl = o.optString("enclosureUrl", "");
                 s.feedUrl = o.optString("feedUrl", "");
+                s.title = o.optString("title", "");
                 s.status = o.optString("status", "unplayed");
                 s.positionMs = o.optInt("positionMs", 0);
                 s.starred = o.optBoolean("starred", false);

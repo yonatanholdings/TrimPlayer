@@ -610,13 +610,19 @@ public class AudioPlayerFragment extends Fragment implements
         toolbar.getMenu().findItem(R.id.set_sleeptimer_item).setVisible(!controller.sleepTimerActive());
         toolbar.getMenu().findItem(R.id.disable_sleeptimer_item).setVisible(controller.sleepTimerActive());
 
-        // Trim segment list: only when this episode has segments to edit.
+        // Trim segment list: show once the episode has been analyzed — whether it
+        // has segments or the user emptied it. Keeping it reachable for the empty
+        // (ANALYZED_EMPTY) case is the only in-app way back to "Mark a skip we
+        // missed" / undo after deleting the last segment.
         String trimGuid = isFeedMedia && ((FeedMedia) media).getItem() != null
                 ? ((FeedMedia) media).getItem().getItemIdentifier() : null;
-        boolean hasSegments = de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.getState(
-                getContext(), trimGuid)
-                == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.HAS_SEGMENTS;
-        toolbar.getMenu().findItem(R.id.trim_segments_item).setVisible(hasSegments);
+        de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State trimState =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.getState(
+                        getContext(), trimGuid);
+        boolean showSegments =
+                trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.HAS_SEGMENTS
+                || trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.ANALYZED_EMPTY;
+        toolbar.getMenu().findItem(R.id.trim_segments_item).setVisible(showSegments);
 
         ((CastEnabledActivity) getActivity()).requestCastButton(toolbar.getMenu());
     }

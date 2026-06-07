@@ -49,6 +49,12 @@ public class EpisodeSleepTimer extends ClockSleepTimer {
     }
 
     @Override
+    protected boolean shakeListensForFullDuration() {
+        // Episode timers don't expose shake-to-reset in the UI; keep the near-expiry-only window.
+        return false;
+    }
+
+    @Override
     public void episodeFinishedPlayback() {
         // episode has finished, decrease the number of episodes left
         updateRemainingTime(getTimeLeft().getDisplayValue() - 1);

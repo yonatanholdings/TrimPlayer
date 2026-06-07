@@ -41,7 +41,8 @@ import de.danoeh.antennapod.storage.preferences.UserPreferences;
  */
 public class PortcastStateWorker extends Worker {
     private static final String TAG = "PortcastStateWorker";
-    private static final String WORK_ID = "de.danoeh.antennapod.PortcastStateApply";
+    /** Unique-work name; public so the in-app status banner can observe it. */
+    public static final String WORK_ID = "de.danoeh.antennapod.PortcastStateApply";
     private static final int MAX_ATTEMPTS = 20; // 30s linear backoff, like the PA worker
 
     public static void enqueue(Context context) {
@@ -78,19 +79,17 @@ public class PortcastStateWorker extends Worker {
         Log.d(TAG, "Attempt " + (getRunAttemptCount() + 1) + "/" + MAX_ATTEMPTS
                 + " (" + states.size() + " states, " + queue.size() + " queue pending)");
 
-        Map<String, PortcastImporter.EpisodeState> byGuid = new HashMap<>();
-        Map<String, PortcastImporter.EpisodeState> byUrl = new HashMap<>();
-        for (PortcastImporter.EpisodeState state : states) {
-            if (!state.guid.isEmpty()) byGuid.put(state.guid, state);
-            if (!state.enclosureUrl.isEmpty()) byUrl.put(state.enclosureUrl, state);
-        }
-
-        // One-pass index of every FeedItem in the DB.
+        // One-pass index of every FeedItem in the DB: by guid, by enclosure
+        // URL, and — for Spotify-sourced states that carry only a title — by
+        // (normalized feed URL → normalized title → item).
         Map<String, FeedItem> itemByGuid = new HashMap<>();
         Map<String, FeedItem> itemByUrl = new HashMap<>();
+        Map<String, Map<String, FeedItem>> itemByFeedAndTitle = new HashMap<>();
         for (Feed feed : DBReader.getFeedList()) {
             List<FeedItem> items = DBReader.getFeedItemList(feed, FeedItemFilter.unfiltered(),
                     SortOrder.DATE_NEW_OLD, 0, Integer.MAX_VALUE);
+            Map<String, FeedItem> titleMap = itemByFeedAndTitle.computeIfAbsent(
+                    PortcastImporter.normalizeFeedUrl(feed.getDownloadUrl()), k -> new HashMap<>());
             for (FeedItem item : items) {
                 if (item.getItemIdentifier() != null && !item.getItemIdentifier().isEmpty()) {
                     itemByGuid.put(item.getItemIdentifier(), item);
@@ -98,23 +97,30 @@ public class PortcastStateWorker extends Worker {
                 if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
                     itemByUrl.put(item.getMedia().getDownloadUrl(), item);
                 }
+                String t = PortcastImporter.normalizeTitle(item.getTitle());
+                // First occurrence wins; DATE_NEW_OLD means that's the newest
+                // when two episodes in one feed share a title (rare).
+                if (!t.isEmpty()) {
+                    titleMap.putIfAbsent(t, item);
+                }
             }
         }
 
         // Apply queue first so users see something happening before per-episode states.
         List<PortcastImporter.QueueEntry> remainingQueue = applyQueue(queue, itemByGuid, itemByUrl);
 
-        List<PortcastImporter.EpisodeState> remaining = new ArrayList<>(states);
-        for (FeedItem item : itemByGuid.values()) {
-            PortcastImporter.EpisodeState state = findState(item, byGuid, byUrl);
-            if (state == null) continue;
+        List<PortcastImporter.EpisodeState> remaining = new ArrayList<>();
+        int applied = 0;
+        for (PortcastImporter.EpisodeState state : states) {
+            FeedItem item = resolveItemForState(state, itemByGuid, itemByUrl, itemByFeedAndTitle);
+            if (item == null) {
+                remaining.add(state);
+                continue;
+            }
             applyState(item, state);
-            remaining.remove(state);
-            if (!state.guid.isEmpty()) byGuid.remove(state.guid);
-            if (!state.enclosureUrl.isEmpty()) byUrl.remove(state.enclosureUrl);
+            applied++;
         }
-        Log.d(TAG, "Applied " + (states.size() - remaining.size()) + " states, "
-                + remaining.size() + " still pending");
+        Log.d(TAG, "Applied " + applied + " states, " + remaining.size() + " still pending");
 
         boolean allDone = remaining.isEmpty() && remainingQueue.isEmpty();
         if (allDone) {
@@ -202,19 +208,24 @@ public class PortcastStateWorker extends Worker {
         return null;
     }
 
-    private PortcastImporter.EpisodeState findState(FeedItem item,
-                                                    Map<String, PortcastImporter.EpisodeState> byGuid,
-                                                    Map<String, PortcastImporter.EpisodeState> byUrl) {
-        String guid = item.getItemIdentifier();
-        if (guid != null && byGuid.containsKey(guid)) {
-            return byGuid.get(guid);
+    /** Resolve the DB FeedItem an imported state targets. RSS-sourced states
+     *  match by guid then enclosure URL; Spotify-sourced states (no guid/url)
+     *  fall back to a feed-scoped title match. Title hits are removed from the
+     *  index so two states can't claim the same item and a retry re-evaluates
+     *  cleanly. */
+    private static FeedItem resolveItemForState(PortcastImporter.EpisodeState state,
+            Map<String, FeedItem> itemByGuid,
+            Map<String, FeedItem> itemByUrl,
+            Map<String, Map<String, FeedItem>> itemByFeedAndTitle) {
+        if (!state.guid.isEmpty() && itemByGuid.containsKey(state.guid)) {
+            return itemByGuid.get(state.guid);
         }
-        if (item.getMedia() != null) {
-            String url = item.getMedia().getDownloadUrl();
-            if (url != null && byUrl.containsKey(url)) {
-                return byUrl.get(url);
-            }
+        if (!state.enclosureUrl.isEmpty() && itemByUrl.containsKey(state.enclosureUrl)) {
+            return itemByUrl.get(state.enclosureUrl);
         }
+        FeedItem byTitle = PortcastImporter.matchByFeedAndTitle(
+                state.feedUrl, state.title, itemByFeedAndTitle);
+        if (byTitle != null) return byTitle;
         return null;
     }
 

@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
+import androidx.work.Data;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.ForegroundInfo;
 import androidx.work.OneTimeWorkRequest;
@@ -45,7 +46,11 @@ import de.danoeh.antennapod.ui.notifications.NotificationUtils;
  */
 public class PortcastSubscribeWorker extends Worker {
     private static final String TAG = "PortcastSubscribeWorker";
-    private static final String WORK_ID = "de.danoeh.antennapod.PortcastSubscribe";
+    /** Unique-work name; public so the in-app status banner can observe it. */
+    public static final String WORK_ID = "de.danoeh.antennapod.PortcastSubscribe";
+    /** {@code setProgressAsync} keys read by the import status banner. */
+    public static final String PROGRESS_CURRENT = "current";
+    public static final String PROGRESS_TOTAL = "total";
 
     public static void enqueue(Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(PortcastSubscribeWorker.class)
@@ -76,7 +81,7 @@ public class PortcastSubscribeWorker extends Worker {
         Log.d(TAG, "Subscribing " + feeds.size() + " feeds in the background");
         int done = 0;
         int total = feeds.size();
-        updateNotification(done, total);
+        updateProgress(done, total);
 
         for (PortcastImporter.PortFeed pf : feeds) {
             if (isStopped()) {
@@ -89,7 +94,7 @@ public class PortcastSubscribeWorker extends Worker {
                 Log.e(TAG, "Subscribe failed for " + pf.feedUrl, e);
             }
             done++;
-            updateNotification(done, total);
+            updateProgress(done, total);
         }
 
         PortcastImporter.clearPendingFeeds(ctx);
@@ -201,6 +206,16 @@ public class PortcastSubscribeWorker extends Worker {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /** Publish both the system notification and the WorkManager progress that
+     *  drives the in-app import status banner. */
+    private void updateProgress(int done, int total) {
+        setProgressAsync(new Data.Builder()
+                .putInt(PROGRESS_CURRENT, done)
+                .putInt(PROGRESS_TOTAL, total)
+                .build());
+        updateNotification(done, total);
     }
 
     private void updateNotification(int done, int total) {

@@ -218,6 +218,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     public static volatile List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> debugLastSegments = Collections.emptyList();
     public static volatile String debugLastSegmentsEpisode = null;
 
+    /** Set by the segment-edit sheet while it auditions a region. When true the
+     *  auto-skip loop stands down so the listener can actually hear the segment
+     *  they're tuning instead of having it skipped out from under the preview. */
+    public static volatile boolean trimSegmentEditPreviewActive = false;
+
     /** Tracks which indices in currentSegments were auto-skipped during this episode. */
     private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
 
@@ -310,12 +315,25 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             if (androidAutoConnected && !wasConnected) {
                 EventBus.getDefault().post(AnalyticsEvent.androidAutoConnected());
                 mutePause = false; // phone mute state is irrelevant when audio routes to the car
+                // Auto-start playback when the phone connects to Android Auto (intentionally
+                // not behind a setting). Reuse the session play callback rather than
+                // mediaPlayer.resume(): on a cold connect the service is freshly created with
+                // no media loaded, so resume() would no-op. onPlay() handles every state —
+                // resume when paused/prepared, prepare when initialized, and load the last
+                // episode from preferences when nothing is loaded at all.
+                if (mediaPlayer != null) {
+                    Log.d(TAG, "Android Auto connected, auto-starting playback");
+                    sessionCallback.onPlay();
+                }
+            } else if (!androidAutoConnected && wasConnected && mediaPlayer != null) {
+                // Pause when Android Auto disconnects, gated by the same (default-on)
+                // "pause on disconnect" preference used for headset/Bluetooth disconnects.
+                pauseIfPauseOnDisconnect();
             }
             if (mediaPlayer != null) {
                 updateMediaSession(mediaPlayer.getPlayerStatus());
             }
         };
-        androidAutoConnectionState.observeForever(androidAutoConnectionObserver);
 
         ContextCompat.registerReceiver(this, shutdownReceiver,
                 new IntentFilter(PlaybackServiceInterface.ACTION_SHUTDOWN_PLAYBACK_SERVICE),
@@ -344,6 +362,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         skipCueSoundId = skipCueSoundPool.load(this, R.raw.skip_cue, 1);
 
         recreateMediaSessionIfNeeded();
+        // Observe Android Auto connection only after the media player exists, so the
+        // synchronous initial emission (which fires when the app is opened in the car
+        // while already connected) can auto-start playback instead of no-oping on a
+        // null mediaPlayer.
+        androidAutoConnectionState.observeForever(androidAutoConnectionObserver);
         castStateListener = new CastStateListener(this) {
             @Override
             public void onSessionStartedOrEnded() {
@@ -439,6 +462,19 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         // Warm path: cached segments for this GUID skip the network round trip entirely.
         java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> cached =
                 de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(this, episodeGuid);
+        // The listener's own marks are authoritative: adopt them as-is (even an
+        // empty "nothing to skip here" set) and don't re-query or re-analyze, so
+        // the backend can't override a segment the user set for themselves.
+        boolean userOwned = de.danoeh.antennapod.playback.service.trim.TrimSegmentCache
+                .isUserOwned(this, episodeGuid);
+        if (userOwned) {
+            currentSegments = cached != null ? cached : Collections.emptyList();
+            skippedSegmentIndices.clear();
+            debugLastSegments = currentSegments;
+            debugLastSegmentsEpisode = episodeUrl;
+            Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " user-owned segments");
+            return;
+        }
         if (cached != null && !cached.isEmpty()) {
             currentSegments = cached;
             skippedSegmentIndices.clear();
@@ -2810,7 +2846,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
 
                     // Trim Player: Check for skip
                     de.danoeh.antennapod.model.playback.Playable trimPlayable = getPlayable();
-                    if (currentSegments != null && trimPlayable instanceof de.danoeh.antennapod.model.feed.FeedMedia) {
+                    if (currentSegments != null && !trimSegmentEditPreviewActive
+                            && trimPlayable instanceof de.danoeh.antennapod.model.feed.FeedMedia) {
                         de.danoeh.antennapod.model.feed.FeedMedia fm =
                                 (de.danoeh.antennapod.model.feed.FeedMedia) trimPlayable;
                         if (fm.getItem() == null) {

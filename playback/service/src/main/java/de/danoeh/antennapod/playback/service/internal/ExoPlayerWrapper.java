@@ -15,13 +15,11 @@ import androidx.core.util.Consumer;
 import androidx.media3.common.C;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.util.UnstableApi;
-import androidx.media3.database.StandaloneDatabaseProvider;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.datasource.HttpDataSource;
 import androidx.media3.datasource.cache.CacheDataSource;
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
@@ -56,7 +54,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 
 import android.os.Handler;
 import android.os.Looper;
-import java.io.File;
+import de.danoeh.antennapod.playback.service.trim.StreamingCache;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -189,8 +187,10 @@ public class ExoPlayerWrapper {
                 initLoudnessEnhancer(audioSessionId);
             }
         });
-        simpleCache = new SimpleCache(new File(context.getCacheDir(), "streaming"),
-                new LeastRecentlyUsedCacheEvictor(100 * 1024 * 1024), new StandaloneDatabaseProvider(context));
+        // Shared, persistent on-disk cache (singleton). Reused by the queue prefetcher so a
+        // prefetched episode prefix is served from disk here. Not released on player teardown —
+        // it lives for the process lifetime and its index survives app/device restarts.
+        simpleCache = StreamingCache.getInstance(context);
         initLoudnessEnhancer(exoPlayer.getAudioSessionId());
     }
 
@@ -249,10 +249,7 @@ public class ExoPlayerWrapper {
         if (exoPlayer != null) {
             exoPlayer.release();
         }
-        if (simpleCache != null) {
-            simpleCache.release();
-            simpleCache = null;
-        }
+        // simpleCache is a shared singleton; do not release it here.
         cancelPendingSpeedChange();
         audioSeekCompleteListener = null;
         audioCompletionListener = null;
@@ -268,10 +265,8 @@ public class ExoPlayerWrapper {
             loudnessEnhancer = null;
         }
         exoPlayer.release();
-        if (simpleCache != null) {
-            simpleCache.release();
-            simpleCache = null;
-        }
+        // simpleCache is a shared singleton; do not release it here. createPlayer() re-points
+        // the field at the same singleton instance.
         createPlayer();
     }
 

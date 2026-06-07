@@ -39,10 +39,15 @@ public final class TrimSegmentCache {
         try {
             JSONObject root = new JSONObject(raw);
             long ts = root.optLong("ts", 0);
-            if (System.currentTimeMillis() - ts > TTL_MS) {
+            JSONArray arr = root.optJSONArray("segments");
+            // User-owned entries that still carry marks never expire — those marks
+            // outrank server-side analysis refreshes. An *empty* user-owned set
+            // (the listener deleted the last segment) is only honored within the
+            // TTL, after which the episode becomes eligible for fresh analysis
+            // again, so a single bad detection doesn't lock the episode forever.
+            if (!neverExpires(root, arr) && System.currentTimeMillis() - ts > TTL_MS) {
                 return null;
             }
-            JSONArray arr = root.optJSONArray("segments");
             if (arr == null) return null;
             List<TrimClient.Segment> segs = new ArrayList<>(arr.length());
             for (int i = 0; i < arr.length(); i++) {
@@ -72,10 +77,10 @@ public final class TrimSegmentCache {
         try {
             JSONObject root = new JSONObject(raw);
             long ts = root.optLong("ts", 0);
-            if (System.currentTimeMillis() - ts > TTL_MS) {
+            JSONArray arr = root.optJSONArray("segments");
+            if (!neverExpires(root, arr) && System.currentTimeMillis() - ts > TTL_MS) {
                 return State.UNKNOWN;
             }
-            JSONArray arr = root.optJSONArray("segments");
             if (arr != null && arr.length() > 0) {
                 return State.HAS_SEGMENTS;
             }
@@ -87,12 +92,46 @@ public final class TrimSegmentCache {
         }
     }
 
+    /** True once the listener has edited/marked/removed any segment for this
+     *  episode. Such an entry is authoritative: the backend must not overwrite
+     *  it and it never expires. */
+    public static boolean isUserOwned(Context ctx, String guid) {
+        if (ctx == null || guid == null || guid.isEmpty()) return false;
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String raw = prefs.getString(guid, null);
+        if (raw == null) return false;
+        try {
+            JSONObject root = new JSONObject(raw);
+            if (!root.optBoolean("userOwned", false)) return false;
+            JSONArray arr = root.optJSONArray("segments");
+            // A user-owned set with marks stays authoritative indefinitely. An
+            // empty user-owned set stops being authoritative once it ages out, so
+            // PlaybackService is free to re-query/re-analyze the episode again.
+            return neverExpires(root, arr)
+                    || System.currentTimeMillis() - root.optLong("ts", 0) <= TTL_MS;
+        } catch (JSONException e) {
+            return false;
+        }
+    }
+
+    /** True for entries that must never expire: a user-owned set that still
+     *  carries at least one segment. An empty user-owned set is deliberately
+     *  excluded so deleting the last segment doesn't lock the episode forever. */
+    private static boolean neverExpires(JSONObject root, JSONArray segments) {
+        return root.optBoolean("userOwned", false) && segments != null && segments.length() > 0;
+    }
+
     public static void put(Context ctx, String guid, List<TrimClient.Segment> segments) {
         if (ctx == null || guid == null || guid.isEmpty() || segments == null || segments.isEmpty()) {
             return;
         }
+        // The listener's own marks win: never let a backend refresh clobber an
+        // episode the user has taken ownership of.
+        if (isUserOwned(ctx, guid)) {
+            return;
+        }
         try {
-            writeSegments(ctx, guid, segments);
+            writeSegments(ctx, guid, segments, false);
         } catch (JSONException e) {
             Log.w(TAG, "Failed to serialize segments for guid=" + guid, e);
         }
@@ -117,15 +156,15 @@ public final class TrimSegmentCache {
         }
         if (!replaced) segs.add(edited);
         try {
-            writeSegments(ctx, guid, segs);
+            writeSegments(ctx, guid, segs, true);
         } catch (JSONException e) {
             Log.w(TAG, "Failed to persist edited segment for guid=" + guid, e);
         }
     }
 
     /** Remove the segment with the given stable id (the "Not a skip" action).
-     *  Leaves an analyzed-empty marker behind when the last segment is removed
-     *  so the badge UI still reads "analyzed" rather than reverting to UNKNOWN. */
+     *  Marks the entry user-owned; removing the last segment leaves a user-owned
+     *  empty set so the badge still reads "analyzed" and the backend won't refill it. */
     public static void removeSegment(Context ctx, String guid, String stableId) {
         if (ctx == null || guid == null || guid.isEmpty() || stableId == null) return;
         List<TrimClient.Segment> segs = get(ctx, guid);
@@ -135,19 +174,17 @@ public final class TrimSegmentCache {
             if (!s.stableId().equals(stableId)) kept.add(s);
         }
         if (kept.size() == segs.size()) return; // nothing matched
-        if (kept.isEmpty()) {
-            putAnalyzedEmpty(ctx, guid);
-            return;
-        }
         try {
-            writeSegments(ctx, guid, kept);
+            // Removing the last segment leaves a user-owned empty set ("I checked,
+            // there's nothing to skip here") that the backend must not refill.
+            writeSegments(ctx, guid, kept, true);
         } catch (JSONException e) {
             Log.w(TAG, "Failed to remove segment for guid=" + guid, e);
         }
     }
 
-    private static void writeSegments(Context ctx, String guid, List<TrimClient.Segment> segments)
-            throws JSONException {
+    private static void writeSegments(Context ctx, String guid, List<TrimClient.Segment> segments,
+                                      boolean userOwned) throws JSONException {
         JSONArray arr = new JSONArray();
         for (TrimClient.Segment s : segments) {
             JSONObject obj = new JSONObject();
@@ -161,6 +198,7 @@ public final class TrimSegmentCache {
         root.put("ts", System.currentTimeMillis());
         root.put("segments", arr);
         root.put("analyzed", true);
+        root.put("userOwned", userOwned);
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().putString(guid, root.toString()).apply();
     }

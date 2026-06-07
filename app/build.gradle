@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId "com.trimplayer"
-        versionName "1.0.6-beta5"
+        versionName "1.0.6-beta7"
         versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
@@ -170,6 +170,10 @@ dependencies {
     androidTestImplementation "androidx.test:runner:$runnerVersion"
     androidTestImplementation "androidx.test:rules:$rulesVersion"
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    // Drives PortcastStateWorker against the real on-device DB in
+    // PortcastSpotifyImportInstrumentationTest. Pinned to the same
+    // WorkManager version as the runtime dep; test scope only.
+    androidTestImplementation "androidx.work:work-testing:$workManagerVersion"
 }
 
 if (project.hasProperty("antennaPodPlayPublisherCredentials")) {

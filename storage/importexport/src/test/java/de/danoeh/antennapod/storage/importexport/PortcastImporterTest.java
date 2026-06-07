@@ -155,11 +155,68 @@ public class PortcastImporterTest {
     }
 
     @Test
-    public void dropsEpisodeWithoutGuidOrEnclosure() throws Exception {
+    public void dropsEpisodeWithoutAnyIdentity() throws Exception {
+        // No guid, no enclosureUrl, no title — nothing to join on.
         JSONObject ep = new JSONObject()
                 .put("episodeStateId", "urn:trimplayer:item:99")
                 .put("status", "unplayed");
         assertNull(PortcastImporter.parseEpisode(ep));
+    }
+
+    @Test
+    public void parsesSpotifyEpisodeByTitleAndShowRef() throws Exception {
+        // Spotify-sourced episode: no guid/enclosureUrl, just a title plus a
+        // show reference. The importer must keep it (title is the join key)
+        // and capture the show ref for feedUrl resolution.
+        JSONObject ep = new JSONObject()
+                .put("episodeStateId", "abc123")
+                .put("subscriptionRef", new JSONObject()
+                        .put("platformRefs", new JSONArray().put("spotify:show:7Fj0XEuUQLUqoMZQdsLXqp")))
+                .put("platformRefs", new JSONArray().put("spotify:episode:5h2qd"))
+                .put("title", "Episode 42: The One About Foo")
+                .put("durationSeconds", 1800.0)
+                .put("status", "completed")
+                .put("completedAt", "2026-04-15T10:30:00Z");
+
+        PortcastImporter.EpisodeState state = PortcastImporter.parseEpisode(ep);
+        assertNotNull(state);
+        assertEquals("", state.guid);
+        assertEquals("", state.enclosureUrl);
+        assertEquals("Episode 42: The One About Foo", state.title);
+        assertEquals("spotify:show:7Fj0XEuUQLUqoMZQdsLXqp", state.showRef);
+        assertEquals("", state.feedUrl);
+        assertEquals("completed", state.status);
+        assertEquals(1_800_000L, state.durationMs);
+    }
+
+    @Test
+    public void dropsSpotifyEpisodeWithoutTitle() throws Exception {
+        // A Spotify episode that somehow lost its title is unjoinable.
+        JSONObject ep = new JSONObject()
+                .put("subscriptionRef", new JSONObject()
+                        .put("platformRefs", new JSONArray().put("spotify:show:xyz")))
+                .put("platformRefs", new JSONArray().put("spotify:episode:1"))
+                .put("status", "completed");
+        assertNull(PortcastImporter.parseEpisode(ep));
+    }
+
+    @Test
+    public void firstShowRefPicksSpotifyShowUrn() throws Exception {
+        assertEquals("spotify:show:xyz", PortcastImporter.firstShowRef(
+                new JSONArray().put("applepodcasts:show:abc").put("spotify:show:xyz")));
+        assertEquals("", PortcastImporter.firstShowRef(new JSONArray().put("spotify:episode:1")));
+        assertEquals("", PortcastImporter.firstShowRef(null));
+    }
+
+    @Test
+    public void normalizeTitleAbsorbsCasingAndWhitespace() {
+        assertEquals("the one about foo",
+                PortcastImporter.normalizeTitle("  The   One About Foo  "));
+        // Surrounding punctuation/quotes are stripped; internal kept.
+        assertEquals("ep 42: foo & bar",
+                PortcastImporter.normalizeTitle("\"Ep 42: Foo & Bar\""));
+        assertEquals("", PortcastImporter.normalizeTitle(null));
+        assertEquals("", PortcastImporter.normalizeTitle("   "));
     }
 
     @Test
