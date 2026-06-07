@@ -26,6 +26,7 @@ import androidx.core.app.ShareCompat;
 import androidx.core.content.FileProvider;
 import com.google.android.material.snackbar.Snackbar;
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.event.AnalyticsEvent;
 import de.danoeh.antennapod.activity.OpmlImportActivity;
 import de.danoeh.antennapod.migration.SpotifyMigrationActivity;
 import de.danoeh.antennapod.portcast.ConflictDialog;
@@ -50,6 +51,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.greenrobot.eventbus.EventBus;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -229,6 +231,17 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
 
     private enum ImportType { DATABASE, OPML, PODCAST_ADDICT, PORTCAST, UNKNOWN }
 
+    /** Analytics import_source label for a detected file type; null = don't track. */
+    private static String importSourceFor(ImportType type) {
+        switch (type) {
+            case DATABASE: return "database";
+            case OPML: return "opml";
+            case PODCAST_ADDICT: return "podcast_addict";
+            case PORTCAST: return "portcast";
+            default: return null;
+        }
+    }
+
     private void handleUnifiedImport(Uri uri) {
         if (uri == null) {
             return;
@@ -239,11 +252,17 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(type -> {
                     progressDialog.dismiss();
+                    String startedSource = importSourceFor(type);
+                    if (startedSource != null) {
+                        EventBus.getDefault().post(AnalyticsEvent.importStarted(startedSource));
+                    }
                     switch (type) {
                         case DATABASE:
                             confirmDatabaseImport(uri);
                             break;
                         case OPML:
+                            // import_completed for OPML fires in OpmlImportActivity once
+                            // the user picks feeds and confirms.
                             Intent intent = new Intent(getContext(), OpmlImportActivity.class);
                             intent.setData(uri);
                             startActivity(intent);
@@ -324,6 +343,7 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(() -> {
+                    EventBus.getDefault().post(AnalyticsEvent.importCompleted("database", -1));
                     showDatabaseImportSuccessDialog();
                     progressDialog.dismiss();
                 }, this::showExportErrorDialog);
@@ -621,6 +641,8 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(() -> {
                     progressDialog.dismiss();
+                    EventBus.getDefault().post(
+                            AnalyticsEvent.importCompleted("podcast_addict", preview.feeds.size()));
                     String msg = getString(R.string.podcast_addict_import_started,
                             preview.feeds.size());
                     Snackbar.make(getView(), msg, Snackbar.LENGTH_LONG).show();
@@ -643,6 +665,8 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(() -> {
                     progressDialog.dismiss();
+                    EventBus.getDefault().post(
+                            AnalyticsEvent.importCompleted("portcast", preview.feeds.size()));
                     int unresolved = preview.unresolvableFeeds.size();
                     String msg = unresolved > 0
                             ? getString(R.string.portcast_import_started_with_unresolved,

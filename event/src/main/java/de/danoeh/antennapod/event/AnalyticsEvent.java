@@ -57,6 +57,47 @@ public class AnalyticsEvent {
         return new AnalyticsEvent("segment_missed", b);
     }
 
+    /**
+     * User kicked off a library import. {@code source} is the app they're
+     * coming from: opml | podcast_addict | portcast | spotify | database.
+     * Pairs with {@link #importCompleted} so completion rate is reportable
+     * by source (the mobile half of the website's switch-page funnel).
+     */
+    public static AnalyticsEvent importStarted(String source) {
+        Bundle b = new Bundle();
+        b.putString("import_source", source != null ? source : "unknown");
+        return new AnalyticsEvent("import_started", b);
+    }
+
+    /**
+     * A library import finished writing subscriptions. {@code subscriptionsAdded}
+     * is omitted when the path can't cheaply count them (e.g. a full database
+     * restore) — pass a negative value to skip it.
+     */
+    public static AnalyticsEvent importCompleted(String source, int subscriptionsAdded) {
+        Bundle b = new Bundle();
+        b.putString("import_source", source != null ? source : "unknown");
+        if (subscriptionsAdded >= 0) {
+            b.putInt("subscriptions_added", subscriptionsAdded);
+        }
+        return new AnalyticsEvent("import_completed", b);
+    }
+
+    /**
+     * In-app analogue of the website's install-intent {@code play_click}, fired
+     * once on first launch so the conversion event name is shared across the web
+     * and app GA4 streams. {@code page_type}/{@code position} are constants here
+     * (there is no page or button inside the app); {@code source} is "app" until
+     * the Play Install Referrer (GH-0.4) is wired to supply the real channel.
+     */
+    public static AnalyticsEvent playClick(String source) {
+        Bundle b = new Bundle();
+        b.putString("source", source != null ? source : "app");
+        b.putString("page_type", "app");
+        b.putString("position", "first_open");
+        return new AnalyticsEvent("play_click", b);
+    }
+
     public static AnalyticsEvent androidAutoConnected() {
         return new AnalyticsEvent("android_auto_session", new Bundle());
     }

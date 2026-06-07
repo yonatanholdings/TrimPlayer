@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.event.AnalyticsEvent;
 import de.danoeh.antennapod.storage.importexport.PortcastImporter;
 import de.danoeh.antennapod.ui.common.ThemeSwitcher;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -28,6 +29,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.greenrobot.eventbus.EventBus;
 
 /**
  * Tap-to-import target for {@code .portcast.json} files arriving via
@@ -45,6 +47,15 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class PortcastImportActivity extends AppCompatActivity {
 
     private static final String TAG = "PortcastImport";
+
+    /**
+     * Origin of the .portcast.json being imported, for analytics attribution.
+     * SpotifyMigrationActivity sets this to "spotify"; absent (the default
+     * share-sheet / VIEW entry) means a hand-supplied PortCast file → "portcast".
+     */
+    public static final String EXTRA_IMPORT_SOURCE = "import_source";
+
+    private String importSource = "portcast";
 
     private ProgressBar progress;
     private TextView statusView;
@@ -79,11 +90,23 @@ public class PortcastImportActivity extends AppCompatActivity {
         cancelButton.setOnClickListener(v -> finish());
         importButton.setOnClickListener(v -> executeImport());
 
+        String src = getIntent().getStringExtra(EXTRA_IMPORT_SOURCE);
+        if (src != null) {
+            importSource = src;
+        }
+
         Uri uri = extractUri(getIntent());
         if (uri == null) {
             showFatalError(getString(R.string.portcast_import_error,
                     "No file URI in intent."));
             return;
+        }
+        // import_started for the Spotify path is fired by SpotifyMigrationActivity
+        // when the user enters that flow, so only fire it here for the direct
+        // share-sheet / VIEW entry. Guard on savedInstanceState so a rotation
+        // doesn't re-count.
+        if (savedInstanceState == null && !"spotify".equals(importSource)) {
+            EventBus.getDefault().post(AnalyticsEvent.importStarted(importSource));
         }
         startPreview(uri);
     }
@@ -220,6 +243,8 @@ public class PortcastImportActivity extends AppCompatActivity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(() -> {
+                    EventBus.getDefault().post(
+                            AnalyticsEvent.importCompleted(importSource, preview.feeds.size()));
                     int unresolved = preview.unresolvableFeeds.size();
                     String msg = unresolved > 0
                             ? getString(R.string.portcast_import_started_with_unresolved,

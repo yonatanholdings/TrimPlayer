@@ -38,8 +38,11 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
+import org.greenrobot.eventbus.EventBus;
+
 import de.danoeh.antennapod.BuildConfig;
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.event.AnalyticsEvent;
 import de.danoeh.antennapod.portcast.PortcastImportActivity;
 import de.danoeh.antennapod.ui.common.ThemeSwitcher;
 
@@ -135,6 +138,13 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
 
         cancelButton.setOnClickListener(v -> finish());
         fetchButton.setOnClickListener(v -> startFetch());
+
+        // The user entered the Spotify migration flow. Completion is reported
+        // later by PortcastImportActivity (tagged "spotify" via the handoff
+        // extra). Guard on savedInstanceState so a rotation doesn't re-count.
+        if (savedInstanceState == null) {
+            EventBus.getDefault().post(AnalyticsEvent.importStarted("spotify"));
+        }
 
         configureWebView();
         // Don't pre-wipe cookies — third-party OAuth providers (Google,
@@ -344,6 +354,7 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
             Intent intent = new Intent(this, PortcastImportActivity.class);
             intent.setAction(Intent.ACTION_VIEW);
             intent.setData(uri);
+            intent.putExtra(PortcastImportActivity.EXTRA_IMPORT_SOURCE, "spotify");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(intent);
             clearStorageAfterSuccess();

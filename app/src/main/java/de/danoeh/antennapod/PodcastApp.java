@@ -1,6 +1,7 @@
 package de.danoeh.antennapod;
 
 import android.app.Application;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.google.android.material.color.DynamicColors;
@@ -9,6 +10,8 @@ import org.greenrobot.eventbus.EventBus;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.EventBusException;
+
+import de.danoeh.antennapod.event.AnalyticsEvent;
 
 /** Main application class. */
 public class PodcastApp extends Application {
@@ -36,10 +39,14 @@ public class PodcastApp extends Application {
         PreferenceUpgrader.checkUpgrades(this);
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true);
         EventBus.getDefault().register(new TrimAnalytics(this));
+        logFirstLaunchPlayClick();
         EventBus.getDefault().register(new TrimPrefetchSubscriber());
-        EventBus.getDefault().register(new TrimQueueSubscriber());
+        EventBus.getDefault().register(new TrimQueueSubscriber(this));
         de.danoeh.antennapod.net.common.TrimPrefetcher.prewarm();
         scheduleTrimEventsUpload();
+        // Warm the first few minutes of the next queued episodes on disk so playback survives a
+        // connectivity gap at episode boundaries. Cached prefixes persist across restarts.
+        QueuePrefetchManager.prefetchTopOfQueue(this);
         // Restore Pro entitlement on every cold start so a reinstall or a
         // device swap recovers Pro without the user re-paying. The call is
         // a no-op for free users (queryPurchasesAsync returns empty).
@@ -49,6 +56,28 @@ public class PodcastApp extends Application {
             // Defensive: BillingClient construction can fail on devices
             // without Play Services. Don't crash the app.
             Log.w(TAG, "Billing init failed (no Play Services?): " + t.getMessage());
+        }
+    }
+
+    /**
+     * Fire the {@code play_click} conversion event once, on the first launch
+     * after install. This is the in-app counterpart of the website's
+     * install-intent event so the conversion name is shared across the web and
+     * app GA4 streams. Guarded by a one-shot flag; TrimAnalytics is already
+     * registered above so the EventBus post is delivered. (Existing installs
+     * upgrading into this build count as one first launch — a one-time event.)
+     */
+    private void logFirstLaunchPlayClick() {
+        try {
+            SharedPreferences prefs = getSharedPreferences("trim_analytics", MODE_PRIVATE);
+            if (prefs.getBoolean("play_click_logged", false)) {
+                return;
+            }
+            EventBus.getDefault().post(AnalyticsEvent.playClick("app"));
+            prefs.edit().putBoolean("play_click_logged", true).apply();
+        } catch (Throwable t) {
+            // Analytics must never break app startup.
+            Log.w(TAG, "first-launch play_click failed: " + t.getMessage());
         }
     }
 
