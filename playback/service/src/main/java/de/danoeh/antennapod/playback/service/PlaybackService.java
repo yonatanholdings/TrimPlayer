@@ -226,6 +226,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     /** Tracks which indices in currentSegments were auto-skipped during this episode. */
     private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
 
+    /** A segment whose (duration-capped) end lands this close to the episode end is
+     *  treated as running to the end: we end the episode rather than seek to the
+     *  duration, which on streaming media clamps a hair short and lands back inside
+     *  the segment — re-skipping every tick in an endless loop. Seen with a backend
+     *  outro that extended past the real episode end. */
+    private static final int SEGMENT_RUNS_TO_END_GUARD_MS = 2000;
+
     private SoundPool skipCueSoundPool;
     private int skipCueSoundId = 0;
     private volatile boolean skipCueLoaded = false;
@@ -2388,7 +2395,10 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      * window is still open.
      */
     private void maybeAutoAdjustVolumeBoost() {
-        if (androidAutoConnected) return;
+        if (androidAutoConnected) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: androidAutoConnected");
+            return;
+        }
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         if (am == null) return;
 
@@ -2397,19 +2407,35 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         int prev = autoBoostLastVolume;
         autoBoostLastVolume = cur;
         autoBoostMaxVolume  = max;
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "VolBoost tick: prev=" + prev + " cur=" + cur + " max=" + max);
+        }
 
         // Don't infer intent from the first event after process start —
         // STREAM_MUSIC could already be at any value.
-        if (prev < 0) return;
+        if (prev < 0) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: first event (prev<0)");
+            return;
+        }
         if (max <= 0) return;
-        if (System.currentTimeMillis() - autoBoostLastChangeMs < AUTO_BOOST_COOLDOWN_MS) return;
-        if (!de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.isBoostSupported()) return;
+        if (System.currentTimeMillis() - autoBoostLastChangeMs < AUTO_BOOST_COOLDOWN_MS) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: cooldown");
+            return;
+        }
+        if (!de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.isBoostSupported()) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: boost not supported on device");
+            return;
+        }
 
         Playable p = mediaPlayer != null ? mediaPlayer.getPlayable() : null;
-        if (!(p instanceof FeedMedia)) return;
+        if (!(p instanceof FeedMedia)) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: not playing FeedMedia (" + p + ")");
+            return;
+        }
         FeedMedia fm = (FeedMedia) p;
         if (fm.getItem() == null || fm.getItem().getFeed() == null
                 || fm.getItem().getFeed().getPreferences() == null) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: item/feed/prefs null");
             return;
         }
         de.danoeh.antennapod.model.feed.FeedPreferences prefs =
@@ -2429,8 +2455,56 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             next = stepBoostDown(current);
         }
 
-        if (next == null || next == current) return;
+        if (next == null || next == current) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "VolBoost no change: current=" + current + " next=" + next
+                        + " (atMaxUp=" + (prev == max && cur == max)
+                        + " downBelowHalf=" + (prev == max && cur < max / 2) + ")");
+            }
+            return;
+        }
 
+        applyVolumeBoostChange(prefs, fm, current, next);
+    }
+
+    /**
+     * Step the currently-playing feed's volume boost one rung. Driven by the
+     * foreground volume-up key intercept (via {@link VolumeBoostStepRequestedEvent})
+     * because the broadcast gesture can't fire on devices that don't emit a
+     * VOLUME_CHANGED broadcast for a no-op press at max. Gives explicit feedback
+     * when already at the ceiling/floor so the user isn't left wondering.
+     */
+    private void stepVolumeBoost(boolean up) {
+        if (!de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.isBoostSupported()) {
+            return;
+        }
+        Playable p = mediaPlayer != null ? mediaPlayer.getPlayable() : null;
+        if (!(p instanceof FeedMedia)) {
+            return;
+        }
+        FeedMedia fm = (FeedMedia) p;
+        if (fm.getItem() == null || fm.getItem().getFeed() == null
+                || fm.getItem().getFeed().getPreferences() == null) {
+            return;
+        }
+        de.danoeh.antennapod.model.feed.FeedPreferences prefs =
+                fm.getItem().getFeed().getPreferences();
+        de.danoeh.antennapod.model.feed.VolumeAdaptionSetting current = prefs.getVolumeAdaptionSetting();
+        de.danoeh.antennapod.model.feed.VolumeAdaptionSetting next =
+                up ? stepBoostUp(current) : stepBoostDown(current);
+        if (next == null || next == current) {
+            Toast.makeText(this,
+                    getString(up ? R.string.volume_boost_at_max : R.string.volume_boost_at_min),
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        applyVolumeBoostChange(prefs, fm, current, next);
+    }
+
+    /** Persist the new boost level, apply it to the running player, and notify the UI. */
+    private void applyVolumeBoostChange(de.danoeh.antennapod.model.feed.FeedPreferences prefs,
+            FeedMedia fm, de.danoeh.antennapod.model.feed.VolumeAdaptionSetting current,
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting next) {
         prefs.setVolumeAdaptionSetting(next);
         autoBoostLastChangeMs = System.currentTimeMillis();
         long feedId = fm.getItem().getFeed().getId();
@@ -2453,8 +2527,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         EventBus.getDefault().post(
                 new de.danoeh.antennapod.event.VolumeBoostAutoChangedEvent(
                         feedId, podcast, next, current));
-        Log.d(TAG, "Auto-adjusted volume boost for feed " + feedId
-                + ": " + current + " → " + next);
+        Log.d(TAG, "Volume boost for feed " + feedId + ": " + current + " → " + next);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onVolumeBoostStepRequested(de.danoeh.antennapod.event.VolumeBoostStepRequestedEvent event) {
+        stepVolumeBoost(event.up);
     }
 
     private static de.danoeh.antennapod.model.feed.VolumeAdaptionSetting stepBoostUp(
@@ -2887,6 +2966,19 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 // within REVERT_WINDOW_MS is classified as a revert (false positive).
                                 recentAutoSkips.addLast(
                                         new long[]{startMs, endMs, System.currentTimeMillis()});
+                                if (dur > 0 && endMs >= dur - SEGMENT_RUNS_TO_END_GUARD_MS) {
+                                    // Segment runs to the end of the episode (e.g. an outro the
+                                    // backend extended past the real end). Seeking to the duration
+                                    // lands a hair short on streaming media and re-skips forever,
+                                    // so end the episode instead of seeking into that limbo.
+                                    Log.d(TAG, "Trim Player: segment reaches episode end — ending episode");
+                                    if (firstSkipForThisSegment) {
+                                        showSegmentSkipToast(eventType, skippedMs);
+                                    }
+                                    playSkipCue();
+                                    mediaPlayer.skip();
+                                    break;
+                                }
                                 nextSeekIsInternal = true;
                                 seekTo(endMs);
                                 if (firstSkipForThisSegment) {

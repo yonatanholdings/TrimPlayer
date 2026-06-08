@@ -63,6 +63,13 @@
             android:exported="false"
             android:label="@string/spotify_migration_title" />
 
+        <!-- First-run "Bring your podcasts with you" screen. Launched once from
+             MainActivity.checkFirstLaunch(). -->
+        <activity
+            android:name="de.danoeh.antennapod.onboarding.OnboardingActivity"
+            android:exported="false"
+            android:label="@string/onboarding_title" />
+
         <!-- Tap-to-import target for .portcast.json files arriving from
              Gmail/Drive/Files/share-sheet. See brief §1.2.1 for the
              rationale behind the redundant MIME entries: Gmail and many

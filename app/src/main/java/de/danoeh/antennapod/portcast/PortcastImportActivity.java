@@ -38,11 +38,13 @@ import org.greenrobot.eventbus.EventBus;
  * {@code trimplayer-android-migration-brief.md} §1.2.1.
  *
  * <p>For M3 this is a fast-path: parse, resolve, show a one-screen
- * confirmation, execute. Conflicts default to "use incoming" (the existing
- * {@code ConflictEpisode.useIncoming = true} default) and are surfaced as
- * a count + pointer to the full manual-review flow in Settings →
- * Import/Export. A full inline conflict UI port from
- * {@code ImportExportPreferencesFragment.showConflictDialog} is a follow-up.
+ * confirmation, execute. Each conflict defaults to whichever side has more
+ * listening progress (see {@link PortcastImporter#preferIncomingByProgress}),
+ * so tapping straight through never silently rewinds or un-completes an
+ * episode; conflicts are surfaced as a count + pointer to the full
+ * manual-review flow in Settings → Import/Export. A full inline conflict UI
+ * port from {@code ImportExportPreferencesFragment.showConflictDialog} is a
+ * follow-up.
  */
 public class PortcastImportActivity extends AppCompatActivity {
 

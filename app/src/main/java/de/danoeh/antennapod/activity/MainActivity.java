@@ -52,6 +52,7 @@ import de.danoeh.antennapod.net.download.service.feed.FeedUpdateManagerImpl;
 import de.danoeh.antennapod.net.download.serviceinterface.DownloadServiceInterface;
 import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.net.sync.serviceinterface.SynchronizationQueue;
+import de.danoeh.antennapod.onboarding.OnboardingActivity;
 import de.danoeh.antennapod.playback.cast.CastEnabledActivity;
 import de.danoeh.antennapod.playback.service.PlaybackServiceInterface;
 import de.danoeh.antennapod.portcast.PortcastImportProgress;
@@ -104,6 +105,14 @@ public class MainActivity extends CastEnabledActivity {
 
     public static final String PREF_NAME = "MainActivityPrefs";
     public static final String PREF_IS_FIRST_LAUNCH = "prefMainActivityIsFirstLaunch";
+    /** Set by a full database restore before it force-restarts; consumed here to kick
+     *  a one-shot feed refresh so restored feeds fetch their cover art immediately. */
+    public static final String PREF_PENDING_RESTORE_REFRESH = "prefPendingRestoreRefresh";
+    /** Set when onboarding kicks off an import; consumed by HomeFragment to show a
+     *  one-time "press play, we skip the boring parts" nudge once an episode lands. */
+    public static final String PREF_PENDING_FIRST_PLAY = "prefPendingFirstPlay";
+    /** Import source string that armed {@link #PREF_PENDING_FIRST_PLAY}, for analytics. */
+    public static final String PREF_PENDING_FIRST_PLAY_SOURCE = "prefPendingFirstPlaySource";
 
     public static final String EXTRA_REFRESH_ON_START = "refresh_on_start";
     public static final String KEY_GENERATED_VIEW_ID = "generated_view_id";
@@ -400,6 +409,19 @@ public class MainActivity extends CastEnabledActivity {
             SharedPreferences.Editor edit = prefs.edit();
             edit.putBoolean(PREF_IS_FIRST_LAUNCH, false);
             edit.apply();
+
+            // Surface the skippable "Bring your podcasts with you" import screen over
+            // Home, so a brand-new user can populate their library before bouncing off
+            // an empty list. Shown once (gated by the same first-launch flag).
+            startActivity(new Intent(this, OnboardingActivity.class));
+        }
+
+        // A full database restore force-restarts the app and leaves the restored feeds
+        // without downloaded cover art; nothing else triggers an immediate refresh, so
+        // do it once here to avoid blank "white tiles" until the hourly job runs.
+        if (prefs.getBoolean(PREF_PENDING_RESTORE_REFRESH, false)) {
+            prefs.edit().putBoolean(PREF_PENDING_RESTORE_REFRESH, false).apply();
+            FeedUpdateManager.getInstance().runOnce(this);
         }
     }
 
@@ -1031,6 +1053,31 @@ public class MainActivity extends CastEnabledActivity {
         }
     }
   
+    // Volume-up at the system ceiling boosts the current podcast. We intercept the
+    // hardware key directly (it reaches the foreground activity even when volume is
+    // already at max) instead of relying on a VOLUME_CHANGED broadcast, which many
+    // devices don't emit for a no-op press at max — that broadcast gap is exactly
+    // why the boost gesture silently stopped working. Only consumed when at max with
+    // playback running and boost supported, so normal volume-raising is untouched.
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP && !(getCurrentFocus() instanceof EditText)
+                && de.danoeh.antennapod.playback.service.PlaybackService.isRunning
+                && de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.isBoostSupported()) {
+            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+            if (audioManager != null) {
+                int cur = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+                int max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                if (max > 0 && cur >= max) {
+                    EventBus.getDefault().post(
+                            new de.danoeh.antennapod.event.VolumeBoostStepRequestedEvent(true));
+                    return true;
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
     //Hardware keyboard support
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {

@@ -21,6 +21,71 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- One-time post-import nudge: press play and feel the auto-trim. Shown by
+         HomeFragment once an imported episode materializes. -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/firstPlayNudge"
+        style="@style/Widget.Material3.CardView.Filled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="14dp">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_play_24dp"
+                android:contentDescription="@string/play_label"
+                app:tint="?attr/colorPrimary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:text="@string/home_firstplay_prompt" />
+
+                <TextView
+                    android:id="@+id/firstPlayEpisode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?android:attr/textColorSecondary" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/firstPlayDismiss"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_close"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/close_label"
+                app:tint="?android:attr/textColorSecondary" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <RelativeLayout
         android:id="@+id/welcomeContainer"
         android:layout_width="match_parent"
@@ -75,6 +140,7 @@
             android:textSize="20sp" />
 
         <TextView
+            android:id="@+id/welcomeText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/home_welcome_text"
@@ -83,6 +149,30 @@
             android:textAlignment="center"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/welcomeImportButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/welcomeText"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="24dp"
+            android:minHeight="52dp"
+            android:paddingHorizontal="24dp"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textAllCaps="false"
+            android:text="@string/home_welcome_import_button" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/home_welcome_import_hint"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@+id/welcomeImportButton"
+            android:layout_marginTop="12dp"
+            android:textAlignment="center"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp" />
 
     </RelativeLayout>
 

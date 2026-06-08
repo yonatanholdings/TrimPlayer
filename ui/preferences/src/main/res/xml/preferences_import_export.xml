@@ -9,6 +9,11 @@
                 search:keywords="@string/import_export_search_keywords"
                 android:title="@string/smart_import_label"
                 android:summary="@string/smart_import_summary"/>
+        <Preference
+                android:key="prefOnboarding"
+                search:keywords="@string/import_export_search_keywords"
+                android:title="@string/onboarding_title"
+                android:summary="@string/onboarding_settings_entry_summary"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/database">

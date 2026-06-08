@@ -225,8 +225,11 @@ public class AudioPlayerFragment extends Fragment implements
         float[] ends = new float[segs.size()];
         for (int i = 0; i < segs.size(); i++) {
             de.danoeh.antennapod.playback.service.trim.TrimClient.Segment s = segs.get(i);
-            starts[i] = (float) (s.start * 1000.0 / effectiveDuration);
-            ends[i] = (float) (s.end * 1000.0 / effectiveDuration);
+            // Clamp to [0,1]: a backend segment can run past the real episode end
+            // (seen on a Mel Robbins outro), which would otherwise draw the marker
+            // past the seek bar.
+            starts[i] = Math.max(0f, Math.min(1f, (float) (s.start * 1000.0 / effectiveDuration)));
+            ends[i] = Math.max(0f, Math.min(1f, (float) (s.end * 1000.0 / effectiveDuration)));
         }
         Log.d(TAG, "setSegmentMarkers: applied " + segs.size() + " segments (effDuration="
                 + effectiveDuration + ", field=" + duration + ")");
@@ -610,19 +613,21 @@ public class AudioPlayerFragment extends Fragment implements
         toolbar.getMenu().findItem(R.id.set_sleeptimer_item).setVisible(!controller.sleepTimerActive());
         toolbar.getMenu().findItem(R.id.disable_sleeptimer_item).setVisible(controller.sleepTimerActive());
 
-        // Trim segment list: show once the episode has been analyzed — whether it
-        // has segments or the user emptied it. Keeping it reachable for the empty
-        // (ANALYZED_EMPTY) case is the only in-app way back to "Mark a skip we
-        // missed" / undo after deleting the last segment.
-        String trimGuid = isFeedMedia && ((FeedMedia) media).getItem() != null
-                ? ((FeedMedia) media).getItem().getItemIdentifier() : null;
-        de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State trimState =
-                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.getState(
-                        getContext(), trimGuid);
-        boolean showSegments =
-                trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.HAS_SEGMENTS
-                || trimState == de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.State.ANALYZED_EMPTY;
-        toolbar.getMenu().findItem(R.id.trim_segments_item).setVisible(showSegments);
+        // Trim segment list: always available on a podcast episode. The sheet lists
+        // any detected segments AND offers "Mark a skip we missed", so it's useful
+        // even before analysis or when nothing was found. The only requirement is a
+        // FeedMedia with an item — its guid (itemIdentifier) keys the segment cache;
+        // non-podcast media has no guid to attach edits to.
+        boolean isPodcastEpisode = isFeedMedia && ((FeedMedia) media).getItem() != null;
+        toolbar.getMenu().findItem(R.id.trim_segments_item).setVisible(isPodcastEpisode);
+
+        // Volume boost: an explicit per-podcast control, available whenever a
+        // podcast episode is playing on a device that supports the LoudnessEnhancer.
+        // Complements the volume-up-at-max key gesture (which only works while the
+        // app is in the foreground).
+        boolean canBoost = isFeedMedia
+                && de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.isBoostSupported();
+        toolbar.getMenu().findItem(R.id.volume_boost_item).setVisible(canBoost);
 
         ((CastEnabledActivity) getActivity()).requestCastButton(toolbar.getMenu());
     }
@@ -658,6 +663,12 @@ public class AudioPlayerFragment extends Fragment implements
                         .show(getChildFragmentManager(), "SegmentListDialog");
             }
             return true;
+        } else if (itemId == R.id.volume_boost_item) {
+            if (media instanceof FeedMedia && ((FeedMedia) media).getItem() != null
+                    && ((FeedMedia) media).getItem().getFeed() != null) {
+                showVolumeBoostDialog(((FeedMedia) media).getItem().getFeed());
+            }
+            return true;
         } else if (itemId == R.id.open_feed_item) {
             if (feedItem != null) {
                 openFeed(feedItem.getFeed());
@@ -665,6 +676,54 @@ public class AudioPlayerFragment extends Fragment implements
             return true;
         }
         return false;
+    }
+
+    /** Per-podcast volume-boost picker. Writes the feed's volumeAdaptionSetting and
+     *  posts {@link VolumeAdaptionChangedEvent} so PlaybackService applies it to the
+     *  running player — the same path the volume-up gesture and feed settings use. */
+    private void showVolumeBoostDialog(Feed feed) {
+        if (feed == null || feed.getPreferences() == null) {
+            return;
+        }
+        de.danoeh.antennapod.model.feed.VolumeAdaptionSetting[] options = {
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.OFF,
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST,
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.MEDIUM_BOOST,
+            de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.HEAVY_BOOST,
+        };
+        String[] labels = {
+            getString(R.string.volume_boost_off),
+            getString(R.string.volume_boost_light),
+            getString(R.string.volume_boost_medium),
+            getString(R.string.volume_boost_heavy),
+        };
+        de.danoeh.antennapod.model.feed.VolumeAdaptionSetting currentRaw =
+                feed.getPreferences().getVolumeAdaptionSetting();
+        int checked = 0;
+        for (int i = 0; i < options.length; i++) {
+            if (options[i] == currentRaw) {
+                checked = i;
+                break;
+            }
+        }
+        final long feedId = feed.getId();
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.volume_boost_menu)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    de.danoeh.antennapod.model.feed.VolumeAdaptionSetting chosen = options[which];
+                    feed.getPreferences().setVolumeAdaptionSetting(chosen);
+                    io.reactivex.rxjava3.core.Completable.fromAction(() ->
+                                    de.danoeh.antennapod.storage.database.DBWriter
+                                            .setFeedPreferences(feed.getPreferences()))
+                            .subscribeOn(io.reactivex.rxjava3.schedulers.Schedulers.io())
+                            .subscribe();
+                    EventBus.getDefault().post(
+                            new de.danoeh.antennapod.event.settings.VolumeAdaptionChangedEvent(
+                                    chosen, feedId));
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.cancel_label, null)
+                .show();
     }
 
     private void openFeed(Feed feed) {

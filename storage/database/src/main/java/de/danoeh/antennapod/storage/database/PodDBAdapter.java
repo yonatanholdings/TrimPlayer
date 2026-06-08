@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1155,6 +1156,106 @@ public class PodDBAdapter {
         final String query = "SELECT " + TABLE_NAME_FAVORITES + "." + KEY_FEEDITEM
                 + " FROM " + TABLE_NAME_FAVORITES;
         return db.rawQuery(query, null);
+    }
+
+    // ── Backup-DB readers ─────────────────────────────────────────────────────
+    // These run the standard projections against an *arbitrary* database handle
+    // (e.g. a read-only AntennaPod/TrimPlayer .db backup being merged in) so the
+    // existing cursor mappers can convert the rows unchanged. They are static
+    // because the backup DB is opened by the caller, separate from this adapter's
+    // singleton connection to the live database.
+    //
+    // A backup created by a different/older build — most importantly a stock
+    // AntennaPod export — can be missing columns this build added, notably the
+    // TrimPlayer-only feed_trim_skip_* columns (added at DB version 3110000).
+    // Selecting a column the backup lacks throws "no such column", so every
+    // projection is rewritten per backup via backupProjection(): any absent
+    // column is replaced by a default literal that keeps the alias the cursor
+    // mappers resolve by name, so the same mappers read foreign backups unchanged.
+
+    /** Defaults for columns a backup may lack. Unlisted missing columns default
+     *  to NULL (→ 0/empty); the trim toggles default on, matching their migration. */
+    private static final Map<String, String> BACKUP_MISSING_COLUMN_DEFAULTS = new HashMap<>();
+    static {
+        BACKUP_MISSING_COLUMN_DEFAULTS.put(KEY_FEED_TRIM_SKIP_INTROS, "1");
+        BACKUP_MISSING_COLUMN_DEFAULTS.put(KEY_FEED_TRIM_SKIP_ADS, "1");
+        BACKUP_MISSING_COLUMN_DEFAULTS.put(KEY_FEED_TRIM_SKIP_OUTROS, "1");
+    }
+
+    private static Set<String> backupTableColumns(SQLiteDatabase backupDb, String table) {
+        Set<String> columns = new HashSet<>();
+        try (Cursor cursor = backupDb.rawQuery("PRAGMA table_info(" + table + ")", null)) {
+            int nameIdx = cursor.getColumnIndex("name");
+            while (cursor.moveToNext()) {
+                columns.add(cursor.getString(nameIdx));
+            }
+        }
+        return columns;
+    }
+
+    /**
+     * Rewrite a {@code "Table.col [AS alias], …"} projection so any column absent
+     * from {@code backupDb}'s schema is replaced by a default literal, preserving
+     * the alias the cursor mappers resolve by name. Terms that don't reference a
+     * single {@code Table.column} (or whose column exists) pass through unchanged.
+     */
+    private static String backupProjection(SQLiteDatabase backupDb, String projection) {
+        Map<String, Set<String>> columnsByTable = new HashMap<>();
+        StringBuilder rewritten = new StringBuilder();
+        for (String rawTerm : projection.split(",")) {
+            String term = rawTerm.trim();
+            String expression = term;
+            String alias = null;
+            int asIndex = term.toUpperCase(Locale.US).indexOf(" AS ");
+            if (asIndex >= 0) {
+                expression = term.substring(0, asIndex).trim();
+                alias = term.substring(asIndex + 4).trim();
+            }
+            int dotIndex = expression.indexOf('.');
+            if (dotIndex > 0) {
+                String table = expression.substring(0, dotIndex);
+                String column = expression.substring(dotIndex + 1);
+                Set<String> columns =
+                        columnsByTable.computeIfAbsent(table, t -> backupTableColumns(backupDb, t));
+                if (!columns.contains(column)) {
+                    String defaultValue = BACKUP_MISSING_COLUMN_DEFAULTS.get(column);
+                    term = (defaultValue != null ? defaultValue : "NULL")
+                            + " AS " + (alias != null ? alias : column);
+                }
+            }
+            if (rewritten.length() > 0) {
+                rewritten.append(", ");
+            }
+            rewritten.append(term);
+        }
+        return rewritten.toString();
+    }
+
+    public static Cursor getAllFeedsCursor(SQLiteDatabase backupDb) {
+        return backupDb.rawQuery(
+                "SELECT " + backupProjection(backupDb, KEYS_FEED) + " FROM " + TABLE_NAME_FEEDS, null);
+    }
+
+    public static Cursor getAllFeedItemsCursor(SQLiteDatabase backupDb) {
+        return backupDb.rawQuery("SELECT "
+                + backupProjection(backupDb, KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA)
+                + " FROM " + TABLE_NAME_FEED_ITEMS + JOIN_FEED_ITEM_AND_MEDIA, null);
+    }
+
+    public static Cursor getQueueCursor(SQLiteDatabase backupDb) {
+        final String query = "SELECT "
+                + backupProjection(backupDb, KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA)
+                + " FROM " + TABLE_NAME_QUEUE
+                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
+                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_QUEUE + "." + KEY_FEEDITEM
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " ORDER BY " + TABLE_NAME_QUEUE + "." + KEY_ID;
+        return backupDb.rawQuery(query, null);
+    }
+
+    public static Cursor getFavoriteItemIdsCursor(SQLiteDatabase backupDb) {
+        return backupDb.rawQuery("SELECT " + TABLE_NAME_FAVORITES + "." + KEY_FEEDITEM
+                + " FROM " + TABLE_NAME_FAVORITES, null);
     }
 
     public void setFeedItems(int oldState, int newState) {

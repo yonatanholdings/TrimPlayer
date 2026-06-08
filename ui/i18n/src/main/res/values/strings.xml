@@ -102,7 +102,10 @@
     <string name="home_new_empty_text">New episodes will show up here. You can then decide whether you are interested in them.</string>
     <string name="home_downloads_empty_text">You can download any episode to listen to it offline.</string>
     <string name="home_welcome_title">Welcome to TrimPlayer!</string>
-    <string name="home_welcome_text">You are not subscribed to any podcasts yet. Open the menu to add a podcast.</string>
+    <string name="home_welcome_text">Bring your shows from Spotify, Apple Podcasts, Podcast Addict and more — or start fresh and find a new one.</string>
+    <string name="home_welcome_import_button">Bring your podcasts</string>
+    <string name="home_welcome_import_hint">Anytime in Settings → Backup &amp; restore</string>
+    <string name="home_firstplay_prompt">Press play. We listen for the intro, ads, and outro — and skip them for you.</string>
     <string name="notification_permission_denied">You denied the permission.</string>
     <string name="configure_home">Configure home screen</string>
     <string name="section_hidden">Hidden</string>
@@ -583,6 +586,9 @@
     <string name="volume_boost_light">light</string>
     <string name="volume_boost_medium">medium</string>
     <string name="volume_boost_heavy">heavy</string>
+    <string name="volume_boost_menu">Volume boost</string>
+    <string name="volume_boost_at_max">Already at maximum volume boost</string>
+    <string name="volume_boost_at_min">Volume boost is off</string>
     <string name="app_action_fallback_podcast_name">this podcast</string>
     <!-- Snackbar when analysis completes mid-playback and segments arrive for the current episode.
          Same two-line layout as trim_analyze_queued_*. %1$s = podcast title. -->
@@ -943,6 +949,37 @@
     <string name="automatic_database_export_error">Error during automatic database backup</string>
     <string name="database_import_label">Database import</string>
     <string name="database_import_warning">Importing a database will replace all of your current subscriptions and playing history. You should export your current database as a backup. Do you want to replace?</string>
+    <string name="database_merge_label">Merge database</string>
+    <string name="database_apply_choice_title">Apply database backup</string>
+    <string name="database_apply_choice_message">You already have subscriptions in TrimPlayer. How do you want to apply this backup?\n\n• Merge keeps your current library and adds the backup\'s shows, history, queue and favorites on top. Only episodes the feeds still publish can be restored.\n\n• Full restore replaces everything currently in TrimPlayer with the backup — including episodes the feeds no longer publish. Your current library is wiped.</string>
+    <string name="database_apply_merge">Merge</string>
+    <string name="database_apply_full_restore">Full restore</string>
+
+    <!-- First-run onboarding ("Bring your podcasts with you") -->
+    <string name="onboarding_title">Bring your podcasts with you</string>
+    <string name="onboarding_subtitle">Most apps make you start from scratch. We don\'t — from any app.</string>
+    <!-- Wedge band: the differentiator, read first, above any import button. -->
+    <string name="onboarding_wedge_band">Press play — we skip the intros, ads, and outros automatically.</string>
+    <string name="onboarding_spotify_title">Bring everything from Spotify</string>
+    <string name="onboarding_spotify_subtitle">Subscriptions and your exact place in every episode. Yes, that\'s allowed.</string>
+    <string name="onboarding_spotify_disclaimer">Not affiliated with Spotify.</string>
+    <string name="onboarding_source_podcast_addict">Podcast Addict</string>
+    <string name="onboarding_source_podcast_addict_sub">Your subs, your place in every episode, even your queue — not just a list.</string>
+    <string name="onboarding_source_antennapod">AntennaPod</string>
+    <string name="onboarding_source_antennapod_sub">We\'re built on AntennaPod, so we read its backup whole — history and all.</string>
+    <string name="onboarding_source_portcast">PortCast file</string>
+    <string name="onboarding_source_portcast_sub">The open format. Everything moves, nothing\'s lost. (We wrote it.)</string>
+    <string name="onboarding_source_opml">Switching from another app?</string>
+    <string name="onboarding_source_opml_sub">Pocket Casts, Overcast, Castro — bring your subscriptions in one tap (OPML). It\'s all the others let you take. We\'ll let you take more.</string>
+    <string name="onboarding_start_fresh">Start fresh</string>
+    <string name="onboarding_settings_entry_summary">Bring your shows from Spotify, Apple Podcasts, Podcast Addict, and more</string>
+    <!-- Post-import success moment (shown before finishing to Home). -->
+    <string name="onboarding_trim_demo_label">Less to sit through, every episode.</string>
+    <string name="onboarding_success_title">Your shows are on the way</string>
+    <string name="onboarding_success_body_history">We\'re pulling in your subscriptions and your exact place in every episode. Your progress is safe — we never rewind you.</string>
+    <string name="onboarding_success_body_subscriptions">We\'re importing your subscriptions now.</string>
+    <string name="onboarding_success_trim">And the moment you press play, we start skipping the intros, ads, and outros for you — automatically.</string>
+    <string name="onboarding_success_cta">Take me to my podcasts</string>
     <string name="please_wait">Please wait&#8230;</string>
     <string name="export_error_label">Export error</string>
     <string name="export_success_title">Export successful</string>
@@ -1335,7 +1372,7 @@
     <string name="echo_thanks_now_favorite">Now, let\'s take a look at your favorite podcasts…</string>
 
     <string name="echo_share_heading">My favorite podcasts</string>
-    <string name="echo_share">My year %d in podcasts. #TrimPlayerEcho</string>
+    <string name="echo_share">My year %d in podcasts 🎧 #TrimPlayerEcho\nSee your own listening wrapped with TrimPlayer:</string>
 
     <string name="echo_time_saved_title">This year, TrimPlayer saved you</string>
     <string name="echo_time_saved_unit_hours">hours</string>

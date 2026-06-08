@@ -281,6 +281,12 @@ public class PortcastImporter {
                     conflict.episodeTitle = stateTitle(epJson, state);
                     conflict.feedTitle = feedTitleByUrl.getOrDefault(state.feedUrl, "Unknown Feed");
                     conflict.apStateDescription = describeApState(apItem);
+                    // Default to whichever side has *more* progress, so a user
+                    // who taps straight through the conflict screen never
+                    // silently rewinds a position or un-completes an episode.
+                    int localPos = apItem.getMedia() != null ? apItem.getMedia().getPosition() : 0;
+                    conflict.useIncoming = preferIncomingByProgress(
+                            state.status, state.positionMs, apItem.isPlayed(), localPos);
                     preview.conflicts.add(conflict);
                 } else {
                     preview.nonConflictingStates.add(state);
@@ -605,6 +611,40 @@ public class PortcastImporter {
         return null;
     }
 
+    /**
+     * Default conflict resolution: prefer whichever side represents <em>more</em>
+     * listening progress. Progress ranks as {@code unplayed < in-progress(position)
+     * < completed/archived}. Returns true when the incoming (imported) state should
+     * win the conflict by default; false to keep the local state. This is only the
+     * pre-selected default — the user can still flip any row in the conflict screen.
+     *
+     * <p>Pure (operates on primitives, no Android types) so it is unit-testable
+     * without a {@code FeedItem}. The caller extracts the local position/played
+     * flag from the matched item.
+     *
+     * @param incomingStatus    PortCast status of the imported episode
+     *                          ("unplayed" | "in_progress" | "completed" | "archived")
+     * @param incomingPositionMs imported resume position in ms
+     * @param localPlayed       whether the local item is marked played/completed
+     * @param localPositionMs   local resume position in ms
+     */
+    static boolean preferIncomingByProgress(String incomingStatus, int incomingPositionMs,
+                                            boolean localPlayed, int localPositionMs) {
+        boolean incomingCompleted = "completed".equals(incomingStatus)
+                || "archived".equals(incomingStatus);
+        if (incomingCompleted && !localPlayed) {
+            return true;   // incoming finished it; local hadn't — incoming is further
+        }
+        if (localPlayed && !incomingCompleted) {
+            return false;  // local finished it; don't un-complete from a partial import
+        }
+        if (localPlayed) {
+            return false;  // both completed — nothing to gain, keep local untouched
+        }
+        // Neither completed: furthest resume position wins. Ties keep local.
+        return incomingPositionMs > localPositionMs;
+    }
+
     private static boolean hasApPlayData(FeedItem item) {
         if (item.isPlayed()) return true;
         if (item.getMedia() != null) {
@@ -625,7 +665,7 @@ public class PortcastImporter {
 
     // ── SharedPreferences stash ──────────────────────────────────────────────
 
-    static void savePendingFeeds(Context context, List<PortFeed> feeds) throws Exception {
+    public static void savePendingFeeds(Context context, List<PortFeed> feeds) throws Exception {
         JSONArray arr = new JSONArray();
         for (PortFeed pf : feeds) {
             JSONObject o = new JSONObject();

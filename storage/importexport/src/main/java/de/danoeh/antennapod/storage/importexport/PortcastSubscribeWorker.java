@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -32,6 +33,7 @@ import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.model.feed.VolumeAdaptionSetting;
 import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
+import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.database.FeedDatabaseWriter;
 import de.danoeh.antennapod.ui.notifications.NotificationUtils;
@@ -105,9 +107,22 @@ public class PortcastSubscribeWorker extends Worker {
     }
 
     private void subscribeOne(Context ctx, PortcastImporter.PortFeed pf) {
-        Feed feed = new Feed(pf.feedUrl, null, pf.title);
-        feed.setItems(Collections.emptyList());
-        Feed persisted = FeedDatabaseWriter.updateFeed(ctx, feed, false);
+        // Reuse an already-subscribed feed when the incoming URL matches one
+        // under normalization, so a re-import never creates a duplicate. We
+        // match on the URL ourselves rather than letting FeedDatabaseWriter
+        // dedupe, because its match key is Feed#getIdentifyingValue, which
+        // prefers an Atom feed's feedIdentifier over its download URL (set on
+        // every refresh from the feed's <id>, see Atom parser). Once a feed has
+        // been refreshed, updateFeed would therefore miss a URL-only match and
+        // add a second row. SubscriptionIdIndex covers resolver-sourced
+        // (Spotify) feeds; this covers plain-RSS, empty-subscriptionId, and
+        // post-reinstall re-imports.
+        Feed persisted = findExistingFeedByUrl(pf.feedUrl);
+        if (persisted == null) {
+            Feed feed = new Feed(pf.feedUrl, null, pf.title);
+            feed.setItems(Collections.emptyList());
+            persisted = FeedDatabaseWriter.updateFeed(ctx, feed, false);
+        }
         if (persisted == null || persisted.getPreferences() == null) {
             return;
         }
@@ -145,6 +160,32 @@ public class PortcastSubscribeWorker extends Worker {
         if (dirty) {
             DBWriter.setFeedPreferences(prefs);
         }
+    }
+
+    /**
+     * Find an already-subscribed feed whose download URL matches {@code incomingUrl}
+     * under {@link PortcastImporter#normalizeFeedUrl} (absorbing scheme, {@code www.},
+     * and trailing-slash drift), or null if none. Returned feeds come straight from
+     * {@link DBReader#getFeedList()} with preferences populated, so the caller can
+     * apply per-feed prefs to the existing subscription. Matching the URL directly
+     * (not {@link Feed#getIdentifyingValue()}) is deliberate — see {@link #subscribeOne}.
+     */
+    @Nullable
+    private static Feed findExistingFeedByUrl(String incomingUrl) {
+        if (incomingUrl == null || incomingUrl.isEmpty()) {
+            return null;
+        }
+        String key = PortcastImporter.normalizeFeedUrl(incomingUrl);
+        if (key.isEmpty()) {
+            return null;
+        }
+        for (Feed existing : DBReader.getFeedList()) {
+            String url = existing.getDownloadUrl();
+            if (url != null && PortcastImporter.normalizeFeedUrl(url).equals(key)) {
+                return existing;
+            }
+        }
+        return null;
     }
 
     /** Apply our `com.trimplayer.*` extension namespaces if present. Returns whether anything was applied. */

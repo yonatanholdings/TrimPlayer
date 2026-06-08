@@ -75,6 +75,9 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
      *  on bootstrap; the library sidebar still fires libraryV3 from there. The
      *  Fetch button should enable for any /collection/* path. */
     private static final String LIBRARY_PREFIX = "https://open.spotify.com/collection";
+    /** The Spotify web-player host (any path). The viewport manager runs on these
+     *  pages; the accounts.spotify.com login host is left untouched. */
+    private static final String PLAYER_HOST = "https://open.spotify.com";
     /** The default mobile WebView UA trips Spotify's "open in app or close"
      *  mobile-web wall, which never lets sign-in proceed. A desktop UA serves
      *  the full web player and the normal login flow. Verified working
@@ -86,6 +89,55 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
     private static final String ASSET_HOOK = "spotify_migration/spotify_hook.js";
     private static final String ASSET_FETCH = "spotify_migration/spotify_fetch.js";
     private static final String ASSET_BUILDER = "spotify_migration/portcast.js";
+
+    /** Fixes the library page's "black band at the bottom" without breaking the
+     *  login page — the two needs conflict, so we resolve them by authentication
+     *  state rather than URL.
+     *
+     *  <p>Black band: once signed in, Spotify's desktop player widens the viewport
+     *  to ~800 CSS px and zooms to fit, but the collection content height stays
+     *  ~603, leaving the bottom ~half of the screen as empty dark-theme background.
+     *  Forcing {@code width=device-width} makes the content fill the screen.
+     *
+     *  <p>Login page: that same device-width force pushes Spotify's wide desktop
+     *  top bar — and the "Log in" control on its right — off-screen. And the login
+     *  shell renders at the {@code /collection} URL pre-auth, so a URL gate can't
+     *  tell login from library. So we gate on a logged-in DOM marker instead, and
+     *  <em>remove</em> the override whenever a login UI is present. Self-correcting
+     *  on a 1s interval (covers SPA sign-in without a reload). Fails safe: if the
+     *  marker is missed we simply don't force device-width — the black band returns
+     *  (cosmetic) but the login stays reachable (functional). We never set
+     *  {@code user-scalable=no}, so pinch-zoom is always available as a fallback. */
+    private static final String VIEWPORT_MANAGER_JS =
+            "(function(){"
+            + "  try {"
+            + "    var WANT = 'width=device-width, initial-scale=1';"
+            + "    var apply = function(){"
+            + "      var loginUi = /accounts\\.spotify\\.com|\\/login|\\/signup/.test(location.href)"
+            + "        || !!document.querySelector("
+            + "             '[data-testid=\"login-button\"],[data-testid=\"signup-button\"],input[type=\"password\"]');"
+            + "      var loggedIn = !!document.querySelector("
+            + "             '[data-testid=\"user-widget-link\"],[data-testid=\"user-widget-button\"],"
+            + "[data-testid=\"user-widget-avatar\"],[data-testid=\"yourLibraryX\"],[data-testid=\"left-sidebar\"]');"
+            + "      var ours = document.querySelector('meta[name=\"viewport\"][data-tp=\"1\"]');"
+            + "      if (loggedIn && !loginUi) {"
+            + "        if (!ours) {"
+            + "          ours = document.createElement('meta');"
+            + "          ours.setAttribute('name', 'viewport');"
+            + "          ours.setAttribute('data-tp', '1');"
+            + "          (document.head || document.documentElement).appendChild(ours);"
+            + "        }"
+            + "        if (ours.getAttribute('content') !== WANT) { ours.setAttribute('content', WANT); }"
+            + "      } else if (ours && ours.parentNode) {"
+            + "        ours.parentNode.removeChild(ours);"
+            + "      }"
+            + "    };"
+            + "    if (window.__tpVpApply) { window.__tpVpApply(); return; }"
+            + "    window.__tpVpApply = apply;"
+            + "    apply();"
+            + "    setInterval(apply, 1000);"
+            + "  } catch (e) {}"
+            + "})();";
 
     /** Namespace we attach portcast.js exports to so they're callable across
      *  separate {@code evaluateJavascript} invocations. */
@@ -193,11 +245,26 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
     }
 
     private void configureWebView() {
+        // Allow Chrome DevTools (chrome://inspect) to attach to this WebView in
+        // debug builds, so the Spotify page can be inspected live over adb.
+        if (BuildConfig.DEBUG) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setUserAgentString(DESKTOP_UA);
+        // Leave the global viewport/zoom defaults so login/home pages keep their
+        // natural zoom-to-fit; the library black band is fixed per-page by
+        // VIEWPORT_MANAGER_JS (auth-gated), not by a global setting.
+        // Always allow pinch-zoom (without the on-screen +/- controls) as a
+        // guaranteed fallback: if any page ends up wider than the screen, the user
+        // can still zoom/pan to reach off-screen controls like a side-positioned
+        // login button.
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(webView, true);
@@ -227,6 +294,10 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
                 // 10s if it misses the first capture, but the spike showed
                 // the first read is normally enough.
                 view.evaluateJavascript(hookJs, null);
+                // Install the auth-gated viewport manager early so it's watching
+                // before the player settles. It self-decides whether to force
+                // device-width (logged-in library) or stay hands-off (login/anon).
+                applyViewportManager(view, url);
             }
 
             @Override
@@ -238,6 +309,7 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
                 // can leave the user looking at the bottom of the previous
                 // page after a redirect.
                 view.scrollTo(0, 0);
+                applyViewportManager(view, url);
                 if (url == null) return;
                 if (phase != Phase.SIGNING_IN && phase != Phase.READY) return;
                 if (url.startsWith(LIBRARY_PREFIX)) {
@@ -254,6 +326,15 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
                     return;
                 }
                 setPhase(Phase.SIGNING_IN);
+            }
+
+            @Override
+            public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                // SPA route changes (Spotify pushes History API states without a
+                // full load) don't fire onPageFinished, so re-assert the viewport
+                // manager here too. (It also self-heals every 1s, but this keeps
+                // it prompt on navigation.)
+                applyViewportManager(view, url);
             }
 
             @Override
@@ -294,6 +375,15 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
         if (webView != null) {
             webView.clearHistory();
             webView.clearCache(true);
+        }
+    }
+
+    /** Install/refresh the auth-gated viewport manager on Spotify web-player pages
+     *  ({@code open.spotify.com}). The manager itself decides per page whether to
+     *  force device-width. See {@link #VIEWPORT_MANAGER_JS}. */
+    private void applyViewportManager(WebView view, String url) {
+        if (view != null && url != null && url.startsWith(PLAYER_HOST)) {
+            view.evaluateJavascript(VIEWPORT_MANAGER_JS, null);
         }
     }
 

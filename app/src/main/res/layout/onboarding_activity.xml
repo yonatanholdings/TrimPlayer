@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="?attr/colorSurface">
+
+    <!-- ===== Picker ===== -->
+    <ScrollView
+        android:id="@+id/onboarding_picker_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="36dp"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                android:text="@string/onboarding_title" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="@string/onboarding_subtitle" />
+
+            <!-- Wedge band: the differentiator, read before any import button -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Material3.CardView.Filled"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="14dp"
+                    android:gravity="center"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:text="@string/onboarding_wedge_band" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Spotify hero: the one source that brings your place, not just your shows -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/onboarding_spotify_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:minHeight="60dp"
+                android:paddingVertical="16dp"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textAllCaps="false"
+                android:text="@string/onboarding_spotify_title" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="@string/onboarding_spotify_subtitle" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center"
+                android:alpha="0.6"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:text="@string/onboarding_spotify_disclaimer" />
+
+            <!-- History sources: full backups (subs + history). All open the picker; auto-detected. -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/onboarding_btn_podcast_addict"
+                style="@style/Widget.Material3.CardView.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:text="@string/onboarding_source_podcast_addict" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:text="@string/onboarding_source_podcast_addict_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/onboarding_btn_antennapod"
+                style="@style/Widget.Material3.CardView.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:text="@string/onboarding_source_antennapod" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:text="@string/onboarding_source_antennapod_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/onboarding_btn_portcast"
+                style="@style/Widget.Material3.CardView.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:text="@string/onboarding_source_portcast" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:text="@string/onboarding_source_portcast_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Honest divider: below is subscriptions-only, and we say so. -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:background="?android:attr/listDivider" />
+
+            <LinearLayout
+                android:id="@+id/onboarding_btn_opml"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:text="@string/onboarding_source_opml" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:text="@string/onboarding_source_opml_sub" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/onboarding_start_fresh_button"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:textAllCaps="false"
+                android:text="@string/onboarding_start_fresh" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ===== Success moment (shown when an import is enqueued, before finishing) ===== -->
+    <LinearLayout
+        android:id="@+id/onboarding_success_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:paddingHorizontal="32dp"
+        android:background="?attr/colorSurface">
+
+        <!-- The "snip": an episode bar whose intro/ad/outro segments collapse and
+             the bar contracts. Animated in OnboardingActivity. -->
+        <LinearLayout
+            android:id="@+id/onboarding_trim_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/seg_intro"
+                android:layout_width="28dp"
+                android:layout_height="match_parent"
+                android:background="?attr/colorError" />
+
+            <View
+                android:id="@+id/seg_show1"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:background="?attr/colorPrimary" />
+
+            <View
+                android:id="@+id/seg_ad"
+                android:layout_width="46dp"
+                android:layout_height="match_parent"
+                android:background="?attr/colorError" />
+
+            <View
+                android:id="@+id/seg_show2"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:background="?attr/colorPrimary" />
+
+            <View
+                android:id="@+id/seg_outro"
+                android:layout_width="28dp"
+                android:layout_height="match_parent"
+                android:background="?attr/colorError" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="@string/onboarding_trim_demo_label" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:text="@string/onboarding_success_title" />
+
+        <TextView
+            android:id="@+id/onboarding_success_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="@string/onboarding_success_body_history" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:text="@string/onboarding_success_trim" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/onboarding_success_cta_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:minHeight="56dp"
+            android:paddingHorizontal="28dp"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textAllCaps="false"
+            android:text="@string/onboarding_success_cta" />
+    </LinearLayout>
+</FrameLayout>

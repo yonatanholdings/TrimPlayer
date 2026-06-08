@@ -1,6 +1,8 @@
 package de.danoeh.antennapod.storage.importexport;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -234,6 +236,51 @@ public class PortcastImporterTest {
     public void dropsQueueEntryWithoutEpisodeRef() throws Exception {
         JSONObject q = new JSONObject().put("position", 1);
         assertNull(PortcastImporter.parseQueueEntry(q));
+    }
+
+    @Test
+    public void conflictDefaultPrefersFurthestProgress() {
+        // Incoming completed, local only in-progress → incoming is further.
+        assertTrue(PortcastImporter.preferIncomingByProgress(
+                "completed", 0, /*localPlayed*/ false, /*localPos*/ 120_000));
+        // Local completed, incoming only in-progress → keep local; don't un-complete.
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "in_progress", 120_000, /*localPlayed*/ true, /*localPos*/ 0));
+        // Both completed → keep local untouched.
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "completed", 0, /*localPlayed*/ true, /*localPos*/ 0));
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "archived", 0, /*localPlayed*/ true, /*localPos*/ 0));
+        // Both in-progress: furthest resume position wins.
+        assertTrue(PortcastImporter.preferIncomingByProgress(
+                "in_progress", 600_000, false, 120_000));
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "in_progress", 120_000, false, 600_000));
+        // The silent-rewind case the old hardcoded default broke: local at 18 min,
+        // incoming backup at 2 min → keep local, no rewind.
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "in_progress", 120_000, false, 1_080_000));
+        // Tie keeps local (no needless overwrite).
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "in_progress", 300_000, false, 300_000));
+        // Incoming unplayed (position 0) never clobbers a local in-progress.
+        assertFalse(PortcastImporter.preferIncomingByProgress(
+                "unplayed", 0, false, 300_000));
+    }
+
+    @Test
+    public void normalizeFeedUrlCollapsesDedupeVariants() {
+        // The PortCast re-import dedupe (PortcastSubscribeWorker#dedupeFeedUrl)
+        // relies on these variants normalizing to one key so a second import
+        // reuses the stored feed instead of subscribing a duplicate.
+        String canonical = PortcastImporter.normalizeFeedUrl("https://example.com/feed");
+        assertEquals(canonical, PortcastImporter.normalizeFeedUrl("http://example.com/feed"));
+        assertEquals(canonical, PortcastImporter.normalizeFeedUrl("https://www.example.com/feed"));
+        assertEquals(canonical, PortcastImporter.normalizeFeedUrl("https://example.com/feed/"));
+        assertEquals(canonical, PortcastImporter.normalizeFeedUrl("  HTTPS://EXAMPLE.COM/feed//  "));
+        // Distinct feeds must NOT collapse together.
+        assertNotEquals(canonical, PortcastImporter.normalizeFeedUrl("https://example.com/other"));
+        assertEquals("", PortcastImporter.normalizeFeedUrl(null));
     }
 
     @Test

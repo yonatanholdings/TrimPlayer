@@ -34,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 public class FinalShareScreen extends EchoScreen {
     private static final int SHARE_SIZE = 1000;
     private static final String TAG = "FinalShareScreen";
+    // Branded recap landing: unfurls into an OG card when shared, handles iOS/desktop viewers,
+    // and forwards Android users to the Play listing while preserving the install referrer.
+    private static final String SHARE_URL = "https://trimplayer.com/echo";
     private final SimpleEchoScreenBinding viewBinding;
     private final ArrayList<String> favoritePodNames = new ArrayList<>();
     private final ArrayList<Drawable> favoritePodImages = new ArrayList<>();
@@ -76,10 +79,14 @@ public class FinalShareScreen extends EchoScreen {
             stream.close();
 
             Uri fileUri = FileProvider.getUriForFile(context, context.getString(R.string.provider_authority), file);
+            // UTM-tag the link for web-side attribution; the landing page carries the install
+            // referrer through to Play so share -> web -> Play -> install stays measurable.
+            String shareUrl = SHARE_URL + "?utm_source=echo_share&utm_medium=social&utm_campaign=echo_"
+                    + EchoConfig.RELEASE_YEAR;
             new ShareCompat.IntentBuilder(context)
                     .setType("image/png")
                     .addStream(fileUri)
-                    .setText(context.getString(R.string.echo_share, EchoConfig.RELEASE_YEAR))
+                    .setText(context.getString(R.string.echo_share, EchoConfig.RELEASE_YEAR) + "\n" + shareUrl)
                     .setChooserTitle(R.string.share_file_label)
                     .startChooser();
         } catch (Exception e) {

@@ -418,7 +418,15 @@
             const ps = it && it.entity && it.entity.data
               && it.entity.data.playedState;
             const stateKey = (ps && ps.state) || "MISSING";
+            // Count every state (for diagnostics) but only carry episodes the
+            // user actually engaged with. queryPodcastEpisodes returns the
+            // show's whole back catalogue; NOT_STARTED/MISSING episodes hold no
+            // resume position or completion to migrate, so importing them just
+            // bloats the document and the downstream title-match pass.
             stateCounts[stateKey] = (stateCounts[stateKey] || 0) + 1;
+            if (stateKey !== "STARTED" && stateKey !== "COMPLETED") {
+              continue;
+            }
             const mapped = mapEpisodeItem(it, showId);
             if (mapped) {
               savedEpisodes.push(mapped);

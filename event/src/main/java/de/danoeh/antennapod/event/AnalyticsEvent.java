@@ -98,6 +98,60 @@ public class AnalyticsEvent {
         return new AnalyticsEvent("play_click", b);
     }
 
+    /**
+     * The first-run onboarding "Bring your podcasts" screen was shown. Top of the
+     * activation funnel — pairs with {@link #onboardingImportChoice} and the
+     * existing {@link #importCompleted} to measure what share of new installs leave
+     * onboarding with a populated library.
+     */
+    public static AnalyticsEvent onboardingImportShown() {
+        return new AnalyticsEvent("onboarding_import_shown", new Bundle());
+    }
+
+    /**
+     * Which path the user picked on the onboarding screen. {@code choice} is one of
+     * spotify | podcast_addict | antennapod | portcast | opml | skip.
+     */
+    public static AnalyticsEvent onboardingImportChoice(String choice) {
+        Bundle b = new Bundle();
+        b.putString("choice", choice != null ? choice : "unknown");
+        return new AnalyticsEvent("onboarding_import_choice", b);
+    }
+
+    /**
+     * An onboarding import was actually enqueued (the success screen is shown).
+     * Closes the onboarding funnel — shown -&gt; choice -&gt; succeeded — and is the
+     * cleanest signal of whether onboarding converts, since for OPML/Spotify the
+     * {@link #importCompleted} finishes in a different screen.
+     */
+    public static AnalyticsEvent onboardingImportSucceeded(String source, int subscriptionsCount) {
+        Bundle b = new Bundle();
+        b.putString("import_source", source != null ? source : "unknown");
+        if (subscriptionsCount >= 0) {
+            b.putInt("subscriptions_added", subscriptionsCount);
+        }
+        return new AnalyticsEvent("onboarding_import_succeeded", b);
+    }
+
+    /** User tapped through the onboarding success screen to Home. A near-zero dwell
+     *  before this fires means the success / auto-trim message isn't landing. */
+    public static AnalyticsEvent onboardingSuccessCtaTapped(String source) {
+        Bundle b = new Bundle();
+        b.putString("import_source", source != null ? source : "unknown");
+        return new AnalyticsEvent("onboarding_success_cta_tapped", b);
+    }
+
+    /**
+     * The new user pressed play from the post-import "first play" nudge on Home — the
+     * true activation event. Without this we can't see whether onboarding ever leads to
+     * a play. {@code source} is the import they came from.
+     */
+    public static AnalyticsEvent onboardingFirstPlayStarted(String source) {
+        Bundle b = new Bundle();
+        b.putString("import_source", source != null ? source : "unknown");
+        return new AnalyticsEvent("onboarding_first_play_started", b);
+    }
+
     public static AnalyticsEvent androidAutoConnected() {
         return new AnalyticsEvent("android_auto_session", new Bundle());
     }
