@@ -980,6 +980,16 @@
     <string name="onboarding_success_body_subscriptions">We\'re importing your subscriptions now.</string>
     <string name="onboarding_success_trim">And the moment you press play, we start skipping the intros, ads, and outros for you — automatically.</string>
     <string name="onboarding_success_cta">Take me to my podcasts</string>
+    <!-- "Start fresh" curated discovery: header + the shows. Ordered by how reliably a
+         fixed intro fires the trim on episode one (not by popularity). -->
+    <string name="onboarding_first_listens_header">Pick your first show — we\'ll skip the boring intros and ads for you.</string>
+    <string-array name="onboarding_first_listens" translatable="false">
+        <item>This American Life</item>
+        <item>99% Invisible</item>
+        <item>Freakonomics Radio</item>
+        <item>The Daily</item>
+        <item>Stuff You Should Know</item>
+    </string-array>
     <string name="please_wait">Please wait&#8230;</string>
     <string name="export_error_label">Export error</string>
     <string name="export_success_title">Export successful</string>

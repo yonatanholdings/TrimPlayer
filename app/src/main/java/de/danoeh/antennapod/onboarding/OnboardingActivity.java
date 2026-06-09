@@ -23,7 +23,10 @@ import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.event.AnalyticsEvent;
 import de.danoeh.antennapod.importflow.ImportFlowController;
 import de.danoeh.antennapod.migration.SpotifyMigrationActivity;
+import de.danoeh.antennapod.playback.service.PlaybackService;
+import de.danoeh.antennapod.ui.appstartintent.MainActivityStarter;
 import de.danoeh.antennapod.ui.common.ThemeSwitcher;
+import de.danoeh.antennapod.ui.screen.AddFeedFragment;
 
 /**
  * First-run "Bring your podcasts with you" screen. Surfaces the import paths that
@@ -77,6 +80,15 @@ public class OnboardingActivity extends AppCompatActivity implements ImportFlowC
                 v -> pickFileForChoice("opml"));
         findViewById(R.id.onboarding_start_fresh_button).setOnClickListener(v -> {
             EventBus.getDefault().post(AnalyticsEvent.onboardingImportChoice("skip"));
+            setEntrySource("start_fresh");
+            // A brand-new listener has nothing to import. Drop them into the popular-
+            // podcasts discovery grid so they pick a first show (and can reach the trim),
+            // instead of bouncing off an empty Home. MainActivity is singleTask, so this
+            // delivers the nav target to the existing instance via onNewIntent.
+            new MainActivityStarter(this)
+                    .withFragmentLoaded(AddFeedFragment.TAG)
+                    .withFragmentArgs(AddFeedFragment.ARG_START_FRESH, true)
+                    .start();
             finish();
         });
         findViewById(R.id.onboarding_success_cta_button).setOnClickListener(v -> {
@@ -102,10 +114,19 @@ public class OnboardingActivity extends AppCompatActivity implements ImportFlowC
     /** Remember that onboarding started an import, so Home can offer a one-time
      *  "press play" nudge once the imported episodes materialize. */
     private void armFirstPlayNudge(String source) {
+        setEntrySource(source);
         getSharedPreferences(MainActivity.PREF_NAME, MODE_PRIVATE).edit()
                 .putBoolean(MainActivity.PREF_PENDING_FIRST_PLAY, true)
                 .putString(MainActivity.PREF_PENDING_FIRST_PLAY_SOURCE, source)
                 .apply();
+    }
+
+    /** Stamp how this user entered onboarding — an import source, or "start_fresh" — so
+     *  {@code first_trim_observed} can be split by cohort. Stored in the prefs file
+     *  PlaybackService reads when the first trim fires. */
+    private void setEntrySource(String entrySource) {
+        getSharedPreferences(PlaybackService.PREF_TRIM_ANALYTICS, MODE_PRIVATE)
+                .edit().putString(PlaybackService.KEY_ENTRY_SOURCE, entrySource).apply();
     }
 
     @Override

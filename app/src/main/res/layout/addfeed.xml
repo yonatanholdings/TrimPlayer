@@ -36,6 +36,32 @@
             android:orientation="vertical"
             android:paddingBottom="16dp">
 
+            <!-- "Great first listens": curated, intro/ad-heavy shows so a brand-new
+                 listener (arrived via onboarding "Start fresh") reaches the auto-trim
+                 wedge on episode one. Shown only when arg start_fresh=true. -->
+            <LinearLayout
+                android:id="@+id/firstListensSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:text="@string/onboarding_first_listens_header" />
+
+                <LinearLayout
+                    android:id="@+id/firstListensContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

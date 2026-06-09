@@ -24,6 +24,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.core.widget.NestedScrollView;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
+import com.google.android.material.button.MaterialButton;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
@@ -56,6 +57,9 @@ import java.util.Collections;
 public class AddFeedFragment extends Fragment {
 
     public static final String TAG = "AddFeedFragment";
+    /** Boolean fragment arg: arrived from onboarding "Start fresh" → show the curated
+     *  "Great first listens" rail. */
+    public static final String ARG_START_FRESH = "start_fresh";
     private static final String KEY_UP_ARROW = "up_arrow";
 
     private AddfeedBinding viewBinding;
@@ -119,7 +123,32 @@ public class AddFeedFragment extends Fragment {
         });
         viewBinding.searchButton.setOnClickListener(view -> performSearch());
 
+        setupFirstListens();
+
         return viewBinding.getRoot();
+    }
+
+    /**
+     * When arrived via onboarding "Start fresh" ({@link #ARG_START_FRESH}), show a curated
+     * rail of intro/ad-heavy shows so a brand-new listener reaches the auto-trim wedge on
+     * episode one (a generic popular grid can surface ad-free shows that never trim). Each
+     * tile runs a directory search by name — robust to feed-URL changes — and opens the
+     * results to subscribe.
+     */
+    private void setupFirstListens() {
+        Bundle args = getArguments();
+        if (args == null || !args.getBoolean(ARG_START_FRESH, false)) {
+            return;
+        }
+        viewBinding.firstListensSection.setVisibility(View.VISIBLE);
+        for (String show : getResources().getStringArray(R.array.onboarding_first_listens)) {
+            MaterialButton tile = (MaterialButton) getLayoutInflater().inflate(
+                    R.layout.first_listen_item, viewBinding.firstListensContainer, false);
+            tile.setText(show);
+            tile.setOnClickListener(v -> activity.loadChildFragment(
+                    OnlineSearchFragment.newInstance(CombinedSearcher.class, show)));
+            viewBinding.firstListensContainer.addView(tile);
+        }
     }
 
     @Override

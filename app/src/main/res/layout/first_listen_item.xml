@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One curated "first listen" show row; text set + click wired in AddFeedFragment. -->
+<com.google.android.material.button.MaterialButton
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Widget.Material3.Button.OutlinedButton"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:gravity="start|center_vertical"
+    android:textAlignment="textStart"
+    android:textAllCaps="false"
+    android:textAppearance="?attr/textAppearanceTitleSmall" />

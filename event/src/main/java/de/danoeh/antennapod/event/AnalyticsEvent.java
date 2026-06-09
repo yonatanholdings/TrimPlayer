@@ -63,9 +63,10 @@ public class AnalyticsEvent {
      * which is the whole pitch. Fires once per install. {@code segmentType} is the kind
      * of segment that landed it (intro | ad | outro).
      */
-    public static AnalyticsEvent firstTrimObserved(String segmentType) {
+    public static AnalyticsEvent firstTrimObserved(String segmentType, String entrySource) {
         Bundle b = new Bundle();
         b.putString("segment_type", segmentType != null ? segmentType : "unknown");
+        b.putString("entry_source", entrySource != null ? entrySource : "organic");
         return new AnalyticsEvent("first_trim_observed", b);
     }
 

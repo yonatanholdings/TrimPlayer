@@ -144,6 +144,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     public static final String AUTO_ROOT_ID          = "auto_media_root";
     public static final String AUTO_RECENT_ID        = "auto_recent";
     public static final String AUTO_QUEUE_ID         = "auto_queue";
+    /** Shared prefs for trim-activation analytics. {@link #KEY_ENTRY_SOURCE} is written by
+     *  onboarding (import source vs "start_fresh") and read here to stamp first_trim_observed. */
+    public static final String PREF_TRIM_ANALYTICS    = "TrimAnalytics";
+    public static final String KEY_FIRST_TRIM_OBSERVED = "firstTrimObserved";
+    public static final String KEY_ENTRY_SOURCE       = "entrySource";
     public static final String AUTO_DOWNLOADS_ID     = "auto_downloads";
     public static final String AUTO_EPISODES_ID      = "auto_episodes";
     public static final String AUTO_SUBSCRIPTIONS_ID = "auto_subscriptions";
@@ -3001,13 +3006,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                         eventType, skippedMs / 1000));
                                 // The first auto-skip this install ever performs is the
                                 // activation-completion event: the user pressed play AND felt
-                                // the trim. Fire once.
+                                // the trim. Fire once, stamped with how they entered (import
+                                // source vs "start_fresh") so we can compare activation by cohort.
                                 android.content.SharedPreferences trimPrefs =
-                                        getSharedPreferences("TrimAnalytics", MODE_PRIVATE);
-                                if (!trimPrefs.getBoolean("firstTrimObserved", false)) {
-                                    trimPrefs.edit().putBoolean("firstTrimObserved", true).apply();
-                                    EventBus.getDefault().post(
-                                            AnalyticsEvent.firstTrimObserved(eventType));
+                                        getSharedPreferences(PREF_TRIM_ANALYTICS, MODE_PRIVATE);
+                                if (!trimPrefs.getBoolean(KEY_FIRST_TRIM_OBSERVED, false)) {
+                                    trimPrefs.edit().putBoolean(KEY_FIRST_TRIM_OBSERVED, true).apply();
+                                    EventBus.getDefault().post(AnalyticsEvent.firstTrimObserved(
+                                            eventType, trimPrefs.getString(KEY_ENTRY_SOURCE, "organic")));
                                 }
                                 // Track the just-skipped range so a backwards user seek into it
                                 // within REVERT_WINDOW_MS is classified as a revert (false positive).
