@@ -25,31 +25,31 @@ public class TrimStub {
     private static Map<String, TrimClient.EpisodeSegmentsResponse> cache;
     private static boolean loaded = false;
 
-    public static List<TrimClient.Segment> getSegments(Context context, String episodeGuid) {
+    public static List<TrimClient.Segment> getSegments(Context context, String episodeUrl) {
         if (!de.danoeh.antennapod.storage.preferences.UserPreferences.isTrimStubEnabled()) {
             return null;
         }
         ensureLoaded(context);
-        if (cache == null) {
+        if (cache == null || episodeUrl == null) {
             return null;
         }
-        TrimClient.EpisodeSegmentsResponse entry = cache.get(episodeGuid);
+        TrimClient.EpisodeSegmentsResponse entry = cache.get(episodeUrl);
         if (entry == null || entry.segments == null || entry.segments.isEmpty()) {
             return null;
         }
-        Log.d(TAG, "Stub hit for guid=" + episodeGuid + " - " + entry.segments.size() + " segments");
+        Log.d(TAG, "Stub hit for url=" + episodeUrl + " - " + entry.segments.size() + " segments");
         return entry.segments;
     }
 
-    public static boolean hasSegments(Context context, String episodeGuid) {
+    public static boolean hasSegments(Context context, String episodeUrl) {
         if (!de.danoeh.antennapod.storage.preferences.UserPreferences.isTrimStubEnabled()) {
             return false;
         }
         ensureLoaded(context);
-        if (cache == null || episodeGuid == null) {
+        if (cache == null || episodeUrl == null) {
             return false;
         }
-        TrimClient.EpisodeSegmentsResponse entry = cache.get(episodeGuid);
+        TrimClient.EpisodeSegmentsResponse entry = cache.get(episodeUrl);
         return entry != null && entry.segments != null && !entry.segments.isEmpty();
     }
 

@@ -223,7 +223,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      *  they're tuning instead of having it skipped out from under the preview. */
     public static volatile boolean trimSegmentEditPreviewActive = false;
 
-    /** Tracks which indices in currentSegments were auto-skipped during this episode. */
+    /** Tracks which indices in currentSegments were auto-skipped during this episode.
+     *  This is the auto-skip de-dup: a segment index is skipped at most once, then
+     *  suppressed until the user manually seeks back into it (see recordSeekTelemetry,
+     *  which re-arms it). The de-dup must be index-based, not positional or time-based:
+     *  on a streaming episode start the post-skip seekTo() frequently does NOT escape
+     *  the segment (the skip-silence/speed "dance" in ExoPlayerWrapper issues its own
+     *  seekTo(pos+1) that clobbers ours, landing playback back inside the segment), so
+     *  a purely positional check re-fires every 1s tick forever. Cleared only when the
+     *  segment set changes / the episode ends — NOT in setupPositionObserver(), which
+     *  re-runs on every play/resume/seek and would otherwise wipe the de-dup mid-loop. */
     private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
 
     /** A segment whose (duration-capped) end lands this close to the episode end is
@@ -452,17 +461,20 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         final String capturedGuid = episodeGuid;
         final String capturedPodcastTitle = podcastTitleSync;
 
+        // Stub segments are a debug-only testing aid (offline, no backend). Gate the whole
+        // lookup on BuildConfig.DEBUG so the shipped stub_segments.json asset can never
+        // override real backend segments in release — isTrimStubEnabled() defaults to true.
         java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> stub =
-                de.danoeh.antennapod.playback.service.trim.TrimStub.getSegments(this, episodeGuid);
+                BuildConfig.DEBUG
+                        ? de.danoeh.antennapod.playback.service.trim.TrimStub.getSegments(this, episodeUrl)
+                        : null;
         if (stub != null) {
             currentSegments = stub;
             skippedSegmentIndices.clear();
             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " stub segments");
-            if (BuildConfig.DEBUG) {
-                android.widget.Toast.makeText(this,
-                        "[Stub] " + currentSegments.size() + " segments loaded",
-                        android.widget.Toast.LENGTH_SHORT).show();
-            }
+            android.widget.Toast.makeText(this,
+                    "[Stub] " + currentSegments.size() + " segments loaded",
+                    android.widget.Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -2786,6 +2798,24 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             return;
         }
 
+        // Re-arm auto-skip for any segment the user manually seeks into. The auto-skip
+        // de-dup (skippedSegmentIndices) suppresses re-skipping a segment once skipped;
+        // a deliberate user seek back into one is the signal to skip it again. This only
+        // runs for user seeks — internal auto-skip seeks set nextSeekIsInternal and never
+        // reach here, and the skip-silence/speed dance seeks below LocalPSMP don't either.
+        List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsForReArm = currentSegments;
+        if (segsForReArm != null) {
+            for (int i = 0; i < segsForReArm.size(); i++) {
+                de.danoeh.antennapod.playback.service.trim.TrimClient.Segment s = segsForReArm.get(i);
+                if (toMs >= (int) (s.start * 1000) && toMs < (int) (s.end * 1000)) {
+                    if (skippedSegmentIndices.remove(i)) {
+                        Log.d(TAG, "Trim Player: re-armed segment " + i + " after user seek into it");
+                    }
+                    break;
+                }
+            }
+        }
+
         long now = System.currentTimeMillis();
         while (!recentAutoSkips.isEmpty()
                 && now - recentAutoSkips.peekFirst()[2] > REVERT_WINDOW_MS) {
@@ -2945,6 +2975,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 endMs = Math.min(endMs, dur);
                             }
                             if (pos >= startMs && pos < endMs) {
+                                // Index-based de-dup: skip each segment at most once. The post-skip
+                                // seek can't be relied on to escape the segment on streaming starts
+                                // (the skip-silence/speed dance clobbers our seekTo, landing us back
+                                // inside), so a positional re-check would loop forever. Re-skipping is
+                                // re-armed only by a genuine user seek back in (see recordSeekTelemetry).
+                                if (skippedSegmentIndices.contains(si)) {
+                                    continue;
+                                }
                                 String eventType = seg.type != null ? seg.type.toLowerCase() : "ad";
                                 if (!trimSkipEnabledForFeed(fm, eventType)) {
                                     // User disabled auto-skip for this segment type. Don't skip,
@@ -2953,7 +2991,6 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     continue;
                                 }
                                 Log.d(TAG, "Trim Player: Auto-skipping segment " + seg.type);
-                                boolean firstSkipForThisSegment = !skippedSegmentIndices.contains(si);
                                 skippedSegmentIndices.add(si);
                                 int skippedMs = endMs - pos;
                                 fm.setSkippedDuration(fm.getSkippedDuration() + skippedMs);
@@ -2982,18 +3019,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     // lands a hair short on streaming media and re-skips forever,
                                     // so end the episode instead of seeking into that limbo.
                                     Log.d(TAG, "Trim Player: segment reaches episode end — ending episode");
-                                    if (firstSkipForThisSegment) {
-                                        showSegmentSkipToast(eventType, skippedMs);
-                                    }
+                                    showSegmentSkipToast(eventType, skippedMs);
                                     playSkipCue();
                                     mediaPlayer.skip();
                                     break;
                                 }
                                 nextSeekIsInternal = true;
                                 seekTo(endMs);
-                                if (firstSkipForThisSegment) {
-                                    showSegmentSkipToast(eventType, skippedMs);
-                                }
+                                showSegmentSkipToast(eventType, skippedMs);
                                 // Cue fires on every auto-skip (e.g. user rewinds
                                 // past a previously-skipped segment); internal
                                 // 1500ms debounce in playSkipCue blocks double-

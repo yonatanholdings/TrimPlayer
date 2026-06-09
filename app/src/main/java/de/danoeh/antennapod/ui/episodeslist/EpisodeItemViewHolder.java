@@ -120,9 +120,10 @@ public class EpisodeItemViewHolder extends RecyclerView.ViewHolder {
         isInbox.setVisibility(item.isNew() ? View.VISIBLE : View.GONE);
         isFavorite.setVisibility(item.isTagged(FeedItem.TAG_FAVORITE) ? View.VISIBLE : View.GONE);
         isInQueue.setVisibility(item.isTagged(FeedItem.TAG_QUEUE) ? View.VISIBLE : View.GONE);
-        if (BuildConfig.DEBUG && item.getItemIdentifier() != null) {
+        if (BuildConfig.DEBUG && item.getMedia() != null && item.getMedia().getStreamUrl() != null) {
+            // Stub is keyed by episode stream URL (see TrimStub / stub_segments.json).
             boolean hasStub = de.danoeh.antennapod.playback.service.trim.TrimStub
-                    .hasSegments(activity, item.getItemIdentifier());
+                    .hasSegments(activity, item.getMedia().getStreamUrl());
             isStubbed.setVisibility(hasStub ? View.VISIBLE : View.GONE);
         } else {
             isStubbed.setVisibility(View.GONE);
