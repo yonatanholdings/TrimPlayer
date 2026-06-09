@@ -248,31 +248,31 @@
                 android:id="@+id/seg_intro"
                 android:layout_width="28dp"
                 android:layout_height="match_parent"
-                android:background="?attr/colorError" />
+                android:background="#FFD9A8" />
 
             <View
                 android:id="@+id/seg_show1"
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
-                android:background="?attr/colorPrimary" />
+                android:background="#F57C00" />
 
             <View
                 android:id="@+id/seg_ad"
                 android:layout_width="46dp"
                 android:layout_height="match_parent"
-                android:background="?attr/colorError" />
+                android:background="#FFD9A8" />
 
             <View
                 android:id="@+id/seg_show2"
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
-                android:background="?attr/colorPrimary" />
+                android:background="#F57C00" />
 
             <View
                 android:id="@+id/seg_outro"
                 android:layout_width="28dp"
                 android:layout_height="match_parent"
-                android:background="?attr/colorError" />
+                android:background="#FFD9A8" />
         </LinearLayout>
 
         <TextView

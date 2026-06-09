@@ -2962,6 +2962,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                         fm.getItem().getId(), eventType, skippedMs);
                                 EventBus.getDefault().post(AnalyticsEvent.segmentSkipped(
                                         eventType, skippedMs / 1000));
+                                // The first auto-skip this install ever performs is the
+                                // activation-completion event: the user pressed play AND felt
+                                // the trim. Fire once.
+                                android.content.SharedPreferences trimPrefs =
+                                        getSharedPreferences("TrimAnalytics", MODE_PRIVATE);
+                                if (!trimPrefs.getBoolean("firstTrimObserved", false)) {
+                                    trimPrefs.edit().putBoolean("firstTrimObserved", true).apply();
+                                    EventBus.getDefault().post(
+                                            AnalyticsEvent.firstTrimObserved(eventType));
+                                }
                                 // Track the just-skipped range so a backwards user seek into it
                                 // within REVERT_WINDOW_MS is classified as a revert (false positive).
                                 recentAutoSkips.addLast(

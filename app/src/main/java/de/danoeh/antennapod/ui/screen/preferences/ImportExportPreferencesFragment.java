@@ -25,6 +25,7 @@ import androidx.core.app.ShareCompat;
 import androidx.core.content.FileProvider;
 import com.google.android.material.snackbar.Snackbar;
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.event.AnalyticsEvent;
 import de.danoeh.antennapod.importflow.ImportFlowController;
 import de.danoeh.antennapod.migration.SpotifyMigrationActivity;
 import de.danoeh.antennapod.onboarding.OnboardingActivity;
@@ -46,6 +47,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.greenrobot.eventbus.EventBus;
 
 import android.view.View;
 
@@ -260,6 +262,7 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(() -> {
+                    EventBus.getDefault().post(AnalyticsEvent.exportCompleted("database"));
                     showExportSuccessSnackbar(uri, "application/x-sqlite3");
                     progressDialog.dismiss();
                 }, this::showExportErrorDialog);
@@ -308,6 +311,7 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(outputFile -> {
                     progressDialog.dismiss();
+                    EventBus.getDefault().post(AnalyticsEvent.exportCompleted(exportType.analyticsFormat));
                     Uri fileUri = FileProvider.getUriForFile(getActivity().getApplicationContext(),
                             getString(R.string.provider_authority), output);
                     showExportSuccessSnackbar(fileUri, exportType.contentType);
@@ -334,6 +338,7 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(ignore -> {
                     progressDialog.dismiss();
+                    EventBus.getDefault().post(AnalyticsEvent.exportCompleted(exportType.analyticsFormat));
                     showExportSuccessSnackbar(output.getUri(), exportType.contentType);
                 }, this::showExportErrorDialog, progressDialog::dismiss);
     }
@@ -399,20 +404,23 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
     }
 
     private enum Export {
-        OPML(CONTENT_TYPE_OPML, DEFAULT_OPML_OUTPUT_NAME, R.string.opml_export_label),
-        HTML(CONTENT_TYPE_HTML, DEFAULT_HTML_OUTPUT_NAME, R.string.html_export_label),
-        FAVORITES(CONTENT_TYPE_HTML, DEFAULT_FAVORITES_OUTPUT_NAME, R.string.favorites_export_label),
-        PORTCAST(CONTENT_TYPE_PORTCAST, DEFAULT_PORTCAST_OUTPUT_NAME, R.string.portcast_export_label);
+        OPML(CONTENT_TYPE_OPML, DEFAULT_OPML_OUTPUT_NAME, R.string.opml_export_label, "opml"),
+        HTML(CONTENT_TYPE_HTML, DEFAULT_HTML_OUTPUT_NAME, R.string.html_export_label, "html"),
+        FAVORITES(CONTENT_TYPE_HTML, DEFAULT_FAVORITES_OUTPUT_NAME, R.string.favorites_export_label, "favorites"),
+        PORTCAST(CONTENT_TYPE_PORTCAST, DEFAULT_PORTCAST_OUTPUT_NAME, R.string.portcast_export_label, "portcast");
 
         final String contentType;
         final String outputNameTemplate;
         @StringRes
         final int labelResId;
+        /** export_completed analytics label. */
+        final String analyticsFormat;
 
-        Export(String contentType, String outputNameTemplate, int labelResId) {
+        Export(String contentType, String outputNameTemplate, int labelResId, String analyticsFormat) {
             this.contentType = contentType;
             this.outputNameTemplate = outputNameTemplate;
             this.labelResId = labelResId;
+            this.analyticsFormat = analyticsFormat;
         }
     }
 }

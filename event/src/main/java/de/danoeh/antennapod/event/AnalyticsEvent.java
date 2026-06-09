@@ -58,6 +58,18 @@ public class AnalyticsEvent {
     }
 
     /**
+     * The very first time auto-trim actually skips a segment for this install — the
+     * activation-completion signal: the user pressed play AND <em>felt</em> the trim,
+     * which is the whole pitch. Fires once per install. {@code segmentType} is the kind
+     * of segment that landed it (intro | ad | outro).
+     */
+    public static AnalyticsEvent firstTrimObserved(String segmentType) {
+        Bundle b = new Bundle();
+        b.putString("segment_type", segmentType != null ? segmentType : "unknown");
+        return new AnalyticsEvent("first_trim_observed", b);
+    }
+
+    /**
      * User kicked off a library import. {@code source} is the app they're
      * coming from: opml | podcast_addict | portcast | spotify | database.
      * Pairs with {@link #importCompleted} so completion rate is reportable
@@ -150,6 +162,18 @@ public class AnalyticsEvent {
         Bundle b = new Bundle();
         b.putString("import_source", source != null ? source : "unknown");
         return new AnalyticsEvent("onboarding_first_play_started", b);
+    }
+
+    /**
+     * The user exported their library to a file — the proof that "your data is yours,
+     * leave anytime" is real, not just claimed. Makes the data-portability pillar a
+     * measurable metric, not only a capability. {@code format} is one of
+     * portcast | opml | database | html | favorites.
+     */
+    public static AnalyticsEvent exportCompleted(String format) {
+        Bundle b = new Bundle();
+        b.putString("export_format", format != null ? format : "unknown");
+        return new AnalyticsEvent("export_completed", b);
     }
 
     public static AnalyticsEvent androidAutoConnected() {

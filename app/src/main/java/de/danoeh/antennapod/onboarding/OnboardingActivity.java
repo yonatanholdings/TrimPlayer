@@ -130,6 +130,10 @@ public class OnboardingActivity extends AppCompatActivity implements ImportFlowC
      * are 0 while it's GONE).
      */
     private void startTrimAnimation() {
+        // Re-arm: the file picker covering onboarding ran onStop(), which set
+        // animationStopped = true; without this the loop's guard would bail and the
+        // bar would sit static.
+        animationStopped = false;
         View bar = findViewById(R.id.onboarding_trim_bar);
         View intro = findViewById(R.id.seg_intro);
         View ad = findViewById(R.id.seg_ad);
