@@ -38,6 +38,7 @@ import java.util.concurrent.Semaphore;
 import de.danoeh.antennapod.event.FavoritesEvent;
 import de.danoeh.antennapod.event.FeedItemEvent;
 import de.danoeh.antennapod.event.FeedListUpdateEvent;
+import de.danoeh.antennapod.event.NewEpisodesPrefetchEvent;
 import de.danoeh.antennapod.event.playback.PlaybackHistoryEvent;
 import de.danoeh.antennapod.event.QueueEvent;
 import de.danoeh.antennapod.event.UnreadItemsUpdateEvent;
@@ -922,10 +923,75 @@ public class DBWriter {
                         SynchronizationQueue.getInstance().enqueueEpisodePlayed(item.getMedia(), true);
                     }
                 }
+                prefetchAnalyzeOnSubscribe(feed);
             }
             adapter.close();
             EventBus.getDefault().post(new FeedListUpdateEvent(feed));
         });
+    }
+
+    /** Newest N + oldest N episodes are pre-analyzed the moment a user subscribes. */
+    static final int SUBSCRIBE_PREFETCH_EDGE_COUNT = 3;
+
+    /**
+     * When the user subscribes to a feed, ask the backend to analyze the episodes they're most
+     * likely to play first — the newest few (play-the-latest) and the oldest few (binge-from-the-
+     * start) — so trim segments are ready before first play.
+     *
+     * <p>This is the only place that covers a manual subscribe. The feed's items are loaded into
+     * the DB during the preview ({@code addNewFeed}), so the post-subscribe refresh in
+     * {@link FeedDatabaseWriter} sees them as already-known ({@code oldItem != null}) and never
+     * queues them for analysis. Without this, a brand-new (start-fresh) listener's very first
+     * episode plays untrimmed until on-demand analysis catches up — i.e. after the intro.</p>
+     */
+    private static void prefetchAnalyzeOnSubscribe(Feed feed) {
+        List<NewEpisodesPrefetchEvent.Item> prefetch = selectSubscribePrefetchItems(feed);
+        if (!prefetch.isEmpty()) {
+            EventBus.getDefault().post(new NewEpisodesPrefetchEvent(prefetch));
+        }
+    }
+
+    /**
+     * Picks the newest {@link #SUBSCRIBE_PREFETCH_EDGE_COUNT} and oldest
+     * {@link #SUBSCRIBE_PREFETCH_EDGE_COUNT} episodes to pre-analyze on subscribe. Package-private
+     * and side-effect-free so the selection can be unit-tested without a DB.
+     *
+     * <p>Contract: {@code feed.getItems()} is expected sorted newest-first (DATE_NEW_OLD), as
+     * {@link DBReader#getFeedItemList} returns it in {@link #setFeedState}. The newest edge is the
+     * head of the list, the oldest edge is the tail. Short feeds are de-duplicated so an episode
+     * that is both among the newest and the oldest is only queued once.</p>
+     */
+    static List<NewEpisodesPrefetchEvent.Item> selectSubscribePrefetchItems(Feed feed) {
+        if (feed == null || feed.isLocalFeed()) {
+            return Collections.emptyList();
+        }
+        String rssUrl = feed.getDownloadUrl();
+        List<FeedItem> items = feed.getItems();
+        if (rssUrl == null || rssUrl.isEmpty() || items == null || items.isEmpty()) {
+            return Collections.emptyList();
+        }
+        int n = items.size();
+        // LinkedHashSet keeps insertion order (newest edge first) and drops the overlap on short feeds.
+        java.util.LinkedHashSet<Integer> indices = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < SUBSCRIBE_PREFETCH_EDGE_COUNT && i < n; i++) {
+            indices.add(i);
+        }
+        for (int i = 0; i < SUBSCRIBE_PREFETCH_EDGE_COUNT && i < n; i++) {
+            indices.add(n - 1 - i);
+        }
+        List<NewEpisodesPrefetchEvent.Item> prefetch = new ArrayList<>(indices.size());
+        for (int idx : indices) {
+            FeedItem item = items.get(idx);
+            if (item == null || item.getMedia() == null) {
+                continue;
+            }
+            String mediaUrl = item.getMedia().getDownloadUrl();
+            if (mediaUrl == null || mediaUrl.isEmpty()) {
+                continue;
+            }
+            prefetch.add(new NewEpisodesPrefetchEvent.Item(rssUrl, mediaUrl, item.getItemIdentifier()));
+        }
+        return prefetch;
     }
 
     /**
