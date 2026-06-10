@@ -40,6 +40,7 @@ import de.danoeh.antennapod.net.discovery.CombinedSearcher;
 import de.danoeh.antennapod.net.discovery.FyydPodcastSearcher;
 import de.danoeh.antennapod.net.discovery.ItunesPodcastSearcher;
 import de.danoeh.antennapod.net.discovery.PodcastIndexPodcastSearcher;
+import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter;
 import de.danoeh.antennapod.ui.discovery.OnlineSearchFragment;
 import de.danoeh.antennapod.ui.screen.feed.FeedItemlistFragment;
@@ -50,6 +51,9 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Provides actions for adding new podcast subscriptions.
@@ -65,6 +69,9 @@ public class AddFeedFragment extends Fragment {
     private AddfeedBinding viewBinding;
     private MainActivity activity;
     private boolean displayUpArrow;
+    /** Backend-curated rail (show name → feed + best demo episode), keyed lower-case.
+     *  Populated async; until it arrives, tiles fall back to directory search. */
+    private final Map<String, TrimClient.FirstListen> firstListenRail = new HashMap<>();
 
     private final ActivityResultLauncher<String> chooseOpmlImportPathLauncher =
             registerForActivityResult(new GetContent(), this::chooseOpmlImportPathResult);
@@ -145,9 +152,43 @@ public class AddFeedFragment extends Fragment {
             MaterialButton tile = (MaterialButton) getLayoutInflater().inflate(
                     R.layout.first_listen_item, viewBinding.firstListensContainer, false);
             tile.setText(show);
-            tile.setOnClickListener(v -> activity.loadChildFragment(
-                    OnlineSearchFragment.newInstance(CombinedSearcher.class, show)));
+            tile.setOnClickListener(v -> onFirstListenTapped(show));
             viewBinding.firstListensContainer.addView(tile);
+        }
+        fetchFirstListenRail();
+    }
+
+    /** Pull the backend-curated rail (feed + best demo episode per show) so a tile
+     *  tap can drop the listener straight onto a known-good, already-trimmed
+     *  episode. Best-effort and non-blocking: if it hasn't arrived (or fails),
+     *  taps fall back to the directory-search subscribe flow. */
+    private void fetchFirstListenRail() {
+        TrimClient.getInstance().fetchFirstListens(result -> {
+            if (!isAdded() || result == null || result.shows == null) {
+                return;
+            }
+            for (TrimClient.FirstListen fl : result.shows) {
+                if (fl != null && fl.name != null) {
+                    firstListenRail.put(fl.name.trim().toLowerCase(Locale.ROOT), fl);
+                }
+            }
+        });
+    }
+
+    /** Tile tap: if the backend has a ready demo episode for this show, preview its
+     *  feed (added not-subscribed) and jump straight to that episode so the listener
+     *  feels the trim with no search/subscribe/episode-pick steps. Falls back to the
+     *  directory search whenever a ready episode isn't available, so the tile always
+     *  does something useful. */
+    private void onFirstListenTapped(String show) {
+        TrimClient.FirstListen fl = firstListenRail.get(show.trim().toLowerCase(Locale.ROOT));
+        if (fl != null && fl.feed_url != null && !fl.feed_url.isEmpty()
+                && fl.episode_guid != null && !fl.episode_guid.isEmpty()) {
+            startActivity(new OnlineFeedviewActivityStarter(requireContext(), fl.feed_url)
+                    .withEpisode(fl.episode_guid)
+                    .getIntent());
+        } else {
+            activity.loadChildFragment(OnlineSearchFragment.newInstance(CombinedSearcher.class, show));
         }
     }
 

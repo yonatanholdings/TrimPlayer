@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter.ARG_EPISODE;
 import static de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter.ARG_FEEDURL;
 import static de.danoeh.antennapod.ui.appstartintent.OnlineFeedviewActivityStarter.ARG_WAS_MANUAL_URL;
 
@@ -129,6 +130,14 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                 password = savedInstanceState.getString("password");
             }
             shareEpisodeId = extractEpisodeId(feedUrl);
+            // An explicit episode extra (onboarding curated rail → withEpisode())
+            // takes precedence over any ?episode= in the URL.
+            if (getIntent().hasExtra(ARG_EPISODE)) {
+                String episodeExtra = getIntent().getStringExtra(ARG_EPISODE);
+                if (episodeExtra != null && !episodeExtra.isEmpty()) {
+                    shareEpisodeId = episodeExtra;
+                }
+            }
             shareSourceUrl = UrlChecker.prepareUrl(feedUrl);
             lookupUrlAndDownload(shareSourceUrl);
         }

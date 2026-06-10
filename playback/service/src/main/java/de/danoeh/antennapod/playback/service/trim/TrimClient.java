@@ -49,6 +49,34 @@ public class TrimClient {
         return api.getSegments(episodeUrl, episodeGuid, clientId, proToken);
     }
 
+    /** Onboarding "Great first listens" rail: per curated show, its feed URL and
+     *  the best demo episode to drop a brand-new listener onto. */
+    public Call<FirstListensResponse> getFirstListens() {
+        return api.getFirstListens();
+    }
+
+    /** Simple-callback wrapper around {@link #getFirstListens()} so callers in
+     *  the app module don't need Retrofit types on their classpath. Delivered on
+     *  the main thread; {@code result} is null on any failure. */
+    public void fetchFirstListens(FirstListensCallback callback) {
+        api.getFirstListens().enqueue(new retrofit2.Callback<FirstListensResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<FirstListensResponse> call,
+                                   retrofit2.Response<FirstListensResponse> response) {
+                callback.onResult(response.isSuccessful() ? response.body() : null);
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<FirstListensResponse> call, Throwable t) {
+                callback.onResult(null);
+            }
+        });
+    }
+
+    public interface FirstListensCallback {
+        void onResult(FirstListensResponse result);
+    }
+
     public Call<BillingVerifyResponse> billingVerify(String clientId, String productId,
                                                     String purchaseToken) {
         return api.billingVerify(new BillingVerifyRequest(clientId, productId, purchaseToken));
@@ -110,6 +138,9 @@ public class TrimClient {
                 @Header("X-Client-Id") String clientId,
                 @Header("X-Pro-Token") String proToken);
 
+        @GET("curated/first-listens")
+        Call<FirstListensResponse> getFirstListens();
+
         @POST("billing/verify")
         Call<BillingVerifyResponse> billingVerify(@Body BillingVerifyRequest request);
 
@@ -140,6 +171,22 @@ public class TrimClient {
 
         @GET("job/{job_id}")
         Call<JobStatusResponse> getJobStatus(@Path("job_id") String jobId);
+    }
+
+    /** GET /curated/first-listens — the onboarding curated rail. */
+    public static class FirstListensResponse {
+        public List<FirstListen> shows;
+    }
+
+    public static class FirstListen {
+        public String name;
+        public String feed_url;
+        /** Null until the show has an analyzed demo episode — client then falls
+         *  back to the normal directory-search subscribe flow for that tile. */
+        public String episode_guid;
+        public String episode_url;
+        public String episode_title;
+        public List<String> segment_types;
     }
 
     public static class EpisodeSegmentsResponse {
