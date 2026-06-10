@@ -8,10 +8,15 @@ apply from: "../common.gradle"
 apply from: "../playFlavor.gradle"
 
 // Single source of truth: versionName. versionCode is derived from it.
-// Schema: major * 1_000_000 + minor * 10_000 + patch * 100 + (betaNum or 95 for final)
-//   "1.2.3-beta4" -> 1020304
-//   "1.2.3"       -> 1020395
+// Schema: VERSION_CODE_OFFSET + major * 1_000_000 + minor * 10_000 + patch * 100 + (betaNum or 95 for final)
+//   "1.2.3-beta4" -> 5020304
+//   "1.2.3"       -> 5020395
+// The 4_000_000 offset clears legacy AntennaPod-derived codes: pre-rebrand
+// com.trimplayer builds shipped versionCode 3_100_195 (3.10.1). Without the
+// offset the rebrand reset to 1.0.x (1_0xx_xxx) is a downgrade and Play rejects
+// it as "not compatible for upgrade". Keep this offset; never lower it.
 static int computeVersionCode(String versionName) {
+    final int VERSION_CODE_OFFSET = 4_000_000
     def m = versionName =~ /^(\d+)\.(\d+)\.(\d+)(?:-beta(\d+))?$/
     if (!m.matches()) {
         throw new GradleException(
@@ -26,7 +31,7 @@ static int computeVersionCode(String versionName) {
         throw new GradleException(
                 "Version part out of range in '${versionName}' (major<=9, minor/patch<=99, beta 1-94).")
     }
-    return major * 1_000_000 + minor * 10_000 + patch * 100 + suffix
+    return VERSION_CODE_OFFSET + major * 1_000_000 + minor * 10_000 + patch * 100 + suffix
 }
 
 android {
