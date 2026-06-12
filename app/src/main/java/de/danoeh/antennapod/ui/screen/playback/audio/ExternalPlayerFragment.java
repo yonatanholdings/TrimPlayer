@@ -45,6 +45,7 @@ public class ExternalPlayerFragment extends Fragment {
     private PlayButton butPlay;
     private TextView feedName;
     private ProgressBar progressBar;
+    private SegmentOverlayView segmentOverlay;
     private PlaybackController controller;
     private Disposable disposable;
 
@@ -61,6 +62,7 @@ public class ExternalPlayerFragment extends Fragment {
         butPlay = root.findViewById(R.id.butPlay);
         feedName = root.findViewById(R.id.txtvAuthor);
         progressBar = root.findViewById(R.id.episodeProgress);
+        segmentOverlay = root.findViewById(R.id.segmentOverlay);
 
         root.findViewById(R.id.fragmentLayout).setOnClickListener(v -> {
             Log.d(TAG, "layoutInfo was clicked");
@@ -203,6 +205,8 @@ public class ExternalPlayerFragment extends Fragment {
                 .fitCenter()
                 .dontAnimate();
 
+        setSegmentMarkers(media);
+
         Glide.with(this)
                 .load(ImageResourceUtils.getEpisodeListImageLocation(media))
                 .error(Glide.with(this)
@@ -217,6 +221,62 @@ public class ExternalPlayerFragment extends Fragment {
         } else {
             butPlay.setVisibility(View.VISIBLE);
             ((MainActivity) getActivity()).getBottomSheet().setLocked(false);
+        }
+    }
+
+    /** Paint the same amber trim-segment overlay the full player shows, reading
+     *  the cache PlaybackService populates. Mirrors AudioPlayerFragment's
+     *  setSegmentMarkers, scaled to the footer progress bar. */
+    private void setSegmentMarkers(Playable media) {
+        if (segmentOverlay == null) {
+            return;
+        }
+        int duration = media != null ? media.getDuration() : 0;
+        if (duration <= 0 || !(media instanceof de.danoeh.antennapod.model.feed.FeedMedia)) {
+            segmentOverlay.setSegments(null, null);
+            return;
+        }
+        de.danoeh.antennapod.model.feed.FeedMedia fm =
+                (de.danoeh.antennapod.model.feed.FeedMedia) media;
+        if (fm.getItem() == null) {
+            segmentOverlay.setSegments(null, null);
+            return;
+        }
+        String guid = fm.getItem().getItemIdentifier();
+        java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segs =
+                de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(requireContext(), guid);
+        if (segs == null || segs.isEmpty()) {
+            segmentOverlay.setSegments(null, null);
+            return;
+        }
+        float[] starts = new float[segs.size()];
+        float[] ends = new float[segs.size()];
+        for (int i = 0; i < segs.size(); i++) {
+            de.danoeh.antennapod.playback.service.trim.TrimClient.Segment s = segs.get(i);
+            // Clamp to [0,1]: a backend segment can run past the real episode end.
+            starts[i] = Math.max(0f, Math.min(1f, (float) (s.start * 1000.0 / duration)));
+            ends[i] = Math.max(0f, Math.min(1f, (float) (s.end * 1000.0 / duration)));
+        }
+        segmentOverlay.setSegments(starts, ends);
+    }
+
+    /** Segments just landed from a mid-playback /analyze response — refresh the
+     *  footer overlay without waiting for the next loadMediaInfo tick. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onTrimSegmentsUnlocked(
+            de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent event) {
+        if (controller != null) {
+            setSegmentMarkers(controller.getMedia());
+        }
+    }
+
+    /** A local segment edit changed the cache — repaint the footer overlay. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onTrimSegmentsEdited(de.danoeh.antennapod.event.TrimSegmentsEditedEvent event) {
+        if (controller != null && controller.getMedia() != null) {
+            setSegmentMarkers(controller.getMedia());
         }
     }
 }

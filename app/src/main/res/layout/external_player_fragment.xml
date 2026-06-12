@@ -68,12 +68,23 @@
 
     </LinearLayout>
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/episodeProgress"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:indeterminate="false"
-        app:trackStopIndicatorSize="0dp"
-        tools:progress="100" />
+        android:layout_height="4dp">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/episodeProgress"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:indeterminate="false"
+            app:trackStopIndicatorSize="0dp"
+            tools:progress="100" />
+
+        <de.danoeh.antennapod.ui.screen.playback.audio.SegmentOverlayView
+            android:id="@+id/segmentOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="4dp" />
+
+    </FrameLayout>
 
 </LinearLayout>
