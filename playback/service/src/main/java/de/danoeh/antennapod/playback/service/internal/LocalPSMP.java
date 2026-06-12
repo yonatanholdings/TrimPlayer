@@ -34,7 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,7 +56,6 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
     private volatile Pair<Integer, Integer> videoSize;
     private final AudioFocusRequestCompat audioFocusRequest;
     private boolean isShutDown = false;
-    private CountDownLatch seekLatch;
     private final Handler speedChangeHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingSpeedChange = null;
     private volatile float displaySpeed = 1.0f;
@@ -371,23 +369,22 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                 endPlayback(true, true, true, true);
                 return;
             }
-            // If a previous seek is still pending, skip this seek rather than blocking
-            // the main thread — ExoPlayer delivers its seek-complete callback on the main
-            // thread, so awaiting here would deadlock.
-            if (seekLatch != null && seekLatch.getCount() > 0) {
-                Log.d(TAG, "seekTo: previous seek still in progress, skipping");
-                return;
-            }
-            seekLatch = new CountDownLatch(1);
+            // Overlapping ExoPlayer seeks are safe: a second seekTo() simply re-targets the
+            // pending seek. Do NOT drop a seek just because an earlier one hasn't reported
+            // completion — ExoPlayer does not emit onPositionDiscontinuity for a no-op
+            // (same-position) seek, and the speed-change dance swallows the SEEK
+            // discontinuity, so any "in progress" flag would wedge permanently and silently
+            // drop every later seek (e.g. the resume-to-saved-position seek → playback
+            // restarts from 0 instead of where the user left off).
             statusBeforeSeeking = playerStatus;
             setPlayerStatus(PlayerStatus.SEEKING, media, getPosition());
             mediaPlayer.seekTo(t);
             if (statusBeforeSeeking == PlayerStatus.PREPARED) {
                 media.setPosition(t);
             }
-            // Do NOT await seekLatch here — ExoPlayer delivers onPositionDiscontinuity
-            // on the main thread, so awaiting from the main thread would deadlock for
-            // 3 seconds. State is restored asynchronously by genericSeekCompleteListener.
+            // Do NOT block here waiting for the seek to finish — ExoPlayer delivers
+            // onPositionDiscontinuity on the main thread, so awaiting from the main thread
+            // would deadlock. State is restored asynchronously by genericSeekCompleteListener.
         } else if (playerStatus == PlayerStatus.INITIALIZED) {
             media.setPosition(t);
             startWhenPrepared.set(false);
@@ -858,9 +855,6 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
 
     private void genericSeekCompleteListener() {
         Log.d(TAG, "genericSeekCompleteListener");
-        if (seekLatch != null) {
-            seekLatch.countDown();
-        }
         if (playerStatus == PlayerStatus.SEEKING) {
             setPlayerStatus(statusBeforeSeeking, media, getPosition());
             // Notify playback start so statistics tracking (startPosition) is reset to the
