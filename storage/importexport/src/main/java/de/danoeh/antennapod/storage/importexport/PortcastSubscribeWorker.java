@@ -126,6 +126,18 @@ public class PortcastSubscribeWorker extends Worker {
         if (persisted == null || persisted.getPreferences() == null) {
             return;
         }
+        // Importing a show means subscribing to it. A newly-created feed already
+        // defaults to STATE_SUBSCRIBED, but a *reused* feed may have been added
+        // earlier as a non-subscribed online preview — promote it, or the
+        // NonSubscribedFeedsCleaner would later garbage-collect the very feed we
+        // just imported.
+        if (persisted.getState() != Feed.STATE_SUBSCRIBED) {
+            try {
+                DBWriter.setFeedState(ctx, persisted, Feed.STATE_SUBSCRIBED).get();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to mark imported feed subscribed: " + pf.feedUrl, e);
+            }
+        }
         // Persist the subscriptionId → feedUrl mapping so future re-imports
         // can short-circuit resolution and avoid creating duplicates from
         // tiny URL canonicalization differences.
@@ -153,6 +165,11 @@ public class PortcastSubscribeWorker extends Worker {
                 prefs.getTags().addAll(merged);
                 dirty = true;
             }
+        }
+        if (pf.notificationsEnabled != null
+                && prefs.getShowEpisodeNotification() != pf.notificationsEnabled) {
+            prefs.setShowEpisodeNotification(pf.notificationsEnabled);
+            dirty = true;
         }
         if (applyExtensions(prefs, pf.extensions)) {
             dirty = true;

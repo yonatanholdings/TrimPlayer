@@ -112,7 +112,14 @@ public class FeedUpdateWorker extends Worker {
         }
         refreshFeeds(toUpdate,  force);
 
-        NonSubscribedFeedsCleaner.deleteOldNonSubscribedFeeds(getApplicationContext());
+        // Only garbage-collect non-subscribed (online-preview / curated) feeds on the
+        // background automatic refresh. A manual or side-effect refresh — e.g. the one a
+        // PortCast/database import kicks via FeedUpdateManager.runOnce (EXTRA_MANUAL=true) —
+        // must not silently delete the user's previewed-but-not-subscribed library entries.
+        // Otherwise an additive import "merges" the file yet wipes the rest of the library.
+        if (isAutomaticRefresh) {
+            NonSubscribedFeedsCleaner.deleteOldNonSubscribedFeeds(getApplicationContext());
+        }
         AutoDownloadManager.getInstance().autodownloadUndownloadedItems(getApplicationContext());
         notificationManager.cancel(R.id.notification_updating_feeds);
         SynchronizationQueue.getInstance().syncImmediately();

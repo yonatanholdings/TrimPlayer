@@ -93,6 +93,9 @@ public class PortcastImporter {
         public int skipOutroSec;
         /** Raw `com.trimplayer.*` extensions, or null. Worker decides which to apply. */
         @Nullable public JSONObject extensions;
+        /** Per-feed "show episode notifications" toggle from the subscription
+         *  object. null = absent in the document (inherit the default). */
+        @Nullable public Boolean notificationsEnabled;
     }
 
     /** Per-episode state extracted from the PortCast file. */
@@ -382,6 +385,9 @@ public class PortcastImporter {
                 String tag = tags.optString(i, "");
                 if (!tag.isEmpty()) pf.tags.add(tag);
             }
+        }
+        if (sub.has("notificationsEnabled")) {
+            pf.notificationsEnabled = sub.optBoolean("notificationsEnabled", true);
         }
         // Pull per-feed overrides keyed by the same feedUrl. Skipped when
         // we don't have a feedUrl yet — Spotify-sourced docs have no
@@ -681,6 +687,9 @@ public class PortcastImporter {
             if (pf.extensions != null) {
                 o.put("extensions", pf.extensions);
             }
+            if (pf.notificationsEnabled != null) {
+                o.put("notificationsEnabled", (boolean) pf.notificationsEnabled);
+            }
             arr.put(o);
         }
         prefs(context).edit().putString(KEY_PENDING_FEEDS, arr.toString()).apply();
@@ -708,6 +717,9 @@ public class PortcastImporter {
                     }
                 }
                 pf.extensions = o.optJSONObject("extensions");
+                if (o.has("notificationsEnabled")) {
+                    pf.notificationsEnabled = o.optBoolean("notificationsEnabled", true);
+                }
                 out.add(pf);
             }
         } catch (Exception ignored) { }
