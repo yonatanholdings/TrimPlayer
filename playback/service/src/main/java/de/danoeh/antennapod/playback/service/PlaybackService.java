@@ -975,6 +975,35 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         singleShotDisposables.add(d);
     }
 
+    /**
+     * Maps an in-app navigation-drawer section tag (see {@code R.array.nav_drawer_section_tags})
+     * to the equivalent Android Auto root section. Drawer sections without an Auto counterpart
+     * (Home, Inbox, history, add-podcast, etc.) return null and are skipped.
+     */
+    @Nullable
+    private MediaBrowserCompat.MediaItem createRootSectionForDrawerTag(String tag) {
+        switch (tag) {
+            case "QueueFragment":
+                return createBrowsableMediaItem(AUTO_QUEUE_ID,
+                        R.string.queue_label, R.drawable.ic_playlist_play_black,
+                        DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.QUEUED)), false);
+            case "DownloadsFragment":
+                return createBrowsableMediaItem(AUTO_DOWNLOADS_ID,
+                        R.string.downloads_label, R.drawable.ic_download_black,
+                        DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.DOWNLOADED)), false);
+            case "EpisodesFragment":
+                return createBrowsableMediaItem(AUTO_EPISODES_ID,
+                        R.string.episodes_label, R.drawable.ic_feed_black,
+                        DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.UNPLAYED)), false);
+            case "SubscriptionFragment":
+                return createBrowsableMediaItem(AUTO_SUBSCRIPTIONS_ID,
+                        R.string.subscriptions_label, R.drawable.ic_subscriptions_black,
+                        DBReader.getFeedList().size(), true);
+            default:
+                return null;
+        }
+    }
+
     private List<MediaBrowserCompat.MediaItem> loadChildrenSynchronous(@NonNull String parentId) {
         List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
 
@@ -982,20 +1011,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             FeedMedia current = DBReader.getFeedMedia(PlaybackPreferences.getCurrentlyPlayingFeedMediaId());
             if (current != null) {
                 mediaItems.add(createBrowsableMediaItem(AUTO_RECENT_ID,
-                        R.string.current_playing_episode, R.drawable.ic_play_48dp_black, 1, false));
+                        R.string.current_playing_episode, R.drawable.ic_folder_black, 1, false));
             }
-            mediaItems.add(createBrowsableMediaItem(AUTO_QUEUE_ID,
-                    R.string.queue_label, R.drawable.ic_playlist_play_black,
-                    DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.QUEUED)), false));
-            mediaItems.add(createBrowsableMediaItem(AUTO_DOWNLOADS_ID,
-                    R.string.downloads_label, R.drawable.ic_download_black,
-                    DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.DOWNLOADED)), false));
-            mediaItems.add(createBrowsableMediaItem(AUTO_EPISODES_ID,
-                    R.string.episodes_label, R.drawable.ic_feed_black,
-                    DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.UNPLAYED)), false));
-            mediaItems.add(createBrowsableMediaItem(AUTO_SUBSCRIPTIONS_ID,
-                    R.string.subscriptions_label, R.drawable.ic_subscriptions_black,
-                    DBReader.getFeedList().size(), true));
+            // Mirror the user's in-app navigation drawer configuration: the Auto menu uses the
+            // same section order and omits sections the user has hidden in the drawer.
+            for (String tag : UserPreferences.getVisibleDrawerItemOrder()) {
+                MediaBrowserCompat.MediaItem item = createRootSectionForDrawerTag(tag);
+                if (item != null) {
+                    mediaItems.add(item);
+                }
+            }
             return mediaItems;
         }
 
@@ -3218,7 +3243,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         @Override
         public void onSkipToQueueItem(long id) {
             Log.d(TAG, "onSkipToQueueItem(" + id + ")");
-            Disposable d = Single.fromCallable(() -> DBReader.getFeedMedia(id))
+            // The queue exposes feedItem.getId() as the QueueItem id (see loadQueueForMediaSession),
+            // so this callback receives a FeedItem id, not a FeedMedia id. Look it up accordingly —
+            // getFeedMedia(id) would key on the wrong table and silently no-op the car's play button.
+            Disposable d = io.reactivex.rxjava3.core.Maybe.fromCallable(() -> {
+                        FeedItem feedItem = DBReader.getFeedItem(id);
+                        return feedItem != null ? feedItem.getMedia() : null;
+                    })
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
