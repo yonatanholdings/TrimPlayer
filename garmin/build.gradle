@@ -1,0 +1,27 @@
+plugins {
+    id("com.android.library")
+}
+apply from: "../common.gradle"
+apply from: "../playFlavor.gradle"
+
+android {
+    namespace "de.danoeh.antennapod.garmin"
+}
+
+dependencies {
+    implementation project(':model')
+    implementation project(':storage:importexport')   // PortcastImporter — receive path
+    implementation project(':storage:preferences')
+
+    annotationProcessor "androidx.annotation:annotation:$annotationVersion"
+
+    // Connect IQ Mobile SDK for Android (watch <-> phone BLE). NOT on Maven
+    // Central — download the AAR from developer.garmin.com and drop it in
+    // garmin/libs/, then add a flatDir repo to settings.gradle's
+    // dependencyResolutionManagement and uncomment the line below + the
+    // GarminConnectIqManager source (see garmin/README.md).
+    // implementation "com.garmin.connectiq:ciq-companion-app-sdk:2.2.0"
+
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.robolectric:robolectric:$robolectricVersion"
+}

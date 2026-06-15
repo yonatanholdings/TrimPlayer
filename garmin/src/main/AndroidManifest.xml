@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The Connect IQ Mobile SDK talks to the watch via Garmin Connect Mobile;
+         BLE permissions are declared by the app module when the SDK is wired in. -->
+</manifest>
