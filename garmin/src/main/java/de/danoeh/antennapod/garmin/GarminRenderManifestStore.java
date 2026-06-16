@@ -22,7 +22,7 @@ import java.util.List;
  * SharedPreferences-backed — the data is tiny (a handful of ranges per synced
  * episode) and must survive process death between render and the next watch sync.
  */
-public class GarminRenderManifestStore {
+public class GarminRenderManifestStore implements GarminManifestLookup {
 
     private static final String PREFS_NAME = "garmin_render_manifests";
 

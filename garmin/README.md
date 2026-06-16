@@ -19,7 +19,8 @@ already-speed-adjusted audio at 1× and exchanges listen state over BLE as
 | `GarminRenderManifest` | per-episode record of how it was rendered (kept ranges + speed) | pure Java, **unit-tested** |
 | `GarminPositionMapper` | rendered-time → original-time inversion (the subtle math) | pure Java, **unit-tested** (`GarminPositionMapperTest`, 8 cases incl. round-trip) |
 | `GarminRenderManifestStore` | persist manifests (guid → manifest) across render→sync | SharedPreferences |
-| `GarminPortcastBridge` | received watch doc → remap positions → `PortcastImporter` | reuses existing import path |
+| `GarminProgressRemapper` | rewrite watch-doc positions (rendered→original) on the SDK's Map/List | pure Java, **unit-tested** |
+| `GarminPortcastBridge` | remap → serialize → `PortcastImporter` | reuses existing import path |
 | `GarminAudioRenderPlan` | build the ffmpeg trim+speed graph + manifest from segments | pure Java, **unit-tested** |
 | `GarminFfmpegExecutor` | abstraction over the ffmpeg call (lib-agnostic) | interface |
 | `GarminProcessFfmpegExecutor` | `ProcessBuilder` impl (desktop/test/bundled-binary) | pure Java, **E2E-tested vs real ffmpeg** |
