@@ -20,9 +20,14 @@ already-speed-adjusted audio at 1× and exchanges listen state over BLE as
 | `GarminPositionMapper` | rendered-time → original-time inversion (the subtle math) | pure Java, **unit-tested** (`GarminPositionMapperTest`, 8 cases incl. round-trip) |
 | `GarminRenderManifestStore` | persist manifests (guid → manifest) across render→sync | SharedPreferences |
 | `GarminPortcastBridge` | received watch doc → remap positions → `PortcastImporter` | reuses existing import path |
+| `GarminAudioRenderPlan` | build the ffmpeg trim+speed graph + manifest from segments | pure Java, **unit-tested** |
+| `GarminRenderer` | orchestrate render (pluggable `FfmpegExecutor`) + persist manifest | thin wrapper |
 
-The mapper test was validated against the real ffmpeg render used end-to-end
-(2:36 source, drop [0,20]+[60,75], 1.5× → 1:20.69 rendered).
+Both the mapper and the render-plan tests were validated against the **real ffmpeg
+render** used end-to-end (2:36 source, drop [0,20]+[60,75], 1.5× → 1:20.69 / 1,291,619
+bytes). The render plan's filter graph is byte-for-byte identical to the backend
+(`app/garmin.py`) and the watch repo's stub, so phone- and server-rendered files
+behave the same — verified by running the planner's generated graph through ffmpeg.
 
 ## Still to wire (needs the Garmin AAR + an Android build)
 
@@ -94,10 +99,17 @@ public class GarminConnectIqManager {
 }
 ```
 
-**3. Render + delivery** (the other big piece): render trim+speed on-device with
-ffmpeg (reuse `TrimClient` segments + `UserPreferences` playback rate), write a
-`GarminRenderManifest` via `GarminRenderManifestStore`, upload to the thin HTTPS
-bucket, and expose the listing the watch fetches. See the watch repo spec §2–3.
+**3. Render** is implemented: `GarminAudioRenderPlan` builds the verified ffmpeg
+graph + manifest, and `GarminRenderer` runs it (via a pluggable `FfmpegExecutor`)
+and persists the manifest. Two things remain to connect it:
+   - provide an `FfmpegExecutor` backed by a maintained ffmpeg lib (ffmpeg-kit is
+     retired) or MediaCodec+SoundTouch;
+   - feed it real inputs: skip ranges from `TrimClient`/`TrimSegmentCache`, speed
+     from `UserPreferences`, source file from the downloaded `FeedMedia`.
+
+**4. Delivery** (the remaining piece): upload the rendered file to the thin HTTPS
+bucket and expose the listing the watch fetches (`guid`/`subscriptionRef`/
+`enclosureUrl` + signed `url`). See the watch repo spec §3.
 
 ## Tests
 
