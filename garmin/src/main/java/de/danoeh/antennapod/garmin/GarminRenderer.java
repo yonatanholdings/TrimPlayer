@@ -16,29 +16,24 @@ import java.util.List;
  * <p>The render graph itself is built and verified by {@link GarminAudioRenderPlan}
  * (its ffmpeg graph is byte-for-byte identical to the backend/stub). This class is
  * just the orchestration: pick a cache path, run ffmpeg, persist the manifest. The
- * actual ffmpeg invocation is delegated to a pluggable {@link FfmpegExecutor} so the
- * module doesn't hard-depend on a particular ffmpeg library (ffmpeg-kit is retired;
- * a maintained fork or MediaCodec+SoundTouch can implement this interface).
+ * actual ffmpeg invocation is delegated to a pluggable {@link GarminFfmpegExecutor}
+ * so the module doesn't hard-depend on a particular ffmpeg library (ffmpeg-kit is
+ * retired; a maintained fork or MediaCodec+SoundTouch can implement that interface).
  */
 public class GarminRenderer {
 
     private static final String TAG = "GarminRenderer";
 
-    /** Runs an ffmpeg invocation. Returns true on success (exit 0). */
-    public interface FfmpegExecutor {
-        boolean run(List<String> args);
-    }
-
     private final Context context;
     private final GarminRenderManifestStore manifests;
-    private final FfmpegExecutor ffmpeg;
+    private final GarminFfmpegExecutor ffmpeg;
     private final String ffmpegBin;
 
-    public GarminRenderer(Context context, FfmpegExecutor ffmpeg) {
+    public GarminRenderer(Context context, GarminFfmpegExecutor ffmpeg) {
         this(context, ffmpeg, "ffmpeg");
     }
 
-    public GarminRenderer(Context context, FfmpegExecutor ffmpeg, String ffmpegBin) {
+    public GarminRenderer(Context context, GarminFfmpegExecutor ffmpeg, String ffmpegBin) {
         this.context = context.getApplicationContext();
         this.manifests = new GarminRenderManifestStore(this.context);
         this.ffmpeg = ffmpeg;

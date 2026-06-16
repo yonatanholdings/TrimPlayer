@@ -21,7 +21,9 @@ already-speed-adjusted audio at 1× and exchanges listen state over BLE as
 | `GarminRenderManifestStore` | persist manifests (guid → manifest) across render→sync | SharedPreferences |
 | `GarminPortcastBridge` | received watch doc → remap positions → `PortcastImporter` | reuses existing import path |
 | `GarminAudioRenderPlan` | build the ffmpeg trim+speed graph + manifest from segments | pure Java, **unit-tested** |
-| `GarminRenderer` | orchestrate render (pluggable `FfmpegExecutor`) + persist manifest | thin wrapper |
+| `GarminFfmpegExecutor` | abstraction over the ffmpeg call (lib-agnostic) | interface |
+| `GarminProcessFfmpegExecutor` | `ProcessBuilder` impl (desktop/test/bundled-binary) | pure Java, **E2E-tested vs real ffmpeg** |
+| `GarminRenderer` | orchestrate render + persist manifest | thin wrapper |
 
 Both the mapper and the render-plan tests were validated against the **real ffmpeg
 render** used end-to-end (2:36 source, drop [0,20]+[60,75], 1.5× → 1:20.69 / 1,291,619
@@ -99,11 +101,14 @@ public class GarminConnectIqManager {
 }
 ```
 
-**3. Render** is implemented: `GarminAudioRenderPlan` builds the verified ffmpeg
-graph + manifest, and `GarminRenderer` runs it (via a pluggable `FfmpegExecutor`)
-and persists the manifest. Two things remain to connect it:
-   - provide an `FfmpegExecutor` backed by a maintained ffmpeg lib (ffmpeg-kit is
-     retired) or MediaCodec+SoundTouch;
+**3. Render** is implemented and tested end-to-end against real ffmpeg:
+`GarminAudioRenderPlan` builds the verified graph + manifest, `GarminRenderer` runs
+it via a `GarminFfmpegExecutor` and persists the manifest, and
+`GarminProcessFfmpegExecutor` is a working binary-backed executor. Two things remain
+to connect it on a phone:
+   - provide a `GarminFfmpegExecutor` backed by a maintained ffmpeg lib (ffmpeg-kit
+     is retired) or MediaCodec+SoundTouch (the ProcessBuilder impl needs an ffmpeg
+     binary, which stock phones lack);
    - feed it real inputs: skip ranges from `TrimClient`/`TrimSegmentCache`, speed
      from `UserPreferences`, source file from the downloaded `FeedMedia`.
 
