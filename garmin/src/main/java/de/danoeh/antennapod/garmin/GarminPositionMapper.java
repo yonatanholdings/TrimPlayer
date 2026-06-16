@@ -54,4 +54,30 @@ public final class GarminPositionMapper {
     public static int renderedSecondsToOriginalMs(double renderedSeconds, GarminRenderManifest manifest) {
         return (int) Math.round(renderedToOriginal(renderedSeconds, manifest) * 1000.0);
     }
+
+    /**
+     * Forward map: original episode seconds -> rendered-timeline seconds. The exact
+     * inverse of {@link #renderedToOriginal} for positions inside kept audio; a
+     * position that fell inside a removed (skipped) range maps to the cut point —
+     * i.e. the rendered position where the following kept range begins — since that
+     * content isn't present in the rendered file.
+     *
+     * <p>Used for round-trip verification and analytics. (It cannot drive watch
+     * playback: the ACP media player has no resume-at-offset API.)
+     */
+    public static double originalToRendered(double originalSeconds, GarminRenderManifest manifest) {
+        double cumulative = 0.0;
+        for (GarminRenderManifest.Range r : manifest.keptRanges) {
+            if (originalSeconds < r.startSeconds) {
+                // In a removed gap before this range — map to where this range starts.
+                return cumulative / manifest.speed;
+            }
+            if (originalSeconds < r.endSeconds) {
+                return (cumulative + (originalSeconds - r.startSeconds)) / manifest.speed;
+            }
+            cumulative += r.length();
+        }
+        // At or past the end of kept audio.
+        return cumulative / manifest.speed;
+    }
 }

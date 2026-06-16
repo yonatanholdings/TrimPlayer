@@ -26,11 +26,19 @@ already-speed-adjusted audio at 1× and exchanges listen state over BLE as
 | `GarminProcessFfmpegExecutor` | `ProcessBuilder` impl (desktop/test/bundled-binary) | pure Java, **E2E-tested vs real ffmpeg** |
 | `GarminRenderer` | orchestrate render + persist manifest | thin wrapper |
 
+`GarminPositionMapper` maps both directions (`renderedToOriginal` for the receive
+path; `originalToRendered` for round-trip verification/analytics).
+
 Both the mapper and the render-plan tests were validated against the **real ffmpeg
 render** used end-to-end (2:36 source, drop [0,20]+[60,75], 1.5× → 1:20.69 / 1,291,619
 bytes). The render plan's filter graph is byte-for-byte identical to the backend
 (`app/garmin.py`) and the watch repo's stub, so phone- and server-rendered files
 behave the same — verified by running the planner's generated graph through ffmpeg.
+
+**28 tests** total, including `GarminPipelineIntegrationTest` which composes the
+whole chain (forward-map a position → render → simulate the watch reporting it →
+remap → recover the original) and checks a real ffmpeg render's duration matches the
+manifest's prediction.
 
 ## Still to wire (needs the Garmin AAR + an Android build)
 

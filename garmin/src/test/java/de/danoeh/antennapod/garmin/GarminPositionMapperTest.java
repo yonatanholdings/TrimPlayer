@@ -72,6 +72,26 @@ public class GarminPositionMapperTest {
     }
 
     @Test
+    public void forwardMapInFirstKeptRange() {
+        // original 35s -> 15s concat -> /1.5 = 10s rendered.
+        assertEquals(10.0, GarminPositionMapper.originalToRendered(35.0, episode1()), EPS);
+    }
+
+    @Test
+    public void forwardMapInLeadingSkipMapsToZero() {
+        // original 5s is inside the removed intro [0,20) -> rendered 0.
+        assertEquals(0.0, GarminPositionMapper.originalToRendered(5.0, episode1()), EPS);
+    }
+
+    @Test
+    public void forwardThenInverseIsIdentityInKeptAudio() {
+        GarminRenderManifest m = episode1();
+        double original = 90.0; // inside second kept range
+        double rendered = GarminPositionMapper.originalToRendered(original, m);
+        assertEquals(original, GarminPositionMapper.renderedToOriginal(rendered, m), EPS);
+    }
+
+    @Test
     public void roundTripForwardThenInverse() {
         // Forward-render a known original position, then invert it.
         GarminRenderManifest m = episode1();
