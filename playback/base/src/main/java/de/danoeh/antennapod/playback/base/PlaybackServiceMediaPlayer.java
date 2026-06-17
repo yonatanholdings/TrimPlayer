@@ -225,6 +225,22 @@ public abstract class PlaybackServiceMediaPlayer {
     }
 
     /**
+     * Ends the current media as if it had played to completion. This is the same path the
+     * natural end-of-file completion listener uses (hasEnded=true), so the episode gets full
+     * completion processing: marked played, position reset, completion synced and reported.
+     *
+     * <p>Trim Player uses this when a trim segment runs all the way to the episode end: the
+     * listener heard everything up to the trimmed outro, so the episode is genuinely finished.
+     * Ending it via {@link #skip()} instead would carry skip semantics (wasSkipped=true,
+     * hasEnded=false), and the episode would only be marked played if smart-mark-as-played
+     * happened to cover the whole outro — leaving long outros (or a disabled smart-mark)
+     * stuck as unfinished.
+     */
+    public void completePlayback() {
+        endPlayback(true, false, true, true);
+    }
+
+    /**
      * Ends playback of current media (if any) and moves into INDETERMINATE state, unless
      * {@param toStoppedState} is set to true, in which case it moves into STOPPED state.
      *

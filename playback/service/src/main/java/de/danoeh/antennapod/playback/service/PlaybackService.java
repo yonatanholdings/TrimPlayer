@@ -3051,10 +3051,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     // backend extended past the real end). Seeking to the duration
                                     // lands a hair short on streaming media and re-skips forever,
                                     // so end the episode instead of seeking into that limbo.
-                                    Log.d(TAG, "Trim Player: segment reaches episode end — ending episode");
+                                    // Use completePlayback() (hasEnded=true), NOT skip(): the listener
+                                    // heard the whole episode up to the trimmed outro, so it must get
+                                    // full completion processing (marked played, position reset,
+                                    // completion synced/reported). skip() would only mark it played if
+                                    // smart-mark-as-played happened to span the outro.
+                                    Log.d(TAG, "Trim Player: segment reaches episode end — completing episode");
                                     showSegmentSkipToast(eventType, skippedMs);
                                     playSkipCue();
-                                    mediaPlayer.skip();
+                                    mediaPlayer.completePlayback();
                                     break;
                                 }
                                 nextSeekIsInternal = true;
