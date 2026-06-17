@@ -2999,12 +2999,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         for (int si = 0; si < segsSnap.size(); si++) {
                             de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg = segsSnap.get(si);
                             int startMs = (int) (seg.start * 1000);
-                            int endMs = (int) (seg.end * 1000);
-                            // Cap endMs to episode duration so we never seek past the end
-                            if (dur > 0) {
-                                endMs = Math.min(endMs, dur);
-                            }
-                            if (pos >= startMs && pos < endMs) {
+                            // Cap endMs to episode duration so we never seek past the end.
+                            int endMs = de.danoeh.antennapod.playback.service.trim.TrimSkipGeometry
+                                    .cappedEndMs(seg.end, dur);
+                            // Forward-only: this is true only when the playhead is inside the segment,
+                            // and the skip below seeks to endMs > pos. A late/out-of-order segment
+                            // already behind the playhead is skipped over, never seeked back into.
+                            if (de.danoeh.antennapod.playback.service.trim.TrimSkipGeometry
+                                    .playheadInside(pos, startMs, endMs)) {
                                 // Index-based de-dup: skip each segment at most once. The post-skip
                                 // seek can't be relied on to escape the segment on streaming starts
                                 // (the skip-silence/speed dance clobbers our seekTo, landing us back

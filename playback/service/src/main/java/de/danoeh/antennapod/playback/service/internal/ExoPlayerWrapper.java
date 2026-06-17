@@ -67,6 +67,13 @@ public class ExoPlayerWrapper {
     public static final int BUFFERING_ENDED = -2;
     private static final String TAG = "ExoPlayerWrapper";
 
+    // Transient-network-error auto-recovery: how many re-prepare attempts before we give up and
+    // surface a fatal error, plus the exponential-backoff bounds. 12 attempts capped at 30s each
+    // means we keep trying for roughly 4 minutes — long enough to ride out a tunnel/dead-zone.
+    private static final int MAX_NETWORK_RECOVERY_ATTEMPTS = 12;
+    private static final long RECOVERY_BASE_DELAY_MS = 1000;
+    private static final long RECOVERY_MAX_DELAY_MS = 30_000;
+
     private final Context context;
     private final Disposable bufferingUpdateDisposable;
     private ExoPlayer exoPlayer;
@@ -85,6 +92,9 @@ public class ExoPlayerWrapper {
     // the new params are applied. Lets rapid taps reuse the same pause without double-pausing.
     private boolean wasPlayingBeforeSpeedChange = false;
     private Runnable pendingSpeedApply = null;
+    // Known-good position captured when the speed-change pause begins (player still playing), used as
+    // a fallback if the debounced flush-seek re-reads the live position as 0 during a transient state.
+    private long positionBeforeSpeedChange = 0;
     // True while a seekTo() triggered internally by setPlaybackParams is in flight.
     // onPositionDiscontinuity uses this to apply the new speed + resume after the
     // seek-triggered AudioSink.flush() is confirmed complete, and to suppress the
@@ -92,6 +102,69 @@ public class ExoPlayerWrapper {
     private boolean speedChangeSeeking = false;
     // skipSilence value captured at setPlaybackParams call-time for use in onPositionDiscontinuity.
     private boolean pendingSkipSilence = false;
+    // True while the current media source is an HTTP stream (vs a local file). Only streams are
+    // eligible for transient-network-error auto-recovery; a local-file IO error is not retried.
+    private boolean isHttpSource = false;
+    // Auto-recovery for transient network errors mid-stream. Instead of surfacing a fatal error
+    // (which stops playback until the user manually restarts), we re-prepare from the position
+    // captured before the outage with capped backoff so playback resumes on its own once
+    // connectivity returns. The state machine lives in a pure, unit-tested controller; this wrapper
+    // only adapts it to the real ExoPlayer + main-thread Handler.
+    private final NetworkRecoveryController networkRecovery = new NetworkRecoveryController(
+            new NetworkRecoveryController.Player() {
+                @Override
+                public long getCurrentPositionMs() {
+                    return exoPlayer.getCurrentPosition();
+                }
+
+                @Override
+                public void prepare() {
+                    exoPlayer.prepare();
+                }
+
+                @Override
+                public void seekTo(long positionMs) {
+                    exoPlayer.seekTo(positionMs);
+                }
+            },
+            new NetworkRecoveryController.Host() {
+                @Override
+                public void scheduleRetry(long delayMs, Runnable retry) {
+                    if (pendingNetworkRecovery != null) {
+                        mainHandler.removeCallbacks(pendingNetworkRecovery);
+                    }
+                    pendingNetworkRecovery = retry;
+                    mainHandler.postDelayed(retry, delayMs);
+                }
+
+                @Override
+                public void cancelScheduled() {
+                    if (pendingNetworkRecovery != null) {
+                        mainHandler.removeCallbacks(pendingNetworkRecovery);
+                        pendingNetworkRecovery = null;
+                    }
+                }
+
+                @Override
+                public void onBuffering() {
+                    // Keep the UI in a "buffering" state rather than letting it look stalled/stopped.
+                    if (bufferingUpdateListener != null) {
+                        bufferingUpdateListener.accept(BUFFERING_STARTED);
+                    }
+                }
+
+                @Override
+                public void onExhausted() {
+                    Log.w(TAG, "Network recovery exhausted; surfacing error");
+                    if (lastNetworkError != null) {
+                        dispatchError(lastNetworkError);
+                    }
+                }
+            },
+            MAX_NETWORK_RECOVERY_ATTEMPTS, RECOVERY_BASE_DELAY_MS, RECOVERY_MAX_DELAY_MS);
+    private Runnable pendingNetworkRecovery = null;
+    // Last recoverable error seen, dispatched if the recovery budget is exhausted.
+    private PlaybackException lastNetworkError = null;
 
     ExoPlayerWrapper(Context context) {
         this.context = context;
@@ -121,6 +194,11 @@ public class ExoPlayerWrapper {
         exoPlayer.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(@Player.State int playbackState) {
+                if (playbackState == Player.STATE_READY) {
+                    // A successful (re)buffer to READY confirms any in-flight network recovery
+                    // worked, so the next outage gets a fresh full backoff budget.
+                    networkRecovery.onPlayerReady();
+                }
                 if (audioCompletionListener != null && playbackState == Player.STATE_ENDED) {
                     audioCompletionListener.run();
                 } else if (bufferingUpdateListener != null && playbackState == Player.STATE_BUFFERING) {
@@ -132,28 +210,18 @@ public class ExoPlayerWrapper {
 
             @Override
             public void onPlayerError(@NonNull PlaybackException error) {
-                if (audioErrorListener != null) {
-                    if (NetworkUtils.wasDownloadBlocked(error)) {
-                        audioErrorListener.accept(context.getString(R.string.download_error_blocked));
-                    } else {
-                        Throwable cause = error.getCause();
-                        if (cause instanceof HttpDataSource.HttpDataSourceException) {
-                            if (cause.getCause() != null) {
-                                cause = cause.getCause();
-                            }
-                        }
-                        if (cause != null && "Source error".equals(cause.getMessage())) {
-                            cause = cause.getCause();
-                        }
-                        if (cause != null && cause.getMessage() != null) {
-                            audioErrorListener.accept(cause.getMessage());
-                        } else if (error.getMessage() != null && cause != null) {
-                            audioErrorListener.accept(error.getMessage() + ": " + cause.getClass().getSimpleName());
-                        } else {
-                            audioErrorListener.accept(null);
-                        }
-                    }
+                Log.w(TAG, "onPlayerError: " + error.getErrorCodeName() + " (" + error.errorCode + ")", error);
+                // A transient network drop mid-stream should not kill playback: re-prepare from the
+                // retained position with backoff and let it resume when connectivity returns. Only
+                // surface the error once recovery is exhausted (or the error isn't network-related).
+                if (isHttpSource && !NetworkUtils.wasDownloadBlocked(error)
+                        && isRecoverableNetworkError(error)) {
+                    lastNetworkError = error;
+                    networkRecovery.onRecoverableError();
+                    return;
                 }
+                networkRecovery.reset();
+                dispatchError(error);
             }
 
             @Override
@@ -251,6 +319,7 @@ public class ExoPlayerWrapper {
         }
         // simpleCache is a shared singleton; do not release it here.
         cancelPendingSpeedChange();
+        networkRecovery.reset();
         audioSeekCompleteListener = null;
         audioCompletionListener = null;
         audioErrorListener = null;
@@ -259,6 +328,7 @@ public class ExoPlayerWrapper {
 
     public void reset() {
         cancelPendingSpeedChange();
+        networkRecovery.reset();
         bufferingUpdateDisposable.dispose();
         if (loudnessEnhancer != null) {
             loudnessEnhancer.release();
@@ -277,6 +347,51 @@ public class ExoPlayerWrapper {
         }
         wasPlayingBeforeSpeedChange = false;
         speedChangeSeeking = false;
+    }
+
+    /**
+     * Whether a {@link PlaybackException} looks like a recoverable transient network fault (the
+     * connection dropped or timed out), as opposed to a permanent failure (bad HTTP status, parsing
+     * error, unsupported format) where re-preparing would just fail again.
+     */
+    private static boolean isRecoverableNetworkError(PlaybackException error) {
+        switch (error.errorCode) {
+            case PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED:
+            case PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT:
+                // Note: deliberately NOT ERROR_CODE_IO_UNSPECIFIED — that bucket catches
+                // non-network IO faults (including a seek/range failure) that re-preparing
+                // would only retry uselessly.
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /** Surfaces a player error to the registered listener (the non-recoverable path). */
+    private void dispatchError(PlaybackException error) {
+        if (audioErrorListener == null) {
+            return;
+        }
+        if (NetworkUtils.wasDownloadBlocked(error)) {
+            audioErrorListener.accept(context.getString(R.string.download_error_blocked));
+            return;
+        }
+        Throwable cause = error.getCause();
+        if (cause instanceof HttpDataSource.HttpDataSourceException) {
+            if (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+        }
+        if (cause != null && "Source error".equals(cause.getMessage())) {
+            cause = cause.getCause();
+        }
+        if (cause != null && cause.getMessage() != null) {
+            audioErrorListener.accept(cause.getMessage());
+        } else if (error.getMessage() != null && cause != null) {
+            audioErrorListener.accept(error.getMessage() + ": " + cause.getClass().getSimpleName());
+        } else {
+            audioErrorListener.accept(null);
+        }
     }
 
     public void seekTo(int i) throws IllegalStateException {
@@ -312,7 +427,10 @@ public class ExoPlayerWrapper {
             httpDataSourceFactory.setDefaultRequestProperties(requestProperties);
         }
         DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(context, httpDataSourceFactory);
-        if (s.startsWith("http")) {
+        isHttpSource = s.startsWith("http");
+        // A new source means any recovery in flight for the previous one is moot.
+        networkRecovery.reset();
+        if (isHttpSource) {
             dataSourceFactory = new CacheDataSource.Factory()
                     .setCache(simpleCache)
                     .setUpstreamDataSourceFactory(httpDataSourceFactory);
@@ -357,6 +475,14 @@ public class ExoPlayerWrapper {
             // wasPlayingBeforeSpeedChange=true: a prior rapid tap already paused the player.
             // Fall through to re-arm the debounce with the new speed.
         } else {
+            // Capture the position while the player is still genuinely playing (known-good), to use
+            // as a fallback for the flush-seek below. The debounced seek re-reads the live position
+            // 80ms later, and if that read lands during a transient state (buffering after an
+            // ad-skip seek, or an in-flight network re-prepare) it can come back as 0 — seeking to
+            // 0+1 would restart the episode from the beginning. See NetworkRecoveryController for the
+            // sibling case. Snapshot once: on a rapid-tap re-arm the player is already paused, so we
+            // keep the original known-good value rather than re-reading a possibly-zero position.
+            positionBeforeSpeedChange = exoPlayer.getCurrentPosition();
             // Pause now so no audio renders at the old speed during the debounce window.
             wasPlayingBeforeSpeedChange = true;
             exoPlayer.pause();
@@ -373,9 +499,21 @@ public class ExoPlayerWrapper {
         pendingSpeedApply = () -> {
             pendingSpeedApply = null;
             speedChangeSeeking = true;
-            exoPlayer.seekTo(exoPlayer.getCurrentPosition() + 1);
+            exoPlayer.seekTo(flushSeekTarget(exoPlayer.getCurrentPosition(), positionBeforeSpeedChange));
         };
         mainHandler.postDelayed(pendingSpeedApply, 80);
+    }
+
+    /**
+     * Target for the speed-change flush-seek. Normally the live position (precise), but if that read
+     * is non-positive — a transient buffering/idle/re-prepare state can momentarily report 0 — fall
+     * back to the position captured while the player was last known to be playing, so the flush never
+     * accidentally restarts the episode from the beginning. Always nudges +1ms because ExoPlayer may
+     * no-op a same-position seek (the flush only happens on an actual discontinuity).
+     */
+    static long flushSeekTarget(long livePositionMs, long fallbackPositionMs) {
+        long base = livePositionMs > 0 ? livePositionMs : Math.max(fallbackPositionMs, 0);
+        return base + 1;
     }
 
     private void applySpeedAndSilence(boolean skipSilence) {
@@ -422,6 +560,7 @@ public class ExoPlayerWrapper {
     }
 
     public void stop() {
+        networkRecovery.reset();
         exoPlayer.stop();
     }
 
