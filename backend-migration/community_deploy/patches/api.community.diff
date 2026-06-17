@@ -1,0 +1,36 @@
+--- api.py.bak.community.20260613-154931	2026-06-12 13:36:12.053465447 +0000
++++ api.py	2026-06-13 12:53:03.565103295 +0000
+@@ -2833,10 +2833,32 @@
+                             detail=f"batch too large (max {_MAX_EVENTS_PER_BATCH})")
+ 
+     payload = [ev.dict() for ev in req.events]
+-    accepted, duplicates = db.store_client_events_batch(req.client_id, payload)
++    accepted, duplicates, accepted_events = db.store_client_events_batch(
++        req.client_id, payload)
++
++    # Fold the newly-accepted events into the Community Impact / Trim Nation
++    # aggregates. Best-effort and isolated: a failure here must never fail
++    # telemetry ingestion. Only genuinely-new rows are passed in, so each event
++    # counts exactly once across client retries. avg_playback_speed is optional
++    # (older clients omit it -> None).
++    if accepted_events:
++        try:
++            db.apply_community_events(
++                req.client_id, accepted_events,
++                getattr(req, "avg_playback_speed", None))
++        except Exception:
++            logger.exception("community impact update failed (non-fatal)")
+     return ClientEventsResponse(accepted=accepted, duplicates=duplicates)
+ 
+ 
++@router.get("/community/impact")
++def get_community_impact():
++    """Anonymous, pooled trim-impact aggregates for the Community Impact / Trim
++    Nation screen: all-time hero/breakdown plus the trailing-window comparison
++    map (7d/30d/90d/1y). See docs/community-impact-spec.md."""
++    return db.get_community_impact()
++
++
+ @router.post("/queue")
+ def post_queue_snapshot(req: QueueSnapshotRequest):
+     """Receive a mobile client's full playback-queue snapshot.

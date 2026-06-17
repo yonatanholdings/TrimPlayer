@@ -1,0 +1,266 @@
+--- database.py.bak.community.20260613-154931	2026-06-12 20:49:35.892730220 +0000
++++ database.py	2026-06-13 12:53:03.726105540 +0000
+@@ -3155,14 +3155,19 @@
+ CLIENT_EVENT_MISS_TYPE    = 'miss'
+ 
+ 
+-def store_client_events_batch(client_id: str, events: List[Dict]) -> Tuple[int, int]:
+-    """Insert a batch of client events. Returns (accepted, duplicates).
++def store_client_events_batch(client_id: str,
++                              events: List[Dict]) -> Tuple[int, int, List]:
++    """Insert a batch of client events. Returns (accepted, duplicates, accepted_events).
+ 
+     Dedupes on (client_id, client_event_id); on conflict the row is silently
+-    skipped so client retries are safe.
++    skipped so client retries are safe. *accepted_events* is the list of
++    (skip_type, duration_ms, client_ts) tuples for rows genuinely inserted this
++    call (rowcount == 1) — fed to apply_community_events so each event folds into
++    the Community Impact aggregates exactly once, even across client retries.
+     """
+     accepted = 0
+     duplicates = 0
++    accepted_events = []
+     with get_db() as conn:
+         for ev in events:
+             cur = conn.execute("""
+@@ -3181,9 +3186,11 @@
+                   ev['client_ts']))
+             if cur.rowcount == 1:
+                 accepted += 1
++                accepted_events.append(
++                    (ev['skip_type'], ev.get('duration_ms') or 0, ev['client_ts']))
+             else:
+                 duplicates += 1
+-    return accepted, duplicates
++    return accepted, duplicates, accepted_events
+ 
+ 
+ def get_usage_report(since_ms: Optional[int] = None,
+@@ -3544,3 +3551,227 @@
+         'events_24h':          last_24h['events'] or 0,
+         'unique_clients_24h':  last_24h['unique_clients'] or 0,
+     }
++
++
++
++
++# ---------------------------------------------------------------------------
++# Community Impact: anonymous, pooled trim-impact aggregates.
++# See docs/community-impact-spec.md. All writes are best-effort and live in
++# their own transaction so a failure here can never block /events ingestion.
++# ---------------------------------------------------------------------------
++
++# Productive, time-saving skip types. 'miss' (and anything else) is engagement
++# but NOT reclaimed time, so it is excluded from the impact totals.
++COMMUNITY_SKIP_TYPES = ('intro', 'outro', 'ad', 'silence', 'speed')
++
++# Trailing-window chips served to the app. 'All' uses the all-time tables and is
++# not stored here. Values are day counts.
++COMMUNITY_WINDOWS = {'7d': 7, '30d': 30, '90d': 90, '1y': 365}
++
++# Keep daily rollup rows for the longest finite window plus a buffer; older rows
++# are pruned on refresh so the *_daily tables stay tiny.
++_COMMUNITY_RETAIN_DAYS = 365 + 14
++# Rebuild the window cache at most this often (lazy, on read).
++_COMMUNITY_WINDOW_TTL_MS = 3600 * 1000
++# Transaction-level advisory lock key so only one request rebuilds the window
++# cache at a time (others serve the existing cache). Auto-released on commit.
++_COMMUNITY_LOCK_KEY = 0x7C0DECA5
++
++
++def _community_day(client_ts_ms):
++    """Map a client timestamp (unix ms, *client* clock) to a UTC date, clamping
++    obviously-bad clocks to today so skew can't smear the window or invent days."""
++    from datetime import datetime, timezone, timedelta
++    now = datetime.now(timezone.utc)
++    try:
++        dt = datetime.fromtimestamp(client_ts_ms / 1000.0, tz=timezone.utc)
++    except (TypeError, ValueError, OverflowError, OSError):
++        return now.date()
++    if dt > now + timedelta(days=1) or dt < now - timedelta(days=365 * 3):
++        return now.date()
++    return dt.date()
++
++
++def _utc_iso(ms):
++    from datetime import datetime, timezone
++    if not ms:
++        return None
++    return datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
++
++
++def _now_ms():
++    from datetime import datetime, timezone
++    return int(datetime.now(timezone.utc).timestamp() * 1000)
++
++
++def apply_community_events(client_id, events, avg_playback_speed=None):
++    """Fold a batch of NEWLY-accepted skip events into the Community Impact
++    aggregates. Best-effort: opens its own transaction.
++
++    *events* is a list of (skip_type, duration_ms, client_ts_ms) for rows the
++    /events insert just accepted (rowcount == 1). Deduped retries MUST NOT be
++    passed in, or totals would double-count. Only productive types contribute to
++    the time totals; a productive event also marks the client active for its day.
++    """
++    if not client_id or not events:
++        return
++    with get_db() as conn:
++        # All-time contributor count: first time we ever see this client.
++        inserted = conn.execute(
++            "INSERT INTO community_clients (client_id, first_ts) VALUES (%s, %s) "
++            "ON CONFLICT (client_id) DO NOTHING",
++            (client_id, _now_ms())
++        ).rowcount
++        if inserted:
++            conn.execute("UPDATE community_scalars SET contributors = contributors + 1 WHERE id = TRUE")
++
++        # Incremental community average playback speed: replace this client's
++        # previous contribution so Σ and N stay exact and reads are O(1).
++        if avg_playback_speed is not None:
++            try:
++                speed = float(avg_playback_speed)
++            except (TypeError, ValueError):
++                speed = None
++            if speed is not None and speed > 0:
++                prev = conn.execute(
++                    "SELECT last_avg_speed FROM community_clients WHERE client_id = %s",
++                    (client_id,)
++                ).fetchone()
++                old = prev['last_avg_speed'] if prev else None
++                if old is None:
++                    conn.execute(
++                        "UPDATE community_scalars SET speed_sum = speed_sum + %s, "
++                        "speed_n = speed_n + 1 WHERE id = TRUE", (speed,))
++                else:
++                    conn.execute(
++                        "UPDATE community_scalars SET speed_sum = speed_sum + %s WHERE id = TRUE",
++                        (speed - old,))
++                conn.execute(
++                    "UPDATE community_clients SET last_avg_speed = %s WHERE client_id = %s",
++                    (speed, client_id))
++
++        # Per-event: all-time bucket totals + per-day rollup + per-day active set.
++        for skip_type, duration_ms, client_ts in events:
++            if skip_type not in COMMUNITY_SKIP_TYPES or not duration_ms or duration_ms <= 0:
++                continue
++            day = _community_day(client_ts)
++            conn.execute(
++                "INSERT INTO community_impact (skip_type, total_ms) VALUES (%s, %s) "
++                "ON CONFLICT (skip_type) DO UPDATE SET "
++                "total_ms = community_impact.total_ms + EXCLUDED.total_ms",
++                (skip_type, duration_ms))
++            conn.execute(
++                "INSERT INTO community_impact_daily (day, skip_type, total_ms) VALUES (%s, %s, %s) "
++                "ON CONFLICT (day, skip_type) DO UPDATE SET "
++                "total_ms = community_impact_daily.total_ms + EXCLUDED.total_ms",
++                (day, skip_type, duration_ms))
++            conn.execute(
++                "INSERT INTO community_active_daily (day, client_id) VALUES (%s, %s) "
++                "ON CONFLICT DO NOTHING",
++                (day, client_id))
++
++
++def _windows_fresh(conn, now_ms):
++    """True if every window label is cached and within the refresh TTL."""
++    cnt = conn.execute("SELECT COUNT(*) AS c FROM community_windows").fetchone()['c']
++    oldest = conn.execute("SELECT MIN(refreshed_at) AS m FROM community_windows").fetchone()['m']
++    return (cnt >= len(COMMUNITY_WINDOWS) and oldest is not None
++            and (now_ms - oldest) < _COMMUNITY_WINDOW_TTL_MS)
++
++
++def refresh_community_windows(force=False):
++    """Rebuild the per-window cache rows and prune stale daily rows. Lazy: a no-op
++    if the cache was refreshed within the TTL, unless *force*."""
++    from datetime import date, timedelta
++    now_ms = _now_ms()
++    with get_db() as conn:
++        if not force and _windows_fresh(conn, now_ms):
++            return
++        # Only one refresher at a time — others serve the existing cache. The
++        # xact-level lock auto-releases on commit, so a pooled connection can't
++        # leak it.
++        got = conn.execute(
++            "SELECT pg_try_advisory_xact_lock(%s) AS locked", (_COMMUNITY_LOCK_KEY,)
++        ).fetchone()
++        if not got or not got['locked']:
++            return
++        # Re-check under the lock: a concurrent refresher may have just finished.
++        if not force and _windows_fresh(conn, now_ms):
++            return
++        today = date.today()
++        for label, days in COMMUNITY_WINDOWS.items():
++            since = today - timedelta(days=days)
++            buckets = {t: 0 for t in COMMUNITY_SKIP_TYPES}
++            for r in conn.execute(
++                "SELECT skip_type, SUM(total_ms) AS s FROM community_impact_daily "
++                "WHERE day >= %s GROUP BY skip_type", (since,)
++            ).fetchall():
++                if r['skip_type'] in buckets:
++                    buckets[r['skip_type']] = r['s'] or 0
++            active = conn.execute(
++                "SELECT COUNT(DISTINCT client_id) AS c FROM community_active_daily WHERE day >= %s",
++                (since,)
++            ).fetchone()['c'] or 0
++            conn.execute("""
++                INSERT INTO community_windows
++                    (label, ads_ms, silence_ms, speed_ms, intro_ms, outro_ms,
++                     active_contributors, refreshed_at)
++                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
++                ON CONFLICT (label) DO UPDATE SET
++                    ads_ms = EXCLUDED.ads_ms, silence_ms = EXCLUDED.silence_ms,
++                    speed_ms = EXCLUDED.speed_ms, intro_ms = EXCLUDED.intro_ms,
++                    outro_ms = EXCLUDED.outro_ms,
++                    active_contributors = EXCLUDED.active_contributors,
++                    refreshed_at = EXCLUDED.refreshed_at
++            """, (label, buckets['ad'], buckets['silence'], buckets['speed'],
++                  buckets['intro'], buckets['outro'], active, now_ms))
++        # Prune daily rows beyond the longest window + buffer.
++        cutoff = today - timedelta(days=_COMMUNITY_RETAIN_DAYS)
++        conn.execute("DELETE FROM community_impact_daily WHERE day < %s", (cutoff,))
++        conn.execute("DELETE FROM community_active_daily WHERE day < %s", (cutoff,))
++
++
++def get_community_impact():
++    """Assemble the Community Impact payload: all-time block (hero/breakdown) +
++    the windows map (tenure-fair comparison rows). Reads are O(1); the window
++    cache is refreshed lazily at most hourly."""
++    try:
++        refresh_community_windows(force=False)
++    except Exception:
++        logger.exception("refresh_community_windows failed; serving stale cache")
++    with get_db_ro() as conn:
++        totals = {r['skip_type']: r['total_ms'] for r in
++                  conn.execute("SELECT skip_type, total_ms FROM community_impact").fetchall()}
++        scal = conn.execute(
++            "SELECT contributors, speed_sum, speed_n FROM community_scalars WHERE id = TRUE"
++        ).fetchone() or {}
++        win_rows = conn.execute(
++            "SELECT label, ads_ms, silence_ms, speed_ms, intro_ms, outro_ms, "
++            "active_contributors, refreshed_at FROM community_windows"
++        ).fetchall()
++
++    ad = totals.get('ad', 0); silence = totals.get('silence', 0)
++    speed = totals.get('speed', 0); intro = totals.get('intro', 0); outro = totals.get('outro', 0)
++    speed_n = scal.get('speed_n') or 0
++    avg_speed = (scal['speed_sum'] / speed_n) if speed_n else None
++
++    windows = {}
++    refreshed = 0
++    for r in win_rows:
++        windows[r['label']] = {
++            'ads_ms': r['ads_ms'], 'silence_ms': r['silence_ms'], 'speed_ms': r['speed_ms'],
++            'intro_ms': r['intro_ms'], 'outro_ms': r['outro_ms'],
++            'active_contributors': r['active_contributors'],
++        }
++        refreshed = max(refreshed, r['refreshed_at'] or 0)
++
++    return {
++        'total_ms': ad + silence + speed + intro + outro,
++        'ads_ms': ad, 'silence_ms': silence, 'speed_ms': speed,
++        'intro_ms': intro, 'outro_ms': outro,
++        'contributors': scal.get('contributors') or 0,
++        'avg_playback_speed': round(avg_speed, 3) if avg_speed is not None else None,
++        'windows': windows,
++        'as_of': _utc_iso(refreshed) or _utc_iso(_now_ms()),
++    }

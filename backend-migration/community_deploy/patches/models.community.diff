@@ -1,0 +1,12 @@
+--- models.py.bak.community.20260613-154931	2026-06-03 04:41:41.000000000 +0000
++++ models.py	2026-06-13 12:53:03.808106677 +0000
+@@ -152,6 +152,9 @@
+ class ClientEventsRequest(BaseModel):
+     client_id: str
+     events: List[ClientEventItem]
++    # Optional "typical speed" proxy for the Community Impact / Trim Nation
++    # screen's playback-speed comparison. Absent on older clients -> None.
++    avg_playback_speed: Optional[float] = None
+ 
+ 
+ class ClientEventsResponse(BaseModel):

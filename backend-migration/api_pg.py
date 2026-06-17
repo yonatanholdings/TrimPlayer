@@ -1554,6 +1554,7 @@ def post_client_events(req: ClientEventsRequest):
         raise HTTPException(status_code=413, detail="batch too large (max 500)")
     accepted = 0
     duplicates = 0
+    accepted_events = []  # (skip_type, duration_ms, client_ts) for newly-inserted rows only
     with get_db() as conn:
         for ev in req.events:
             cur = conn.execute("""
@@ -1566,7 +1567,29 @@ def post_client_events(req: ClientEventsRequest):
                   ev.episode_guid, ev.episode_url, ev.podcast_rss, ev.client_ts))
             if cur.rowcount == 1:
                 accepted += 1
+                accepted_events.append((ev.skip_type, ev.duration_ms, ev.client_ts))
             else:
                 duplicates += 1
+
+    # Fold the newly-accepted events into the Community Impact aggregates. Runs in
+    # its own transaction *after* the events commit, and is best-effort: a failure
+    # here must never fail telemetry ingestion. Only genuinely-new rows are passed
+    # in, so this counts each event exactly once even across client retries.
+    # NOTE (cross-repo): `avg_playback_speed` must be added as an optional field on
+    # ClientEventsRequest in models.py (TrimBrain repo) for the speed average to
+    # populate; until then getattr() simply yields None and the rest still works.
+    if accepted_events:
+        try:
+            db.apply_community_events(
+                req.client_id, accepted_events, getattr(req, "avg_playback_speed", None))
+        except Exception:
+            logger.exception("community impact update failed (non-fatal)")
     return ClientEventsResponse(accepted=accepted, duplicates=duplicates)
+
+
+@router.get("/community/impact")
+def get_community_impact():
+    """Anonymous, pooled trim-impact aggregates: all-time hero/breakdown plus the
+    trailing-window comparison map (7d/30d/90d/1y). See docs/community-impact-spec.md."""
+    return db.get_community_impact()
 
