@@ -59,6 +59,10 @@
             android:title="@string/report_bug_title"
             android:icon="@drawable/ic_bug" />
         <Preference
+            android:key="prefCommunityImpact"
+            android:title="@string/community_impact_title"
+            android:icon="@drawable/ic_community" />
+        <Preference
             android:key="prefAbout"
             android:title="@string/about_pref"
             android:icon="@drawable/ic_info" />

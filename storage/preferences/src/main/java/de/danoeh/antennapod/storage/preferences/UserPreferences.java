@@ -474,7 +474,9 @@ public abstract class UserPreferences {
     }
 
     public static long getUpdateInterval() {
-        return Integer.parseInt(prefs.getString(PREF_UPDATE_INTERVAL_MINUTES, "720"));
+        // Parse as long: the value is a long (see setUpdateInterval) and a past migration bug
+        // could inflate it past Integer.MAX_VALUE, which made Integer.parseInt crash on startup.
+        return Long.parseLong(prefs.getString(PREF_UPDATE_INTERVAL_MINUTES, "720"));
     }
 
     public static void setUpdateInterval(long interval) {
@@ -715,7 +717,14 @@ public abstract class UserPreferences {
     }
 
     public static int getEpisodeCleanupValue() {
-        return Integer.parseInt(prefs.getString(PREF_EPISODE_CLEANUP, "" + EPISODE_CLEANUP_NULL));
+        // Parse defensively: a past migration bug could compound this past Integer.MAX_VALUE, which
+        // made Integer.parseInt throw here (at startup and during auto-cleanup). Treat any
+        // unparseable / out-of-int-range value as "disabled" so it self-heals instead of crashing.
+        try {
+            return Integer.parseInt(prefs.getString(PREF_EPISODE_CLEANUP, "" + EPISODE_CLEANUP_NULL));
+        } catch (NumberFormatException e) {
+            return EPISODE_CLEANUP_NULL;
+        }
     }
 
     public static void setEpisodeCleanupValue(int episodeCleanupValue) {
@@ -1044,6 +1053,19 @@ public abstract class UserPreferences {
 
     public static void setFeedbackUnreadCount(int count) {
         prefs.edit().putInt(PREF_TRIM_FEEDBACK_UNREAD, Math.max(0, count)).apply();
+    }
+
+    // Last successful /community/impact response, cached verbatim so the
+    // Community Impact screen renders instantly and survives offline. Replaced
+    // on each successful fetch; null/empty until the first one.
+    public static final String PREF_TRIM_COMMUNITY_IMPACT = "prefTrimCommunityImpact";
+
+    public static String getCommunityImpactCache() {
+        return prefs.getString(PREF_TRIM_COMMUNITY_IMPACT, null);
+    }
+
+    public static void setCommunityImpactCache(String json) {
+        prefs.edit().putString(PREF_TRIM_COMMUNITY_IMPACT, json).apply();
     }
 
     // -----------------------------------------------------------------------

@@ -107,6 +107,12 @@ public class TrimEventsUploadWorker extends Worker {
         JSONObject root = new JSONObject();
         root.put("client_id", clientId);
         root.put("events", events);
+        // Community Impact: the user's typical playback speed, so the backend can
+        // keep a community average for the "you vs community" speed comparison.
+        // v1 proxy = the configured default speed (cheap, no playback hook). The
+        // backend only reads this once its ClientEventsRequest model adds the
+        // optional field; extra keys are otherwise ignored.
+        root.put("avg_playback_speed", UserPreferences.getPlaybackSpeed());
         return root.toString();
     }
 }

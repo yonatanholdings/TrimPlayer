@@ -23,6 +23,17 @@ import de.danoeh.antennapod.ui.swipeactions.SwipeActions;
 public class PreferenceUpgrader {
     private static final String PREF_CONFIGURED_VERSION = "version_code";
     private static final String PREF_NAME = "app_version";
+    // One-time guard for the hours->minutes refresh-interval migration. TrimPlayer reset its
+    // versionCode below 3100000 in the rebrand, so the `oldVersion < 3100000` check is permanently
+    // true and the migration would re-run (multiplying by 60) on every upgrade until it overflowed.
+    private static final String PREF_MIGRATED_INTERVAL_TO_MINUTES = "migratedUpdateIntervalToMinutes";
+    // Largest interval the picker offers (4320 min = 3 days); anything above is corrupted data.
+    private static final long MAX_VALID_UPDATE_INTERVAL_MINUTES = TimeUnit.DAYS.toMinutes(3);
+    // Same class of bug as the interval migration: the episode-cleanup x24 (oldVersion < 1070196)
+    // also re-fired on every sub-offset build, compounding any positive cleanup value.
+    private static final String PREF_MIGRATED_CLEANUP_TO_HOURS = "migratedEpisodeCleanupToHours";
+    // Largest cleanup value the picker offers (168 h = 7 days); anything above is corrupted data.
+    private static final int MAX_VALID_CLEANUP_HOURS = (int) TimeUnit.DAYS.toHours(7);
 
     private static SharedPreferences prefs;
 
@@ -46,11 +57,23 @@ public class PreferenceUpgrader {
             return;
         }
         if (oldVersion < 1070196) {
-            // migrate episode cleanup value (unit changed from days to hours)
-            int oldValueInDays = UserPreferences.getEpisodeCleanupValue();
-            if (oldValueInDays > 0) {
-                UserPreferences.setEpisodeCleanupValue(oldValueInDays * 24);
-            } // else 0 or special negative values, no change needed
+            // Upstream this migrated episode cleanup from days to hours, but TrimPlayer forked from
+            // AntennaPod 3.10.1 where the value was already in hours, so the x24 was never correct
+            // here, and the rebrand versionCode reset made this block re-fire and compound it. Now
+            // run once (flag-guarded) and only repair a value the old bug already corrupted.
+            if (!prefs.getBoolean(PREF_MIGRATED_CLEANUP_TO_HOURS, false)) {
+                // getEpisodeCleanupValue() now returns EPISODE_CLEANUP_NULL for an int-overflowed
+                // (unparseable) stored string, so a too-large value or that sentinel both mean the
+                // stored pref is corrupt. Rewrite it to disabled to flush the garbage string.
+                int value = UserPreferences.getEpisodeCleanupValue();
+                String defaultRaw = String.valueOf(UserPreferences.EPISODE_CLEANUP_NULL);
+                String raw = prefs.getString(UserPreferences.PREF_EPISODE_CLEANUP, defaultRaw);
+                boolean unparseable = !String.valueOf(value).equals(raw);
+                if (value > MAX_VALID_CLEANUP_HOURS || unparseable) {
+                    UserPreferences.setEpisodeCleanupValue(UserPreferences.EPISODE_CLEANUP_NULL);
+                } // else 0, valid hours, or special negative values: no change needed
+                prefs.edit().putBoolean(PREF_MIGRATED_CLEANUP_TO_HOURS, true).apply();
+            }
         }
         if (oldVersion < 1070197) {
             if (prefs.getBoolean("prefMobileUpdate", false)) {
@@ -180,8 +203,19 @@ public class PreferenceUpgrader {
             UserPreferences.setBottomNavigationEnabled(true);
         }
         if (oldVersion < 3100000) {
-            // Migrate refresh interval from hours to minutes
-            UserPreferences.setUpdateInterval(60L * UserPreferences.getUpdateInterval());
+            // Upstream this migrated the refresh interval from hours to minutes, but TrimPlayer
+            // forked from AntennaPod 3.10.1 where the value was already in minutes, so the x60 was
+            // never correct here. Worse, the rebrand reset versionCode below 3100000, so this block
+            // re-ran on every upgrade and the compounding x60 eventually overflowed int and crashed
+            // the app at startup. Now it only runs once (flag-guarded) and just repairs any value
+            // the old bug already corrupted past the picker's max.
+            if (!prefs.getBoolean(PREF_MIGRATED_INTERVAL_TO_MINUTES, false)) {
+                long minutes = UserPreferences.getUpdateInterval();
+                if (minutes < 0 || minutes > MAX_VALID_UPDATE_INTERVAL_MINUTES) {
+                    UserPreferences.setUpdateInterval(TimeUnit.HOURS.toMinutes(12)); // 720, the default
+                }
+                prefs.edit().putBoolean(PREF_MIGRATED_INTERVAL_TO_MINUTES, true).apply();
+            }
             FeedUpdateManager.getInstance().restartUpdateAlarm(context, true);
         }
     }

@@ -55,6 +55,18 @@
         license="Simplified BSD"
         licenseText="LICENSE_GLIDE.txt" />
     <library
+        name="IBM Plex Mono"
+        author="IBM Corp."
+        website="https://github.com/IBM/plex"
+        license="SIL OFL 1.1"
+        licenseText="LICENSE_FONTS_OFL.txt" />
+    <library
+        name="Instrument Serif"
+        author="The Instrument Serif Project Authors"
+        website="https://github.com/Instrument/instrument-serif"
+        license="SIL OFL 1.1"
+        licenseText="LICENSE_FONTS_OFL.txt" />
+    <library
         name="jsoup"
         author="Jonathan Hedley"
         website="https://jsoup.org/"

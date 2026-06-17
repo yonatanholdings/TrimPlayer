@@ -23,7 +23,7 @@ public final class EditorialTheme {
     private EditorialTheme() {}
 
     // Set to true once font .ttf files are added to res/font/
-    private static final boolean FONTS_BUNDLED = false;
+    private static final boolean FONTS_BUNDLED = true;
 
     // ── Color accessors (theme-aware via resources) ──────────────────────────
     public static int paper(Context c)         { return ContextCompat.getColor(c, R.color.editorial_paper); }

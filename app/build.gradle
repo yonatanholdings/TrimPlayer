@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId "com.trimplayer"
-        versionName "1.0.7-beta1"
+        versionName "1.0.7-beta6"
         versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
@@ -150,6 +150,13 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:34.12.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
+
+    // 16 KB page-size compliance: libdatastore_shared_counter.so is the only
+    // native lib bundled in the app, pulled transitively via Firebase Sessions.
+    // datastore-core >= 1.1.2 ships a 16 KB-aligned .so; pin it so a future
+    // transitive bump can't silently regress to a 4 KB-aligned build that Play
+    // would reject. See blog.google "Prepare Play apps for 16 KB page size".
+    implementation 'androidx.datastore:datastore-core-android:1.1.7'
 
     // Google Play Billing — used by app.billing.TrimBillingManager. The
     // 'free' product flavor is currently vestigial (inherited from AntennaPod

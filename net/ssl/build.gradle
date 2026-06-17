@@ -16,5 +16,7 @@ dependencies {
 
     playImplementation 'com.google.android.gms:play-services-base:17.5.0'
     // This version should be updated regularly.
-    freeImplementation 'org.conscrypt:conscrypt-android:2.5.2'
+    // 2.5.3+ ships 16 KB-aligned libconscrypt_jni.so (2.5.2 was 4 KB-aligned and
+    // Play rejects it for 16 KB page-size compliance). Keep >= 2.5.3.
+    freeImplementation 'org.conscrypt:conscrypt-android:2.5.3'
 }

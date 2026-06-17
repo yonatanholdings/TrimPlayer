@@ -13,6 +13,7 @@ import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
 import de.danoeh.antennapod.ui.preferences.screen.about.AboutFragment;
 import de.danoeh.antennapod.ui.preferences.screen.bugreport.BugReportFragment;
+import de.danoeh.antennapod.ui.statistics.CommunityImpactFragment;
 import de.danoeh.antennapod.ui.statistics.StatisticsFragment;
 
 public class MainPreferencesFragment extends AnimatedPreferenceFragment {
@@ -25,6 +26,7 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
     private static final String PREF_ABOUT = "prefAbout";
     private static final String PREF_NOTIFICATION = "notifications";
     private static final String PREF_STATISTICS = "prefStatistics";
+    private static final String PREF_COMMUNITY_IMPACT = "prefCommunityImpact";
     private static final String PREF_TRIM_PRO = "prefTrimPro";
 
     @Override
@@ -97,6 +99,12 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
             getParentFragmentManager().beginTransaction()
                     .replace(R.id.settingsContainer, new StatisticsFragment())
                     .addToBackStack(getString(R.string.statistics_label)).commit();
+            return true;
+        });
+        findPreference(PREF_COMMUNITY_IMPACT).setOnPreferenceClickListener(preference -> {
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.settingsContainer, new CommunityImpactFragment())
+                    .addToBackStack(getString(R.string.community_impact_title)).commit();
             return true;
         });
         // TrimPlayer Pro entry — summary text reflects current entitlement.
