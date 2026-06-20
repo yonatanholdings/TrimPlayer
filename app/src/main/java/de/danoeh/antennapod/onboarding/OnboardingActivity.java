@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts.GetContent;
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,6 +23,7 @@ import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.event.AnalyticsEvent;
 import de.danoeh.antennapod.importflow.ImportFlowController;
+import de.danoeh.antennapod.migration.MigrationGuideActivity;
 import de.danoeh.antennapod.migration.SpotifyMigrationActivity;
 import de.danoeh.antennapod.playback.service.PlaybackService;
 import de.danoeh.antennapod.ui.appstartintent.MainActivityStarter;
@@ -53,6 +55,16 @@ public class OnboardingActivity extends AppCompatActivity implements ImportFlowC
     private final ActivityResultLauncher<String> pickFileLauncher =
             registerForActivityResult(new GetContent(), this::onFilePicked);
 
+    /** A file-based source's export guide finished. RESULT_OK = the user is ready to
+     *  pick the backup they just made, so open the same picker the card opened before
+     *  the guide existed; the shared ImportFlowController auto-detects the type. */
+    private final ActivityResultLauncher<Intent> guideLauncher =
+            registerForActivityResult(new StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    pickFileLauncher.launch("*/*");
+                }
+            });
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         setTheme(ThemeSwitcher.getNoTitleTheme(this));
@@ -71,9 +83,9 @@ public class OnboardingActivity extends AppCompatActivity implements ImportFlowC
             finish();
         });
         findViewById(R.id.onboarding_btn_podcast_addict).setOnClickListener(
-                v -> pickFileForChoice("podcast_addict"));
+                v -> openGuideForChoice("podcast_addict"));
         findViewById(R.id.onboarding_btn_antennapod).setOnClickListener(
-                v -> pickFileForChoice("antennapod"));
+                v -> openGuideForChoice("antennapod"));
         findViewById(R.id.onboarding_btn_portcast).setOnClickListener(
                 v -> pickFileForChoice("portcast"));
         findViewById(R.id.onboarding_btn_opml).setOnClickListener(
@@ -100,6 +112,17 @@ public class OnboardingActivity extends AppCompatActivity implements ImportFlowC
     private void pickFileForChoice(String choice) {
         EventBus.getDefault().post(AnalyticsEvent.onboardingImportChoice(choice));
         pickFileLauncher.launch("*/*");
+    }
+
+    /** Show the per-app export guide before the file picker, for sources that need
+     *  the user to produce a backup in another app first (Podcast Addict, AntennaPod).
+     *  The choice is recorded now (the user committed to this source); the picker opens
+     *  when {@link #guideLauncher} returns RESULT_OK. */
+    private void openGuideForChoice(String choice) {
+        EventBus.getDefault().post(AnalyticsEvent.onboardingImportChoice(choice));
+        Intent intent = new Intent(this, MigrationGuideActivity.class);
+        intent.putExtra(MigrationGuideActivity.EXTRA_SOURCE, choice);
+        guideLauncher.launch(intent);
     }
 
     private void onFilePicked(@Nullable Uri uri) {

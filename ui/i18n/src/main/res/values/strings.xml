@@ -1035,6 +1035,45 @@
     <string name="onboarding_source_opml_sub">Pocket Casts, Overcast, Castro — bring your subscriptions in one tap (OPML). It\'s all the others let you take. We\'ll let you take more.</string>
     <string name="onboarding_start_fresh">Start fresh</string>
     <string name="onboarding_settings_entry_summary">Bring your shows from Spotify, Apple Podcasts, Podcast Addict, and more</string>
+    <!-- Pre-picker migration guide: how to export a backup from the other app before
+         the file picker opens. %1$s = the source app name (e.g. "Podcast Addict"). -->
+    <string name="migration_guide_title">Export from %1$s</string>
+    <string name="migration_guide_choose_file">I\'ve made my backup — choose file</string>
+    <string name="migration_guide_skip">I already have my backup file</string>
+    <string name="migration_guide_step_number">%1$d.</string>
+    <string name="migration_guide_screenshot_desc">Screenshot of step %1$d in %2$s</string>
+    <string name="migration_guide_podcast_addict_intro">First make a backup inside Podcast Addict (about a minute) — then just <b>Share it to TrimPlayer</b> and your library imports automatically.</string>
+    <string name="migration_guide_podcast_addict_note">Prefer to do it by hand? The backup is a .backup file (named PodcastAddict_….backup) in your Podcasts folder — tap “choose file” below and pick it.</string>
+    <string-array name="migration_guide_podcast_addict_steps">
+        <item>In Podcast Addict, open the menu and tap the gear (Settings) at the bottom.</item>
+        <item>Tap Backup / Restore.</item>
+        <item>Tap the green BACK UP button and wait for it to finish.</item>
+        <item>On the “Backup” pop-up, tap SHARE and choose TrimPlayer — your shows import automatically, no need to come back.</item>
+    </string-array>
+    <!-- Per-step screenshots, parallel to migration_guide_podcast_addict_steps. -->
+    <array name="migration_guide_podcast_addict_step_images">
+        <item>@drawable/pa_migration_1_menu</item>
+        <item>@drawable/pa_migration_2_backup</item>
+        <item>@drawable/pa_migration_3_backupbtn</item>
+        <item>@drawable/pa_migration_4_done</item>
+    </array>
+    <string name="migration_guide_antennapod_intro">Export your whole library from AntennaPod — subscriptions, listened episodes and queue — then <b>Share it to TrimPlayer</b> and it imports automatically.</string>
+    <string name="migration_guide_antennapod_note">Prefer to do it by hand? The export is a .db file (named AntennaPodBackup-….db) saved where you chose — tap “choose file” below and pick it.</string>
+    <string-array name="migration_guide_antennapod_steps">
+        <item>In AntennaPod, open the menu (More) and tap Settings.</item>
+        <item>Tap Backup &amp; restore.</item>
+        <item>Tap Database export — this includes your subscriptions, listened episodes and queue.</item>
+        <item>Choose where to save and tap SAVE.</item>
+        <item>On the “Export successful” message, tap Share and choose TrimPlayer — your library imports automatically, no need to come back.</item>
+    </string-array>
+    <!-- Per-step screenshots, parallel to migration_guide_antennapod_steps. -->
+    <array name="migration_guide_antennapod_step_images">
+        <item>@drawable/ap_migration_1_menu</item>
+        <item>@drawable/ap_migration_2_backup</item>
+        <item>@drawable/ap_migration_3_dbexport</item>
+        <item>@drawable/ap_migration_4_save</item>
+        <item>@drawable/ap_migration_5_done</item>
+    </array>
     <!-- Post-import success moment (shown before finishing to Home). -->
     <string name="onboarding_trim_demo_label">Less to sit through, every episode.</string>
     <string name="onboarding_success_title">Your shows are on the way</string>

@@ -63,6 +63,13 @@
             android:exported="false"
             android:label="@string/spotify_migration_title" />
 
+        <!-- Pre-picker "how to export your backup" guide for file-based sources
+             (Podcast Addict, AntennaPod). Launched for-result by onboarding and
+             Settings → Import; returns RESULT_OK to open the file picker. -->
+        <activity
+            android:name="de.danoeh.antennapod.migration.MigrationGuideActivity"
+            android:exported="false" />
+
         <!-- First-run "Bring your podcasts with you" screen. Launched once from
              MainActivity.checkFirstLaunch(). -->
         <activity
@@ -281,6 +288,9 @@
                 <data android:pathPattern=".*\\..*\\..*\\.backup"/>
                 <data android:pathPattern=".*\\.opml"/>
                 <data android:pathPattern=".*\\..*\\.opml"/>
+                <!-- AntennaPod database export (AntennaPodBackup-….db) opened from a file manager -->
+                <data android:pathPattern=".*\\.db"/>
+                <data android:pathPattern=".*\\..*\\.db"/>
             </intent-filter>
         </activity>
 
