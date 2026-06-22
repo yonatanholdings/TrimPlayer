@@ -240,6 +240,42 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      *  re-runs on every play/resume/seek and would otherwise wipe the de-dup mid-loop. */
     private final Set<Integer> skippedSegmentIndices = new java.util.HashSet<>();
 
+    /** Set true when an auto-skip seekTo() failed to hold — the playhead regressed
+     *  to before the segment instead of landing at its end. That is the signature of
+     *  a non-seekable streaming source (the host ignores HTTP Range, or the target is
+     *  past the downloaded frontier): ExoPlayer reports the seek complete, then
+     *  restarts the progressive stream at position 0. Left unguarded, the index-based
+     *  de-dup walks the playhead forward to the next segment and bounces again,
+     *  restarting the episode from the beginning forever. Once detected we stop
+     *  auto-skipping THIS episode (so it plays linearly instead of looping) and request
+     *  a download so seeks work on replay. Reset per new episode (INITIALIZED). */
+    private boolean trimSeekUnreliable = false;
+
+    /** Pending verification of the most recent auto-skip seek: {@code {startMs, endMs,
+     *  earliestCheckMs, deadlineMs}}. Evaluated on later position ticks once past
+     *  {@code earliestCheckMs} — playhead below {@code startMs} means the seek regressed
+     *  (→ {@link #trimSeekUnreliable}); still forward past {@code deadlineMs} means it
+     *  held. Null when there is nothing to verify. */
+    private long[] pendingSkipVerify = null;
+
+    /** Wait this long after a skip before judging the result, so a transient post-seek
+     *  position read of 0 (the buffering/idle window right after a seekTo) isn't mistaken
+     *  for a regression. The seek itself completes in well under this. */
+    private static final long SKIP_VERIFY_SETTLE_MS = 1500L;
+
+    /** Total window after a skip to watch for a regression before treating the seek as
+     *  held. Spans the observed restart-to-0 (~1–5 s out) at the 1 s observer cadence. */
+    private static final long SKIP_VERIFY_WINDOW_MS = 4000L;
+
+    /** One-shot guard so the phantom-tail end (see {@link PlaybackEndGuard}) fires at most once per
+     *  episode. Reset per new episode at INITIALIZED. */
+    private boolean phantomTailHandled = false;
+
+    /** How far the player's duration estimate must exceed the feed duration before we end the
+     *  episode at the feed duration. Large enough that only a genuine headerless/VBR over-estimate
+     *  triggers it — a few-second rounding difference (or a slightly under-stated feed) does not. */
+    private static final long PHANTOM_TAIL_MARGIN_MS = 10_000L;
+
     /** A segment whose (duration-capped) end lands this close to the episode end is
      *  treated as running to the end: we end the episode rather than seek to the
      *  duration, which on streaming media clamps a hair short and lands back inside
@@ -811,6 +847,36 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             }
         }
         return UserPreferences.isTrimSkipEnabledForType(eventType);
+    }
+
+    /**
+     * When an auto-skip seek proves unreliable on a streaming episode, request a download.
+     * The local file is always seekable, so once it lands, future playback of this episode
+     * trims correctly instead of bouncing back to the start. This does not hot-swap the
+     * currently-playing stream — the current session keeps playing linearly (auto-skip is
+     * already disabled for it) — it makes the trim reliable on replay.
+     *
+     * <p>No-op when the media is already local or a download is already in flight. Uses the
+     * constraint-respecting {@code download()} (not {@code downloadNow()}) so it honours the
+     * user's metered/Wi-Fi download settings.
+     */
+    private void trimRequestDownloadForReliableSkips(
+            de.danoeh.antennapod.model.feed.FeedMedia fm) {
+        try {
+            if (fm == null || fm.getItem() == null || fm.localFileAvailable()) {
+                return;
+            }
+            String url = fm.getDownloadUrl();
+            if (url == null || de.danoeh.antennapod.net.download.serviceinterface
+                    .DownloadServiceInterface.get().isDownloadingEpisode(url)) {
+                return;
+            }
+            Log.d(TAG, "Trim Player: requesting download so trims are seekable on replay");
+            de.danoeh.antennapod.net.download.serviceinterface.DownloadServiceInterface.get()
+                    .download(this, fm.getItem());
+        } catch (Exception e) {
+            Log.w(TAG, "Trim Player: failed to request download for reliable skips", e);
+        }
     }
 
     @Override
@@ -1436,6 +1502,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                     // covers both manual play and auto-advance via endPlayback → playMediaObject)
                     trimPollHandler.removeCallbacksAndMessages(null);
                     currentSegments = Collections.emptyList();
+                    // New episode: re-arm auto-skip and drop any pending seek verification
+                    // from the previous one.
+                    trimSeekUnreliable = false;
+                    pendingSkipVerify = null;
+                    phantomTailHandled = false;
                     if (newInfo.getPlayable() instanceof FeedMedia) {
                         trimFetchSegments((FeedMedia) newInfo.getPlayable());
                     }
@@ -2983,6 +3054,27 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                     }
                     skipEndingIfNecessary();
 
+                    // Phantom-tail guard: headerless/VBR MP3s make ExoPlayer over-estimate the
+                    // duration, so playback runs past the real (feed) end into a silent tail that
+                    // never reaches STATE_ENDED — the episode never finishes or auto-advances. End
+                    // it at the publisher-provided duration instead. See PlaybackEndGuard.
+                    de.danoeh.antennapod.model.playback.Playable endPlayable = getPlayable();
+                    if (!phantomTailHandled
+                            && endPlayable instanceof de.danoeh.antennapod.model.feed.FeedMedia
+                            && de.danoeh.antennapod.playback.service.internal.PlaybackEndGuard
+                                .shouldCompleteAtFeedDuration(getCurrentPosition(),
+                                        ((de.danoeh.antennapod.model.feed.FeedMedia) endPlayable).getDuration(),
+                                        getDuration(), PHANTOM_TAIL_MARGIN_MS)) {
+                        Log.d(TAG, "Phantom-tail: position " + getCurrentPosition()
+                                + " reached feed duration "
+                                + ((de.danoeh.antennapod.model.feed.FeedMedia) endPlayable).getDuration()
+                                + " but player duration is " + getDuration()
+                                + " — completing episode");
+                        phantomTailHandled = true;
+                        mediaPlayer.completePlayback();
+                        return;
+                    }
+
                     // Trim Player: Check for skip
                     de.danoeh.antennapod.model.playback.Playable trimPlayable = getPlayable();
                     if (currentSegments != null && !trimSegmentEditPreviewActive
@@ -2995,8 +3087,31 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         }
                         int pos = getCurrentPosition(); // ms
                         int dur = getDuration();
+
+                        // Verify the previous auto-skip seek actually held before doing any more
+                        // skipping. On a non-seekable streaming source a forward seekTo() reports
+                        // complete, then ExoPlayer silently restarts the stream at position 0; the
+                        // de-dup below would then walk forward to the next segment and bounce again,
+                        // looping the episode back to its start forever. If the playhead regressed to
+                        // before the skipped segment, stand down for this episode.
+                        if (pendingSkipVerify != null
+                                && System.currentTimeMillis() >= pendingSkipVerify[2]) {
+                            if (pos < pendingSkipVerify[0]) {
+                                Log.w(TAG, "Trim Player: auto-skip seek regressed (pos=" + pos
+                                        + " < segmentStart=" + pendingSkipVerify[0]
+                                        + ", target=" + pendingSkipVerify[1] + ") — stream not"
+                                        + " seekable; disabling auto-skip for this episode");
+                                trimSeekUnreliable = true;
+                                pendingSkipVerify = null;
+                                trimRequestDownloadForReliableSkips(fm);
+                            } else if (System.currentTimeMillis() > pendingSkipVerify[3]) {
+                                // Stayed forward past the watch window — the seek held.
+                                pendingSkipVerify = null;
+                            }
+                        }
+
                         List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsSnap = currentSegments;
-                        for (int si = 0; si < segsSnap.size(); si++) {
+                        for (int si = 0; !trimSeekUnreliable && si < segsSnap.size(); si++) {
                             de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg = segsSnap.get(si);
                             int startMs = (int) (seg.start * 1000);
                             // Cap endMs to episode duration so we never seek past the end.
@@ -3064,6 +3179,12 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 }
                                 nextSeekIsInternal = true;
                                 seekTo(endMs);
+                                // Watch the next few ticks: if the playhead regresses to before
+                                // this segment, the source couldn't honor the seek (see
+                                // trimSeekUnreliable) and we stop auto-skipping it.
+                                long nowMs = System.currentTimeMillis();
+                                pendingSkipVerify = new long[]{startMs, endMs,
+                                        nowMs + SKIP_VERIFY_SETTLE_MS, nowMs + SKIP_VERIFY_WINDOW_MS};
                                 showSegmentSkipToast(eventType, skippedMs);
                                 // Cue fires on every auto-skip (e.g. user rewinds
                                 // past a previously-skipped segment); internal
