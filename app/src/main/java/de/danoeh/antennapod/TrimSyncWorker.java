@@ -12,6 +12,7 @@ import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
+import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 import java.util.ArrayList;
@@ -81,12 +82,61 @@ public class TrimSyncWorker extends Worker {
         // mid-apply just re-pulls (apply is idempotent + LWW-guarded). v1 applies
         // playback progress only; queue reorder + auto-subscribe stay deferred
         // (they mutate the subscription set and need on-device validation).
-        int applied = applyProgress(resp.body.progress);
+        int appliedProgress = applyProgress(resp.body.progress);
+        int appliedQueue = applyQueue(getApplicationContext(), resp.body.queue);
         UserPreferences.setTrimSyncCursor(resp.body.cursor);
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
-                + "; applied progress=" + applied + ", cursor=" + resp.body.cursor);
+                + "; applied progress=" + appliedProgress + " queue=" + appliedQueue
+                + ", cursor=" + resp.body.cursor);
         return Result.success();
+    }
+
+    /** Apply server-side queue changes to the local queue (delta only, so we
+     *  touch just the items that changed server-side rather than rebuilding the
+     *  queue). Conservative for v1: web-side removals and additions propagate,
+     *  but reordering of already-queued items is left to the phone (precise
+     *  cross-device reorder needs the change-journal — deferred). Episodes not
+     *  present locally are skipped (queue auto-subscribe deferred). */
+    private static int applyQueue(android.content.Context ctx,
+                                  List<TrimClient.QueueChange> queue) {
+        if (queue == null || queue.isEmpty()) {
+            return 0;
+        }
+        LongList ids = DBReader.getQueueIDList();
+        Set<Long> inQueue = new HashSet<>();
+        for (int i = 0; i < ids.size(); i++) {
+            inQueue.add(ids.get(i));
+        }
+        int changed = 0;
+        for (TrimClient.QueueChange q : queue) {
+            if (q == null || q.episode_url == null) {
+                continue;
+            }
+            FeedItem item = DBReader.getFeedItemByGuidOrEpisodeUrl(q.guid, q.episode_url);
+            if (item == null) {
+                continue; // not subscribed/present locally
+            }
+            boolean present = inQueue.contains(item.getId());
+            try {
+                if (q.deleted) {
+                    if (present) {
+                        DBWriter.removeQueueItem(ctx, false, item).get();
+                        inQueue.remove(item.getId());
+                        changed++;
+                    }
+                } else if (!present) {
+                    int size = inQueue.size();
+                    int idx = q.position == null ? size : Math.max(0, Math.min(q.position, size));
+                    DBWriter.addQueueItemAt(ctx, item.getId(), idx).get();
+                    inQueue.add(item.getId());
+                    changed++;
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "queue apply failed for " + q.episode_url + ": " + e.getMessage());
+            }
+        }
+        return changed;
     }
 
     /** Apply server-side progress to the local DB. Returns how many rows changed.
