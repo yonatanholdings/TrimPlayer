@@ -11,6 +11,7 @@ import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.storage.database.DBReader;
+import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 import java.util.ArrayList;
@@ -76,12 +77,52 @@ public class TrimSyncWorker extends Worker {
             Log.w(TAG, "sync returned " + resp.code + "; will retry");
             return Result.retry();
         }
+        // Apply the server delta locally BEFORE advancing the cursor, so a crash
+        // mid-apply just re-pulls (apply is idempotent + LWW-guarded). v1 applies
+        // playback progress only; queue reorder + auto-subscribe stay deferred
+        // (they mutate the subscription set and need on-device validation).
+        int applied = applyProgress(resp.body.progress);
         UserPreferences.setTrimSyncCursor(resp.body.cursor);
-        // TODO(sync-phase-2): applyServerDelta(resp.body);
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
-                + ", cursor=" + resp.body.cursor);
+                + "; applied progress=" + applied + ", cursor=" + resp.body.cursor);
         return Result.success();
+    }
+
+    /** Apply server-side progress to the local DB. Returns how many rows changed.
+     *  Last-writer-wins by the media's local last-played time, so newer on-device
+     *  progress is never clobbered by an older web update. Episodes not present
+     *  locally are skipped (auto-subscribe is deferred). */
+    private static int applyProgress(List<TrimClient.ProgressChange> progress) {
+        if (progress == null) {
+            return 0;
+        }
+        int applied = 0;
+        for (TrimClient.ProgressChange p : progress) {
+            if (p == null || p.episode_url == null || p.deleted) {
+                continue;
+            }
+            FeedItem item = DBReader.getFeedItemByGuidOrEpisodeUrl(p.guid, p.episode_url);
+            if (item == null || item.getMedia() == null) {
+                continue;
+            }
+            FeedMedia media = item.getMedia();
+            // LWW: skip if local progress is at least as recent as the server's.
+            if (p.client_ts <= media.getLastPlayedTimeStatistics()) {
+                continue;
+            }
+            if (p.position_ms != null) {
+                long pos = Math.max(0, Math.min(p.position_ms, Integer.MAX_VALUE));
+                media.setPosition((int) pos);
+                DBWriter.setFeedMedia(media);
+            }
+            if (p.played != item.isPlayed()) {
+                DBWriter.markItemPlayed(p.played ? FeedItem.PLAYED : FeedItem.UNPLAYED,
+                        false, item.getId());
+            }
+            applied++;
+        }
+        return applied;
     }
 
     private static List<TrimClient.SubscriptionChange> buildSubscriptions(long ts) {
