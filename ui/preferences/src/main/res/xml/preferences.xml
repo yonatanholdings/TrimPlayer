@@ -47,6 +47,12 @@
             android:icon="@drawable/ic_play_24dp" />
 
     <Preference
+            android:key="prefTrimAccount"
+            android:title="@string/trim_account_title"
+            android:summary="@string/trim_account_pref_summary_logged_out"
+            android:icon="@drawable/ic_cloud" />
+
+    <Preference
             android:key="notifications"
             android:title="@string/notification_pref_fragment"
             android:icon="@drawable/ic_notifications"/>

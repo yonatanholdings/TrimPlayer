@@ -28,6 +28,7 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
     private static final String PREF_STATISTICS = "prefStatistics";
     private static final String PREF_COMMUNITY_IMPACT = "prefCommunityImpact";
     private static final String PREF_TRIM_PRO = "prefTrimPro";
+    private static final String PREF_TRIM_ACCOUNT = "prefTrimAccount";
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -129,6 +130,19 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
                     return true;
                 });
             }
+        }
+        // TrimPlayer account — login/logout for web/phone library sync. Summary
+        // reflects the current session; the dialog kicks an immediate sync on login.
+        Preference accountPref = findPreference(PREF_TRIM_ACCOUNT);
+        if (accountPref != null) {
+            if (UserPreferences.isTrimAccountLoggedIn()) {
+                accountPref.setSummary(getString(R.string.trim_account_pref_summary_logged_in,
+                        UserPreferences.getTrimAccountEmail()));
+            }
+            accountPref.setOnPreferenceClickListener(preference -> {
+                TrimAccountDialogs.show(requireContext(), accountPref);
+                return true;
+            });
         }
     }
 

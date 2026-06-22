@@ -658,6 +658,20 @@
     <string name="trim_pro_title">TrimPlayer Pro</string>
     <string name="trim_pro_pref_summary">Unlimited auto-trim · Get Pro</string>
     <string name="trim_pro_pref_summary_active">Pro active</string>
+    <!-- TrimPlayer account (web/phone library sync) -->
+    <string name="trim_account_title">TrimPlayer account</string>
+    <string name="trim_account_pref_summary_logged_out">Log in to sync your queue and progress to the web player</string>
+    <string name="trim_account_pref_summary_logged_in">Signed in as %1$s · syncing</string>
+    <string name="trim_account_login_title">Log in to TrimPlayer</string>
+    <string name="trim_account_signup_title">Create a TrimPlayer account</string>
+    <string name="trim_account_email_hint">Email</string>
+    <string name="trim_account_password_hint">Password</string>
+    <string name="trim_account_action_login">Log in</string>
+    <string name="trim_account_action_signup">Sign up</string>
+    <string name="trim_account_switch_to_signup">Create an account instead</string>
+    <string name="trim_account_switch_to_login">I already have an account</string>
+    <string name="trim_account_logout">Log out</string>
+    <string name="trim_account_login_success">Signed in — your library will sync shortly</string>
     <string name="trim_pro_badge">PRO</string>
     <!-- %1$d = quota used, %2$d = quota limit (e.g. "3/3") -->
     <string name="trim_pro_quota_used">Auto-trim used: %1$d/%2$d this month</string>
