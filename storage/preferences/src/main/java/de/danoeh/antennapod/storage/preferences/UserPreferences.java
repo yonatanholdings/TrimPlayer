@@ -1005,13 +1005,39 @@ public abstract class UserPreferences {
                 .apply();
     }
 
-    /** Clear the session on logout (cursor reset so a re-login does a full pull). */
+    /** Clear the session on logout (cursor + change-journal snapshots reset so a
+     *  re-login does a full pull and re-seeds the account from local state). */
     public static void clearTrimAccount() {
         prefs.edit()
                 .remove(PREF_TRIM_ACCOUNT_TOKEN)
                 .remove(PREF_TRIM_ACCOUNT_EMAIL)
                 .remove(PREF_TRIM_SYNC_CURSOR)
+                .remove(PREF_TRIM_SYNC_SNAP_SUBS)
+                .remove(PREF_TRIM_SYNC_SNAP_QUEUE)
                 .apply();
+    }
+
+    // Change-journal snapshots: the subscription set + queue as last successfully
+    // pushed to the account. The sync worker diffs current local state against
+    // these so it only pushes genuine local changes (adds/edits/removals) instead
+    // of re-asserting everything every run — which would clobber web-side edits.
+    public static final String PREF_TRIM_SYNC_SNAP_SUBS = "prefTrimSyncSnapSubs";
+    public static final String PREF_TRIM_SYNC_SNAP_QUEUE = "prefTrimSyncSnapQueue";
+
+    public static String getTrimSyncSubsSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_SUBS, "");
+    }
+
+    public static void setTrimSyncSubsSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_SUBS, json == null ? "" : json).apply();
+    }
+
+    public static String getTrimSyncQueueSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_QUEUE, "");
+    }
+
+    public static void setTrimSyncQueueSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_QUEUE, json == null ? "" : json).apply();
     }
 
     public static long getTrimSyncCursor() {

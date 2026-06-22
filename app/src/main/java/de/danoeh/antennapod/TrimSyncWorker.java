@@ -15,9 +15,16 @@ import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -57,11 +64,20 @@ public class TrimSyncWorker extends Worker {
         String bearer = "Bearer " + UserPreferences.getTrimAccountToken();
         long now = System.currentTimeMillis();
 
+        // Change-journal: diff current local state against the snapshot of what we
+        // last pushed, so we only send genuine local changes (adds / title edits /
+        // reorders / removals) and never re-assert unchanged rows over a web edit.
+        Map<String, String> prevSubs = parseSubsSnapshot(UserPreferences.getTrimSyncSubsSnapshot());
+        List<String> prevQueue = parseQueueSnapshot(UserPreferences.getTrimSyncQueueSnapshot());
+        List<Feed> feeds = DBReader.getFeedList();
+        List<FeedItem> queue = DBReader.getQueue();
+        Map<String, String> curSubs = currentSubs(feeds);
+        List<String> curQueueUrls = currentQueueUrls(queue);
+
         TrimClient.SyncRequest req = new TrimClient.SyncRequest();
         req.cursor = UserPreferences.getTrimSyncCursor();
-        req.subscriptions = buildSubscriptions(now);
-        List<FeedItem> queue = DBReader.getQueue();
-        req.queue = buildQueue(queue, now);
+        req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
+        req.queue = diffQueue(prevQueue, queue, curQueueUrls, now);
         req.progress = buildProgress(queue, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
@@ -85,6 +101,10 @@ public class TrimSyncWorker extends Worker {
         int appliedProgress = applyProgress(resp.body.progress);
         int appliedQueue = applyQueue(getApplicationContext(), resp.body.queue);
         UserPreferences.setTrimSyncCursor(resp.body.cursor);
+        // Snapshot the reconciled (post-apply) local state so the next diff is
+        // clean — i.e. we don't echo server-applied changes back as local ones.
+        UserPreferences.setTrimSyncSubsSnapshot(serializeSubs(currentSubs(DBReader.getFeedList())));
+        UserPreferences.setTrimSyncQueueSnapshot(serializeQueue(currentQueueUrls(DBReader.getQueue())));
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
                 + "; applied progress=" + appliedProgress + " queue=" + appliedQueue
@@ -175,40 +195,154 @@ public class TrimSyncWorker extends Worker {
         return applied;
     }
 
-    private static List<TrimClient.SubscriptionChange> buildSubscriptions(long ts) {
-        List<TrimClient.SubscriptionChange> out = new ArrayList<>();
-        for (Feed f : DBReader.getFeedList()) {
-            if (f.getDownloadUrl() == null || f.getDownloadUrl().isEmpty()) {
-                continue;
+    // --- change-journal: current state, snapshots, and diffs ------------------
+
+    private static Map<String, String> currentSubs(List<Feed> feeds) {
+        Map<String, String> m = new HashMap<>();
+        for (Feed f : feeds) {
+            String url = f.getDownloadUrl();
+            if (url != null && !url.isEmpty()) {
+                m.put(url, f.getTitle());
             }
-            TrimClient.SubscriptionChange s = new TrimClient.SubscriptionChange();
-            s.rss_url = f.getDownloadUrl();
-            s.title = f.getTitle();
-            s.deleted = false;
-            s.client_ts = ts;
-            out.add(s);
+        }
+        return m;
+    }
+
+    private static List<String> currentQueueUrls(List<FeedItem> queue) {
+        List<String> urls = new ArrayList<>();
+        for (FeedItem item : queue) {
+            FeedMedia media = item.getMedia();
+            if (media != null && media.getDownloadUrl() != null && !media.getDownloadUrl().isEmpty()) {
+                urls.add(media.getDownloadUrl());
+            }
+        }
+        return urls;
+    }
+
+    /** Subscriptions added or whose title changed (deleted=false), plus removals
+     *  (deleted=true tombstones) — everything else is unchanged and omitted. */
+    private static List<TrimClient.SubscriptionChange> diffSubscriptions(
+            Map<String, String> prev, Map<String, String> cur, long ts) {
+        List<TrimClient.SubscriptionChange> out = new ArrayList<>();
+        for (Map.Entry<String, String> e : cur.entrySet()) {
+            if (!prev.containsKey(e.getKey()) || !equalsNullable(prev.get(e.getKey()), e.getValue())) {
+                TrimClient.SubscriptionChange s = new TrimClient.SubscriptionChange();
+                s.rss_url = e.getKey();
+                s.title = e.getValue();
+                s.deleted = false;
+                s.client_ts = ts;
+                out.add(s);
+            }
+        }
+        for (String url : prev.keySet()) {
+            if (!cur.containsKey(url)) {
+                TrimClient.SubscriptionChange s = new TrimClient.SubscriptionChange();
+                s.rss_url = url;
+                s.deleted = true;
+                s.client_ts = ts;
+                out.add(s);
+            }
         }
         return out;
     }
 
-    private static List<TrimClient.QueueChange> buildQueue(List<FeedItem> queue, long ts) {
+    /** Queue items that are new or moved to a different position (deleted=false),
+     *  plus removals (deleted=true). Unchanged-position items are omitted. */
+    private static List<TrimClient.QueueChange> diffQueue(
+            List<String> prev, List<FeedItem> curItems, List<String> curUrls, long ts) {
         List<TrimClient.QueueChange> out = new ArrayList<>();
-        for (int i = 0; i < queue.size(); i++) {
-            FeedItem item = queue.get(i);
+        Map<String, Integer> prevIdx = new HashMap<>();
+        for (int i = 0; i < prev.size(); i++) {
+            prevIdx.put(prev.get(i), i);
+        }
+        Set<String> curSet = new HashSet<>(curUrls);
+        for (int i = 0; i < curItems.size(); i++) {
+            FeedItem item = curItems.get(i);
             FeedMedia media = item.getMedia();
             if (media == null || media.getDownloadUrl() == null || media.getDownloadUrl().isEmpty()) {
                 continue;
             }
-            TrimClient.QueueChange q = new TrimClient.QueueChange();
-            q.episode_url = media.getDownloadUrl();
-            q.rss_url = item.getFeed() != null ? item.getFeed().getDownloadUrl() : null;
-            q.guid = item.getItemIdentifier();
-            q.position = i;
-            q.deleted = false;
-            q.client_ts = ts;
-            out.add(q);
+            String url = media.getDownloadUrl();
+            Integer pIdx = prevIdx.get(url);
+            if (pIdx == null || pIdx != i) {
+                TrimClient.QueueChange q = new TrimClient.QueueChange();
+                q.episode_url = url;
+                q.rss_url = item.getFeed() != null ? item.getFeed().getDownloadUrl() : null;
+                q.guid = item.getItemIdentifier();
+                q.position = i;
+                q.deleted = false;
+                q.client_ts = ts;
+                out.add(q);
+            }
+        }
+        for (String url : prev) {
+            if (!curSet.contains(url)) {
+                TrimClient.QueueChange q = new TrimClient.QueueChange();
+                q.episode_url = url;
+                q.deleted = true;
+                q.client_ts = ts;
+                out.add(q);
+            }
         }
         return out;
+    }
+
+    private static boolean equalsNullable(String a, String b) {
+        return a == null ? b == null : a.equals(b);
+    }
+
+    private static Map<String, String> parseSubsSnapshot(String json) {
+        Map<String, String> m = new HashMap<>();
+        if (json == null || json.isEmpty()) {
+            return m;
+        }
+        try {
+            JSONObject o = new JSONObject(json);
+            Iterator<String> it = o.keys();
+            while (it.hasNext()) {
+                String k = it.next();
+                m.put(k, o.isNull(k) ? null : o.optString(k));
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "bad subs snapshot, treating as empty: " + e.getMessage());
+        }
+        return m;
+    }
+
+    private static String serializeSubs(Map<String, String> subs) {
+        JSONObject o = new JSONObject();
+        try {
+            for (Map.Entry<String, String> e : subs.entrySet()) {
+                o.put(e.getKey(), e.getValue() == null ? JSONObject.NULL : e.getValue());
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "failed to serialize subs snapshot: " + e.getMessage());
+        }
+        return o.toString();
+    }
+
+    private static List<String> parseQueueSnapshot(String json) {
+        List<String> urls = new ArrayList<>();
+        if (json == null || json.isEmpty()) {
+            return urls;
+        }
+        try {
+            JSONArray a = new JSONArray(json);
+            for (int i = 0; i < a.length(); i++) {
+                urls.add(a.optString(i));
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "bad queue snapshot, treating as empty: " + e.getMessage());
+        }
+        return urls;
+    }
+
+    private static String serializeQueue(List<String> urls) {
+        JSONArray a = new JSONArray();
+        for (String u : urls) {
+            a.put(u);
+        }
+        return a.toString();
     }
 
     /** Progress for queued + recently-played episodes, deduped by episode URL.
