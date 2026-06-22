@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId "com.trimplayer"
-        versionName "1.0.7-beta6"
+        versionName "1.0.7-beta7"
         versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
@@ -79,7 +79,13 @@ android {
                 'RestrictedApi', 'ExportedReceiver', 'NotifyDataSetChanged', 'UseCompoundDrawables', 'NestedWeights',
                 'Overdraw', 'UselessParent', 'TextFields', 'AlwaysShowAction', 'Autofill', 'ClickableViewAccessibility',
                 'KeyboardInaccessibleWidget', 'LabelFor', 'SetTextI18n', 'HardcodedText', 'RelativeOverlap',
-                'RtlHardcoded', 'RtlEnabled', 'ContentDescription'
+                'RtlHardcoded', 'RtlEnabled', 'ContentDescription',
+                // Non-deterministic across this multi-module build (checkDependencies) and on the
+                // generated google-services resources, so it can never settle in the baseline.
+                'UnusedResources'
+        // Records the (pre-existing, largely upstream) lint errors so the gate fails only on NEW
+        // regressions. Regenerate with `./gradlew :app:updateLintBaseline` after intentional changes.
+        baseline file('lint-baseline.xml')
     }
 
     androidResources {

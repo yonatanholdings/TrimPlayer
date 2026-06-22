@@ -69,6 +69,13 @@
         <Class name="de.danoeh.antennapod.ui.cleaner.PlainTextLinksConverter$LinkConvertingVisitor"/>
     </Match>
 
+    <!-- TrimClient's nested types are Gson JSON DTOs: their fields are read/written by reflection
+         during (de)serialization, so the unused/unread/unwritten-field detectors are false positives. -->
+    <Match>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD,UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD,UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+        <Class name="~de\.danoeh\.antennapod\.playback\.service\.trim\.TrimClient.*"/>
+    </Match>
+
     <Match><Package name="~.*\.databinding"/></Match>
 
     <Match><Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/></Match>

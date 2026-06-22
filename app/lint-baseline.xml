@@ -1,0 +1,1234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.11.0" type="baseline" client="gradle" dependencies="true" name="AGP (8.11.0)" variant="all" version="8.11.0">
+
+    <issue
+        id="UseGetLayoutInflater"
+        message="Use of LayoutInflater.from(requireContext()) detected. Consider using getLayoutInflater() instead"
+        errorLine1="        View view = LayoutInflater.from(requireContext())"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/feed/FeedDossierDialogFragment.java"
+            line="49"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`."
+        errorLine1="        this.type = type != null ? type.toLowerCase() : &quot;ad&quot;;"
+        errorLine2="                                        ~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/playback/audio/BoundaryEditor.java"
+            line="145"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`."
+        errorLine1="            if (text.startsWith(&quot;&lt;?xml&quot;) || text.toLowerCase().startsWith(&quot;&lt;opml&quot;)) {"
+        errorLine2="                                                 ~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/importflow/ImportFlowController.java"
+            line="199"
+            column="50"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                sb.append(String.format(&quot;  [%s] %.1f – %.1f s\n&quot;, s.type, s.start, s.end));"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/preferences/PlaybackPreferencesFragment.java"
+            line="143"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`."
+        errorLine1="                String tl = t.toLowerCase();"
+        errorLine2="                              ~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="685"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`."
+        errorLine1="                                String eventType = seg.type != null ? seg.type.toLowerCase() : &quot;ad&quot;;"
+        errorLine2="                                                                               ~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="3133"
+            column="80"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="            return String.format(&quot;In progress at %d:%02d&quot;, posSec / 60, posSec % 60);"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/PodcastAddictImporter.java"
+            line="381"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`."
+        errorLine1="        switch (segmentType.toLowerCase()) {"
+        errorLine2="                            ~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/preferences/UserPreferences.java"
+            line="1015"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 23): `android.os.VibrationEffect#DEFAULT_AMPLITUDE`"
+        errorLine1="                        v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));"
+        errorLine2="                                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="2475"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.List#sort`"
+        errorLine1="            sorted.sort((a, b) -> a.title.compareToIgnoreCase(b.title));"
+        errorLine2="                   ~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/portcast/ConflictAdapter.java"
+            line="132"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24 (current min is 23): `java.util.TreeMap#merge`"
+        errorLine1="                yearMap.merge(yr, c.getLong(iMs), Long::sum);"
+        errorLine2="                        ~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/database/DBReader.java"
+            line="1228"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.function.IntConsumer#accept`"
+        errorLine1="            onColor.accept(cached);"
+        errorLine2="                    ~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/FeedColorCache.java"
+            line="47"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.function.IntConsumer#accept`"
+        errorLine1="            onColor.accept(fallback);"
+        errorLine2="                    ~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/FeedColorCache.java"
+            line="51"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.function.IntConsumer#accept`"
+        errorLine1="                            onColor.accept(chosen);"
+        errorLine2="                                    ~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/FeedColorCache.java"
+            line="62"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.function.IntConsumer#accept`"
+        errorLine1="                        onColor.accept(fallback);"
+        errorLine2="                                ~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/FeedColorCache.java"
+            line="73"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.os.VibrationEffect#createOneShot`"
+        errorLine1="                        v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));"
+        errorLine2="                                                  ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="2475"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.os.Vibrator#vibrate`"
+        errorLine1="                        v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));"
+        errorLine2="                          ~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="2475"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Map#computeIfAbsent`"
+        errorLine1="                        columnsByTable.computeIfAbsent(table, t -> backupTableColumns(backupDb, t));"
+        errorLine2="                                       ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/database/PodDBAdapter.java"
+            line="1219"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Map#getOrDefault`"
+        errorLine1="                        conflict.feedTitle = podcastTitleById.getOrDefault(podcastId, &quot;Unknown Feed&quot;);"
+        errorLine2="                                                              ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/PodcastAddictImporter.java"
+            line="294"
+            column="63"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Map#getOrDefault`"
+        errorLine1="                    conflict.feedTitle = feedTitleByUrl.getOrDefault(state.feedUrl, &quot;Unknown Feed&quot;);"
+        errorLine2="                                                        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/PortcastImporter.java"
+            line="285"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.List#sort`"
+        errorLine1="            sorted.sort((a, b) -> Integer.compare(a.optInt(&quot;position&quot;, Integer.MAX_VALUE),"
+        errorLine2="                   ~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/PortcastImporter.java"
+            line="310"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Map#computeIfAbsent`"
+        errorLine1="            Map&lt;String, FeedItem> titleMap = itemByFeedAndTitle.computeIfAbsent("
+        errorLine2="                                                                ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/PortcastStateWorker.java"
+            line="91"
+            column="65"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Map#putIfAbsent`"
+        errorLine1="                    titleMap.putIfAbsent(t, item);"
+        errorLine2="                             ~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/PortcastStateWorker.java"
+            line="104"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24 (current min is 23): `java.util.TreeMap#merge`"
+        errorLine1="            byYear.merge(m.year, m.totalMs, Long::sum);"
+        errorLine2="                   ~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/timesaved/TimeSavedStatisticsFragment.java"
+            line="256"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 23): `java.time.Instant#parse`"
+        errorLine1="            return Instant.parse(iso).toEpochMilli();"
+        errorLine2="                           ~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/billing/TrimBillingManager.java"
+            line="348"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 23): `java.time.Instant#toEpochMilli`"
+        errorLine1="            return Instant.parse(iso).toEpochMilli();"
+        errorLine2="                                      ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/billing/TrimBillingManager.java"
+            line="348"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 23): `java.time.Instant#toEpochMilli`"
+        errorLine1="                return java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli();"
+        errorLine2="                                                                       ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/billing/TrimBillingManager.java"
+            line="352"
+            column="72"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 23): `java.time.OffsetDateTime#parse`"
+        errorLine1="                return java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli();"
+        errorLine2="                                                ~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/billing/TrimBillingManager.java"
+            line="352"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 23): `java.time.OffsetDateTime#toInstant`"
+        errorLine1="                return java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli();"
+        errorLine2="                                                           ~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/billing/TrimBillingManager.java"
+            line="352"
+            column="60"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Optional#empty`"
+        errorLine1="                return java.util.Optional.&lt;de.danoeh.antennapod.model.playback.Playable>empty();"
+        errorLine2="                                                                                        ~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/playback/VariableSpeedDialog.java"
+            line="104"
+            column="89"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Optional#empty`"
+        errorLine1="            return p == null ? java.util.Optional.&lt;de.danoeh.antennapod.model.playback.Playable>empty()"
+        errorLine2="                                                                                                ~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/playback/VariableSpeedDialog.java"
+            line="109"
+            column="97"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Optional#of`"
+        errorLine1="                             : java.util.Optional.of(p);"
+        errorLine2="                                                  ~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/playback/VariableSpeedDialog.java"
+            line="110"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24, or core library desugaring (current min is 23): `java.util.Optional#orElse`"
+        errorLine1="                    cachedMedia = maybe.orElse(null);"
+        errorLine2="                                        ~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/playback/VariableSpeedDialog.java"
+            line="118"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="AppLinkWarning"
+        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
+        errorLine1="            &lt;intent-filter>"
+        errorLine2="             ~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="363"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="AppLinkWarning"
+        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
+        errorLine1="            &lt;intent-filter>"
+        errorLine2="             ~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="375"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="AppLinkWarning"
+        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
+        errorLine1="            &lt;intent-filter>"
+        errorLine2="             ~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="389"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="AppLinkWarning"
+        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
+        errorLine1="            &lt;intent-filter>"
+        errorLine2="             ~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="400"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Use of this function is discouraged because resource reflection makes it harder to perform build optimizations and compile-time verification of code. It is much more efficient to retrieve resources by identifier (e.g. `R.foo.bar`) than by name (e.g. `getIdentifier(&quot;bar&quot;, &quot;foo&quot;, null)`)."
+        errorLine1="            int serifResId = ctx.getResources().getIdentifier("
+        errorLine2="                                                ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/EditorialTheme.java"
+            line="89"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Use of this function is discouraged because resource reflection makes it harder to perform build optimizations and compile-time verification of code. It is much more efficient to retrieve resources by identifier (e.g. `R.foo.bar`) than by name (e.g. `getIdentifier(&quot;bar&quot;, &quot;foo&quot;, null)`)."
+        errorLine1="            int monoResId = ctx.getResources().getIdentifier("
+        errorLine2="                                               ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/EditorialTheme.java"
+            line="98"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="UseAppTint"
+        message="Must use `app:tint` instead of `android:tint`"
+        errorLine1="            android:tint=&quot;@android:color/white&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/snackbar_trim_analyze.xml"
+            line="28"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SetJavaScriptEnabled"
+        message="Using `setJavaScriptEnabled` can introduce XSS vulnerabilities into your application, review carefully"
+        errorLine1="        settings.setJavaScriptEnabled(true);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/migration/SpotifyMigrationActivity.java"
+            line="254"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="        float[] xs = new float[n];"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/SparklineView.java"
+            line="67"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="        float[] ys = new float[n];"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/SparklineView.java"
+            line="68"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="        float[] xs = new float[n];"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/StreamgraphView.java"
+            line="103"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="        float[] ys = new float[n];"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/statistics/editorial/StreamgraphView.java"
+            line="104"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                        | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/storage/importexport/AutomaticDatabaseExportWorker.java"
+            line="117"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        if (Build.VERSION.SDK_INT >= 23) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/download/DownloadLogItemViewHolder.java"
+            line="35"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/download/service/episode/EpisodeDownloadWorker.java"
+            line="265"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/download/service/episode/EpisodeDownloadWorker.java"
+            line="271"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/episodeslist/EpisodeItemListAdapter.java"
+            line="114"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        if (Build.VERSION.SDK_INT >= 23) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/episodeslist/EpisodeItemViewHolder.java"
+            line="83"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        if (Build.VERSION.SDK_INT >= 23) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/episode/ItemFragment.java"
+            line="119"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/activity/MainActivity.java"
+            line="1118"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/appstartintent/MainActivityStarter.java"
+            line="43"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/appstartintent/MediaButtonStarter.java"
+            line="22"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/drawer/NavListAdapter.java"
+            line="172"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is never &lt; 23"
+        errorLine1="        if (Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.M) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/common/NetworkUtils.java"
+            line="76"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        if (Build.VERSION.SDK_INT >= 23) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/common/NetworkUtils.java"
+            line="88"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/download/service/feed/NewEpisodesNotification.java"
+            line="76"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/download/service/feed/NewEpisodesNotification.java"
+            line="105"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                                    &amp;&amp; Build.VERSION.SDK_INT >= 23) {"
+        errorLine2="                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/activity/OpmlImportActivity.java"
+            line="259"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `Build.VERSION.SDK_INT >= 23` is always true here (`SDK_INT` ≥ 23 and &lt; 26)"
+        errorLine1="                            | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="1274"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `Build.VERSION.SDK_INT >= 23` is always true here (`SDK_INT` ≥ 23 and &lt; 26)"
+        errorLine1="                            | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/PlaybackService.java"
+            line="1288"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                        | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/internal/PlaybackServiceNotificationBuilder.java"
+            line="173"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `Build.VERSION.SDK_INT >= 23` is always true here (`SDK_INT` ≥ 23 and &lt; 26)"
+        errorLine1="                    | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/internal/PlaybackServiceNotificationBuilder.java"
+            line="247"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `Build.VERSION.SDK_INT >= 23` is always true here (`SDK_INT` ≥ 23 and &lt; 26)"
+        errorLine1="                    | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/playback/service/internal/PlaybackServiceNotificationBuilder.java"
+            line="261"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/appstartintent/PlaybackSpeedActivityStarter.java"
+            line="30"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/subscriptions/SubscriptionTagAdapter.java"
+            line="75"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/subscriptions/SubscriptionsRecyclerAdapter.java"
+            line="115"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                        | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/net/sync/service/SyncService.java"
+            line="327"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/appstartintent/VideoPlayerActivityStarter.java"
+            line="30"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/de/danoeh/antennapod/ui/screen/playback/video/VideoplayerActivity.java"
+            line="824"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;m&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="72"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="154"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="164"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="174"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="184"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="194"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="204"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 23"
+        errorLine1="        &lt;item name=&quot;android:windowLightStatusBar&quot; tools:targetApi=&quot;M&quot;>false&lt;/item>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="220"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v23`) is unnecessary; `minSdkVersion` is 23. Merge all the resources in this folder into `values`.">
+        <location
+            file="src/main/res/values-v23"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="    &lt;LinearLayout android:layout_width=&quot;match_parent&quot; android:layout_height=&quot;wrap_content&quot;"
+        errorLine2="     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="54"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="            &lt;LinearLayout android:layout_width=&quot;match_parent&quot; android:layout_height=&quot;wrap_content&quot;"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_activity_statistics.xml"
+            line="19"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="            &lt;LinearLayout android:layout_width=&quot;match_parent&quot; android:layout_height=&quot;wrap_content&quot;"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_activity_statistics.xml"
+            line="56"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="        &lt;LinearLayout"
+        errorLine2="         ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_overview_statistics.xml"
+            line="76"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="    &lt;LinearLayout"
+        errorLine2="     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_subscriptions_editorial.xml"
+            line="9"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="        &lt;LinearLayout android:layout_width=&quot;match_parent&quot; android:layout_height=&quot;wrap_content&quot;"
+        errorLine2="         ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_time_saved_statistics.xml"
+            line="52"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="&lt;LinearLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2=" ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/snackbar_trim_analyze.xml"
+            line="2"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="IconXmlAndPng"
+        message="The following images appear both as density independent `.xml` files and as bitmap files: src\main\res\drawable\ic_launcher_background.xml, src\main\res\mipmap-hdpi\ic_launcher_background.png">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher_background.png"/>
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher_background.png"/>
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher_background.png"/>
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher_background.png"/>
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher_background.png"/>
+        <location
+            file="src/main/res/drawable/ic_launcher_background.xml"/>
+    </issue>
+
+    <issue
+        id="IconXmlAndPng"
+        message="The following images appear both as density independent `.xml` files and as bitmap files: src\main\res\drawable\ic_launcher_foreground.xml, src\main\res\mipmap-hdpi\ic_launcher_foreground.png">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png"/>
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png"/>
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher_foreground.png"/>
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher_foreground.png"/>
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher_foreground.png"/>
+        <location
+            file="src/main/res/drawable/ic_launcher_foreground.xml"/>
+    </issue>
+
+    <issue
+        id="IconXmlAndPng"
+        message="The following images appear both as density independent `.xml` files and as bitmap files: src\main\res\drawable\ic_launcher_monochrome.xml, src\main\res\mipmap-xxxhdpi\ic_launcher_monochrome.png">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"/>
+        <location
+            file="src/main/res/drawable/ic_launcher_monochrome.xml"/>
+    </issue>
+
+    <issue
+        id="IconXmlAndPng"
+        message="The following images appear both as density independent `.xml` files and as bitmap files: src\main\res\drawable-anydpi\ic_notification.xml, src\main\res\drawable-hdpi\ic_notification.png">
+        <location
+            file="src/main/res/drawable-xxxhdpi/ic_notification.png"/>
+        <location
+            file="src/main/res/drawable-xxhdpi/ic_notification.png"/>
+        <location
+            file="src/main/res/drawable-xhdpi/ic_notification.png"/>
+        <location
+            file="src/main/res/drawable-mdpi/ic_notification.png"/>
+        <location
+            file="src/main/res/drawable-hdpi/ic_notification.png"/>
+        <location
+            file="src/main/res/drawable-anydpi/ic_notification.xml"/>
+    </issue>
+
+    <issue
+        id="IconXmlAndPng"
+        message="The following images appear both as density independent `.xml` files and as bitmap files: src\main\res\drawable-anydpi\ic_notification_new.xml, src\main\res\drawable-hdpi\ic_notification_new.png">
+        <location
+            file="src/main/res/drawable-xxxhdpi/ic_notification_new.png"/>
+        <location
+            file="src/main/res/drawable-xxhdpi/ic_notification_new.png"/>
+        <location
+            file="src/main/res/drawable-xhdpi/ic_notification_new.png"/>
+        <location
+            file="src/main/res/drawable-mdpi/ic_notification_new.png"/>
+        <location
+            file="src/main/res/drawable-hdpi/ic_notification_new.png"/>
+        <location
+            file="src/main/res/drawable-anydpi/ic_notification_new.xml"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="ButtonStyle"
+        message="Buttons in button bars should be borderless; use `style=&quot;?android:attr/buttonBarButtonStyle&quot;` (and `?android:attr/buttonBarStyle` on the parent)"
+        errorLine1="        &lt;Button"
+        errorLine2="         ~~~~~~">
+        <location
+            file="src/main/res/layout/portcast_import_activity.xml"
+            line="86"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="ButtonStyle"
+        message="Buttons in button bars should be borderless; use `style=&quot;?android:attr/buttonBarButtonStyle&quot;` (and `?android:attr/buttonBarStyle` on the parent)"
+        errorLine1="        &lt;Button"
+        errorLine2="         ~~~~~~">
+        <location
+            file="src/main/res/layout/spotify_migration_activity.xml"
+            line="56"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `9sp`"
+        errorLine1="            android:textSize=&quot;9sp&quot; android:letterSpacing=&quot;0.15&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="16"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `9sp`"
+        errorLine1="            android:textSize=&quot;9sp&quot; android:letterSpacing=&quot;0.15&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="20"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `9sp`"
+        errorLine1="                android:textSize=&quot;9sp&quot; android:textAllCaps=&quot;true&quot; android:letterSpacing=&quot;0.15&quot;"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="41"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `10sp`"
+        errorLine1="                android:text=&quot;listened&quot; android:textSize=&quot;10sp&quot; android:textColor=&quot;@color/editorial_ink_muted&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="64"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `10sp`"
+        errorLine1="                android:text=&quot;saved&quot; android:textSize=&quot;10sp&quot; android:textColor=&quot;@color/editorial_ink_muted&quot; />"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="73"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `10sp`"
+        errorLine1="                android:text=&quot;episodes&quot; android:textSize=&quot;10sp&quot; android:textColor=&quot;@color/editorial_ink_muted&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="82"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `9sp`"
+        errorLine1="            android:textSize=&quot;9sp&quot; android:textAllCaps=&quot;true&quot; android:letterSpacing=&quot;0.15&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_feed_dossier.xml"
+            line="95"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingLeft` you should probably also define `paddingRight` for right-to-left symmetry"
+        errorLine1="                    android:paddingLeft=&quot;16dp&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_activity_statistics.xml"
+            line="36"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingLeft` you should probably also define `paddingRight` for right-to-left symmetry"
+        errorLine1="                    android:paddingLeft=&quot;16dp&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_activity_statistics.xml"
+            line="73"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingLeft` you should probably also define `paddingRight` for right-to-left symmetry"
+        errorLine1="            android:paddingLeft=&quot;16dp&quot;>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/fragment_subscriptions_editorial.xml"
+            line="48"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingLeft` you should probably also define `paddingRight` for right-to-left symmetry"
+        errorLine1="        android:paddingLeft=&quot;10dp&quot; />"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/row_played_episode.xml"
+            line="54"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingLeft` you should probably also define `paddingRight` for right-to-left symmetry"
+        errorLine1="        android:paddingLeft=&quot;12dp&quot;>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/show_row_editorial.xml"
+            line="58"
+            column="9"/>
+    </issue>
+
+</issues>
