@@ -1050,13 +1050,8 @@
         <item>Tap the green BACK UP button and wait for it to finish.</item>
         <item>On the “Backup” pop-up, tap SHARE and choose TrimPlayer — your shows import automatically, no need to come back.</item>
     </string-array>
-    <!-- Per-step screenshots, parallel to migration_guide_podcast_addict_steps. -->
-    <array name="migration_guide_podcast_addict_step_images">
-        <item>@drawable/pa_migration_1_menu</item>
-        <item>@drawable/pa_migration_2_backup</item>
-        <item>@drawable/pa_migration_3_backupbtn</item>
-        <item>@drawable/pa_migration_4_done</item>
-    </array>
+    <!-- Per-step screenshots (migration_guide_podcast_addict_step_images) live in the app module's
+         migration_arrays.xml: they reference @drawable assets only present in app/. -->
     <string name="migration_guide_antennapod_intro">Export your whole library from AntennaPod — subscriptions, listened episodes and queue — then <b>Share it to TrimPlayer</b> and it imports automatically.</string>
     <string name="migration_guide_antennapod_note">Prefer to do it by hand? The export is a .db file (named AntennaPodBackup-….db) saved where you chose — tap “choose file” below and pick it.</string>
     <string-array name="migration_guide_antennapod_steps">
@@ -1066,14 +1061,8 @@
         <item>Choose where to save and tap SAVE.</item>
         <item>On the “Export successful” message, tap Share and choose TrimPlayer — your library imports automatically, no need to come back.</item>
     </string-array>
-    <!-- Per-step screenshots, parallel to migration_guide_antennapod_steps. -->
-    <array name="migration_guide_antennapod_step_images">
-        <item>@drawable/ap_migration_1_menu</item>
-        <item>@drawable/ap_migration_2_backup</item>
-        <item>@drawable/ap_migration_3_dbexport</item>
-        <item>@drawable/ap_migration_4_save</item>
-        <item>@drawable/ap_migration_5_done</item>
-    </array>
+    <!-- Per-step screenshots (migration_guide_antennapod_step_images) live in the app module's
+         migration_arrays.xml: they reference @drawable assets only present in app/. -->
     <!-- Post-import success moment (shown before finishing to Home). -->
     <string name="onboarding_trim_demo_label">Less to sit through, every episode.</string>
     <string name="onboarding_success_title">Your shows are on the way</string>

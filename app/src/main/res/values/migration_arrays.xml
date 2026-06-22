@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Per-step screenshot arrays for the migration guide (MigrationGuideActivity), read via
+    obtainTypedArray. These live in the app module — NOT in ui/i18n — because their items are
+    @drawable references to assets in app/src/main/res/drawable-nodpi/, which a library module
+    cannot resolve (it fails resource linking). They are not localizable; the parallel step *text*
+    (migration_guide_*_steps) stays in ui/i18n.
+-->
+<resources>
+    <!-- Parallel to migration_guide_podcast_addict_steps. -->
+    <array name="migration_guide_podcast_addict_step_images">
+        <item>@drawable/pa_migration_1_menu</item>
+        <item>@drawable/pa_migration_2_backup</item>
+        <item>@drawable/pa_migration_3_backupbtn</item>
+        <item>@drawable/pa_migration_4_done</item>
+    </array>
+    <!-- Parallel to migration_guide_antennapod_steps. -->
+    <array name="migration_guide_antennapod_step_images">
+        <item>@drawable/ap_migration_1_menu</item>
+        <item>@drawable/ap_migration_2_backup</item>
+        <item>@drawable/ap_migration_3_dbexport</item>
+        <item>@drawable/ap_migration_4_save</item>
+        <item>@drawable/ap_migration_5_done</item>
+    </array>
+</resources>
