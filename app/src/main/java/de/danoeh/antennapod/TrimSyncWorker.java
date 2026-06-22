@@ -10,10 +10,14 @@ import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
+import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
+import de.danoeh.antennapod.storage.database.FeedDatabaseWriter;
 import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
+
+import java.util.Collections;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -98,6 +102,7 @@ public class TrimSyncWorker extends Worker {
         // mid-apply just re-pulls (apply is idempotent + LWW-guarded). v1 applies
         // playback progress only; queue reorder + auto-subscribe stay deferred
         // (they mutate the subscription set and need on-device validation).
+        int appliedSubs = applySubscriptions(getApplicationContext(), resp.body.subscriptions, curSubs);
         int appliedProgress = applyProgress(resp.body.progress);
         int appliedQueue = applyQueue(getApplicationContext(), resp.body.queue);
         UserPreferences.setTrimSyncCursor(resp.body.cursor);
@@ -107,9 +112,49 @@ public class TrimSyncWorker extends Worker {
         UserPreferences.setTrimSyncQueueSnapshot(serializeQueue(currentQueueUrls(DBReader.getQueue())));
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
-                + "; applied progress=" + appliedProgress + " queue=" + appliedQueue
-                + ", cursor=" + resp.body.cursor);
+                + "; applied subs=" + appliedSubs + " progress=" + appliedProgress
+                + " queue=" + appliedQueue + ", cursor=" + resp.body.cursor);
         return Result.success();
+    }
+
+    /** Auto-subscribe to feeds present on the account but not locally (e.g. added
+     *  from the web player). Creates the Feed shell via FeedDatabaseWriter and, if
+     *  any were added, triggers a single feed refresh so episodes are fetched.
+     *  Web-side unsubscribes (deleted=true) are NOT auto-unsubscribed here — that
+     *  would let one device silently wipe another's subscription on a stale push;
+     *  removals stay a deliberate per-device action for now. Returns count added.
+     *
+     *  {@code localSubs} is the set of local feed download-urls captured before the
+     *  push, so we only add genuinely-missing feeds. */
+    private static int applySubscriptions(android.content.Context ctx,
+                                          List<TrimClient.SubscriptionChange> subs,
+                                          java.util.Map<String, String> localSubs) {
+        if (subs == null || subs.isEmpty()) {
+            return 0;
+        }
+        int added = 0;
+        for (TrimClient.SubscriptionChange s : subs) {
+            if (s == null || s.deleted || s.rss_url == null || s.rss_url.isEmpty()) {
+                continue;
+            }
+            if (localSubs.containsKey(s.rss_url)) {
+                continue; // already subscribed locally
+            }
+            try {
+                Feed feed = new Feed(s.rss_url, null, s.title);
+                feed.setItems(Collections.emptyList());
+                FeedDatabaseWriter.updateFeed(ctx, feed, false);
+                localSubs.put(s.rss_url, s.title); // guard against dupes within this batch
+                added++;
+            } catch (Exception e) {
+                Log.w(TAG, "auto-subscribe failed for " + s.rss_url + ": " + e.getMessage());
+            }
+        }
+        if (added > 0) {
+            // Fetch episodes for the newly-added feeds (and any others due).
+            FeedUpdateManager.getInstance().runOnce(ctx);
+        }
+        return added;
     }
 
     /** Apply server-side queue changes to the local queue (delta only, so we
