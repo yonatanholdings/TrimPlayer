@@ -2,6 +2,10 @@ package de.danoeh.antennapod.playback.service.internal;
 
 import android.content.Context;
 import android.media.audiofx.LoudnessEnhancer;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,6 +37,8 @@ import androidx.media3.common.AudioAttributes;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.exoplayer.source.TrackGroupArray;
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy;
+import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.exoplayer.trackselection.ExoTrackSelection;
 import androidx.media3.exoplayer.trackselection.MappingTrackSelector;
@@ -54,6 +60,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import de.danoeh.antennapod.playback.service.trim.StreamingCache;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,11 +75,39 @@ public class ExoPlayerWrapper {
     private static final String TAG = "ExoPlayerWrapper";
 
     // Transient-network-error auto-recovery: how many re-prepare attempts before we give up and
-    // surface a fatal error, plus the exponential-backoff bounds. 12 attempts capped at 30s each
-    // means we keep trying for roughly 4 minutes — long enough to ride out a tunnel/dead-zone.
-    private static final int MAX_NETWORK_RECOVERY_ATTEMPTS = 12;
+    // surface a fatal error, plus the exponential-backoff bounds. The cap is deliberately small (5s):
+    // a restored connection short-circuits the timer and retries immediately (see the NetworkCallback
+    // in registerConnectivityCallback), so the cap only governs blind polling while the OS still
+    // reports no usable network — and a 5s poll resumes far faster than the old 30s after a server-
+    // side stall the connectivity callback can't see. The attempt budget is sized to span a realistic
+    // dead-zone: 60 attempts × ≤5s ≈ 5 minutes before we give up.
+    private static final int MAX_NETWORK_RECOVERY_ATTEMPTS = 60;
     private static final long RECOVERY_BASE_DELAY_MS = 1000;
-    private static final long RECOVERY_MAX_DELAY_MS = 30_000;
+    private static final long RECOVERY_MAX_DELAY_MS = 5_000;
+
+    // HTTP + load resilience for streaming. media3's defaults give up far too quickly for
+    // mobile: 8s connect/read timeouts and only ~3 load retries, so a brief cellular stall
+    // escalates to a FATAL player error — which stops playback regardless of how much audio
+    // is buffered ahead — before the buffer can cover the gap. We widen the timeouts and make
+    // the loader patient so transient drops are ridden out from buffer (background retries)
+    // instead of stopping playback. A genuinely dead load still surfaces once the retry budget
+    // is spent, where NetworkRecoveryController takes over with its re-prepare path.
+    private static final int HTTP_CONNECT_TIMEOUT_MS = 30_000;
+    private static final int HTTP_READ_TIMEOUT_MS = 30_000;
+    private static final int MAX_LOAD_RETRIES = 30;
+    // Small cap so the background loader re-attempts a load ~every 5s once it's ramped, instead of
+    // sitting idle for 30s after connectivity has already returned (the loader's retries are internal
+    // to media3 and can't be triggered by our NetworkCallback, so a tight cap is the lever here).
+    private static final long LOAD_RETRY_MAX_DELAY_MS = 5_000;
+
+    // Seek-collapse guard. A forward seek on a progressive stream into a region the source can't serve
+    // (offline, or past the downloaded frontier) does NOT raise an error — ExoPlayer's
+    // ProgressiveMediaPeriod silently resolves it to ~0, restarting the episode from the start. When a
+    // sizeable forward seek lands near 0 like that, we bounce once back to where we seeked from (still
+    // in the retained back-buffer) instead of accepting the restart. An online seek reports its real
+    // target position and never trips this.
+    private static final long SEEK_COLLAPSE_MIN_FORWARD_MS = 30_000; // only guard sizeable forward seeks
+    private static final long SEEK_COLLAPSE_NEAR_ZERO_MS = 3_000;    // landed this close to start = collapsed
 
     private final Context context;
     private final Disposable bufferingUpdateDisposable;
@@ -124,6 +159,9 @@ public class ExoPlayerWrapper {
 
                 @Override
                 public void seekTo(long positionMs) {
+                    // Mark this as a recovery restore seek so onPositionDiscontinuity can verify it
+                    // landed (vs. collapsing to ~0) and report back to the controller.
+                    recoveryRestoreTargetMs = positionMs;
                     exoPlayer.seekTo(positionMs);
                 }
             },
@@ -155,7 +193,10 @@ public class ExoPlayerWrapper {
 
                 @Override
                 public void onExhausted() {
-                    Log.w(TAG, "Network recovery exhausted; surfacing error");
+                    Log.w(TAG, "Network recovery exhausted after "
+                            + (recoveryStartMs == 0 ? "?" : (SystemClock.elapsedRealtime() - recoveryStartMs))
+                            + "ms; surfacing error");
+                    recoveryStartMs = 0;
                     if (lastNetworkError != null) {
                         dispatchError(lastNetworkError);
                     }
@@ -165,10 +206,27 @@ public class ExoPlayerWrapper {
     private Runnable pendingNetworkRecovery = null;
     // Last recoverable error seen, dispatched if the recovery budget is exhausted.
     private PlaybackException lastNetworkError = null;
+    // elapsedRealtime when the current recovery sequence began, or 0 when not recovering. Used purely
+    // to measure (and log) the user-visible stall: error→connectivity-restored→resumed-to-READY.
+    private long recoveryStartMs = 0;
+    // Seek-collapse guard state, set on each public seekTo and consumed by the next seek discontinuity.
+    private long lastSeekTargetMs = C.TIME_UNSET;
+    private long lastSeekFromMs = 0;
+    private boolean seekCollapseGuardArmed = false;
+    // Target of an in-flight recovery restore seek (set by the controller's Player.seekTo), so the next
+    // seek discontinuity can verify it landed vs. collapsed to ~0 and tell the controller which.
+    private long recoveryRestoreTargetMs = C.TIME_UNSET;
+    // Set once release() runs so a connectivity callback already posted to the main thread becomes a
+    // no-op instead of touching a released ExoPlayer.
+    private volatile boolean released = false;
+    // Registered once for the wrapper's lifetime; lets a restored connection short-circuit the
+    // recovery backoff timer for a near-instant resume. Null when registration failed/was removed.
+    private ConnectivityManager.NetworkCallback networkCallback = null;
 
     ExoPlayerWrapper(Context context) {
         this.context = context;
         createPlayer();
+        registerConnectivityCallback();
         playbackParameters = exoPlayer.getPlaybackParameters();
         bufferingUpdateDisposable = Observable.interval(2, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -184,6 +242,18 @@ public class ExoPlayerWrapper {
         loadControl.setBufferDurationsMs((int) TimeUnit.HOURS.toMillis(1), (int) TimeUnit.HOURS.toMillis(3),
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS);
+        // The durations above are only a high time ceiling — they do NOT bound the buffer. media3
+        // gates loading by bytes OR time, whichever is reached first, and with
+        // prioritizeTimeOverSizeThresholds left at its default (false) the BYTE cap wins. The default
+        // audio cap (DefaultLoadControl.DEFAULT_AUDIO_BUFFER_SIZE ≈ 12.5 MB) silently overrode the
+        // "1 hour" intent, leaving only ~6–25 min of real headroom (bitrate-dependent) — and a drop
+        // that outlasts the buffered-ahead audio stalls. Raise the byte cap so the buffer can get far
+        // enough ahead to ride out an outage from buffer. We deliberately keep
+        // prioritizeTimeOverSizeThresholds=false: setting it true removes the byte ceiling entirely,
+        // and a 1–3 hour in-memory media buffer would risk OOM on low-end (minSdk 23) devices and
+        // video podcasts. A fixed byte cap self-limits for any bitrate / media type (≈ 16–32 min of
+        // audio; far less for video).
+        loadControl.setTargetBufferBytes(32 * 1024 * 1024);
         loadControl.setBackBuffer((int) TimeUnit.MINUTES.toMillis(5), true);
         trackSelector = new DefaultTrackSelector(context);
         exoPlayer = new ExoPlayer.Builder(context, new DefaultRenderersFactory(context))
@@ -195,6 +265,11 @@ public class ExoPlayerWrapper {
             @Override
             public void onPlaybackStateChanged(@Player.State int playbackState) {
                 if (playbackState == Player.STATE_READY) {
+                    if (recoveryStartMs != 0) {
+                        Log.i(TAG, "Network recovery: resumed to READY after "
+                                + (SystemClock.elapsedRealtime() - recoveryStartMs) + "ms");
+                        recoveryStartMs = 0;
+                    }
                     // A successful (re)buffer to READY confirms any in-flight network recovery
                     // worked, so the next outage gets a fresh full backoff budget.
                     networkRecovery.onPlayerReady();
@@ -217,6 +292,10 @@ public class ExoPlayerWrapper {
                 if (isHttpSource && !NetworkUtils.wasDownloadBlocked(error)
                         && isRecoverableNetworkError(error)) {
                     lastNetworkError = error;
+                    if (recoveryStartMs == 0) {
+                        recoveryStartMs = SystemClock.elapsedRealtime();
+                        Log.i(TAG, "Network recovery: started (error=" + error.getErrorCodeName() + ")");
+                    }
                     networkRecovery.onRecoverableError();
                     return;
                 }
@@ -236,6 +315,7 @@ public class ExoPlayerWrapper {
                         Log.d(TAG, "speed-change dance: seek complete, applying speed. wasPlayingBeforeSpeedChange="
                                 + wasPlayingBeforeSpeedChange + " playWhenReady=" + exoPlayer.getPlayWhenReady());
                         speedChangeSeeking = false;
+                        seekCollapseGuardArmed = false; // not a user seek; don't let it trip the guard
                         applySpeedAndSilence(pendingSkipSilence);
                         if (wasPlayingBeforeSpeedChange) {
                             wasPlayingBeforeSpeedChange = false;
@@ -243,6 +323,41 @@ public class ExoPlayerWrapper {
                             exoPlayer.play();
                         }
                         return;
+                    }
+                    if (recoveryRestoreTargetMs != C.TIME_UNSET) {
+                        long target = recoveryRestoreTargetMs;
+                        recoveryRestoreTargetMs = C.TIME_UNSET;
+                        if (target > SEEK_COLLAPSE_NEAR_ZERO_MS
+                                && newPosition.positionMs < SEEK_COLLAPSE_NEAR_ZERO_MS) {
+                            // The restore seek itself collapsed (target still un-servable). Don't accept
+                            // the restart-from-0: keep recovering so the next ready retries the restore.
+                            Log.w(TAG, "Recovery restore seek to " + target + " collapsed to "
+                                    + newPosition.positionMs + " — keeping recovery alive");
+                            networkRecovery.onRestoreSeekCollapsed();
+                            return;
+                        }
+                        // Landed where asked — recovery is truly complete.
+                        networkRecovery.onRestoreSeekSucceeded();
+                        if (audioSeekCompleteListener != null) {
+                            audioSeekCompleteListener.run();
+                        }
+                        return;
+                    }
+                    if (seekCollapseGuardArmed) {
+                        seekCollapseGuardArmed = false;
+                        long landed = newPosition.positionMs;
+                        if (lastSeekTargetMs != C.TIME_UNSET
+                                && lastSeekTargetMs > lastSeekFromMs + SEEK_COLLAPSE_MIN_FORWARD_MS
+                                && landed < SEEK_COLLAPSE_NEAR_ZERO_MS
+                                && lastSeekFromMs > SEEK_COLLAPSE_NEAR_ZERO_MS) {
+                            Log.w(TAG, "Seek to " + lastSeekTargetMs + " collapsed to " + landed
+                                    + " — stream couldn't serve it; restoring to " + lastSeekFromMs);
+                            // Bounce back once to the known-good pre-seek position (in the retained
+                            // back-buffer). Its own discontinuity fires the seek-complete listener;
+                            // the guard is disarmed so a re-collapse is accepted rather than looping.
+                            exoPlayer.seekTo(lastSeekFromMs);
+                            return;
+                        }
                     }
                     if (audioSeekCompleteListener != null) {
                         audioSeekCompleteListener.run();
@@ -260,6 +375,66 @@ public class ExoPlayerWrapper {
         // it lives for the process lifetime and its index survives app/device restarts.
         simpleCache = StreamingCache.getInstance(context);
         initLoudnessEnhancer(exoPlayer.getAudioSessionId());
+    }
+
+    /**
+     * Watch for the OS reporting a usable network again. When connectivity returns mid-recovery the
+     * callback retries the re-prepare immediately instead of waiting out the remaining backoff delay,
+     * turning an up-to-{@link #RECOVERY_MAX_DELAY_MS} silent gap into a near-instant resume. The
+     * callback marshals onto the main thread so all {@link NetworkRecoveryController} state is touched
+     * from one thread, and is a no-op when no recovery is in flight. Registered once for the wrapper's
+     * lifetime (survives reset(), which recreates the player but keeps networkRecovery); unregistered
+     * in release().
+     */
+    private void registerConnectivityCallback() {
+        ConnectivityManager cm =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) {
+            return;
+        }
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                mainHandler.post(() -> {
+                    if (released) {
+                        return; // player torn down between the callback firing and this running
+                    }
+                    if (recoveryStartMs != 0) {
+                        Log.i(TAG, "Network recovery: connectivity restored after "
+                                + (SystemClock.elapsedRealtime() - recoveryStartMs)
+                                + "ms — retrying immediately");
+                    }
+                    networkRecovery.onConnectivityRestored();
+                });
+            }
+        };
+        try {
+            NetworkRequest request = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build();
+            cm.registerNetworkCallback(request, networkCallback);
+        } catch (RuntimeException e) {
+            // Missing ACCESS_NETWORK_STATE or a transient framework failure: fall back to the
+            // (still functional) timer-based recovery.
+            Log.w(TAG, "Could not register network callback for fast recovery", e);
+            networkCallback = null;
+        }
+    }
+
+    private void unregisterConnectivityCallback() {
+        if (networkCallback == null) {
+            return;
+        }
+        ConnectivityManager cm =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            try {
+                cm.unregisterNetworkCallback(networkCallback);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not unregister network callback", e);
+            }
+        }
+        networkCallback = null;
     }
 
     public int getCurrentPosition() {
@@ -309,6 +484,8 @@ public class ExoPlayerWrapper {
     }
 
     public void release() {
+        released = true;
+        unregisterConnectivityCallback();
         bufferingUpdateDisposable.dispose();
         if (loudnessEnhancer != null) {
             loudnessEnhancer.release();
@@ -320,6 +497,8 @@ public class ExoPlayerWrapper {
         // simpleCache is a shared singleton; do not release it here.
         cancelPendingSpeedChange();
         networkRecovery.reset();
+        recoveryStartMs = 0;
+        recoveryRestoreTargetMs = C.TIME_UNSET;
         audioSeekCompleteListener = null;
         audioCompletionListener = null;
         audioErrorListener = null;
@@ -329,6 +508,8 @@ public class ExoPlayerWrapper {
     public void reset() {
         cancelPendingSpeedChange();
         networkRecovery.reset();
+        recoveryStartMs = 0;
+        recoveryRestoreTargetMs = C.TIME_UNSET;
         bufferingUpdateDisposable.dispose();
         if (loudnessEnhancer != null) {
             loudnessEnhancer.release();
@@ -395,6 +576,11 @@ public class ExoPlayerWrapper {
     }
 
     public void seekTo(int i) throws IllegalStateException {
+        // Arm the seek-collapse guard: snapshot where we are now so we can bounce back if this
+        // forward seek silently resolves to ~0 (an un-servable progressive seek; see the constants).
+        lastSeekFromMs = exoPlayer.getCurrentPosition();
+        lastSeekTargetMs = i;
+        seekCollapseGuardArmed = true;
         exoPlayer.seekTo(i);
         // Do NOT call audioSeekCompleteListener here — ExoPlayer fires onPositionDiscontinuity
         // (DISCONTINUITY_REASON_SEEK) on the main thread when the seek is actually complete.
@@ -420,6 +606,9 @@ public class ExoPlayerWrapper {
         httpDataSourceFactory.setUserAgent(UserAgentInterceptor.USER_AGENT);
         httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
         httpDataSourceFactory.setKeepPostFor302Redirects(true);
+        // Don't kill a slow-but-alive mobile read at the 8s default; give it room to recover.
+        httpDataSourceFactory.setConnectTimeoutMs(HTTP_CONNECT_TIMEOUT_MS);
+        httpDataSourceFactory.setReadTimeoutMs(HTTP_READ_TIMEOUT_MS);
 
         if (!TextUtils.isEmpty(user) && !TextUtils.isEmpty(password)) {
             final HashMap<String, String> requestProperties = new HashMap<>();
@@ -430,6 +619,8 @@ public class ExoPlayerWrapper {
         isHttpSource = s.startsWith("http");
         // A new source means any recovery in flight for the previous one is moot.
         networkRecovery.reset();
+        recoveryStartMs = 0;
+        recoveryRestoreTargetMs = C.TIME_UNSET;
         if (isHttpSource) {
             dataSourceFactory = new CacheDataSource.Factory()
                     .setCache(simpleCache)
@@ -439,12 +630,50 @@ public class ExoPlayerWrapper {
         extractorsFactory.setConstantBitrateSeekingEnabled(true);
         extractorsFactory.setMp3ExtractorFlags(Mp3Extractor.FLAG_DISABLE_ID3_METADATA);
         ProgressiveMediaSource.Factory f = new ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory);
+        if (isHttpSource) {
+            // Keep retrying transient network loads in the background (instead of failing
+            // fatally after media3's default ~3 tries) so playback rides through brief drops
+            // from buffer. Permanent faults (parse errors, bad HTTP status) still fail fast —
+            // we defer that verdict to the default policy and only extend the patience/backoff.
+            f.setLoadErrorHandlingPolicy(patientLoadErrorHandlingPolicy());
+        }
         final MediaItem mediaItem = MediaItem.fromUri(Uri.parse(s));
         mediaSource = f.createMediaSource(mediaItem);
     }
 
     public void setDataSource(String s) throws IllegalArgumentException, IllegalStateException {
         setDataSource(s, null, null);
+    }
+
+    /**
+     * A {@link LoadErrorHandlingPolicy} that is far more patient with transient network faults
+     * than media3's default. The default gives up after ~3 retries with a ≤5s backoff, turning a
+     * brief stall into a fatal player error (which stops playback even when audio is buffered
+     * ahead). This keeps retrying loads in the background ({@link #MAX_LOAD_RETRIES} times with a
+     * capped exponential backoff) so playback continues from buffer and the loader silently
+     * catches up when connectivity returns. It does NOT change which errors are permanent — the
+     * "don't retry" verdict (parse errors, position-out-of-range, fatal HTTP codes) is delegated
+     * to {@link DefaultLoadErrorHandlingPolicy}; we only extend the retry count and backoff.
+     */
+    @androidx.annotation.VisibleForTesting
+    static LoadErrorHandlingPolicy patientLoadErrorHandlingPolicy() {
+        return new DefaultLoadErrorHandlingPolicy() {
+            @Override
+            public int getMinimumLoadableRetryCount(int dataType) {
+                return MAX_LOAD_RETRIES;
+            }
+
+            @Override
+            public long getRetryDelayMsFor(LoadErrorHandlingPolicy.LoadErrorInfo loadErrorInfo) {
+                if (super.getRetryDelayMsFor(loadErrorInfo) == C.TIME_UNSET) {
+                    // Permanent fault — let it surface instead of retrying uselessly.
+                    return C.TIME_UNSET;
+                }
+                // Capped exponential backoff for transient network faults: 1s, 2s, 4s, then ≤5s.
+                long backoff = 1000L << Math.min(loadErrorInfo.errorCount - 1, 5);
+                return Math.min(backoff, LOAD_RETRY_MAX_DELAY_MS);
+            }
+        };
     }
 
     public void setDisplay(SurfaceHolder sh) {
@@ -561,6 +790,8 @@ public class ExoPlayerWrapper {
 
     public void stop() {
         networkRecovery.reset();
+        recoveryStartMs = 0;
+        recoveryRestoreTargetMs = C.TIME_UNSET;
         exoPlayer.stop();
     }
 
