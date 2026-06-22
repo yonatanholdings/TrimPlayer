@@ -130,6 +130,46 @@ public class TrimClient {
         return api.getJobStatus(jobId);
     }
 
+    // --- Account auth + library sync ---------------------------------------
+
+    /** Create an account. The X-Client-Id links this device to the new account
+     *  so its existing client_id-scoped data (queue, entitlement) carries over. */
+    public Call<AuthResponse> signup(String email, String password, String clientId) {
+        return api.signup(new Credentials(email, password), clientId);
+    }
+
+    /** Log into an existing account (also links this device via X-Client-Id). */
+    public Call<AuthResponse> login(String email, String password, String clientId) {
+        return api.login(new Credentials(email, password), clientId);
+    }
+
+    /** Validate the stored session token. 401 -> the token is gone/expired. */
+    public Call<AuthResponse> me(String bearer) {
+        return api.me(bearer);
+    }
+
+    /** Two-way library delta sync. {@code bearer} is "Bearer &lt;session token&gt;". */
+    public Call<SyncResponse> accountSync(String bearer, SyncRequest request) {
+        return api.accountSync(bearer, request);
+    }
+
+    /** Blocking sync that keeps Retrofit types out of caller modules (the app
+     *  module depends on playback:service via {@code implementation}, so it can
+     *  see {@link SyncResult}/{@link SyncResponse} but not {@code retrofit2.*}).
+     *  Never throws: HTTP failures land in {@link SyncResult#code}, transport
+     *  failures set {@link SyncResult#networkError}. Call off the main thread. */
+    public SyncResult accountSyncBlocking(String bearer, SyncRequest request) {
+        SyncResult out = new SyncResult();
+        try {
+            retrofit2.Response<SyncResponse> r = api.accountSync(bearer, request).execute();
+            out.code = r.code();
+            out.body = r.body();
+        } catch (java.io.IOException e) {
+            out.networkError = true;
+        }
+        return out;
+    }
+
     public interface TrimApi {
         @GET("segments")
         Call<EpisodeSegmentsResponse> getSegments(
@@ -171,6 +211,92 @@ public class TrimClient {
 
         @GET("job/{job_id}")
         Call<JobStatusResponse> getJobStatus(@Path("job_id") String jobId);
+
+        @POST("auth/signup")
+        Call<AuthResponse> signup(@Body Credentials body, @Header("X-Client-Id") String clientId);
+
+        @POST("auth/login")
+        Call<AuthResponse> login(@Body Credentials body, @Header("X-Client-Id") String clientId);
+
+        @GET("auth/me")
+        Call<AuthResponse> me(@Header("Authorization") String bearer);
+
+        @POST("account/sync")
+        Call<SyncResponse> accountSync(@Header("Authorization") String bearer,
+                                       @Body SyncRequest request);
+    }
+
+    // --- Account DTOs (mirror backend accounts.py / account_sync.py) --------
+
+    public static class Credentials {
+        public String email;
+        public String password;
+
+        public Credentials(String email, String password) {
+            this.email = email;
+            this.password = password;
+        }
+    }
+
+    public static class AuthResponse {
+        public String token;
+        public String expires_at;
+        public long account_id;
+        public String email;
+    }
+
+    public static class SubscriptionChange {
+        public String rss_url;
+        public String title;
+        public boolean deleted;
+        public long client_ts;
+    }
+
+    public static class ProgressChange {
+        public String episode_url;
+        public String rss_url;
+        public String guid;
+        public Long position_ms;
+        public Long duration_ms;
+        public boolean played;
+        public boolean deleted;
+        public long client_ts;
+    }
+
+    public static class QueueChange {
+        public String episode_url;
+        public String rss_url;
+        public String guid;
+        public Integer position;
+        public boolean deleted;
+        public long client_ts;
+    }
+
+    public static class SyncRequest {
+        public long cursor;
+        public List<SubscriptionChange> subscriptions;
+        public List<ProgressChange> progress;
+        public List<QueueChange> queue;
+    }
+
+    public static class SyncResponse {
+        public long cursor;
+        public List<SubscriptionChange> subscriptions;
+        public List<ProgressChange> progress;
+        public List<QueueChange> queue;
+    }
+
+    /** Retrofit-free result wrapper so the app module can drive sync without a
+     *  Retrofit compile dependency. {@code code} is the HTTP status (0 if the
+     *  request never completed), {@code networkError} marks a transport failure. */
+    public static class SyncResult {
+        public int code;
+        public boolean networkError;
+        public SyncResponse body;
+
+        public boolean isSuccessful() {
+            return code >= 200 && code < 300 && body != null;
+        }
     }
 
     /** GET /curated/first-listens — the onboarding curated rail. */

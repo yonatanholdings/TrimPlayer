@@ -977,6 +977,51 @@ public abstract class UserPreferences {
         prefs.edit().putBoolean(PREF_TRIM_STUB_ENABLED, enabled).apply();
     }
 
+    // --- TrimPlayer account (web/phone library sync) -----------------------
+    // Session token + email from /auth, and the per-account delta-sync cursor
+    // (highest rev applied from /account/sync). Empty token == logged out.
+    public static final String PREF_TRIM_ACCOUNT_TOKEN = "prefTrimAccountToken";
+    public static final String PREF_TRIM_ACCOUNT_EMAIL = "prefTrimAccountEmail";
+    public static final String PREF_TRIM_SYNC_CURSOR = "prefTrimSyncCursor";
+
+    public static String getTrimAccountToken() {
+        return prefs.getString(PREF_TRIM_ACCOUNT_TOKEN, "");
+    }
+
+    public static boolean isTrimAccountLoggedIn() {
+        String t = getTrimAccountToken();
+        return t != null && !t.isEmpty();
+    }
+
+    public static String getTrimAccountEmail() {
+        return prefs.getString(PREF_TRIM_ACCOUNT_EMAIL, "");
+    }
+
+    /** Persist the session after a successful /auth/signup|login. */
+    public static void setTrimAccount(String token, String email) {
+        prefs.edit()
+                .putString(PREF_TRIM_ACCOUNT_TOKEN, token == null ? "" : token)
+                .putString(PREF_TRIM_ACCOUNT_EMAIL, email == null ? "" : email)
+                .apply();
+    }
+
+    /** Clear the session on logout (cursor reset so a re-login does a full pull). */
+    public static void clearTrimAccount() {
+        prefs.edit()
+                .remove(PREF_TRIM_ACCOUNT_TOKEN)
+                .remove(PREF_TRIM_ACCOUNT_EMAIL)
+                .remove(PREF_TRIM_SYNC_CURSOR)
+                .apply();
+    }
+
+    public static long getTrimSyncCursor() {
+        return prefs.getLong(PREF_TRIM_SYNC_CURSOR, 0L);
+    }
+
+    public static void setTrimSyncCursor(long cursor) {
+        prefs.edit().putLong(PREF_TRIM_SYNC_CURSOR, cursor).apply();
+    }
+
     // Per-type auto-skip toggles. Each defaults to true (preserves existing behaviour
     // for users who upgrade). The SharedPreferences keys match the preferences_playback
     // entries so an XML SwitchPreferenceCompat reads/writes them directly.

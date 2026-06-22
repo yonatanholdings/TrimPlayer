@@ -44,6 +44,7 @@ public class PodcastApp extends Application {
         EventBus.getDefault().register(new TrimQueueSubscriber(this));
         de.danoeh.antennapod.net.common.TrimPrefetcher.prewarm();
         scheduleTrimEventsUpload();
+        scheduleTrimSync();
         // Warm the first few minutes of the next queued episodes on disk so playback survives a
         // connectivity gap at episode boundaries. Cached prefixes persist across restarts.
         QueuePrefetchManager.prefetchTopOfQueue(this);
@@ -93,5 +94,19 @@ public class PodcastApp extends Application {
                 .build();
         androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "trimEventsUpload", androidx.work.ExistingPeriodicWorkPolicy.KEEP, request);
+    }
+
+    private void scheduleTrimSync() {
+        androidx.work.Constraints constraints = new androidx.work.Constraints.Builder()
+                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                .build();
+        androidx.work.PeriodicWorkRequest request = new androidx.work.PeriodicWorkRequest.Builder(
+                TrimSyncWorker.class, 2, java.util.concurrent.TimeUnit.HOURS)
+                .setConstraints(constraints)
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                        15, java.util.concurrent.TimeUnit.MINUTES)
+                .build();
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "trimAccountSync", androidx.work.ExistingPeriodicWorkPolicy.KEEP, request);
     }
 }
