@@ -655,9 +655,9 @@
     <string name="pref_trim_skip_outros_sum">Auto-skip detected outro music and end-of-episode wrap-up</string>
 
     <!-- Pro paywall (Phase 1). -->
-    <string name="trim_pro_title">TrimPlayer Pro</string>
-    <string name="trim_pro_pref_summary">Unlimited auto-trim · Get Pro</string>
-    <string name="trim_pro_pref_summary_active">Pro active</string>
+    <string name="trim_pro_title">Support TrimPlayer</string>
+    <string name="trim_pro_pref_summary">TrimPlayer is free — chip in to keep it running</string>
+    <string name="trim_pro_pref_summary_active">Thanks for supporting TrimPlayer ♥</string>
     <!-- TrimPlayer account (web/phone library sync) -->
     <string name="trim_account_title">TrimPlayer account</string>
     <string name="trim_account_pref_summary_logged_out">Log in to sync your queue and progress to the web player</string>

@@ -108,28 +108,25 @@ public class MainPreferencesFragment extends AnimatedPreferenceFragment {
                     .addToBackStack(getString(R.string.community_impact_title)).commit();
             return true;
         });
-        // TrimPlayer Pro entry — summary text reflects current entitlement.
-        // Visibility is server-driven; the preference appears/disappears the
-        // next time the user returns to Settings after a /segments response
-        // changes the pro_ui_visible flag.
+        // Support TrimPlayer entry. Goodwill model (2026-06): always visible —
+        // supporting the project is voluntary and always available, so this no
+        // longer hangs off the server-driven pro_ui_visible flag. Opens the
+        // existing purchase screen (TrimProFragment); the summary thanks
+        // already-supporting users. See PRICING_PLAN.md goodwill banner.
         Preference proPref = findPreference(PREF_TRIM_PRO);
         if (proPref != null) {
-            if (!de.danoeh.antennapod.ui.screen.preferences.pro.TrimProDialogs.isProUiVisible()) {
-                proPref.setVisible(false);
-            } else {
-                de.danoeh.antennapod.playback.service.trim.EntitlementStore.Snapshot snap =
-                        de.danoeh.antennapod.playback.service.trim.EntitlementStore.get().snapshot();
-                if (snap != null && snap.isPro()) {
-                    proPref.setSummary(R.string.trim_pro_pref_summary_active);
-                }
-                proPref.setOnPreferenceClickListener(preference -> {
-                    getParentFragmentManager().beginTransaction()
-                            .replace(R.id.settingsContainer,
-                                    new de.danoeh.antennapod.ui.screen.preferences.pro.TrimProFragment())
-                            .addToBackStack(getString(R.string.trim_pro_title)).commit();
-                    return true;
-                });
+            de.danoeh.antennapod.playback.service.trim.EntitlementStore.Snapshot snap =
+                    de.danoeh.antennapod.playback.service.trim.EntitlementStore.get().snapshot();
+            if (snap != null && snap.isPro()) {
+                proPref.setSummary(R.string.trim_pro_pref_summary_active);
             }
+            proPref.setOnPreferenceClickListener(preference -> {
+                getParentFragmentManager().beginTransaction()
+                        .replace(R.id.settingsContainer,
+                                new de.danoeh.antennapod.ui.screen.preferences.pro.TrimProFragment())
+                        .addToBackStack(getString(R.string.trim_pro_title)).commit();
+                return true;
+            });
         }
         // TrimPlayer account — login/logout for web/phone library sync. Summary
         // reflects the current session; the dialog kicks an immediate sync on login.
