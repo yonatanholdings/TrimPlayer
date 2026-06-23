@@ -36,6 +36,45 @@ public final class TrimAccountManager {
         UserPreferences.clearTrimAccount();
     }
 
+    /** The backend's Google OAuth Web client id (serverClientId for native
+     *  Credential Manager sign-in), or null if Google sign-in isn't configured.
+     *  Blocking — call off the main thread. */
+    public static String fetchGoogleClientId() {
+        try {
+            Response<TrimClient.AuthConfig> resp = TrimClient.getInstance().authConfig().execute();
+            if (resp.isSuccessful() && resp.body() != null) {
+                return resp.body().google_client_id;
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "fetchGoogleClientId failed: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /** Exchange a Google ID token for a session and persist it.
+     *  @return null on success, else a human-readable error message. Blocking. */
+    public static String loginWithGoogle(String idToken) {
+        String clientId = UserPreferences.getOrCreateTrimClientId();
+        try {
+            Response<TrimClient.AuthResponse> resp =
+                    TrimClient.getInstance().authGoogle(idToken, clientId).execute();
+            if (resp.isSuccessful() && resp.body() != null && resp.body().token != null) {
+                UserPreferences.setTrimAccount(resp.body().token, resp.body().email);
+                return null;
+            }
+            if (resp.code() == 503) {
+                return "Google sign-in isn't available right now.";
+            }
+            if (resp.code() == 401) {
+                return "Google sign-in was rejected. Please try again.";
+            }
+            return "Google sign-in failed (" + resp.code() + ").";
+        } catch (IOException e) {
+            Log.w(TAG, "google auth network failure: " + e.getMessage());
+            return "Network error. Check your connection and try again.";
+        }
+    }
+
     private static String authenticate(boolean isSignup, String email, String password) {
         String clientId = UserPreferences.getOrCreateTrimClientId();
         try {

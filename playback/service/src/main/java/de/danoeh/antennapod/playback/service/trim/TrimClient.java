@@ -148,6 +148,19 @@ public class TrimClient {
         return api.me(bearer);
     }
 
+    /** Exchange a Google ID token (from native Credential Manager sign-in) for a
+     *  session. X-Client-Id links this device to the account, like email login. */
+    public Call<AuthResponse> authGoogle(String idToken, String clientId) {
+        return api.authGoogle(new GoogleAuthBody(idToken), clientId);
+    }
+
+    /** Public sign-in config: which social providers the backend has enabled.
+     *  google_client_id is the OAuth Web client id used as the native
+     *  Credential Manager serverClientId, or null when Google sign-in is off. */
+    public Call<AuthConfig> authConfig() {
+        return api.authConfig();
+    }
+
     /** Two-way library delta sync. {@code bearer} is "Bearer &lt;session token&gt;". */
     public Call<SyncResponse> accountSync(String bearer, SyncRequest request) {
         return api.accountSync(bearer, request);
@@ -221,6 +234,12 @@ public class TrimClient {
         @GET("auth/me")
         Call<AuthResponse> me(@Header("Authorization") String bearer);
 
+        @POST("auth/google")
+        Call<AuthResponse> authGoogle(@Body GoogleAuthBody body, @Header("X-Client-Id") String clientId);
+
+        @GET("auth/config")
+        Call<AuthConfig> authConfig();
+
         @POST("account/sync")
         Call<SyncResponse> accountSync(@Header("Authorization") String bearer,
                                        @Body SyncRequest request);
@@ -243,6 +262,18 @@ public class TrimClient {
         public String expires_at;
         public long account_id;
         public String email;
+    }
+
+    public static class GoogleAuthBody {
+        public String id_token;
+
+        public GoogleAuthBody(String idToken) {
+            this.id_token = idToken;
+        }
+    }
+
+    public static class AuthConfig {
+        public String google_client_id;
     }
 
     public static class SubscriptionChange {
