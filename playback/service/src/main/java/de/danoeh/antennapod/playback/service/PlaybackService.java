@@ -1215,7 +1215,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 stateManager.stopService();
                             });
             singleShotDisposables.add(d);
-        } else {
+        } else if (mediaSession != null) {
             mediaSession.getController().getTransportControls().sendCustomAction(customAction, null);
         }
 
@@ -2067,6 +2067,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      * @param playerStatus the current {@link PlayerStatus}
      */
     private void updateMediaSession(final PlayerStatus playerStatus) {
+        if (mediaSession == null) {
+            // The service may already be tearing down (onDestroy releases and nulls mediaSession).
+            // A status change posted during end-of-episode auto-advance (endPlayback ->
+            // finishEndPlayback -> playMediaObject -> statusChanged) can arrive after that, so
+            // guard against the null deref here just like updateMediaSessionMetadata does.
+            return;
+        }
         PlaybackStateCompat.Builder sessionState = new PlaybackStateCompat.Builder();
 
         int state;
@@ -2289,6 +2296,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             if (!stateManager.hasReceivedValidStartCommand()) {
                 stateManager.stopService();
             }
+            return;
+        }
+
+        if (mediaSession == null) {
+            // Same teardown race as updateMediaSession: this runs from statusChanged (INITIALIZED)
+            // during end-of-episode auto-advance, which can fire after onDestroy nulled mediaSession.
+            // Without this guard the crash just moves from updateMediaSession to getSessionToken below.
             return;
         }
 
