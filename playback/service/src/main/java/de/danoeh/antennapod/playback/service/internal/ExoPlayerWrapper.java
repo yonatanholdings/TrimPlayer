@@ -308,6 +308,22 @@ public class ExoPlayerWrapper {
                                                 @NonNull Player.PositionInfo newPosition,
                                                 @Player.DiscontinuityReason int reason) {
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    // A public/user seek that silently resolved to ~the start must be bounced back
+                    // BEFORE the speed-dance and recovery branches below can consume this
+                    // discontinuity and swallow the collapse (the speed branch even disarms the
+                    // guard). In the car a forward seek into an un-cached/un-reachable region
+                    // collapses to 0 while one of those is active, and the cached prefix then plays
+                    // on from 0 seamlessly — the user sees the episode "jump to the start". Restore
+                    // the pre-seek position first; the guard is disarmed so a re-collapse of the
+                    // bounce is accepted rather than looping.
+                    if (seekCollapseGuardArmed && isCollapsedForwardSeek(newPosition.positionMs)) {
+                        seekCollapseGuardArmed = false;
+                        Log.w(TAG, "Seek to " + lastSeekTargetMs + " collapsed to "
+                                + newPosition.positionMs + " — stream couldn't serve it; restoring to "
+                                + lastSeekFromMs);
+                        exoPlayer.seekTo(lastSeekFromMs);
+                        return;
+                    }
                     if (speedChangeSeeking) {
                         // The flush-seek is confirmed complete by ExoPlayer — AudioSink.flush()
                         // has already run, SonicAudioProcessor's stale-sample buffer is clear.
@@ -343,22 +359,10 @@ public class ExoPlayerWrapper {
                         }
                         return;
                     }
-                    if (seekCollapseGuardArmed) {
-                        seekCollapseGuardArmed = false;
-                        long landed = newPosition.positionMs;
-                        if (lastSeekTargetMs != C.TIME_UNSET
-                                && lastSeekTargetMs > lastSeekFromMs + SEEK_COLLAPSE_MIN_FORWARD_MS
-                                && landed < SEEK_COLLAPSE_NEAR_ZERO_MS
-                                && lastSeekFromMs > SEEK_COLLAPSE_NEAR_ZERO_MS) {
-                            Log.w(TAG, "Seek to " + lastSeekTargetMs + " collapsed to " + landed
-                                    + " — stream couldn't serve it; restoring to " + lastSeekFromMs);
-                            // Bounce back once to the known-good pre-seek position (in the retained
-                            // back-buffer). Its own discontinuity fires the seek-complete listener;
-                            // the guard is disarmed so a re-collapse is accepted rather than looping.
-                            exoPlayer.seekTo(lastSeekFromMs);
-                            return;
-                        }
-                    }
+                    // Any genuine forward-seek collapse was already bounced at the top of this
+                    // block; reaching here means the seek held (or wasn't an armed forward seek),
+                    // so just disarm the guard before firing the seek-complete listener.
+                    seekCollapseGuardArmed = false;
                     if (audioSeekCompleteListener != null) {
                         audioSeekCompleteListener.run();
                     }
@@ -573,6 +577,21 @@ public class ExoPlayerWrapper {
         } else {
             audioErrorListener.accept(null);
         }
+    }
+
+    /**
+     * True when an armed public/user seek silently resolved to ~the start: a sizeable forward seek
+     * (target well past where we were) that landed near 0 from a non-start position. That is how an
+     * un-servable progressive seek manifests — the target is past the cached/buffered frontier on a
+     * flaky connection, so ExoPlayer reports the seek complete but restarts the source at 0. The
+     * cached prefix then plays on seamlessly, so without bouncing back the user just sees the episode
+     * jump to the start.
+     */
+    private boolean isCollapsedForwardSeek(long landedMs) {
+        return lastSeekTargetMs != C.TIME_UNSET
+                && lastSeekTargetMs > lastSeekFromMs + SEEK_COLLAPSE_MIN_FORWARD_MS
+                && landedMs < SEEK_COLLAPSE_NEAR_ZERO_MS
+                && lastSeekFromMs > SEEK_COLLAPSE_NEAR_ZERO_MS;
     }
 
     public void seekTo(int i) throws IllegalStateException {
