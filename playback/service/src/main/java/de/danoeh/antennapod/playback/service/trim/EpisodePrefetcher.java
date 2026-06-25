@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.OptIn;
+import androidx.media3.common.C;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSpec;
 import androidx.media3.datasource.DefaultHttpDataSource;
@@ -53,6 +54,24 @@ public final class EpisodePrefetcher {
     }
 
     public static void prefetchPrefix(Context context, String url, String user, String password, long maxBytes) {
+        prefetch(context, url, user, password, maxBytes);
+    }
+
+    /**
+     * Cache the WHOLE episode (not just the opening), so playback and any seek within it are served
+     * from disk and survive going offline — e.g. the currently-playing and next-in-queue episodes
+     * kept fully warm for the tunnel-while-driving case. Already-cached spans are skipped, so this is
+     * cheap and idempotent on re-runs once the file is on disk.
+     */
+    public static void prefetchFull(Context context, String url, String user, String password) {
+        prefetch(context, url, user, password, C.LENGTH_UNSET);
+    }
+
+    /**
+     * @param length number of bytes from the start to cache, or {@link C#LENGTH_UNSET} for the
+     *               whole resource.
+     */
+    private static void prefetch(Context context, String url, String user, String password, long length) {
         if (url == null || !url.startsWith("http")) {
             return;
         }
@@ -76,10 +95,11 @@ public final class EpisodePrefetcher {
                 DataSpec dataSpec = new DataSpec.Builder()
                         .setUri(Uri.parse(url))
                         .setPosition(0)
-                        .setLength(maxBytes)
+                        .setLength(length)
                         .build();
                 new CacheWriter(dataSource, dataSpec, null, null).cache();
-                Log.d(TAG, "Prefetched up to " + maxBytes + " bytes for " + url);
+                Log.d(TAG, "Prefetched " + (length == C.LENGTH_UNSET ? "full episode" : length + " bytes")
+                        + " for " + url);
             } catch (Throwable t) {
                 // Best-effort: a failed prefetch just means the episode streams normally.
                 Log.d(TAG, "Prefetch failed for " + url + ": " + t.getMessage());

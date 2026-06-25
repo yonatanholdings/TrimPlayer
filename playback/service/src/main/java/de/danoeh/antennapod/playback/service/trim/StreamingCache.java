@@ -26,8 +26,13 @@ import java.io.File;
  */
 @OptIn(markerClass = UnstableApi.class)
 public final class StreamingCache {
-    /** LRU budget. Holds the current episode's look-ahead plus a few prefetched prefixes. */
-    private static final long MAX_BYTES = 200L * 1024 * 1024;
+    /**
+     * LRU budget. Sized to hold the two fully-cached episodes the prefetcher keeps warm (the
+     * currently-playing one and the next in queue — see {@code QueuePrefetchManager}) plus a few
+     * prefetched prefixes and recently-played look-ahead, with headroom for long (multi-hour)
+     * episodes. Two ~150 MB episodes + margin fits comfortably under this cap.
+     */
+    private static final long MAX_BYTES = 600L * 1024 * 1024;
 
     private static SimpleCache instance;
 
