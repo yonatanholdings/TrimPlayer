@@ -15,6 +15,7 @@ import com.google.android.material.snackbar.Snackbar;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.playback.service.trim.EntitlementStore;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
+import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.screen.preferences.PreferenceActivity;
 import java.text.NumberFormat;
@@ -47,9 +48,10 @@ public class TrimProFragment extends Fragment {
     // to read them from. Lifetime tier was dropped 2026-05-19; replaced with
     // the Supporter tier ($50/yr — same Pro entitlement, donation-shaped price
     // with badge + thanks). See PRICING_PLAN.md §3.
-    public static final String SKU_MONTHLY   = "trimplayer_pro_monthly";
-    public static final String SKU_YEARLY    = "trimplayer_pro_yearly";
-    public static final String SKU_SUPPORTER = "trimplayer_pro_supporter";
+    public static final String SKU_MONTHLY      = "trimplayer_pro_monthly";
+    public static final String SKU_MONTHLY_PLUS = "trimplayer_pro_monthly_plus";
+    public static final String SKU_YEARLY       = "trimplayer_pro_yearly";
+    public static final String SKU_SUPPORTER    = "trimplayer_pro_supporter";
 
     /** Entitlement source string the backend will tag Supporter purchases with.
      *  Mirrored in EntitlementStore.Snapshot for badge rendering. The exact
@@ -84,14 +86,17 @@ public class TrimProFragment extends Fragment {
             if (ab != null) ab.setTitle(R.string.trim_pro_title);
         }
 
-        MaterialButton monthly   = v.findViewById(R.id.trimProPriceMonthly);
-        MaterialButton yearly    = v.findViewById(R.id.trimProPriceYearly);
-        MaterialButton supporter = v.findViewById(R.id.trimProPriceSupporter);
+        MaterialButton monthly     = v.findViewById(R.id.trimProPriceMonthly);
+        MaterialButton monthlyPlus = v.findViewById(R.id.trimProPriceMonthlyPlus);
+        MaterialButton yearly      = v.findViewById(R.id.trimProPriceYearly);
+        MaterialButton supporter   = v.findViewById(R.id.trimProPriceSupporter);
         monthly.setOnClickListener(b -> launchPurchase(SKU_MONTHLY));
+        monthlyPlus.setOnClickListener(b -> launchPurchase(SKU_MONTHLY_PLUS));
         yearly.setOnClickListener(b -> launchPurchase(SKU_YEARLY));
         supporter.setOnClickListener(b -> launchPurchase(SKU_SUPPORTER));
 
         render(EntitlementStore.get().snapshot(), v);
+        loadImpact(v);
 
         storeListener = snapshot -> {
             View view = getView();
@@ -151,12 +156,13 @@ public class TrimProFragment extends Fragment {
         TextView activeSubtitle           = root.findViewById(R.id.trimProActiveSubtitle);
         TextView supporterBadge           = root.findViewById(R.id.trimProSupporterBadge);
         TextView supporterThanks          = root.findViewById(R.id.trimProSupporterThanks);
-        TextView quotaLine                = root.findViewById(R.id.trimProQuotaLine);
         TextView pricingTitle             = root.findViewById(R.id.trimProPricingTitle);
         MaterialButton monthly            = root.findViewById(R.id.trimProPriceMonthly);
+        MaterialButton monthlyPlus        = root.findViewById(R.id.trimProPriceMonthlyPlus);
         MaterialButton yearly             = root.findViewById(R.id.trimProPriceYearly);
         MaterialButton supporter          = root.findViewById(R.id.trimProPriceSupporter);
         TextView supporterExplainer       = root.findViewById(R.id.trimProSupporterExplainer);
+        TextView supportNote              = root.findViewById(R.id.trimProSupportNote);
 
         boolean isPro = s != null && s.isPro();
         boolean isSupporter = isPro && SOURCE_SUPPORTER.equals(s.source);
@@ -166,7 +172,9 @@ public class TrimProFragment extends Fragment {
         int pricingVis = isPro ? View.GONE : View.VISIBLE;
         pricingTitle.setVisibility(pricingVis);
         monthly.setVisibility(pricingVis);
+        monthlyPlus.setVisibility(pricingVis);
         yearly.setVisibility(pricingVis);
+        supportNote.setVisibility(pricingVis);
         // Supporter purchase surface gated on the feature flag — defensive
         // belt-and-suspenders with the layout's hardcoded gone. When the flag
         // flips on, this line restores normal show-when-not-Pro behavior.
@@ -183,12 +191,6 @@ public class TrimProFragment extends Fragment {
         if (isPro) {
             String src = s.source != null ? s.source : "?";
             activeSubtitle.setText(getString(R.string.trim_pro_status_active_subtitle, src));
-            quotaLine.setVisibility(View.GONE);
-        } else if (s != null && s.quotaUsed != null && s.quotaLimit != null) {
-            quotaLine.setVisibility(View.VISIBLE);
-            quotaLine.setText(getString(R.string.trim_pro_quota_used, s.quotaUsed, s.quotaLimit));
-        } else {
-            quotaLine.setVisibility(View.GONE);
         }
 
         // Supporter Digest card — fetch only when source confirms Supporter
@@ -200,6 +202,48 @@ public class TrimProFragment extends Fragment {
         } else {
             digestCard.setVisibility(View.GONE);
         }
+    }
+
+    /** Show the listener's real, all-time trim impact — the time TrimPlayer has
+     *  saved them by skipping intros, ads, outros, and silence. Everyone sees
+     *  this; it's the "here's the value you're getting" case for chipping in.
+     *  Read off the main thread — {@link DBReader#getSkipStatistics()} hits SQLite. */
+    private void loadImpact(View root) {
+        new Thread(() -> {
+            DBReader.SkipStatistics stats = DBReader.getSkipStatistics();
+            long savedMs = stats.introMs + stats.adMs + stats.outroMs + stats.silenceMs;
+            root.post(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                TextView impact = root.findViewById(R.id.trimProImpact);
+                if (impact == null) {
+                    return;
+                }
+                impact.setText(savedMs >= 60_000L
+                        ? getString(R.string.trim_pro_impact, formatDuration(savedMs))
+                        : getString(R.string.trim_pro_impact_empty));
+            });
+        }, "trim-pro-impact").start();
+    }
+
+    /** Humanize a millisecond duration as e.g. "3 hours 12 minutes" or "12 minutes".
+     *  Minutes-granularity is enough for an impact figure; callers gate sub-minute
+     *  totals to the empty-state copy. */
+    private String formatDuration(long ms) {
+        long totalMinutes = ms / 60_000L;
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append(hours == 1 ? " hour" : " hours");
+            if (minutes > 0) {
+                sb.append(' ').append(minutes).append(minutes == 1 ? " minute" : " minutes");
+            }
+        } else {
+            sb.append(minutes).append(minutes == 1 ? " minute" : " minutes");
+        }
+        return sb.toString();
     }
 
     /** Fetch the Supporter Digest and render. Three terminal states:
@@ -443,10 +487,13 @@ public class TrimProFragment extends Fragment {
     private void applyPriceLabels(View root) {
         de.danoeh.antennapod.billing.TrimBillingManager billing =
                 de.danoeh.antennapod.billing.TrimBillingManager.get(requireContext());
-        MaterialButton monthly = root.findViewById(R.id.trimProPriceMonthly);
-        MaterialButton yearly  = root.findViewById(R.id.trimProPriceYearly);
+        MaterialButton monthly     = root.findViewById(R.id.trimProPriceMonthly);
+        MaterialButton monthlyPlus = root.findViewById(R.id.trimProPriceMonthlyPlus);
+        MaterialButton yearly      = root.findViewById(R.id.trimProPriceYearly);
         applyOnePrice(monthly, billing.getProductDetails(SKU_MONTHLY),
                 R.string.trim_pro_price_monthly_label);
+        applyOnePrice(monthlyPlus, billing.getProductDetails(SKU_MONTHLY_PLUS),
+                R.string.trim_pro_price_monthly_plus_label);
         applyOnePrice(yearly,  billing.getProductDetails(SKU_YEARLY),
                 R.string.trim_pro_price_yearly_label);
     }
@@ -467,6 +514,7 @@ public class TrimProFragment extends Fragment {
 
     private void hidePurchaseButtons(View root) {
         root.findViewById(R.id.trimProPriceMonthly).setVisibility(View.GONE);
+        root.findViewById(R.id.trimProPriceMonthlyPlus).setVisibility(View.GONE);
         root.findViewById(R.id.trimProPriceYearly).setVisibility(View.GONE);
         root.findViewById(R.id.trimProPriceSupporter).setVisibility(View.GONE);
         root.findViewById(R.id.trimProSupporterExplainer).setVisibility(View.GONE);

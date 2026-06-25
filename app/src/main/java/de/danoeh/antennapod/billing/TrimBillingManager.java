@@ -169,13 +169,17 @@ public final class TrimBillingManager {
         });
     }
 
-    /** Fetch ProductDetails for our two subscription SKUs and cache them.
+    /** Fetch ProductDetails for our subscription SKUs and cache them.
      *  Pro screen reads from the cache to render localized prices. */
     public void queryProductsAsync() {
         if (!connected) return;
         List<QueryProductDetailsParams.Product> wanted = new ArrayList<>();
         wanted.add(QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(TrimProFragment.SKU_MONTHLY)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build());
+        wanted.add(QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(TrimProFragment.SKU_MONTHLY_PLUS)
                 .setProductType(BillingClient.ProductType.SUBS)
                 .build());
         wanted.add(QueryProductDetailsParams.Product.newBuilder()

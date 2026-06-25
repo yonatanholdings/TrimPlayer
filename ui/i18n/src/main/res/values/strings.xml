@@ -676,9 +676,6 @@
     <string name="trim_account_or">or</string>
     <string name="trim_account_google_unavailable">Google sign-in isn\'t available right now</string>
     <string name="trim_pro_badge">PRO</string>
-    <!-- %1$d = quota used, %2$d = quota limit (e.g. "3/3") -->
-    <string name="trim_pro_quota_used">Auto-trim used: %1$d/%2$d this month</string>
-    <string name="trim_pro_quota_resets_at">Resets %1$s</string>
 
     <!-- Soft-paywall upsell dialog (fires on quota exhaustion). -->
     <string name="trim_upsell_title">Auto-trim limit reached</string>
@@ -687,21 +684,26 @@
     <string name="trim_upsell_cta_get_pro">Get Pro</string>
     <string name="trim_upsell_cta_later">Maybe later</string>
 
-    <!-- Get Pro settings screen. -->
-    <string name="trim_pro_screen_headline">Skip every intro, ad, and outro — automatically.</string>
-    <string name="trim_pro_screen_features_title">What you get</string>
-    <string name="trim_pro_feature_unlimited">Unlimited auto-trim on every episode</string>
-    <string name="trim_pro_feature_early_access">Early access to new features</string>
-    <string name="trim_pro_feature_future_sync">Cross-device sync (coming soon)</string>
-    <string name="trim_pro_pricing_title">Choose a plan</string>
+    <!-- Support TrimPlayer screen. Every feature is free for everyone; this
+         screen shows the listener's real time-saved impact and invites
+         voluntary support. -->
+    <string name="trim_pro_screen_headline">Everything in TrimPlayer is free — every feature, no limits, no locked extras. If it has saved you time, you can chip in to help keep it running.</string>
+    <string name="trim_pro_screen_features_title">Your impact so far</string>
+    <!-- %1$s = humanized duration, e.g. "3 hours 12 minutes" -->
+    <string name="trim_pro_impact">TrimPlayer has saved you %1$s by skipping intros, ads, outros, and silence.</string>
+    <string name="trim_pro_impact_empty">Play a few episodes and the time TrimPlayer saves you will start adding up here.</string>
+    <string name="trim_pro_pricing_title">Support development</string>
+    <string name="trim_pro_support_note">Every feature is already unlocked for everyone. These are optional subscriptions that help cover servers and development — thank you for chipping in. ♥</string>
     <!-- Fallback labels with USD hardcoded. Used until Play returns localized
          ProductDetails, at which point applyPriceLabels swaps in the formatted
          price via trim_pro_price_*_label. -->
-    <string name="trim_pro_price_monthly">Monthly · $2.99</string>
-    <string name="trim_pro_price_yearly">Yearly · $19.99 (save 44%)</string>
-    <!-- Localized-price templates. %1$s = Play-formatted price string (e.g. "$2.99", "€2,99"). -->
-    <string name="trim_pro_price_monthly_label">Monthly · %1$s</string>
-    <string name="trim_pro_price_yearly_label">Yearly · %1$s</string>
+    <string name="trim_pro_price_monthly">$3 / month</string>
+    <string name="trim_pro_price_monthly_plus">$5 / month</string>
+    <string name="trim_pro_price_yearly">$30 / year</string>
+    <!-- Localized-price templates. %1$s = Play-formatted price string (e.g. "$3", "€2,99"). -->
+    <string name="trim_pro_price_monthly_label">%1$s / month</string>
+    <string name="trim_pro_price_monthly_plus_label">%1$s / month</string>
+    <string name="trim_pro_price_yearly_label">%1$s / year</string>
     <string name="trim_pro_purchase_success">You\'re Pro — thanks for upgrading.</string>
     <string name="trim_pro_price_supporter">Supporter · $50 / year</string>
     <string name="trim_pro_supporter_explainer">Same Pro features as the yearly plan. The extra $30 helps fund development and infra. You\'ll get a permanent Supporter badge and our thanks.</string>
@@ -939,10 +941,12 @@
     <string name="about_trim_client_id_summary">Tap to copy</string>
     <string name="contributors">Contributors</string>
     <string name="contributors_summary">Everyone can help to make TrimPlayer better - with code, translations or by helping users in our forum</string>
+    <string name="about_based_on_antennapod">Based on AntennaPod · open source under GPL-3.0</string>
     <string name="developers">Developers</string>
     <string name="translators">Translators</string>
     <string name="special_thanks">Special thanks</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="pref_privacy_policy_url" translatable="false">https://trimplayer.com/privacy</string>
     <string name="licenses">Licenses</string>
     <string name="licenses_summary">TrimPlayer uses other great software</string>
 
