@@ -691,7 +691,6 @@
     <string name="trim_pro_screen_headline">Skip every intro, ad, and outro — automatically.</string>
     <string name="trim_pro_screen_features_title">What you get</string>
     <string name="trim_pro_feature_unlimited">Unlimited auto-trim on every episode</string>
-    <string name="trim_pro_feature_priority">Faster fingerprinting on your queue</string>
     <string name="trim_pro_feature_early_access">Early access to new features</string>
     <string name="trim_pro_feature_future_sync">Cross-device sync (coming soon)</string>
     <string name="trim_pro_pricing_title">Choose a plan</string>
