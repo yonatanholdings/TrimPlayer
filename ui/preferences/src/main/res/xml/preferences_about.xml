@@ -13,4 +13,17 @@
             android:title="@string/about_trim_client_id_title"
             android:summary="@string/about_trim_client_id_summary"/>
 
+    <Preference
+            android:key="about_contributors"
+            android:title="@string/contributors"
+            android:summary="@string/about_based_on_antennapod"/>
+
+    <Preference
+            android:key="about_licenses"
+            android:title="@string/licenses"/>
+
+    <Preference
+            android:key="about_privacy_policy"
+            android:title="@string/privacy_policy"/>
+
 </PreferenceScreen>

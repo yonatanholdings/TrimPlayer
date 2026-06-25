@@ -5,7 +5,13 @@
         author="The TrimPlayer team"
         website="https://github.com/yonatanholdings/TrimPlayer"
         license="GPL-3.0"
-        licenseText="LICENSE.txt" />
+        licenseText="LICENSE_GPL-3.0.txt" />
+    <library
+        name="AntennaPod"
+        author="The AntennaPod contributors"
+        website="https://github.com/AntennaPod/AntennaPod"
+        license="GPL-3.0"
+        licenseText="LICENSE_GPL-3.0.txt" />
     <library
         name="Android Jetpack"
         author="Google"
