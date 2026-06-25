@@ -547,6 +547,15 @@ public class ExoPlayerWrapper {
                 // non-network IO faults (including a seek/range failure) that re-preparing
                 // would only retry uselessly.
                 return true;
+            case PlaybackException.ERROR_CODE_FAILED_RUNTIME_CHECK:
+                // A streamed forward seek into an un-buffered region can leave the progressive
+                // source in a bad state and throw a runtime-check failure when connectivity
+                // returns mid-seek (observed on an offline-seek + reconnect repro: playback hard-
+                // stopped at 0 instead of resuming). Re-preparing from the retained position
+                // resolves it once back online, so route it through the bounded recovery path
+                // rather than killing playback. The attempt budget caps useless retries on a
+                // genuinely un-servable seek (it still surfaces once the budget is spent).
+                return true;
             default:
                 return false;
         }
