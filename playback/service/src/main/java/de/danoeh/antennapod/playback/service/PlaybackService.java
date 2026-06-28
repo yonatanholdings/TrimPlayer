@@ -73,6 +73,7 @@ import de.danoeh.antennapod.playback.service.internal.PlaybackServiceTaskManager
 import de.danoeh.antennapod.playback.service.internal.PlaybackVolumeUpdater;
 import de.danoeh.antennapod.model.playback.TimerValue;
 import de.danoeh.antennapod.playback.service.internal.WearMediaSession;
+import de.danoeh.antennapod.playback.service.trim.EpisodePrefetcher;
 import de.danoeh.antennapod.storage.preferences.SleepTimerType;
 import de.danoeh.antennapod.ui.notifications.NotificationUtils;
 import de.danoeh.antennapod.ui.widget.WidgetUpdater;
@@ -1448,6 +1449,43 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     }
 
     /**
+     * Warm the shared streaming cache for the episode currently starting playback. Mirrors
+     * {@code QueuePrefetchManager}'s gating — full-cache the whole episode on Wi-Fi (or on mobile
+     * when the user has allowed episode downloads over mobile), otherwise just keep the opening
+     * warm so we never silently burn metered data. Unlike the queue prefetcher this fires for the
+     * actually-playing episode even when it isn't in the queue, so a stream played straight from a
+     * feed/home/history still gets cached protection against a mid-episode network drop.
+     *
+     * <p>No-op for already-downloaded media (it's fully on disk) and non-HTTP sources. The prefetch
+     * itself is best-effort, idempotent (already-cached spans are skipped), and runs on
+     * {@link EpisodePrefetcher}'s own low-priority single-thread executor, so calling it on every
+     * new media — including a duplicate of what the queue prefetcher may already be doing — is cheap.
+     */
+    private void prefetchPlayingEpisode(FeedMedia media) {
+        if (media == null || media.isDownloaded()) {
+            return;
+        }
+        String url = media.getStreamUrl();
+        if (url == null || !url.startsWith("http")) {
+            return;
+        }
+        String user = null;
+        String password = null;
+        if (media.getItem() != null && media.getItem().getFeed() != null) {
+            FeedPreferences prefs = media.getItem().getFeed().getPreferences();
+            if (prefs != null) {
+                user = prefs.getUsername();
+                password = prefs.getPassword();
+            }
+        }
+        if (NetworkUtils.isEpisodeDownloadAllowed()) {
+            EpisodePrefetcher.prefetchFull(this, url, user, password);
+        } else {
+            EpisodePrefetcher.prefetchPrefix(this, url, user, password);
+        }
+    }
+
+    /**
      * Called by a mediaplayer Activity as soon as it has prepared its
      * mediaplayer.
      */
@@ -1508,7 +1546,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                     pendingSkipVerify = null;
                     phantomTailHandled = false;
                     if (newInfo.getPlayable() instanceof FeedMedia) {
-                        trimFetchSegments((FeedMedia) newInfo.getPlayable());
+                        FeedMedia fm = (FeedMedia) newInfo.getPlayable();
+                        trimFetchSegments(fm);
+                        // Warm the streaming cache for the episode that just started, regardless of
+                        // whether it sits at the top of the queue. QueuePrefetchManager only covers the
+                        // top-of-queue items, so an episode played straight from a feed/home/history
+                        // (not via the queue) would otherwise stream with no cached fallback — a forward
+                        // seek/skip into an un-fetched region plus a brief network dip then strands
+                        // playback in a long silent buffer. This closes that hole.
+                        prefetchPlayingEpisode(fm);
                     }
                     break;
                 case PREPARED:
