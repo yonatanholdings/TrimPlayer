@@ -3,11 +3,12 @@ package de.danoeh.antennapod.ui.screen.preferences;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.InputType;
-import android.view.Gravity;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,13 +21,18 @@ import androidx.credentials.CustomCredential;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.GetCredentialException;
+import androidx.credentials.exceptions.NoCredentialException;
 import androidx.preference.Preference;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.TrimSyncWorker;
@@ -43,6 +49,8 @@ import java.util.concurrent.Executor;
  * the periodic run.
  */
 public final class TrimAccountDialogs {
+    private static final String TAG = "TrimAccountDialogs";
+
     private TrimAccountDialogs() { }
 
     /** Entry point: shows login when logged out, or an account/logout sheet when
@@ -68,56 +76,92 @@ public final class TrimAccountDialogs {
                 .show();
     }
 
-    private static void showLogin(Context context, Preference pref, boolean signupMode) {
-        int pad = Math.round(context.getResources().getDisplayMetrics().density * 20);
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(pad, pad / 2, pad, 0);
+    private static void showLogin(Context context, Preference pref, boolean startSignup) {
+        // Bespoke branded surface (res/layout/dialog_trim_login.xml) hosted in a
+        // MaterialAlertDialogBuilder with NO builder buttons — every action lives in
+        // the layout, so it reads as a designed login screen rather than a stock
+        // AlertDialog. Cancel is handled by tapping outside / back.
+        View content = LayoutInflater.from(context).inflate(R.layout.dialog_trim_login, null, false);
+        ImageView logo = content.findViewById(R.id.login_logo);
+        TextView title = content.findViewById(R.id.login_title);
+        TextView subtitle = content.findViewById(R.id.login_subtitle);
+        MaterialButton googleBtn = content.findViewById(R.id.login_btn_google);
+        TextInputEditText email = content.findViewById(R.id.login_email);
+        TextInputEditText password = content.findViewById(R.id.login_password);
+        TextInputLayout emailLayout = content.findViewById(R.id.login_email_layout);
+        TextInputLayout passwordLayout = content.findViewById(R.id.login_password_layout);
+        TextView errorBanner = content.findViewById(R.id.login_error);
+        MaterialButton primaryBtn = content.findViewById(R.id.login_btn_primary);
+        MaterialButton secondaryBtn = content.findViewById(R.id.login_btn_secondary);
 
-        // Native Google sign-in. Always shown; if the backend hasn't enabled it,
-        // the tap reports "not available" rather than the button being hidden
-        // behind a pre-dialog network check.
-        Button googleBtn = new Button(context);
-        googleBtn.setText(R.string.trim_account_google);
-        googleBtn.setAllCaps(false);
-        layout.addView(googleBtn);
-
-        TextView divider = new TextView(context);
-        divider.setText(R.string.trim_account_or);
-        divider.setGravity(Gravity.CENTER);
-        divider.setPadding(0, pad / 2, 0, pad / 4);
-        divider.setAlpha(0.6f);
-        layout.addView(divider);
-
-        EditText email = new EditText(context);
-        email.setHint(R.string.trim_account_email_hint);
-        email.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        layout.addView(email);
-
-        EditText password = new EditText(context);
-        password.setHint(R.string.trim_account_password_hint);
-        password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        layout.addView(password);
-
-        AlertDialog dialog = new AlertDialog.Builder(context)
-                .setTitle(signupMode ? R.string.trim_account_signup_title
-                        : R.string.trim_account_login_title)
-                .setView(layout)
-                .setPositiveButton(signupMode ? R.string.trim_account_action_signup
-                        : R.string.trim_account_action_login, null) // overridden below
-                .setNeutralButton(signupMode ? R.string.trim_account_switch_to_login
-                        : R.string.trim_account_switch_to_signup, (d, w) ->
-                        showLogin(context, pref, !signupMode))
-                .setNegativeButton(android.R.string.cancel, null)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setView(content)
                 .create();
 
-        googleBtn.setOnClickListener(v -> startGoogleSignIn(context, pref, dialog));
+        // Mode is toggled in-place (login <-> signup) so we never re-inflate or
+        // re-run the entrance animation when the user switches.
+        boolean[] signup = { startSignup };
+        Runnable bindMode = () -> {
+            boolean s = signup[0];
+            title.setText(s ? R.string.trim_account_welcome_signup_title
+                    : R.string.trim_account_welcome_title);
+            subtitle.setText(s ? R.string.trim_account_signup_sub : R.string.trim_account_login_sub);
+            primaryBtn.setText(s ? R.string.trim_account_action_signup
+                    : R.string.trim_account_action_login);
+            secondaryBtn.setText(s ? R.string.trim_account_switch_to_login
+                    : R.string.trim_account_switch_to_signup);
+            errorBanner.setVisibility(View.GONE);
+            emailLayout.setError(null);
+            passwordLayout.setError(null);
+        };
+        bindMode.run();
 
-        // Override the positive button so a failed login keeps the dialog open.
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> authenticate(context, pref, dialog, signupMode,
-                        email.getText().toString().trim(), password.getText().toString())));
+        googleBtn.setOnClickListener(v -> startGoogleSignIn(context, pref, dialog));
+        primaryBtn.setOnClickListener(v -> {
+            errorBanner.setVisibility(View.GONE);
+            authenticate(context, pref, dialog, signup[0],
+                    email.getText().toString().trim(), password.getText().toString(), primaryBtn);
+        });
+        secondaryBtn.setOnClickListener(v -> {
+            signup[0] = !signup[0];
+            bindMode.run();
+        });
+
+        dialog.setOnShowListener(d -> animateIn(context, content, logo));
         dialog.show();
+    }
+
+    /** Subtle, single-shot entrance: the card fades + scales in, the hero logo
+     *  drifts down into place just after. GPU-cheap (alpha/scale/translation only),
+     *  no looping animation — battery- and ANR-safe. */
+    private static void animateIn(Context context, View content, View logo) {
+        content.setAlpha(0f);
+        content.setScaleX(0.96f);
+        content.setScaleY(0.96f);
+        content.animate().alpha(1f).scaleX(1f).scaleY(1f)
+                .setDuration(220)
+                .setInterpolator(new AccelerateDecelerateInterpolator())
+                .start();
+
+        float dy = 8 * context.getResources().getDisplayMetrics().density;
+        logo.setAlpha(0f);
+        logo.setTranslationY(-dy);
+        logo.animate().alpha(1f).translationY(0f)
+                .setStartDelay(60).setDuration(260)
+                .setInterpolator(new DecelerateInterpolator(1.5f))
+                .start();
+    }
+
+    /** Show an auth error inside the dialog (persists, unlike a toast). Falls back
+     *  to a toast if the banner isn't present (e.g. dialog already torn down). */
+    private static void showError(AlertDialog dialog, String message) {
+        TextView banner = dialog.findViewById(R.id.login_error);
+        if (banner != null) {
+            banner.setText(message);
+            banner.setVisibility(View.VISIBLE);
+        } else {
+            Toast.makeText(dialog.getContext(), message, Toast.LENGTH_LONG).show();
+        }
     }
 
     // --- Native Google sign-in (Credential Manager) ---------------------------
@@ -129,6 +173,8 @@ public final class TrimAccountDialogs {
             String serverClientId = TrimAccountManager.fetchGoogleClientId();
             main.post(() -> {
                 if (serverClientId == null || serverClientId.isEmpty()) {
+                    // Backend /auth/config returned no google_client_id (or 404).
+                    Log.w(TAG, "Google sign-in unavailable: backend returned no client id");
                     Toast.makeText(context, R.string.trim_account_google_unavailable,
                             Toast.LENGTH_LONG).show();
                     return;
@@ -140,11 +186,12 @@ public final class TrimAccountDialogs {
 
     private static void requestGoogleCredential(Context context, Preference pref,
                                                 AlertDialog dialog, String serverClientId) {
-        GetGoogleIdOption option = new GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false) // let the user pick any account
-                .setServerClientId(serverClientId)
-                .setAutoSelectEnabled(false)
-                .build();
+        // Button-triggered flow: use GetSignInWithGoogleOption (the explicit
+        // "Sign in with Google" button option), NOT GetGoogleIdOption — the
+        // latter is the One-Tap/auto-select style that throws
+        // NoCredentialException on first use or after a prior dismissal.
+        GetSignInWithGoogleOption option =
+                new GetSignInWithGoogleOption.Builder(serverClientId).build();
         GetCredentialRequest request = new GetCredentialRequest.Builder()
                 .addCredentialOption(option)
                 .build();
@@ -159,10 +206,22 @@ public final class TrimAccountDialogs {
 
                     @Override
                     public void onError(GetCredentialException e) {
-                        // Includes the user dismissing the account picker — stay quiet
-                        // on cancellation-like errors but surface real failures.
-                        Toast.makeText(context, R.string.trim_account_google_unavailable,
-                                Toast.LENGTH_LONG).show();
+                        // Log the real cause — without this, every failure looks
+                        // identical and is impossible to diagnose from the field.
+                        Log.w(TAG, "Google credential request failed: "
+                                + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        if (e instanceof NoCredentialException) {
+                            // No Google account on the device (or the user has
+                            // none that can be offered) — actionable for the user.
+                            Toast.makeText(context, R.string.trim_account_google_no_account,
+                                    Toast.LENGTH_LONG).show();
+                        } else {
+                            // Real failure (config/SHA-1 mismatch, cancellation,
+                            // transient errors). Cancellation is benign but rare
+                            // enough that a toast is acceptable.
+                            Toast.makeText(context, R.string.trim_account_google_failed,
+                                    Toast.LENGTH_LONG).show();
+                        }
                     }
                 });
     }
@@ -172,7 +231,8 @@ public final class TrimAccountDialogs {
         Credential credential = response.getCredential();
         if (!(credential instanceof CustomCredential)
                 || !GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())) {
-            Toast.makeText(context, R.string.trim_account_google_unavailable, Toast.LENGTH_LONG).show();
+            Log.w(TAG, "Unexpected credential type from Credential Manager: " + credential.getType());
+            Toast.makeText(context, R.string.trim_account_google_failed, Toast.LENGTH_LONG).show();
             return;
         }
         String idToken = GoogleIdTokenCredential
@@ -190,20 +250,23 @@ public final class TrimAccountDialogs {
                     Toast.makeText(context, R.string.trim_account_login_success,
                             Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+                    showError(dialog, error);
                 }
             });
         }).start();
     }
 
     private static void authenticate(Context context, Preference pref, AlertDialog dialog,
-                                     boolean signupMode, String emailText, String passwordText) {
+                                     boolean signupMode, String emailText, String passwordText,
+                                     MaterialButton primaryBtn) {
+        primaryBtn.setEnabled(false); // guard against double-submit while the call runs
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
             String error = signupMode
                     ? TrimAccountManager.signup(emailText, passwordText)
                     : TrimAccountManager.login(emailText, passwordText);
             main.post(() -> {
+                primaryBtn.setEnabled(true);
                 if (error == null) {
                     dialog.dismiss();
                     refreshSummary(pref);
@@ -211,7 +274,7 @@ public final class TrimAccountDialogs {
                     Toast.makeText(context, R.string.trim_account_login_success,
                             Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+                    showError(dialog, error);
                 }
             });
         }).start();

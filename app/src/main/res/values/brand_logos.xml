@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Neutral chip colors behind full-color source-brand logos on the onboarding
+     "Bring your podcasts with you" picker. Neutral (not brand-tinted) so each
+     official mark stays legible and is never recolored. Dark overrides in
+     values-night/brand_logos.xml. -->
+<resources>
+    <color name="brand_chip_bg">#FFFFFF</color>
+    <color name="brand_chip_stroke">#E3E3E3</color>
+</resources>

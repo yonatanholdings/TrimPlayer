@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-theme chip: a slightly elevated neutral surface + hairline so white-edged
+     marks read against dark. -->
+<resources>
+    <color name="brand_chip_bg">#2A2A2D</color>
+    <color name="brand_chip_stroke">#3C4043</color>
+</resources>

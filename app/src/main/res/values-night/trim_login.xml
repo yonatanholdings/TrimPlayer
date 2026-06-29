@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Google button — dark theme (per official "Sign in with Google" guidelines). -->
+<resources>
+    <color name="google_btn_bg">#131314</color>
+    <color name="google_btn_stroke">#8E918F</color>
+    <color name="google_btn_text">#E3E3E3</color>
+</resources>

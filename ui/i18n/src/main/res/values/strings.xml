@@ -664,6 +664,10 @@
     <string name="trim_account_pref_summary_logged_in">Signed in as %1$s · syncing</string>
     <string name="trim_account_login_title">Log in to TrimPlayer</string>
     <string name="trim_account_signup_title">Create a TrimPlayer account</string>
+    <string name="trim_account_welcome_title">Welcome to TrimPlayer</string>
+    <string name="trim_account_welcome_signup_title">Create your account</string>
+    <string name="trim_account_login_sub">Sign in to sync your library across devices.</string>
+    <string name="trim_account_signup_sub">One account syncs your podcasts everywhere.</string>
     <string name="trim_account_email_hint">Email</string>
     <string name="trim_account_password_hint">Password</string>
     <string name="trim_account_action_login">Log in</string>
@@ -675,6 +679,8 @@
     <string name="trim_account_google">Continue with Google</string>
     <string name="trim_account_or">or</string>
     <string name="trim_account_google_unavailable">Google sign-in isn\'t available right now</string>
+    <string name="trim_account_google_no_account">No Google account found on this device. Add one in Settings, then try again.</string>
+    <string name="trim_account_google_failed">Couldn\'t sign in with Google. Please try again.</string>
     <string name="trim_pro_badge">PRO</string>
 
     <!-- Soft-paywall upsell dialog (fires on quota exhaustion). -->

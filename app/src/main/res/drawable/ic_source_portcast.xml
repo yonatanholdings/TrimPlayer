@@ -1,0 +1,48 @@
+<!-- PortCast logo (TrimPlayer's own open export format). Converted faithfully from
+     C:\git\PortCast\docs\favicon.svg: orange gradient disc + white play/export mark.
+     Self-contained badge (sits on the neutral chip like the other source marks). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- orange gradient disc (r=47 @ 50,50) -->
+    <path android:pathData="M3,50 A47,47 0 1 0 97,50 A47,47 0 1 0 3,50 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0" android:startY="0"
+                android:endX="100" android:endY="100">
+                <item android:offset="0" android:color="#FFB74D" />
+                <item android:offset="1" android:color="#E65100" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- mark group: translated +8 in x to match the source SVG transform -->
+    <group android:translateX="8">
+        <!-- vertical stem -->
+        <path android:pathData="M25,20 L25,80"
+            android:strokeColor="#FFFFFF" android:strokeWidth="4"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <!-- top play triangle -->
+        <path android:pathData="M30,20 L65,45 L30,45 Z"
+            android:fillColor="#FFFFFF" android:strokeColor="#FFFFFF" android:strokeWidth="4"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <!-- bottom play triangle -->
+        <path android:pathData="M30,55 L65,55 L30,80 Z"
+            android:fillColor="#FFFFFF" android:strokeColor="#FFFFFF" android:strokeWidth="4"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <!-- horizontal crossbar -->
+        <path android:pathData="M25,50 L80,50"
+            android:strokeColor="#FFFFFF" android:strokeWidth="4"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <!-- export arrowhead -->
+        <path android:pathData="M72,42 L82,50 L72,58"
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF" android:strokeWidth="4"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>

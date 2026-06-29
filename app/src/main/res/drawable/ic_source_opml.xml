@@ -1,0 +1,11 @@
+<!-- OPML is a file format, not a brand: a generic subscriptions/RSS glyph, tinted
+     by the UI (colorOnSurfaceVariant) — never a vendor logo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path android:fillColor="@android:color/white"
+        android:pathData="M6.18,15.64c-1.01,0 -1.82,0.81 -1.82,1.82S5.17,19.27 6.18,19.27 8,18.46 8,17.45 7.19,15.64 6.18,15.64zM4.36,9.09v2.18c4.39,0 7.95,3.56 7.95,7.95h2.18C14.49,13.61 9.94,9.09 4.36,9.09zM4.36,4.73v2.18c6.81,0 12.36,5.55 12.36,12.36h2.18C18.91,11.18 12.45,4.73 4.36,4.73z" />
+</vector>

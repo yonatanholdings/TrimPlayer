@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Login dialog (TrimAccountDialogs) brand colors + per-field theme overlay.
+     Google button colors follow the official "Sign in with Google" branding
+     guidelines (light theme here; dark overrides in values-night/trim_login.xml). -->
+<resources>
+    <color name="trim_brand_orange">#F59F00</color>
+    <color name="trim_brand_orange_12">#1FF59F00</color>
+
+    <!-- Google button — light theme (per Google Identity guidelines) -->
+    <color name="google_btn_bg">#FFFFFF</color>
+    <color name="google_btn_stroke">#747775</color>
+    <color name="google_btn_text">#1F1F1F</color>
+
+    <!-- Focused stroke / cursor / label accent for the login text fields. -->
+    <style name="ThemeOverlay.TrimLogin.TextField" parent="">
+        <item name="colorPrimary">@color/trim_brand_orange</item>
+        <item name="colorControlActivated">@color/trim_brand_orange</item>
+    </style>
+</resources>

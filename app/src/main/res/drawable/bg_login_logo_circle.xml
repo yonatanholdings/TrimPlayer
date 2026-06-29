@@ -1,0 +1,6 @@
+<!-- Solid brand-orange disc behind the white TrimPlayer mark in the login hero,
+     so the logo reads as the real branded app mark (white-on-orange). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/trim_brand_orange" />
+</shape>
