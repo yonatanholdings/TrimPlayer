@@ -7,7 +7,6 @@ import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.UiModeManager;
 import android.bluetooth.BluetoothA2dp;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -16,7 +15,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -1366,6 +1364,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 } else if (getStatus() == PlayerStatus.PLAYING || getStatus() == PlayerStatus.PAUSED) {
                     mediaPlayer.skip();
                     return true;
+                } else if (mediaPlayer.getPlayable() == null) {
+                    // Cold service: playback was paused long enough for the OS to reclaim the
+                    // service (see stopForeground on pause), so there is no in-memory player to
+                    // skip. Load the last-playing episode from preferences and advance to the next
+                    // queued episode — mirrors the MEDIA_PLAY cold-start (startPlayingFromPreferences).
+                    skipToNextFromPreferences();
+                    return true;
                 }
                 return false;
             case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
@@ -1415,6 +1420,51 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         playable -> startPlaying(playable, false),
                         error -> {
                             Log.d(TAG, "Playable was not loaded from preferences. Stopping service.");
+                            error.printStackTrace();
+                            stateManager.stopService();
+                        });
+        singleShotDisposables.add(d);
+    }
+
+    /**
+     * Skips to the next queued episode when there is no live in-memory player — i.e. a "next"
+     * media button arrived at a cold service because playback was paused and the service was
+     * reclaimed. Loads the last-playing episode from preferences, resolves the next in queue via
+     * the same {@link #getNextInQueue(Playable)} logic the auto-advance path uses, starts it, and
+     * runs the same post-playback on the skipped episode as a warm skip (so "keep episode when
+     * skipping" is honoured identically whether playback was playing or paused). If there is no
+     * next episode (end of queue, or follow-queue disabled), the service is stopped, matching what
+     * a warm skip does in those cases.
+     */
+    private void skipToNextFromPreferences() {
+        // getNextInQueue() reads the database and may update the notification/session, so run the
+        // DB work off the main thread (same as the auto-advance path in LocalPSMP.endPlayback).
+        Disposable d = io.reactivex.rxjava3.core.Single.fromCallable(() -> {
+                    FeedMedia current = DBReader.getFeedMedia(
+                            PlaybackPreferences.getCurrentlyPlayingFeedMediaId());
+                    if (current == null) {
+                        throw new IllegalStateException("No currently-playing media in preferences");
+                    }
+                    return new androidx.core.util.Pair<Playable, Playable>(current, getNextInQueue(current));
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        pair -> {
+                            Playable next = pair.second;
+                            if (next != null) {
+                                startPlaying(next, false);
+                            }
+                            // Same post-playback the warm skip runs on the skipped episode: honours
+                            // "keep episode when skipping" (mark played + dequeue, or keep as-is).
+                            onPostPlayback(pair.first, false, true, next != null);
+                            if (next == null) {
+                                Log.d(TAG, "No next episode to skip to from cold start. Stopping service.");
+                                stateManager.stopService();
+                            }
+                        },
+                        error -> {
+                            Log.d(TAG, "Could not skip to next from preferences. Stopping service.");
                             error.printStackTrace();
                             stateManager.stopService();
                         });
@@ -3418,13 +3468,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         @Override
         public void onSkipToNext() {
             Log.d(TAG, "onSkipToNext()");
-            UiModeManager uiModeManager = (UiModeManager) getApplicationContext()
-                    .getSystemService(Context.UI_MODE_SERVICE);
-            if (UserPreferences.getHardwareForwardButton() == KeyEvent.KEYCODE_MEDIA_NEXT
-                    || uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_CAR) {
+            // The lock-screen / system media "next" control reaches here via ACTION_SKIP_TO_NEXT.
+            // For a podcast player it should always advance to the next episode rather than honour
+            // the headset "forward button" remap (whose default is fast-forward). That remap still
+            // applies to actual hardware/headset buttons, which arrive through handleKeycode().
+            if (mediaPlayer.getPlayable() != null) {
                 mediaPlayer.skip();
             } else {
-                seekDelta(UserPreferences.getFastForwardSecs() * 1000);
+                // Cold service: paused playback was reclaimed by the OS, so there is no in-memory
+                // player to skip. Advance from preferences (same fallback as the MEDIA_NEXT button).
+                skipToNextFromPreferences();
             }
         }
 
