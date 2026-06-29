@@ -61,6 +61,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import de.danoeh.antennapod.playback.service.trim.PlaybackDiagnostics;
 import de.danoeh.antennapod.playback.service.trim.StreamingCache;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,6 +85,10 @@ public class ExoPlayerWrapper {
     private static final int MAX_NETWORK_RECOVERY_ATTEMPTS = 60;
     private static final long RECOVERY_BASE_DELAY_MS = 1000;
     private static final long RECOVERY_MAX_DELAY_MS = 5_000;
+
+    // Persist a buffering stall to the diagnostics log only once it's long enough to be heard as a
+    // gap; routine sub-second buffering on seeks is ignored so the log stays signal, not noise.
+    private static final long BUFFERING_STALL_LOG_THRESHOLD_MS = 4_000;
 
     // HTTP + load resilience for streaming. media3's defaults give up far too quickly for
     // mobile: 8s connect/read timeouts and only ~3 load retries, so a brief cellular stall
@@ -193,9 +198,11 @@ public class ExoPlayerWrapper {
 
                 @Override
                 public void onExhausted() {
-                    Log.w(TAG, "Network recovery exhausted after "
-                            + (recoveryStartMs == 0 ? "?" : (SystemClock.elapsedRealtime() - recoveryStartMs))
-                            + "ms; surfacing error");
+                    String elapsed = recoveryStartMs == 0 ? "?"
+                            : String.valueOf(SystemClock.elapsedRealtime() - recoveryStartMs);
+                    Log.w(TAG, "Network recovery exhausted after " + elapsed + "ms; surfacing error");
+                    PlaybackDiagnostics.log(context, TAG,
+                            "network-recovery EXHAUSTED after " + elapsed + "ms; surfacing error");
                     recoveryStartMs = 0;
                     if (lastNetworkError != null) {
                         dispatchError(lastNetworkError);
@@ -204,6 +211,9 @@ public class ExoPlayerWrapper {
             },
             MAX_NETWORK_RECOVERY_ATTEMPTS, RECOVERY_BASE_DELAY_MS, RECOVERY_MAX_DELAY_MS);
     private Runnable pendingNetworkRecovery = null;
+    // elapsedRealtime when the player entered STATE_BUFFERING, or 0 when not buffering. Used to
+    // measure (and persist) a user-visible stall even when no player error / recovery is involved.
+    private long bufferingStartMs = 0;
     // Last recoverable error seen, dispatched if the recovery budget is exhausted.
     private PlaybackException lastNetworkError = null;
     // elapsedRealtime when the current recovery sequence began, or 0 when not recovering. Used purely
@@ -266,13 +276,32 @@ public class ExoPlayerWrapper {
             public void onPlaybackStateChanged(@Player.State int playbackState) {
                 if (playbackState == Player.STATE_READY) {
                     if (recoveryStartMs != 0) {
-                        Log.i(TAG, "Network recovery: resumed to READY after "
-                                + (SystemClock.elapsedRealtime() - recoveryStartMs) + "ms");
+                        long elapsed = SystemClock.elapsedRealtime() - recoveryStartMs;
+                        Log.i(TAG, "Network recovery: resumed to READY after " + elapsed + "ms");
+                        PlaybackDiagnostics.log(context, TAG,
+                                "network-recovery resumed to READY after " + elapsed + "ms");
                         recoveryStartMs = 0;
                     }
                     // A successful (re)buffer to READY confirms any in-flight network recovery
                     // worked, so the next outage gets a fresh full backoff budget.
                     networkRecovery.onPlayerReady();
+                }
+                if (playbackState == Player.STATE_BUFFERING) {
+                    // Record the start of a stall so a long buffering gap (the user-visible silence,
+                    // which may never raise a player error under the patient load policy) leaves a
+                    // trace even when recovery never engages.
+                    if (bufferingStartMs == 0) {
+                        bufferingStartMs = SystemClock.elapsedRealtime();
+                    }
+                } else if (bufferingStartMs != 0) {
+                    long stall = SystemClock.elapsedRealtime() - bufferingStartMs;
+                    bufferingStartMs = 0;
+                    // Only persist stalls long enough to be heard as a gap; routine sub-second
+                    // buffering on seeks would otherwise flood the log.
+                    if (stall >= BUFFERING_STALL_LOG_THRESHOLD_MS) {
+                        PlaybackDiagnostics.log(context, TAG, "buffering stall ended after " + stall
+                                + "ms (state=" + playbackState + ")");
+                    }
                 }
                 if (audioCompletionListener != null && playbackState == Player.STATE_ENDED) {
                     audioCompletionListener.run();
@@ -295,10 +324,14 @@ public class ExoPlayerWrapper {
                     if (recoveryStartMs == 0) {
                         recoveryStartMs = SystemClock.elapsedRealtime();
                         Log.i(TAG, "Network recovery: started (error=" + error.getErrorCodeName() + ")");
+                        PlaybackDiagnostics.log(context, TAG,
+                                "network-recovery started (error=" + error.getErrorCodeName() + ")");
                     }
                     networkRecovery.onRecoverableError();
                     return;
                 }
+                PlaybackDiagnostics.log(context, TAG, "fatal player error " + error.getErrorCodeName()
+                        + " (" + error.errorCode + "); surfacing");
                 networkRecovery.reset();
                 dispatchError(error);
             }
