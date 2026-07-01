@@ -9,9 +9,7 @@ import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
 import de.danoeh.antennapod.model.feed.SortOrder;
-import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.storage.database.DBReader;
-import de.danoeh.antennapod.storage.database.FeedDatabaseWriter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -433,7 +431,9 @@ public class PodcastAddictImporter {
                 .compile("name=\"pref_speedAdjustment\" value=\"([0-9.]+)\"")
                 .matcher(content);
         if (m.find()) {
-            try { globalSpeed = Float.parseFloat(m.group(1)); } catch (NumberFormatException ignored) {}
+            try { globalSpeed = Float.parseFloat(m.group(1)); } catch (NumberFormatException ignored) {
+                // intentionally ignored
+            }
         }
 
         // Per-podcast speed values
@@ -445,7 +445,9 @@ public class PodcastAddictImporter {
                 long id = Long.parseLong(m.group(1));
                 float speed = Float.parseFloat(m.group(2));
                 speedValue.put(id, speed);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                // intentionally ignored
+            }
         }
 
         // Per-podcast speed on/off
@@ -456,7 +458,9 @@ public class PodcastAddictImporter {
             try {
                 long id = Long.parseLong(m.group(1));
                 speedEnabled.put(id, "true".equals(m.group(2)) ? 1.0f : 0.0f);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                // intentionally ignored
+            }
         }
 
         // Per-podcast intro skip seconds (PA: pref_podcastOffset_<id>)
@@ -467,8 +471,12 @@ public class PodcastAddictImporter {
             try {
                 long id = Long.parseLong(m.group(1));
                 int sec = Integer.parseInt(m.group(2));
-                if (sec > 0) introSec.put(id, sec);
-            } catch (NumberFormatException ignored) {}
+                if (sec > 0) {
+                    introSec.put(id, sec);
+                }
+            } catch (NumberFormatException ignored) {
+                // intentionally ignored
+            }
         }
 
         // Per-podcast outro skip seconds (PA: pref_podcastOutroOffset_<id>)
@@ -479,8 +487,12 @@ public class PodcastAddictImporter {
             try {
                 long id = Long.parseLong(m.group(1));
                 int sec = Integer.parseInt(m.group(2));
-                if (sec > 0) outroSec.put(id, sec);
-            } catch (NumberFormatException ignored) {}
+                if (sec > 0) {
+                    outroSec.put(id, sec);
+                }
+            } catch (NumberFormatException ignored) {
+                // intentionally ignored
+            }
         }
 
         // Last-played audio episode (PA's internal episode _id)
@@ -489,7 +501,9 @@ public class PodcastAddictImporter {
                 .compile("name=\"pref_lastPlayedAudioEpisode\" value=\"([0-9]+)\"")
                 .matcher(content);
         if (m.find()) {
-            try { lastPlayedAudioId = Long.parseLong(m.group(1)); } catch (NumberFormatException ignored) {}
+            try { lastPlayedAudioId = Long.parseLong(m.group(1)); } catch (NumberFormatException ignored) {
+                // intentionally ignored
+            }
         }
 
         // Build effective speed map
@@ -621,7 +635,9 @@ public class PodcastAddictImporter {
                 q.downloadUrl = obj.optString("downloadUrl", "");
                 out.add(q);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
         return out;
     }
 
@@ -645,7 +661,9 @@ public class PodcastAddictImporter {
     public static List<PaFeed> loadPendingFeeds(Context context) {
         String json = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .getString(KEY_PENDING_FEEDS, null);
-        if (json == null) return Collections.emptyList();
+        if (json == null) {
+            return Collections.emptyList();
+        }
         List<PaFeed> out = new ArrayList<>();
         try {
             JSONArray array = new JSONArray(json);
@@ -660,7 +678,9 @@ public class PodcastAddictImporter {
                 f.category      = obj.optString("category", "");
                 out.add(f);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
         return out;
     }
 
@@ -672,7 +692,9 @@ public class PodcastAddictImporter {
     public static QueueEntry loadCurrentlyPlaying(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String json = prefs.getString(KEY_CURRENTLY_PLAYING, null);
-        if (json == null) return null;
+        if (json == null) {
+            return null;
+        }
         try {
             JSONObject obj = new JSONObject(json);
             QueueEntry q = new QueueEntry();

@@ -910,7 +910,9 @@ public class CommunityImpactFragment extends Fragment {
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
-    /** Colour the first occurrence of {@code sub} within {@code full}. */
+    /**
+     * Colour the first occurrence of {@code sub} within {@code full}.
+     */
     private static CharSequence spanColor(String full, String sub, int color) {
         int i = full.indexOf(sub);
         if (i < 0) {

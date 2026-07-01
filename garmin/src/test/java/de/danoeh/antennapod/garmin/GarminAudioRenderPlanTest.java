@@ -28,9 +28,9 @@ public class GarminAudioRenderPlanTest {
         // Same graph shape the stub/backend emit: atrim kept ranges -> concat -> atempo.
         String expected =
                 "[0:a]atrim=start=20:end=60,asetpts=PTS-STARTPTS[a0];"
-              + "[0:a]atrim=start=75:end=156.03,asetpts=PTS-STARTPTS[a1];"
-              + "[a0][a1]concat=n=2:v=0:a=1[ac];"
-              + "[ac]atempo=1.500000[out]";
+                + "[0:a]atrim=start=75:end=156.03,asetpts=PTS-STARTPTS[a1];"
+                + "[a0][a1]concat=n=2:v=0:a=1[ac];"
+                + "[ac]atempo=1.500000[out]";
         assertEquals(expected, episode1().filterComplex());
     }
 
@@ -59,8 +59,8 @@ public class GarminAudioRenderPlanTest {
                 Collections.emptyList(), 100.0);
         assertEquals(
                 "[0:a]atrim=start=0:end=100,asetpts=PTS-STARTPTS[a0];"
-              + "[a0]concat=n=1:v=0:a=1[ac];"
-              + "[ac]atempo=1.000000[out]",
+                + "[a0]concat=n=1:v=0:a=1[ac];"
+                + "[ac]atempo=1.000000[out]",
                 plan.filterComplex());
     }
 

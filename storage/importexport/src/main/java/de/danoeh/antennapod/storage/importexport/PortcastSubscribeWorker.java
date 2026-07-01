@@ -50,7 +50,9 @@ public class PortcastSubscribeWorker extends Worker {
     private static final String TAG = "PortcastSubscribeWorker";
     /** Unique-work name; public so the in-app status banner can observe it. */
     public static final String WORK_ID = "de.danoeh.antennapod.PortcastSubscribe";
-    /** {@code setProgressAsync} keys read by the import status banner. */
+    /**
+     * {@code setProgressAsync} keys read by the import status banner.
+     */
     public static final String PROGRESS_CURRENT = "current";
     public static final String PROGRESS_TOTAL = "total";
 
@@ -207,7 +209,9 @@ public class PortcastSubscribeWorker extends Worker {
 
     /** Apply our `com.trimplayer.*` extension namespaces if present. Returns whether anything was applied. */
     private static boolean applyExtensions(FeedPreferences prefs, JSONObject ext) {
-        if (ext == null) return false;
+        if (ext == null) {
+            return false;
+        }
         boolean dirty = false;
         JSONObject skips = ext.optJSONObject("com.trimplayer.skips");
         if (skips != null) {
@@ -258,7 +262,9 @@ public class PortcastSubscribeWorker extends Worker {
     }
 
     private static <E extends Enum<E>> E parseEnum(Class<E> cls, String name) {
-        if (name == null || name.isEmpty()) return null;
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
         try {
             return Enum.valueOf(cls, name);
         } catch (IllegalArgumentException e) {

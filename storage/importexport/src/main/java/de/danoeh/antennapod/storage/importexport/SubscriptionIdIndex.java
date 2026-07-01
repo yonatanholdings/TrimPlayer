@@ -40,13 +40,19 @@ public final class SubscriptionIdIndex {
     /** Returns null if the id has never been imported, or is null/empty. */
     @Nullable
     public static String lookup(Context context, @Nullable String subscriptionId) {
-        if (subscriptionId == null || subscriptionId.isEmpty()) return null;
+        if (subscriptionId == null || subscriptionId.isEmpty()) {
+            return null;
+        }
         return prefs(context).getString(subscriptionId, null);
     }
 
     public static void put(Context context, @Nullable String subscriptionId, @Nullable String feedUrl) {
-        if (subscriptionId == null || subscriptionId.isEmpty()) return;
-        if (feedUrl == null || feedUrl.isEmpty()) return;
+        if (subscriptionId == null || subscriptionId.isEmpty()) {
+            return;
+        }
+        if (feedUrl == null || feedUrl.isEmpty()) {
+            return;
+        }
         prefs(context).edit().putString(subscriptionId, feedUrl).apply();
     }
 

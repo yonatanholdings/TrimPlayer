@@ -535,7 +535,7 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
 
     private String loadAsset(String path) throws IOException {
         try (InputStream in = getAssets().open(path);
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buf = new byte[8192];
             int n;
             while ((n = in.read(buf)) >= 0) {

@@ -1082,7 +1082,9 @@ public abstract class UserPreferences {
     /** Returns true when the auto-skip pref for this segment type is enabled.
      *  Unknown types default to enabled so we never silently skip skipping. */
     public static boolean isTrimSkipEnabledForType(String segmentType) {
-        if (segmentType == null) return true;
+        if (segmentType == null) {
+            return true;
+        }
         switch (segmentType.toLowerCase()) {
             case "intro": return isTrimSkipIntrosEnabled();
             case "ad":    return isTrimSkipAdsEnabled();
@@ -1206,8 +1208,12 @@ public abstract class UserPreferences {
         android.content.SharedPreferences.Editor e = prefs.edit();
         if (status == null) e.remove(PREF_TRIM_PRO_STATUS); else e.putString(PREF_TRIM_PRO_STATUS, status);
         if (source == null) e.remove(PREF_TRIM_PRO_SOURCE); else e.putString(PREF_TRIM_PRO_SOURCE, source);
-        if (quotaUsed != null)  e.putInt(PREF_TRIM_QUOTA_USED,  quotaUsed);
-        if (quotaLimit != null) e.putInt(PREF_TRIM_QUOTA_LIMIT, quotaLimit);
+        if (quotaUsed != null) {
+            e.putInt(PREF_TRIM_QUOTA_USED,  quotaUsed);
+        }
+        if (quotaLimit != null) {
+            e.putInt(PREF_TRIM_QUOTA_LIMIT, quotaLimit);
+        }
         if (resetsAt == null) e.remove(PREF_TRIM_QUOTA_RESETS_AT); else e.putString(PREF_TRIM_QUOTA_RESETS_AT, resetsAt);
         e.putBoolean(PREF_TRIM_PRO_UI_VISIBLE, proUiVisible);
         e.apply();

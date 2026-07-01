@@ -88,7 +88,9 @@ public class OverviewStatisticsFragment extends Fragment {
      *  from the cached `heatmapStartMs` so no DB lookup is needed. Also loads the
      *  list of episodes played that day into the section below. */
     private void onHeatmapCellTap(int weekIdx, int dayIdx) {
-        if (currentStats == null) return;
+        if (currentStats == null) {
+            return;
+        }
         long dayMs = currentStats.heatmapStartMs + (weekIdx * 7L + dayIdx) * 86_400_000L;
         java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("MMM d", Locale.getDefault());
         String date = dateFmt.format(new Date(dayMs));
@@ -107,7 +109,9 @@ public class OverviewStatisticsFragment extends Fragment {
 
     private void loadEpisodesForDay(long dayStartMs, String dateLabel,
                                     int weekIdx, int dayIdx, long listenedMs) {
-        if (playedDisposable != null) playedDisposable.dispose();
+        if (playedDisposable != null) {
+            playedDisposable.dispose();
+        }
         playedSection.setVisibility(View.VISIBLE);
         playedList.removeAllViews();
         playedEmpty.setVisibility(View.GONE);
@@ -193,7 +197,9 @@ public class OverviewStatisticsFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (playedDisposable != null) playedDisposable.dispose();
+        if (playedDisposable != null) {
+            playedDisposable.dispose();
+        }
     }
 
     private void bind(DBReader.EditorialStats s) {

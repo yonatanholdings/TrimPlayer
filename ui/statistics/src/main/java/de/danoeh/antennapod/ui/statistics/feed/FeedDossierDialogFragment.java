@@ -112,6 +112,8 @@ public class FeedDossierDialogFragment extends DialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (disposable != null) disposable.dispose();
+        if (disposable != null) {
+            disposable.dispose();
+        }
     }
 }

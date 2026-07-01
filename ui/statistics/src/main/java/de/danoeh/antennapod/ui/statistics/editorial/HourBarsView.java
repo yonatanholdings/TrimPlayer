@@ -46,7 +46,9 @@ public class HourBarsView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if (hourClickListener == null) return super.onTouchEvent(e);
+        if (hourClickListener == null) {
+            return super.onTouchEvent(e);
+        }
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 downX = e.getX();
@@ -80,7 +82,9 @@ public class HourBarsView extends View {
         float d = getResources().getDisplayMetrics().density;
         float left = 24 * d;
         float barW = (getWidth() - 48 * d) / 24f;
-        if (x < left) return -1;
+        if (x < left) {
+            return -1;
+        }
         int h = (int) ((x - left) / barW);
         return (h < 0 || h > 23) ? -1 : h;
     }
@@ -98,7 +102,9 @@ public class HourBarsView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (byHour == null || byHour.length < 24) return;
+        if (byHour == null || byHour.length < 24) {
+            return;
+        }
         float d = getResources().getDisplayMetrics().density;
         float labelH = 14 * d;
         float tickH = 16 * d;

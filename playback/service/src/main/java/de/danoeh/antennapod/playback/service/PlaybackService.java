@@ -675,7 +675,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         int intros = 0, ads = 0, outros = 0;
         if (segsAtEnd != null) {
             for (Integer si : skippedSegmentIndices) {
-                if (si == null || si < 0 || si >= segsAtEnd.size()) continue;
+                if (si == null || si < 0 || si >= segsAtEnd.size()) {
+                    continue;
+                }
                 String t = segsAtEnd.get(si).type;
                 if (t == null) {
                     ads++;  // matches the eventType fallback used at skip time
@@ -684,13 +686,21 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 String tl = t.toLowerCase();
                 if ("intro".equals(tl)) intros++;
                 else if ("outro".equals(tl)) outros++;
-                else ads++;
+                else {
+                    ads++;
+                }
             }
         }
         java.util.List<String> parts = new java.util.ArrayList<>(3);
-        if (intros > 0) parts.add(getResources().getQuantityString(R.plurals.trim_summary_intros, intros, intros));
-        if (ads    > 0) parts.add(getResources().getQuantityString(R.plurals.trim_summary_ads,    ads,    ads));
-        if (outros > 0) parts.add(getResources().getQuantityString(R.plurals.trim_summary_outros, outros, outros));
+        if (intros > 0) {
+            parts.add(getResources().getQuantityString(R.plurals.trim_summary_intros, intros, intros));
+        }
+        if (ads    > 0) {
+            parts.add(getResources().getQuantityString(R.plurals.trim_summary_ads,    ads,    ads));
+        }
+        if (outros > 0) {
+            parts.add(getResources().getQuantityString(R.plurals.trim_summary_outros, outros, outros));
+        }
         if (parts.isEmpty()) {
             return getString(R.string.trim_summary_no_breakdown, duration);
         }
@@ -728,14 +738,18 @@ public class PlaybackService extends MediaBrowserServiceCompat {
 
     private boolean trimAnalyzeOnCooldown(String guid, String episodeUrl) {
         String key = trimCooldownKey(guid, episodeUrl);
-        if (key == null) return false;
+        if (key == null) {
+            return false;
+        }
         long last = getSharedPreferences(TRIM_COOLDOWN_PREFS, MODE_PRIVATE).getLong(key, 0L);
         return last > 0 && (System.currentTimeMillis() - last) < TRIM_ANALYZE_COOLDOWN_MS;
     }
 
     private void trimRecordAnalyzeAttempt(String guid, String episodeUrl) {
         String key = trimCooldownKey(guid, episodeUrl);
-        if (key == null) return;
+        if (key == null) {
+            return;
+        }
         getSharedPreferences(TRIM_COOLDOWN_PREFS, MODE_PRIVATE)
                 .edit().putLong(key, System.currentTimeMillis()).apply();
     }
@@ -772,7 +786,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         pollRunnable[0] = new Runnable() {
             @Override
             public void run() {
-                if (!jobId.equals(activePollingJobId)) return;
+                if (!jobId.equals(activePollingJobId)) {
+                    return;
+                }
                 de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
                         .getJobStatus(jobId)
                         .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.JobStatusResponse>() {
@@ -780,7 +796,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                             public void onResponse(
                                     retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.JobStatusResponse> call,
                                     retrofit2.Response<de.danoeh.antennapod.playback.service.trim.TrimClient.JobStatusResponse> response) {
-                                if (!jobId.equals(activePollingJobId)) return;
+                                if (!jobId.equals(activePollingJobId)) {
+                                    return;
+                                }
                                 if (!response.isSuccessful() || response.body() == null) {
                                     trimPollHandler.postDelayed(pollRunnable[0], 10000);
                                     return;
@@ -808,7 +826,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                             public void onFailure(
                                     retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.JobStatusResponse> call,
                                     Throwable t) {
-                                if (!jobId.equals(activePollingJobId)) return;
+                                if (!jobId.equals(activePollingJobId)) {
+                                    return;
+                                }
                                 Log.e(TAG, "Trim Player: Poll failed, retrying", t);
                                 trimPollHandler.postDelayed(pollRunnable[0], 10000);
                             }
@@ -949,7 +969,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     }
 
     private boolean isKnownCaller(String packageName, int uid) {
-        if (packageName.equals(getPackageName())) return true;
+        if (packageName.equals(getPackageName())) {
+            return true;
+        }
         if (uid < 1000) return true; // system process
         // Android Auto / AAOS
         if (packageName.equals("com.google.android.projection.gearhead")) return true;
@@ -2623,7 +2645,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             return;
         }
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (am == null) return;
+        if (am == null) {
+            return;
+        }
 
         int cur = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
@@ -2640,7 +2664,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: first event (prev<0)");
             return;
         }
-        if (max <= 0) return;
+        if (max <= 0) {
+            return;
+        }
         if (System.currentTimeMillis() - autoBoostLastChangeMs < AUTO_BOOST_COOLDOWN_MS) {
             if (BuildConfig.DEBUG) Log.d(TAG, "VolBoost bail: cooldown");
             return;
@@ -2764,7 +2790,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         switch (current) {
             case LIGHT_REDUCTION:
             case HEAVY_REDUCTION:
-            case OFF:           return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST;
+                case OFF:           return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST;
             case LIGHT_BOOST:   return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.MEDIUM_BOOST;
             case MEDIUM_BOOST:  return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.HEAVY_BOOST;
             case HEAVY_BOOST:   return null;  // already at ceiling
@@ -3488,9 +3514,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             // so this callback receives a FeedItem id, not a FeedMedia id. Look it up accordingly —
             // getFeedMedia(id) would key on the wrong table and silently no-op the car's play button.
             Disposable d = io.reactivex.rxjava3.core.Maybe.fromCallable(() -> {
-                        FeedItem feedItem = DBReader.getFeedItem(id);
-                        return feedItem != null ? feedItem.getMedia() : null;
-                    })
+                FeedItem feedItem = DBReader.getFeedItem(id);
+                return feedItem != null ? feedItem.getMedia() : null;
+            })
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(

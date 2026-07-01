@@ -32,10 +32,14 @@ public final class TrimSegmentCache {
     private TrimSegmentCache() { }
 
     public static List<TrimClient.Segment> get(Context ctx, String guid) {
-        if (ctx == null || guid == null || guid.isEmpty()) return null;
+        if (ctx == null || guid == null || guid.isEmpty()) {
+            return null;
+        }
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String raw = prefs.getString(guid, null);
-        if (raw == null) return null;
+        if (raw == null) {
+            return null;
+        }
         try {
             JSONObject root = new JSONObject(raw);
             long ts = root.optLong("ts", 0);
@@ -48,7 +52,9 @@ public final class TrimSegmentCache {
             if (!neverExpires(root, arr) && System.currentTimeMillis() - ts > TTL_MS) {
                 return null;
             }
-            if (arr == null) return null;
+            if (arr == null) {
+                return null;
+            }
             List<TrimClient.Segment> segs = new ArrayList<>(arr.length());
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
@@ -70,10 +76,14 @@ public final class TrimSegmentCache {
      *  cost — cheap enough to call from list adapters. Returns UNKNOWN for
      *  expired or missing entries so stale state never paints a misleading badge. */
     public static State getState(Context ctx, String guid) {
-        if (ctx == null || guid == null || guid.isEmpty()) return State.UNKNOWN;
+        if (ctx == null || guid == null || guid.isEmpty()) {
+            return State.UNKNOWN;
+        }
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String raw = prefs.getString(guid, null);
-        if (raw == null) return State.UNKNOWN;
+        if (raw == null) {
+            return State.UNKNOWN;
+        }
         try {
             JSONObject root = new JSONObject(raw);
             long ts = root.optLong("ts", 0);
@@ -96,10 +106,14 @@ public final class TrimSegmentCache {
      *  episode. Such an entry is authoritative: the backend must not overwrite
      *  it and it never expires. */
     public static boolean isUserOwned(Context ctx, String guid) {
-        if (ctx == null || guid == null || guid.isEmpty()) return false;
+        if (ctx == null || guid == null || guid.isEmpty()) {
+            return false;
+        }
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String raw = prefs.getString(guid, null);
-        if (raw == null) return false;
+        if (raw == null) {
+            return false;
+        }
         try {
             JSONObject root = new JSONObject(raw);
             if (!root.optBoolean("userOwned", false)) return false;
@@ -142,9 +156,13 @@ public final class TrimSegmentCache {
      *  so dragged boundaries / relabels survive across sessions and feed the
      *  auto-skip loop on the next load. */
     public static void putSegment(Context ctx, String guid, TrimClient.Segment edited) {
-        if (ctx == null || guid == null || guid.isEmpty() || edited == null) return;
+        if (ctx == null || guid == null || guid.isEmpty() || edited == null) {
+            return;
+        }
         List<TrimClient.Segment> segs = get(ctx, guid);
-        if (segs == null) segs = new ArrayList<>();
+        if (segs == null) {
+            segs = new ArrayList<>();
+        }
         String targetId = edited.stableId();
         boolean replaced = false;
         for (int i = 0; i < segs.size(); i++) {
@@ -154,7 +172,9 @@ public final class TrimSegmentCache {
                 break;
             }
         }
-        if (!replaced) segs.add(edited);
+        if (!replaced) {
+            segs.add(edited);
+        }
         try {
             writeSegments(ctx, guid, segs, true);
         } catch (JSONException e) {
@@ -166,12 +186,18 @@ public final class TrimSegmentCache {
      *  Marks the entry user-owned; removing the last segment leaves a user-owned
      *  empty set so the badge still reads "analyzed" and the backend won't refill it. */
     public static void removeSegment(Context ctx, String guid, String stableId) {
-        if (ctx == null || guid == null || guid.isEmpty() || stableId == null) return;
+        if (ctx == null || guid == null || guid.isEmpty() || stableId == null) {
+            return;
+        }
         List<TrimClient.Segment> segs = get(ctx, guid);
-        if (segs == null || segs.isEmpty()) return;
+        if (segs == null || segs.isEmpty()) {
+            return;
+        }
         List<TrimClient.Segment> kept = new ArrayList<>(segs.size());
         for (TrimClient.Segment s : segs) {
-            if (!s.stableId().equals(stableId)) kept.add(s);
+            if (!s.stableId().equals(stableId)) {
+                kept.add(s);
+            }
         }
         if (kept.size() == segs.size()) return; // nothing matched
         try {
@@ -207,7 +233,9 @@ public final class TrimSegmentCache {
      *  segments. Distinct from {@link State#UNKNOWN} — the badge UI uses this
      *  to render the "analyzed, nothing to trim" icon instead of nothing. */
     public static void putAnalyzedEmpty(Context ctx, String guid) {
-        if (ctx == null || guid == null || guid.isEmpty()) return;
+        if (ctx == null || guid == null || guid.isEmpty()) {
+            return;
+        }
         try {
             JSONObject root = new JSONObject();
             root.put("ts", System.currentTimeMillis());

@@ -301,48 +301,48 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
             return;
         }
         download = io.reactivex.rxjava3.core.Single.<Long>fromCallable(() -> {
-                    Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
-                    if (feed == null || feed.getItems() == null) {
-                        return 0L;
-                    }
-                    String wanted = normalizeTitle(episodeTitle);
-                    if (wanted.isEmpty()) {
-                        return 0L;
-                    }
+            Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
+            if (feed == null || feed.getItems() == null) {
+                return 0L;
+            }
+            String wanted = normalizeTitle(episodeTitle);
+            if (wanted.isEmpty()) {
+                return 0L;
+            }
                     // The hint is often "<show> | <episode>" (full og:title) while
                     // RSS items are bare "<episode>". Substring matching handles
                     // both directions, but if multiple items match (e.g. "Ep 213"
                     // and "Ep 213: Intro to Money"), prefer the longest overlap
                     // so we don't pick the shorter, less-specific sibling.
-                    long bestId = 0L;
-                    int bestScore = 0;
-                    for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
-                        String t = normalizeTitle(fi.getTitle());
-                        if (t.isEmpty()) {
-                            continue;
-                        }
-                        int score;
-                        if (t.equals(wanted)) {
-                            score = Integer.MAX_VALUE;
-                        } else if (wanted.contains(t)) {
-                            score = t.length();
-                        } else if (t.contains(wanted)) {
-                            score = wanted.length();
-                        } else {
-                            continue;
-                        }
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestId = fi.getId();
-                        }
-                    }
+            long bestId = 0L;
+            int bestScore = 0;
+            for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
+                String t = normalizeTitle(fi.getTitle());
+                if (t.isEmpty()) {
+                    continue;
+                }
+                int score;
+                if (t.equals(wanted)) {
+                    score = Integer.MAX_VALUE;
+                } else if (wanted.contains(t)) {
+                    score = t.length();
+                } else if (t.contains(wanted)) {
+                    score = wanted.length();
+                } else {
+                    continue;
+                }
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestId = fi.getId();
+                }
+            }
                     // Require at least 4 chars of overlap to filter out spurious
                     // tiny-substring matches (e.g. "Ep 1" matching anything).
-                    Log.i(TAG, "Episode match: wanted=\"" + wanted + "\" itemCount="
+            Log.i(TAG, "Episode match: wanted=\"" + wanted + "\" itemCount="
                             + feed.getItems().size() + " bestScore=" + bestScore
                             + " bestId=" + bestId);
-                    return bestScore >= 4 ? bestId : 0L;
-                })
+            return bestScore >= 4 ? bestId : 0L;
+        })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(matchedItemId -> {
@@ -366,20 +366,20 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
      *  episode can't be found (e.g. it has since dropped out of the feed). */
     private void routeToEpisodeById(long feedId, String episodeId, Runnable fallback) {
         download = io.reactivex.rxjava3.core.Single.<Long>fromCallable(() -> {
-                    Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
-                    if (feed == null || feed.getItems() == null) {
-                        return 0L;
-                    }
-                    for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
-                        boolean guidMatch = episodeId.equals(fi.getItemIdentifier());
-                        boolean mediaMatch = fi.getMedia() != null
+            Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
+            if (feed == null || feed.getItems() == null) {
+                return 0L;
+            }
+            for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
+                boolean guidMatch = episodeId.equals(fi.getItemIdentifier());
+                boolean mediaMatch = fi.getMedia() != null
                                 && episodeId.equals(fi.getMedia().getDownloadUrl());
-                        if (guidMatch || mediaMatch) {
-                            return fi.getId();
-                        }
-                    }
-                    return 0L;
-                })
+                if (guidMatch || mediaMatch) {
+                    return fi.getId();
+                }
+            }
+            return 0L;
+        })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(itemId -> {

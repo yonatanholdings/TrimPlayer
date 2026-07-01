@@ -53,7 +53,9 @@ public class SparklineView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (data == null || data.length < 2) return;
+        if (data == null || data.length < 2) {
+            return;
+        }
         int n = data.length;
         float maxV = 0.01f;
         for (float v : data) if (v > maxV) maxV = v;

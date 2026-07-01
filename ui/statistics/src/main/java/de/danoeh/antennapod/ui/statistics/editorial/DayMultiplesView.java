@@ -45,7 +45,9 @@ public class DayMultiplesView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if (dayClickListener == null) return super.onTouchEvent(e);
+        if (dayClickListener == null) {
+            return super.onTouchEvent(e);
+        }
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 downX = e.getX();
@@ -79,7 +81,9 @@ public class DayMultiplesView extends View {
         float d = getResources().getDisplayMetrics().density;
         float left = 24 * d;
         float cellW = (getWidth() - 48 * d) / 7f;
-        if (x < left) return -1;
+        if (x < left) {
+            return -1;
+        }
         int i = (int) ((x - left) / cellW);
         return (i < 0 || i > 6) ? -1 : i;
     }
@@ -97,7 +101,9 @@ public class DayMultiplesView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (byDay == null || byDay.length < 7) return;
+        if (byDay == null || byDay.length < 7) {
+            return;
+        }
         float d = getResources().getDisplayMetrics().density;
         float textH = 12 * d;
         float valueH = 14 * d;

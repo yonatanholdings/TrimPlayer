@@ -66,7 +66,9 @@ public class DonutView extends View {
     }
 
     public void setSelectedIndex(int index) {
-        if (this.selectedIndex == index) return;
+        if (this.selectedIndex == index) {
+            return;
+        }
         this.selectedIndex = index;
         invalidate();
     }
@@ -77,7 +79,9 @@ public class DonutView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if (shows == null || shows.isEmpty()) return super.onTouchEvent(e);
+        if (shows == null || shows.isEmpty()) {
+            return super.onTouchEvent(e);
+        }
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 downX = e.getX();
@@ -114,7 +118,9 @@ public class DonutView extends View {
      *  ring annulus. Uses the same geometry constants as onDraw, with the gap
      *  swept into the leading segment so taps near gaps still register. */
     private int hitTestSegment(float x, float y) {
-        if (shows == null || shows.isEmpty()) return -1;
+        if (shows == null || shows.isEmpty()) {
+            return -1;
+        }
         float d = getResources().getDisplayMetrics().density;
         float stroke = 22 * d;
         float cx = getWidth() / 2f;
@@ -122,16 +128,24 @@ public class DonutView extends View {
         float r = Math.min(cx, cy) - stroke / 2 - 4 * d;
         float dx = x - cx, dy = y - cy;
         float dist = (float) Math.hypot(dx, dy);
-        if (dist < r - stroke / 2 || dist > r + stroke / 2) return -1;
+        if (dist < r - stroke / 2 || dist > r + stroke / 2) {
+            return -1;
+        }
 
         // Angle clockwise from top (12 o'clock = 0, increasing clockwise).
         double ang = Math.atan2(dy, dx) + Math.PI / 2;
-        if (ang < 0) ang += 2 * Math.PI;
+        if (ang < 0) {
+            ang += 2 * Math.PI;
+        }
         double angleDeg = Math.toDegrees(ang);
 
         float total = 0;
-        for (DBReader.EditorialStats.ShowItem s : shows) total += s.hrs;
-        if (total == 0) return -1;
+        for (DBReader.EditorialStats.ShowItem s : shows) {
+            total += s.hrs;
+        }
+        if (total == 0) {
+            return -1;
+        }
 
         float cumulative = 0;
         for (int i = 0; i < shows.size(); i++) {
@@ -152,7 +166,9 @@ public class DonutView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (shows == null || shows.isEmpty()) return;
+        if (shows == null || shows.isEmpty()) {
+            return;
+        }
         float d = getResources().getDisplayMetrics().density;
         float stroke = 22 * d;
         float gap = 1.2f * d;
@@ -165,8 +181,12 @@ public class DonutView extends View {
 
         // Compute total
         float total = 0;
-        for (DBReader.EditorialStats.ShowItem s : shows) total += s.hrs;
-        if (total == 0) return;
+        for (DBReader.EditorialStats.ShowItem s : shows) {
+            total += s.hrs;
+        }
+        if (total == 0) {
+            return;
+        }
 
         float gapAngle = (float) Math.toDegrees(gap / r);
         float start = -90f;

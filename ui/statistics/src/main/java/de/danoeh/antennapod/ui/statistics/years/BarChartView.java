@@ -139,9 +139,15 @@ public class BarChartView extends AppCompatImageView {
         }
 
         private long pickGridStep(long maxVal) {
-            if (maxVal >= 10 * ONE_HOUR) return 10 * ONE_HOUR;
-            if (maxVal >= 2 * ONE_HOUR)  return ONE_HOUR;
-            if (maxVal >= ONE_HOUR / 2)  return ONE_HOUR / 2;
+            if (maxVal >= 10 * ONE_HOUR) {
+                return 10 * ONE_HOUR;
+            }
+            if (maxVal >= 2 * ONE_HOUR) {
+                return ONE_HOUR;
+            }
+            if (maxVal >= ONE_HOUR / 2) {
+                return ONE_HOUR / 2;
+            }
             return ONE_HOUR / 6; // 10 minutes
         }
 

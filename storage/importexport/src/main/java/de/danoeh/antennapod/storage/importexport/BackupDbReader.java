@@ -36,7 +36,9 @@ import de.danoeh.antennapod.storage.database.mapper.FeedItemCursor;
 public final class BackupDbReader {
     private static final String TAG = "BackupDbReader";
 
-    /** What a backup contains, shaped exactly as {@link PortcastExporter#buildDocument} expects. */
+    /**
+     * What a backup contains, shaped exactly as {@link PortcastExporter#buildDocument} expects.
+     */
     public static final class Library {
         public final List<Feed> feeds;
         public final List<FeedItem> episodes;

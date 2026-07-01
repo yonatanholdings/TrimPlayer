@@ -128,7 +128,9 @@ public class TimeSavedStatisticsFragment extends Fragment {
 
     private void showStatistics(DBReader.SkipStatistics stats) {
         Context ctx = getContext();
-        if (ctx == null) return;
+        if (ctx == null) {
+            return;
+        }
         allTimeStats = stats;
         emptyState.setVisibility(stats.totalMs <= 0 ? View.VISIBLE : View.GONE);
 
@@ -193,7 +195,9 @@ public class TimeSavedStatisticsFragment extends Fragment {
             // monthly history so the demo drill-down looks plausible.
             long yearTotal = 0;
             for (DBReader.MonthlySkipItem m : allTimeStats.monthly) {
-                if (m.year == year) yearTotal += m.totalMs;
+                if (m.year == year) {
+                    yearTotal += m.totalMs;
+                }
             }
             double frac = allTimeStats.totalMs > 0
                     ? (double) yearTotal / allTimeStats.totalMs : 0;
@@ -210,7 +214,9 @@ public class TimeSavedStatisticsFragment extends Fragment {
         long from = startOfYear(year);
         long to = startOfYear(year + 1) - 1;
         categorySubheader.setText(year + " · loading…");
-        if (yearQueryDisposable != null) yearQueryDisposable.dispose();
+        if (yearQueryDisposable != null) {
+            yearQueryDisposable.dispose();
+        }
         yearQueryDisposable = Single.fromCallable(() -> DBReader.getSkipBreakdown(from, to))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -249,7 +255,9 @@ public class TimeSavedStatisticsFragment extends Fragment {
      *  handful of months — a 3-year listener sees 3 rows instead of 36. */
     private void bindYearlyHistory(DBReader.SkipStatistics stats, Context ctx) {
         yearlyContainer.removeAllViews();
-        if (stats.monthly.isEmpty()) return;
+        if (stats.monthly.isEmpty()) {
+            return;
+        }
 
         TreeMap<Integer, Long> byYear = new TreeMap<>();
         for (DBReader.MonthlySkipItem m : stats.monthly) {
@@ -257,12 +265,16 @@ public class TimeSavedStatisticsFragment extends Fragment {
         }
 
         long maxYear = 1;
-        for (Long v : byYear.values()) maxYear = Math.max(maxYear, v);
+        for (Long v : byYear.values()) {
+            maxYear = Math.max(maxYear, v);
+        }
 
         // Render newest year first.
         boolean first = true;
         for (Integer year : byYear.descendingKeySet()) {
-            if (!first) yearlyContainer.addView(buildHairline(ctx));
+            if (!first) {
+                yearlyContainer.addView(buildHairline(ctx));
+            }
             yearlyContainer.addView(buildYearlyRow(year, byYear.get(year), maxYear, ctx));
             first = false;
         }
@@ -334,10 +346,14 @@ public class TimeSavedStatisticsFragment extends Fragment {
      *  synchronously so the selection visual updates immediately. */
     private void onYearTap(int year) {
         Context ctx = getContext();
-        if (ctx == null || allTimeStats == null) return;
+        if (ctx == null || allTimeStats == null) {
+            return;
+        }
         if (selectedYear != null && selectedYear == year) {
             selectedYear = null;
-            if (yearQueryDisposable != null) yearQueryDisposable.dispose();
+            if (yearQueryDisposable != null) {
+                yearQueryDisposable.dispose();
+            }
             applyTypeBreakdown(allTimeStats.totalMs, allTimeStats.introMs,
                     allTimeStats.outroMs, allTimeStats.adMs,
                     allTimeStats.silenceMs, allTimeStats.speedMs, "All time");

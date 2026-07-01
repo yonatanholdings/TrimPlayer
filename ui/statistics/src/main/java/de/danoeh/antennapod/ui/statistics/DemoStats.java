@@ -59,7 +59,9 @@ public final class DemoStats {
         //    0=speed, 1=silence, 2=ads, 3=intros, 4=outros ──────────────────
         // Weighted by byDay so heavy listening days have heavier saved time.
         long byDayTotal = 0;
-        for (long m : s.byDay) byDayTotal += m;
+        for (long m : s.byDay) {
+            byDayTotal += m;
+        }
         long[] saved = { s.savedSpeedMs, s.savedSilenceMs, s.savedAdsMs,
                          s.savedIntrosMs, s.savedOutrosMs };
         for (int d = 0; d < 7; d++) {
@@ -120,7 +122,9 @@ public final class DemoStats {
         };
         float[] hrs = { 72.3f, 58.1f, 49.7f, 41.4f, 33.0f, 28.6f, 21.9f, 17.4f };
         float totalShowHrs = 0;
-        for (float h : hrs) totalShowHrs += h;
+        for (float h : hrs) {
+            totalShowHrs += h;
+        }
         for (int i = 0; i < titles.length; i++) {
             int pct = Math.round(hrs[i] * 100f / totalShowHrs);
             s.shows.add(new DBReader.EditorialStats.ShowItem(
@@ -151,7 +155,9 @@ public final class DemoStats {
      *  cell shows the same rows across taps. */
     public static java.util.List<FakeEpisode> fakeEpisodesForDay(int weekIdx, int dayIdx, long listenedMs) {
         java.util.List<FakeEpisode> out = new java.util.ArrayList<>();
-        if (listenedMs <= 0) return out;
+        if (listenedMs <= 0) {
+            return out;
+        }
 
         String[] feedTitles = {
                 "The Daily", "Hard Fork", "Lex Fridman Podcast",

@@ -20,8 +20,12 @@ public final class JaroWinkler {
     public static double similarity(String s1, String s2) {
         if (s1 == null) s1 = "";
         if (s2 == null) s2 = "";
-        if (s1.isEmpty() && s2.isEmpty()) return 1.0;
-        if (s1.isEmpty() || s2.isEmpty()) return 0.0;
+        if (s1.isEmpty() && s2.isEmpty()) {
+            return 1.0;
+        }
+        if (s1.isEmpty() || s2.isEmpty()) {
+            return 0.0;
+        }
 
         int len1 = s1.length();
         int len2 = s2.length();
@@ -37,22 +41,34 @@ public final class JaroWinkler {
             int start = Math.max(0, i - matchDistance);
             int end = Math.min(i + matchDistance + 1, len2);
             for (int j = start; j < end; j++) {
-                if (m2[j]) continue;
-                if (s1.charAt(i) != s2.charAt(j)) continue;
+                if (m2[j]) {
+                    continue;
+                }
+                if (s1.charAt(i) != s2.charAt(j)) {
+                    continue;
+                }
                 m1[i] = true;
                 m2[j] = true;
                 matches++;
                 break;
             }
         }
-        if (matches == 0) return 0.0;
+        if (matches == 0) {
+            return 0.0;
+        }
 
         int transpositions = 0;
         int k = 0;
         for (int i = 0; i < len1; i++) {
-            if (!m1[i]) continue;
-            while (!m2[k]) k++;
-            if (s1.charAt(i) != s2.charAt(k)) transpositions++;
+            if (!m1[i]) {
+                continue;
+            }
+            while (!m2[k]) {
+                k++;
+            }
+            if (s1.charAt(i) != s2.charAt(k)) {
+                transpositions++;
+            }
             k++;
         }
         double jaro = (

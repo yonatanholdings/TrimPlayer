@@ -175,9 +175,13 @@ public class PortcastExporter {
             if (prefs != null) {
                 JSONArray tags = new JSONArray();
                 for (String tag : prefs.getTags()) {
-                    if (tag == null) continue;
+                    if (tag == null) {
+                        continue;
+                    }
                     String trimmed = tag.trim();
-                    if (trimmed.isEmpty() || FeedPreferences.TAG_ROOT.equals(trimmed)) continue;
+                    if (trimmed.isEmpty() || FeedPreferences.TAG_ROOT.equals(trimmed)) {
+                        continue;
+                    }
                     tags.put(trimmed);
                 }
                 if (tags.length() > 0) {
@@ -205,7 +209,9 @@ public class PortcastExporter {
             FeedMedia media = item.getMedia();
             String enclosureUrl = media != null ? media.getDownloadUrl() : null;
             // Spec requires at least one of guid/enclosureUrl on every episode.
-            if (isBlank(guid) && isBlank(enclosureUrl)) continue;
+            if (isBlank(guid) && isBlank(enclosureUrl)) {
+                continue;
+            }
 
             JSONObject e = new JSONObject();
             e.put("episodeStateId", "urn:trimplayer:item:" + item.getId());
@@ -264,7 +270,9 @@ public class PortcastExporter {
             String guid = item.getItemIdentifier();
             FeedMedia media = item.getMedia();
             String enclosureUrl = media != null ? media.getDownloadUrl() : null;
-            if (isBlank(guid) && isBlank(enclosureUrl)) continue;
+            if (isBlank(guid) && isBlank(enclosureUrl)) {
+                continue;
+            }
 
             JSONObject q = new JSONObject();
             q.put("position", position++);
@@ -292,7 +300,9 @@ public class PortcastExporter {
         JSONObject perFeed = new JSONObject();
         for (Feed feed : subscribed) {
             FeedPreferences fp = feed.getPreferences();
-            if (fp == null) continue;
+            if (fp == null) {
+                continue;
+            }
             JSONObject entry = new JSONObject();
             boolean any = false;
             if (fp.getFeedPlaybackSpeed() > 0

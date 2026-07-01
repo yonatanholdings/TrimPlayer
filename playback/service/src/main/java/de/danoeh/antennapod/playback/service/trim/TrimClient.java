@@ -161,7 +161,9 @@ public class TrimClient {
         return api.authConfig();
     }
 
-    /** Two-way library delta sync. {@code bearer} is "Bearer &lt;session token&gt;". */
+    /**
+     * Two-way library delta sync. {@code bearer} is "Bearer &lt;session token&gt;".
+     */
     public Call<SyncResponse> accountSync(String bearer, SyncRequest request) {
         return api.accountSync(bearer, request);
     }

@@ -118,11 +118,17 @@ public class PodcastAddictStateWorker extends Worker {
         List<PodcastAddictImporter.EpisodeState> remaining = new ArrayList<>(states);
         for (FeedItem item : itemByGuid.values()) {
             PodcastAddictImporter.EpisodeState state = findState(item, byGuid, byUrl);
-            if (state == null) continue;
+            if (state == null) {
+                continue;
+            }
             applyState(item, state);
             remaining.remove(state);
-            if (state.guid != null) byGuid.remove(state.guid);
-            if (state.downloadUrl != null) byUrl.remove(state.downloadUrl);
+            if (state.guid != null) {
+                byGuid.remove(state.guid);
+            }
+            if (state.downloadUrl != null) {
+                byUrl.remove(state.downloadUrl);
+            }
         }
         Log.d(TAG, "Applied " + (states.size() - remaining.size()) + " states, "
                 + remaining.size() + " still pending");
@@ -165,7 +171,9 @@ public class PodcastAddictStateWorker extends Worker {
             List<PodcastAddictImporter.QueueEntry> entries,
             Map<String, FeedItem> itemByGuid,
             Map<String, FeedItem> itemByUrl) {
-        if (entries.isEmpty()) return java.util.Collections.emptyList();
+        if (entries.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
 
         // Existing queue IDs to skip duplicates we already imported. DBReader
         // returns a LongList (primitive-friendly), so copy out manually.
@@ -183,7 +191,9 @@ public class PodcastAddictStateWorker extends Worker {
                 remaining.add(q);
                 continue;
             }
-            if (alreadyQueued.contains(item.getId())) continue;
+            if (alreadyQueued.contains(item.getId())) {
+                continue;
+            }
             toEnqueue.add(item);
             alreadyQueued.add(item.getId());
         }
@@ -205,11 +215,15 @@ public class PodcastAddictStateWorker extends Worker {
             Map<String, FeedItem> itemByGuid, Map<String, FeedItem> itemByUrl) {
         if (q.guid != null && !q.guid.isEmpty()) {
             FeedItem item = itemByGuid.get(q.guid);
-            if (item != null) return item;
+            if (item != null) {
+                return item;
+            }
         }
         if (q.downloadUrl != null && !q.downloadUrl.isEmpty()) {
             FeedItem item = itemByUrl.get(q.downloadUrl);
-            if (item != null) return item;
+            if (item != null) {
+                return item;
+            }
         }
         return null;
     }

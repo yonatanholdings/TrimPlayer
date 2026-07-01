@@ -22,12 +22,16 @@ public final class TrimAccountManager {
 
     private TrimAccountManager() { }
 
-    /** @return null on success, else a human-readable error message. */
+    /**
+     * @return null on success, else a human-readable error message.
+     */
     public static String login(String email, String password) {
         return authenticate(false, email, password);
     }
 
-    /** @return null on success, else a human-readable error message. */
+    /**
+     * @return null on success, else a human-readable error message.
+     */
     public static String signup(String email, String password) {
         return authenticate(true, email, password);
     }

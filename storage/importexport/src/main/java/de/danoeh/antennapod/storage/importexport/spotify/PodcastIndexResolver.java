@@ -86,9 +86,13 @@ public final class PodcastIndexResolver implements ResolverImpl {
         int considered = 0;
 
         for (PodcastSearchResult r : results) {
-            if (considered >= MAX_RESULTS_TO_CONSIDER) break;
+            if (considered >= MAX_RESULTS_TO_CONSIDER) {
+                break;
+            }
             considered++;
-            if (r == null || r.feedUrl == null) continue;
+            if (r == null || r.feedUrl == null) {
+                continue;
+            }
             double titleScore = JaroWinkler.similarity(normTitle, normalize(r.title));
             double authorScore = JaroWinkler.similarity(normAuthor, normalize(r.author));
             double combined = TITLE_WEIGHT * titleScore + AUTHOR_WEIGHT * authorScore;

@@ -40,7 +40,9 @@ public final class EntitlementStore {
         void onEntitlementChanged(Snapshot snapshot);
     }
 
-    /** Immutable snapshot. Build via {@link #fromServer} or {@link #unknown}. */
+    /**
+     * Immutable snapshot. Build via {@link #fromServer} or {@link #unknown}.
+     */
     public static final class Snapshot {
         public final String status;          // "ok" | "quota_exceeded" | "pro" | null (unknown)
         public final String source;          // play_subscription | play_lifetime | beta_grandfather | null
@@ -68,7 +70,9 @@ public final class EntitlementStore {
         }
 
         public static Snapshot fromServer(TrimClient.EntitlementStatus ent) {
-            if (ent == null) return unknown();
+            if (ent == null) {
+                return unknown();
+            }
             boolean visible = ent.pro_ui_visible != null && ent.pro_ui_visible;
             return new Snapshot(ent.status, ent.source, ent.used, ent.quota, ent.resets_at, visible);
         }
@@ -112,7 +116,9 @@ public final class EntitlementStore {
     /** Update from a /segments response. No-op if {@code ent} is null. Notifies
      *  listeners only when something actually changed. */
     public void updateFromServer(TrimClient.EntitlementStatus ent) {
-        if (ent == null) return;
+        if (ent == null) {
+            return;
+        }
         Snapshot next = Snapshot.fromServer(ent);
         Snapshot prev = current;
         if (snapshotsEqual(prev, next)) {
@@ -158,15 +164,21 @@ public final class EntitlementStore {
     }
 
     public void addListener(Listener l) {
-        if (l != null) listeners.addIfAbsent(l);
+        if (l != null) {
+            listeners.addIfAbsent(l);
+        }
     }
 
     public void removeListener(Listener l) {
-        if (l != null) listeners.remove(l);
+        if (l != null) {
+            listeners.remove(l);
+        }
     }
 
     private static boolean snapshotsEqual(Snapshot a, Snapshot b) {
-        if (a == null || b == null) return a == b;
+        if (a == null || b == null) {
+            return a == b;
+        }
         return eq(a.status, b.status)
                 && eq(a.source, b.source)
                 && eq(a.quotaUsed, b.quotaUsed)

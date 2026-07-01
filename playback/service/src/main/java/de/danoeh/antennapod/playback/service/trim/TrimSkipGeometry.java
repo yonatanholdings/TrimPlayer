@@ -15,7 +15,9 @@ public final class TrimSkipGeometry {
     private TrimSkipGeometry() {
     }
 
-    /** Segment end in ms, capped to the episode duration when it is known ({@code durationMs > 0}). */
+    /**
+     * Segment end in ms, capped to the episode duration when it is known ({@code durationMs > 0}).
+     */
     public static int cappedEndMs(double segmentEndSeconds, int durationMs) {
         int endMs = (int) (segmentEndSeconds * 1000);
         if (durationMs > 0) {

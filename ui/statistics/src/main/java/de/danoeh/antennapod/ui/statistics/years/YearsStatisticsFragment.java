@@ -1,7 +1,6 @@
 package de.danoeh.antennapod.ui.statistics.years;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -67,10 +66,14 @@ public class YearsStatisticsFragment extends Fragment {
     }
 
     private void bind(DBReader.EditorialStats s) {
-        if (s.yearly.isEmpty()) return;
+        if (s.yearly.isEmpty()) {
+            return;
+        }
 
         float totalHrs = 0;
-        for (DBReader.EditorialStats.YearItem y : s.yearly) totalHrs += y.hrs;
+        for (DBReader.EditorialStats.YearItem y : s.yearly) {
+            totalHrs += y.hrs;
+        }
         long totalHoursRounded = Math.round(totalHrs);
         long totalDays = totalHoursRounded / 24;
         long remHours = totalHoursRounded % 24;
@@ -186,7 +189,9 @@ public class YearsStatisticsFragment extends Fragment {
     private void onYearTap(int year) {
         if (selectedYear != null && selectedYear == year) {
             selectedYear = null;
-            if (yearQueryDisposable != null) yearQueryDisposable.dispose();
+            if (yearQueryDisposable != null) {
+                yearQueryDisposable.dispose();
+            }
             yearDrilldown.setVisibility(View.GONE);
         } else {
             selectedYear = year;
@@ -195,7 +200,9 @@ public class YearsStatisticsFragment extends Fragment {
         // Re-render year list so selection visual updates.
         DBReader.EditorialStats s = new ViewModelProvider(requireParentFragment())
                 .get(StatisticsViewModel.class).editorial().getValue();
-        if (s != null) bind(s);
+        if (s != null) {
+            bind(s);
+        }
     }
 
     /** Async: fetch top shows for the given year and render up to 5 rows in
@@ -210,7 +217,9 @@ public class YearsStatisticsFragment extends Fragment {
         }
         long from = startOfYear(year);
         long to = startOfYear(year + 1) - 1;
-        if (yearQueryDisposable != null) yearQueryDisposable.dispose();
+        if (yearQueryDisposable != null) {
+            yearQueryDisposable.dispose();
+        }
         yearQueryDisposable = Single
                 .fromCallable(() -> DBReader.getStatistics(false, from, to))
                 .subscribeOn(Schedulers.io())
@@ -263,8 +272,12 @@ public class YearsStatisticsFragment extends Fragment {
 
         int count = 0;
         for (StatisticsItem it : sorted) {
-            if (it.timePlayed <= 0) continue;
-            if (count >= 5) break;
+            if (it.timePlayed <= 0) {
+                continue;
+            }
+            if (count >= 5) {
+                break;
+            }
             yearDrilldownRows.addView(buildTopShowRow(ctx, it, maxPlayed));
             count++;
         }

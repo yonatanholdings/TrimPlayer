@@ -76,15 +76,23 @@ public final class FeedColorCache {
     }
 
     private static int pickColor(@Nullable Palette palette, int fallback) {
-        if (palette == null) return fallback;
+        if (palette == null) {
+            return fallback;
+        }
         int c = palette.getVibrantColor(0);
-        if (c == 0) c = palette.getMutedColor(0);
-        if (c == 0) c = palette.getDominantColor(fallback);
+        if (c == 0) {
+            c = palette.getMutedColor(0);
+        }
+        if (c == 0) {
+            c = palette.getDominantColor(fallback);
+        }
         // Floor lightness to keep colors from disappearing on a cream paper bg.
         // (Pure-white covers can extract near-white; nudge them down to a usable tone.)
         float[] hsl = new float[3];
         Color.colorToHSV(c, hsl);
-        if (hsl[2] > 0.85f) hsl[2] = 0.65f;
+        if (hsl[2] > 0.85f) {
+            hsl[2] = 0.65f;
+        }
         return Color.HSVToColor(hsl);
     }
 }

@@ -72,7 +72,9 @@ public final class SpotifyShowResolver {
      * {@code Unresolvable("budget-exceeded")}.
      */
     public List<Resolution> resolveAll(List<ResolverInput> inputs, @Nullable ProgressCallback progress) {
-        if (inputs == null || inputs.isEmpty()) return Collections.emptyList();
+        if (inputs == null || inputs.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         final int n = inputs.size();
         final Resolution[] out = new Resolution[n];
@@ -129,7 +131,9 @@ public final class SpotifyShowResolver {
     private Resolution resolveOne(ResolverInput input) {
         if (input.spotifyShowId != null) {
             Resolution cached = cache.get(input.spotifyShowId);
-            if (cached != null) return cached;
+            if (cached != null) {
+                return cached;
+            }
         }
         Resolution last = new Resolution.Unresolvable("no-resolver-attempted");
         for (ResolverImpl r : chain) {
@@ -140,7 +144,9 @@ public final class SpotifyShowResolver {
                 outcome = new Resolution.Unresolvable(r.name() + "-threw: " + e.getMessage());
             }
             last = outcome != null ? outcome : new Resolution.Unresolvable(r.name() + "-null");
-            if (last.isResolved()) break;
+            if (last.isResolved()) {
+                break;
+            }
         }
         if (input.spotifyShowId != null) {
             cache.put(input.spotifyShowId, last);

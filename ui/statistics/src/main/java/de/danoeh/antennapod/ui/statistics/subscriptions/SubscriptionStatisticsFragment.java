@@ -72,7 +72,9 @@ public class SubscriptionStatisticsFragment extends Fragment {
         // Donut tap: select that segment, highlight + scroll to the matching
         // row in the list. Inverse of the row-tap path above.
         donutChart.setOnSegmentClickListener(index -> {
-            if (index < 0 || index >= adapter.getItemCount()) return;
+            if (index < 0 || index >= adapter.getItemCount()) {
+                return;
+            }
             adapter.setHighlightedIndex(donutChart.getSelectedIndex());
             recycler.smoothScrollToPosition(index);
         });
@@ -90,7 +92,9 @@ public class SubscriptionStatisticsFragment extends Fragment {
 
         // Donut center text
         float totalHrs = 0;
-        for (DBReader.EditorialStats.ShowItem sh : s.shows) totalHrs += sh.hrs;
+        for (DBReader.EditorialStats.ShowItem sh : s.shows) {
+            totalHrs += sh.hrs;
+        }
         donutKicker.setText("Total");
         donutCenter.setText(String.format(Locale.getDefault(), "%.0fh", totalHrs));
         donutCaption.setText(s.shows.size() + " shows");
@@ -139,8 +143,12 @@ public class SubscriptionStatisticsFragment extends Fragment {
         void setHighlightedIndex(int index) {
             int old = highlightedIndex;
             highlightedIndex = index;
-            if (old >= 0) notifyItemChanged(old);
-            if (index >= 0) notifyItemChanged(index);
+            if (old >= 0) {
+                notifyItemChanged(old);
+            }
+            if (index >= 0) {
+                notifyItemChanged(index);
+            }
         }
 
         void setData(List<DBReader.EditorialStats.ShowItem> items) {
@@ -179,7 +187,9 @@ public class SubscriptionStatisticsFragment extends Fragment {
                 // checking the bound feedId still matches before applying.
                 final long requested = sh.feedId;
                 FeedColorCache.apply(ctx, sh.feedId, sh.imageUrl, sh.color, color -> {
-                    if (h.boundFeedId == requested) applyAccentColor(h, color);
+                    if (h.boundFeedId == requested) {
+                        applyAccentColor(h, color);
+                    }
                 });
                 final int rowPos = pos;
                 h.itemView.setOnClickListener(v -> listener.onShowClick(sh.feedId, rowPos));
@@ -207,7 +217,10 @@ public class SubscriptionStatisticsFragment extends Fragment {
         public int getItemCount() { return data.size(); }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView ordinal, title, hours, pct;
+            TextView ordinal;
+            TextView title;
+            TextView hours;
+            TextView pct;
             ImageView cover;
             ProgressBar bar;
             /** Tracks which feed this holder is currently bound to, so async

@@ -73,7 +73,9 @@ public class StreamgraphView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (yearly == null || yearly.size() < 2) return;
+        if (yearly == null || yearly.size() < 2) {
+            return;
+        }
         float d = getResources().getDisplayMetrics().density;
         int n = yearly.size();
 

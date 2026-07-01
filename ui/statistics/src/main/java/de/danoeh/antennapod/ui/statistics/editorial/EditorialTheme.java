@@ -45,19 +45,58 @@ public final class EditorialTheme {
     // ── Legacy constants ──────────────────────────────────────────────────────
     // Kept for callers that don't have a Context handy (e.g. show-color palette).
     // Avoid using these in new code; prefer the context-aware getters above.
-    /** @deprecated use {@link #paper(Context)}. */ @Deprecated public static final int BG          = 0xFFFFFFFF;
-    /** @deprecated use {@link #paperAlt(Context)}. */ @Deprecated public static final int PAPER       = 0xFFFBF8F1;
-    /** @deprecated use {@link #ink(Context)}. */ @Deprecated public static final int INK         = 0xFF15110D;
-    /** @deprecated use {@link #inkSoft(Context)}. */ @Deprecated public static final int INK_SOFT    = 0xFF3A322A;
-    /** @deprecated use {@link #inkMuted(Context)}. */ @Deprecated public static final int INK_MUTE    = 0xFF7A6E60;
-    /** @deprecated use {@link #vermilion(Context)}. */ @Deprecated public static final int ACCENT      = 0xFFB8442E;
-    /** @deprecated use {@link #vermilionSoft(Context)}. */ @Deprecated public static final int ACCENT_SOFT = 0xFFE8B9A4;
-    /** @deprecated use {@link #vermilionTint(Context)}. */ @Deprecated public static final int ACCENT_TINT = 0xFFF3D6C4;
-    /** @deprecated use {@link #gold(Context)}. */ @Deprecated public static final int GOLD        = 0xFFA47436;
-    /** @deprecated use {@link #goldSoft(Context)}. */ @Deprecated public static final int GOLD_SOFT   = 0xFFE1C79A;
-    /** @deprecated use {@link #ruleFaint(Context)}. */ @Deprecated public static final int FAINT       = 0x1A15110D;
-    /** @deprecated use {@link #ruleVeryFaint(Context)}. */ @Deprecated public static final int VERY_FAINT  = 0x0D15110D;
-    /** @deprecated use {@link #ruleThick(Context)}. */ @Deprecated public static final int RULE        = 0xFF15110D;
+    /**
+     * @deprecated use {@link #paper(Context)}.
+     */
+    @Deprecated public static final int BG          = 0xFFFFFFFF;
+    /**
+     * @deprecated use {@link #paperAlt(Context)}.
+     */
+    @Deprecated public static final int PAPER       = 0xFFFBF8F1;
+    /**
+     * @deprecated use {@link #ink(Context)}.
+     */
+    @Deprecated public static final int INK         = 0xFF15110D;
+    /**
+     * @deprecated use {@link #inkSoft(Context)}.
+     */
+    @Deprecated public static final int INK_SOFT    = 0xFF3A322A;
+    /**
+     * @deprecated use {@link #inkMuted(Context)}.
+     */
+    @Deprecated public static final int INK_MUTE    = 0xFF7A6E60;
+    /**
+     * @deprecated use {@link #vermilion(Context)}.
+     */
+    @Deprecated public static final int ACCENT      = 0xFFB8442E;
+    /**
+     * @deprecated use {@link #vermilionSoft(Context)}.
+     */
+    @Deprecated public static final int ACCENT_SOFT = 0xFFE8B9A4;
+    /**
+     * @deprecated use {@link #vermilionTint(Context)}.
+     */
+    @Deprecated public static final int ACCENT_TINT = 0xFFF3D6C4;
+    /**
+     * @deprecated use {@link #gold(Context)}.
+     */
+    @Deprecated public static final int GOLD        = 0xFFA47436;
+    /**
+     * @deprecated use {@link #goldSoft(Context)}.
+     */
+    @Deprecated public static final int GOLD_SOFT   = 0xFFE1C79A;
+    /**
+     * @deprecated use {@link #ruleFaint(Context)}.
+     */
+    @Deprecated public static final int FAINT       = 0x1A15110D;
+    /**
+     * @deprecated use {@link #ruleVeryFaint(Context)}.
+     */
+    @Deprecated public static final int VERY_FAINT  = 0x0D15110D;
+    /**
+     * @deprecated use {@link #ruleThick(Context)}.
+     */
+    @Deprecated public static final int RULE        = 0xFF15110D;
 
     // ── Show palette ──────────────────────────────────────────────────────────
     public static final int[] SHOW_COLORS = {
@@ -71,36 +110,52 @@ public final class EditorialTheme {
     private static volatile boolean fontsLoaded;
 
     public static Typeface getSerif(Context ctx) {
-        if (!fontsLoaded) loadFonts(ctx);
+        if (!fontsLoaded) {
+            loadFonts(ctx);
+        }
         return cachedSerif != null ? cachedSerif : Typeface.SERIF;
     }
 
     public static Typeface getMono(Context ctx) {
-        if (!fontsLoaded) loadFonts(ctx);
+        if (!fontsLoaded) {
+            loadFonts(ctx);
+        }
         return cachedMono != null ? cachedMono : Typeface.MONOSPACE;
     }
 
     private static synchronized void loadFonts(Context ctx) {
-        if (fontsLoaded) return;
+        if (fontsLoaded) {
+            return;
+        }
         fontsLoaded = true;
-        if (!FONTS_BUNDLED) return;
+        if (!FONTS_BUNDLED) {
+            return;
+        }
 
         try {
             int serifResId = ctx.getResources().getIdentifier(
                     "instrument_serif_regular", "font", ctx.getPackageName());
             if (serifResId != 0) {
                 Typeface t = androidx.core.content.res.ResourcesCompat.getFont(ctx, serifResId);
-                if (t != null) cachedSerif = t;
+                if (t != null) {
+                    cachedSerif = t;
+                }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
 
         try {
             int monoResId = ctx.getResources().getIdentifier(
                     "ibm_plex_mono_regular", "font", ctx.getPackageName());
             if (monoResId != 0) {
                 Typeface t = androidx.core.content.res.ResourcesCompat.getFont(ctx, monoResId);
-                if (t != null) cachedMono = t;
+                if (t != null) {
+                    cachedMono = t;
+                }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
     }
 }

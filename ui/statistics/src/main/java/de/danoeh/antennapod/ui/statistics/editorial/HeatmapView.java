@@ -58,7 +58,9 @@ public class HeatmapView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if (cellClickListener == null || data == null) return super.onTouchEvent(e);
+        if (cellClickListener == null || data == null) {
+            return super.onTouchEvent(e);
+        }
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 downX = e.getX();
@@ -89,7 +91,9 @@ public class HeatmapView extends View {
 
     /** Returns [weekIdx, dayIdx] for a touch coordinate, or null if outside grid. */
     private int[] hitTest(float x, float y) {
-        if (data == null || data.length == 0) return null;
+        if (data == null || data.length == 0) {
+            return null;
+        }
         float d = getResources().getDisplayMetrics().density;
         float labelColW = 16 * d;
         float gridLeft = 24 * d + labelColW;
@@ -100,10 +104,14 @@ public class HeatmapView extends View {
         float gap = 2 * d;
         float cellSize = cellW - gap;
 
-        if (x < gridLeft) return null;
+        if (x < gridLeft) {
+            return null;
+        }
         int w = (int) ((x - gridLeft) / cellW);
         int dw = (int) (y / (cellSize + gap));
-        if (w < 0 || w >= weeks || dw < 0 || dw >= days) return null;
+        if (w < 0 || w >= weeks || dw < 0 || dw >= days) {
+            return null;
+        }
         return new int[] {w, dw};
     }
 
@@ -123,7 +131,9 @@ public class HeatmapView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (data == null) return;
+        if (data == null) {
+            return;
+        }
         float d = getResources().getDisplayMetrics().density;
         float labelColW = 16 * d;
         float gridLeft = 24 * d + labelColW;

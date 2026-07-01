@@ -1076,7 +1076,9 @@ public final class DBReader {
             int iMin = c.getColumnIndexOrThrow("minutes");
             while (c.moveToNext()) {
                 int h = c.getInt(iHour);
-                if (h >= 0 && h < 24) s.byHour[h] = c.getLong(iMin);
+                if (h >= 0 && h < 24) {
+                    s.byHour[h] = c.getLong(iMin);
+                }
             }
         }
 
@@ -1092,7 +1094,9 @@ public final class DBReader {
             int iMin = c.getColumnIndexOrThrow("minutes");
             while (c.moveToNext()) {
                 int d = c.getInt(iDow);
-                if (d >= 0 && d < 7) s.byDay[d] = c.getLong(iMin);
+                if (d >= 0 && d < 7) {
+                    s.byDay[d] = c.getLong(iMin);
+                }
             }
         }
 
@@ -1103,7 +1107,9 @@ public final class DBReader {
         try (Cursor c = adapter.getDailyListeningCursor(heatmapStart, nowMs)) {
             int iDay = c.getColumnIndexOrThrow("day");
             int iMs = c.getColumnIndexOrThrow("ms");
-            while (c.moveToNext()) dailyMs.put(c.getString(iDay), c.getLong(iMs));
+            while (c.moveToNext()) {
+                dailyMs.put(c.getString(iDay), c.getLong(iMs));
+            }
         }
 
         // Build heatmap: bucket 0-4 by quintile of max
@@ -1137,8 +1143,10 @@ public final class DBReader {
         long weekStart = nowMs - 12L * 7 * 86400_000L;
         java.util.Calendar wCal = java.util.Calendar.getInstance();
         wCal.setTimeInMillis(weekStart);
-        wCal.set(java.util.Calendar.HOUR_OF_DAY, 0); wCal.set(java.util.Calendar.MINUTE, 0);
-        wCal.set(java.util.Calendar.SECOND, 0); wCal.set(java.util.Calendar.MILLISECOND, 0);
+        wCal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        wCal.set(java.util.Calendar.MINUTE, 0);
+        wCal.set(java.util.Calendar.SECOND, 0);
+        wCal.set(java.util.Calendar.MILLISECOND, 0);
         for (int w = 0; w < 12; w++) {
             long weekMs = 0;
             for (int d = 0; d < 7; d++) {
@@ -1151,8 +1159,10 @@ public final class DBReader {
 
         // streak: consecutive days with listening ending today
         java.util.Calendar streakCal = java.util.Calendar.getInstance();
-        streakCal.set(java.util.Calendar.HOUR_OF_DAY, 0); streakCal.set(java.util.Calendar.MINUTE, 0);
-        streakCal.set(java.util.Calendar.SECOND, 0); streakCal.set(java.util.Calendar.MILLISECOND, 0);
+        streakCal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        streakCal.set(java.util.Calendar.MINUTE, 0);
+        streakCal.set(java.util.Calendar.SECOND, 0);
+        streakCal.set(java.util.Calendar.MILLISECOND, 0);
         int streak = 0;
         for (int i = 0; i < 365; i++) {
             String key = sdf.format(streakCal.getTime());
@@ -1193,9 +1203,13 @@ public final class DBReader {
             int iMs = c.getColumnIndexOrThrow("total_ms");
             while (c.moveToNext()) {
                 int dow = c.getInt(iDow);
-                if (dow < 0 || dow > 6) continue;
+                if (dow < 0 || dow > 6) {
+                    continue;
+                }
                 int cat = skipCategoryIndex(c.getString(iType));
-                if (cat < 0) continue;
+                if (cat < 0) {
+                    continue;
+                }
                 s.byDaySaved[dow][cat] = c.getLong(iMs);
             }
         }
@@ -1203,7 +1217,9 @@ public final class DBReader {
         // Total played (all time) — total_duration is already in milliseconds
         try (Cursor c = adapter.getMonthlyStatisticsCursor()) {
             int iMs = c.getColumnIndexOrThrow("total_duration");
-            while (c.moveToNext()) s.totalPlayedMs += c.getLong(iMs);
+            while (c.moveToNext()) {
+                s.totalPlayedMs += c.getLong(iMs);
+            }
         }
 
         // Episode counts. Abandoned = started, not finished, no playback activity
@@ -1236,7 +1252,9 @@ public final class DBReader {
         StatisticsResult feedStats = getStatistics(false, 0, Long.MAX_VALUE);
         Collections.sort(feedStats.feedTime, (a, b) -> Long.compare(b.timePlayed, a.timePlayed));
         long totalPlayed = 0;
-        for (StatisticsItem it : feedStats.feedTime) totalPlayed += it.timePlayed;
+        for (StatisticsItem it : feedStats.feedTime) {
+            totalPlayed += it.timePlayed;
+        }
 
         int[] palette = {0xFFf4a261, 0xFF2a9d8f, 0xFFe76f51, 0xFF264653,
                          0xFFa06cd5, 0xFF83c5be, 0xFFbc4749, 0xFF588157, 0xFF9aa0a6};
@@ -1244,7 +1262,9 @@ public final class DBReader {
         float otherHrs = 0;
         long threshold = totalPlayed / 25; // <4% → "Other"
         for (StatisticsItem it : feedStats.feedTime) {
-            if (it.timePlayed == 0) continue;
+            if (it.timePlayed == 0) {
+                continue;
+            }
             int pct = totalPlayed > 0 ? (int) Math.round(it.timePlayed * 100.0 / totalPlayed) : 0;
             if (it.timePlayed < threshold || s.shows.size() >= 8) {
                 otherHrs += it.timePlayed / 3_600_000f;
@@ -1266,7 +1286,9 @@ public final class DBReader {
 
     /** Maps the skip_type string to the byDaySaved column index. -1 if unknown. */
     private static int skipCategoryIndex(String type) {
-        if (type == null) return -1;
+        if (type == null) {
+            return -1;
+        }
         switch (type) {
             case "speed":   return 0;
             case "silence": return 1;
@@ -1310,13 +1332,17 @@ public final class DBReader {
         try (Cursor c = adapter.getFeedDailyListeningCursor(feedId, weekStart, nowMs)) {
             int iDay = c.getColumnIndexOrThrow("day");
             int iMs = c.getColumnIndexOrThrow("ms");
-            while (c.moveToNext()) dailyMs.put(c.getString(iDay), c.getLong(iMs));
+            while (c.moveToNext()) {
+                dailyMs.put(c.getString(iDay), c.getLong(iMs));
+            }
         }
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
         java.util.Calendar wCal = java.util.Calendar.getInstance();
         wCal.setTimeInMillis(weekStart);
-        wCal.set(java.util.Calendar.HOUR_OF_DAY, 0); wCal.set(java.util.Calendar.MINUTE, 0);
-        wCal.set(java.util.Calendar.SECOND, 0); wCal.set(java.util.Calendar.MILLISECOND, 0);
+        wCal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        wCal.set(java.util.Calendar.MINUTE, 0);
+        wCal.set(java.util.Calendar.SECOND, 0);
+        wCal.set(java.util.Calendar.MILLISECOND, 0);
         float[] weekly = new float[12];
         for (int w = 0; w < 12; w++) {
             long wMs = 0;

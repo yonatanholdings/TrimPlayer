@@ -163,7 +163,9 @@ public class PortcastStateWorker extends Worker {
             List<PortcastImporter.QueueEntry> entries,
             Map<String, FeedItem> itemByGuid,
             Map<String, FeedItem> itemByUrl) {
-        if (entries.isEmpty()) return new ArrayList<>();
+        if (entries.isEmpty()) {
+            return new ArrayList<>();
+        }
 
         Set<Long> alreadyQueued = new HashSet<>();
         LongList queueIds = DBReader.getQueueIDList();
@@ -179,7 +181,9 @@ public class PortcastStateWorker extends Worker {
                 remaining.add(q);
                 continue;
             }
-            if (alreadyQueued.contains(item.getId())) continue;
+            if (alreadyQueued.contains(item.getId())) {
+                continue;
+            }
             toEnqueue.add(item);
             alreadyQueued.add(item.getId());
         }
@@ -225,7 +229,9 @@ public class PortcastStateWorker extends Worker {
         }
         FeedItem byTitle = PortcastImporter.matchByFeedAndTitle(
                 state.feedUrl, state.title, itemByFeedAndTitle);
-        if (byTitle != null) return byTitle;
+        if (byTitle != null) {
+            return byTitle;
+        }
         return null;
     }
 

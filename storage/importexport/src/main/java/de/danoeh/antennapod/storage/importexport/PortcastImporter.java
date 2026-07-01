@@ -218,7 +218,9 @@ public class PortcastImporter {
         if (subs != null) {
             for (int i = 0; i < subs.length(); i++) {
                 PortFeed pf = parseSubscription(subs.getJSONObject(i), perFeedPrefs);
-                if (pf == null) continue;
+                if (pf == null) {
+                    continue;
+                }
                 preview.feeds.add(pf);
             }
         }
@@ -363,7 +365,9 @@ public class PortcastImporter {
         // Spec allows feedUrl OR podcastGuid OR platformRefs. We accept the
         // first and last; podcastGuid-only subs remain unsupported (rare
         // enough that adding GUID-resolution isn't worth M2's complexity).
-        if (TextUtils.isEmpty(feedUrl) && !hasPlatformRefs) return null;
+        if (TextUtils.isEmpty(feedUrl) && !hasPlatformRefs) {
+            return null;
+        }
 
         PortFeed pf = new PortFeed();
         pf.subscriptionId = sub.optString("subscriptionId", "");
@@ -374,7 +378,9 @@ public class PortcastImporter {
         if (platformRefs != null) {
             for (int i = 0; i < platformRefs.length(); i++) {
                 String ref = platformRefs.optString(i, "");
-                if (!ref.isEmpty()) pf.platformRefs.add(ref);
+                if (!ref.isEmpty()) {
+                    pf.platformRefs.add(ref);
+                }
             }
         }
         pf.needsResolution = TextUtils.isEmpty(feedUrl);
@@ -383,7 +389,9 @@ public class PortcastImporter {
         if (tags != null) {
             for (int i = 0; i < tags.length(); i++) {
                 String tag = tags.optString(i, "");
-                if (!tag.isEmpty()) pf.tags.add(tag);
+                if (!tag.isEmpty()) {
+                    pf.tags.add(tag);
+                }
             }
         }
         if (sub.has("notificationsEnabled")) {
@@ -462,7 +470,9 @@ public class PortcastImporter {
             return null;
         }
         Map<String, T> titleMap = indexByFeedKey.get(normalizeFeedUrl(feedUrl));
-        if (titleMap == null) return null;
+        if (titleMap == null) {
+            return null;
+        }
         return titleMap.remove(normalizeTitle(title));
     }
 
@@ -470,7 +480,9 @@ public class PortcastImporter {
      *  Returns null if no spotify:show: ref is present. */
     @Nullable
     static String spotifyShowIdFrom(List<String> platformRefs) {
-        if (platformRefs == null) return null;
+        if (platformRefs == null) {
+            return null;
+        }
         final String prefix = "spotify:show:";
         for (String ref : platformRefs) {
             if (ref != null && ref.startsWith(prefix)) {
@@ -498,13 +510,17 @@ public class PortcastImporter {
      * search instead.
      */
     static void resolveFeeds(Context context, ImportPreview preview, @Nullable ProgressCallback progress) {
-        if (preview.feeds.isEmpty()) return;
+        if (preview.feeds.isEmpty()) {
+            return;
+        }
 
         // Phase 1: SubscriptionIdIndex fast-path. Skips the resolver call
         // entirely for subscriptions we've imported before.
         List<PortFeed> stillNeedResolution = new ArrayList<>();
         for (PortFeed pf : preview.feeds) {
-            if (!pf.needsResolution) continue;
+            if (!pf.needsResolution) {
+                continue;
+            }
             String cached = SubscriptionIdIndex.lookup(context, pf.subscriptionId);
             if (cached != null && !cached.isEmpty()) {
                 pf.feedUrl = cached;
@@ -513,7 +529,9 @@ public class PortcastImporter {
                 stillNeedResolution.add(pf);
             }
         }
-        if (stillNeedResolution.isEmpty()) return;
+        if (stillNeedResolution.isEmpty()) {
+            return;
+        }
 
         // Phase 2: run the resolver chain. Inputs and outputs are
         // index-aligned; resolver order is irrelevant for correctness.
@@ -562,7 +580,9 @@ public class PortcastImporter {
                 ? firstShowRef(ref.optJSONArray("platformRefs")) : "";
         boolean hasIdentity = !guid.isEmpty() || !enclosureUrl.isEmpty()
                 || (!title.isEmpty() && (!feedUrl.isEmpty() || !showRef.isEmpty()));
-        if (!hasIdentity) return null;
+        if (!hasIdentity) {
+            return null;
+        }
 
         EpisodeState state = new EpisodeState();
         state.guid = guid;
@@ -585,10 +605,14 @@ public class PortcastImporter {
     @Nullable
     static QueueEntry parseQueueEntry(JSONObject q) {
         JSONObject ref = q.optJSONObject("episodeRef");
-        if (ref == null) return null;
+        if (ref == null) {
+            return null;
+        }
         String guid = ref.optString("guid", "");
         String url = ref.optString("enclosureUrl", "");
-        if (guid.isEmpty() && url.isEmpty()) return null;
+        if (guid.isEmpty() && url.isEmpty()) {
+            return null;
+        }
         QueueEntry entry = new QueueEntry();
         entry.guid = guid;
         entry.enclosureUrl = url;
@@ -597,8 +621,12 @@ public class PortcastImporter {
 
     private static String stateTitle(JSONObject episodeJson, EpisodeState state) {
         String title = episodeJson.optString("title", "");
-        if (!title.isEmpty()) return title;
-        if (!state.enclosureUrl.isEmpty()) return state.enclosureUrl;
+        if (!title.isEmpty()) {
+            return title;
+        }
+        if (!state.enclosureUrl.isEmpty()) {
+            return state.enclosureUrl;
+        }
         return state.guid;
     }
 
@@ -652,7 +680,9 @@ public class PortcastImporter {
     }
 
     private static boolean hasApPlayData(FeedItem item) {
-        if (item.isPlayed()) return true;
+        if (item.isPlayed()) {
+            return true;
+        }
         if (item.getMedia() != null) {
             return item.getMedia().getPosition() > 0
                     || item.getMedia().getLastPlayedTimeStatistics() > 0;
@@ -697,7 +727,9 @@ public class PortcastImporter {
 
     public static List<PortFeed> loadPendingFeeds(Context context) {
         String json = prefs(context).getString(KEY_PENDING_FEEDS, null);
-        if (json == null) return Collections.emptyList();
+        if (json == null) {
+            return Collections.emptyList();
+        }
         List<PortFeed> out = new ArrayList<>();
         try {
             JSONArray arr = new JSONArray(json);
@@ -722,7 +754,9 @@ public class PortcastImporter {
                 }
                 out.add(pf);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
         return out;
     }
 
@@ -750,7 +784,9 @@ public class PortcastImporter {
 
     public static List<EpisodeState> loadEpisodeStates(Context context) {
         String json = prefs(context).getString(KEY_EPISODE_STATES, null);
-        if (json == null) return Collections.emptyList();
+        if (json == null) {
+            return Collections.emptyList();
+        }
         List<EpisodeState> out = new ArrayList<>();
         try {
             JSONArray arr = new JSONArray(json);
@@ -768,7 +804,9 @@ public class PortcastImporter {
                 s.lastPlayedMs = o.optLong("lastPlayedMs", 0);
                 out.add(s);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
         return out;
     }
 
@@ -789,7 +827,9 @@ public class PortcastImporter {
 
     public static List<QueueEntry> loadQueue(Context context) {
         String json = prefs(context).getString(KEY_QUEUE, null);
-        if (json == null) return Collections.emptyList();
+        if (json == null) {
+            return Collections.emptyList();
+        }
         List<QueueEntry> out = new ArrayList<>();
         try {
             JSONArray arr = new JSONArray(json);
@@ -800,7 +840,9 @@ public class PortcastImporter {
                 q.enclosureUrl = o.optString("enclosureUrl", "");
                 out.add(q);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // intentionally ignored
+        }
         return out;
     }
 
@@ -826,7 +868,9 @@ public class PortcastImporter {
     @Nullable
     public static GlobalPrefs loadGlobalPrefs(Context context) {
         String json = prefs(context).getString(KEY_GLOBAL_PREFS, null);
-        if (json == null) return null;
+        if (json == null) {
+            return null;
+        }
         try {
             JSONObject o = new JSONObject(json);
             GlobalPrefs gp = new GlobalPrefs();
@@ -864,7 +908,9 @@ public class PortcastImporter {
 
     /** Parse RFC 3339 / ISO 8601. Returns 0 on empty or parse failure. */
     static long parseRfc3339(@NonNull String text) {
-        if (text == null || text.isEmpty()) return 0;
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
         // Try the most common shapes; we don't pull in java.time because
         // minSdk 23 lacks it on older devices outside desugaring scope.
         String[] patterns = {
@@ -877,7 +923,9 @@ public class PortcastImporter {
             SimpleDateFormat fmt = new SimpleDateFormat(p, Locale.US);
             fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
             Date d = fmt.parse(text, new ParsePosition(0));
-            if (d != null) return d.getTime();
+            if (d != null) {
+                return d.getTime();
+            }
         }
         return 0;
     }

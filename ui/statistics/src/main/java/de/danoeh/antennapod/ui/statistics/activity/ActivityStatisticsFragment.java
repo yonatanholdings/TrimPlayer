@@ -12,7 +12,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import java.util.Locale;
 
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.ui.statistics.R;
@@ -100,7 +99,9 @@ public class ActivityStatisticsFragment extends Fragment {
     /** Hour-of-day tap → "9pm · 2h 14m" or "9pm · no listening". Hour labels in
      *  12-hour clock to match how the user thinks about their listening. */
     private void onHourTap(int hour) {
-        if (currentStats == null) return;
+        if (currentStats == null) {
+            return;
+        }
         long minutes = currentStats.byHour[hour];
         String hourLabel;
         if (hour == 0) hourLabel = "12am";
@@ -113,7 +114,9 @@ public class ActivityStatisticsFragment extends Fragment {
     /** Day-of-week tap → "Friday · 8h 20m", and filters the Time Saved card to
      *  that weekday. Tapping the same day again clears the filter. */
     private void onDayTap(int day) {
-        if (currentStats == null) return;
+        if (currentStats == null) {
+            return;
+        }
         String[] names = {"Sunday", "Monday", "Tuesday", "Wednesday",
                           "Thursday", "Friday", "Saturday"};
         long minutes = currentStats.byDay[day];
@@ -151,11 +154,20 @@ public class ActivityStatisticsFragment extends Fragment {
     /** Renders the Time Saved card from either all-time totals or the
      *  per-day-of-week breakdown when {@link #selectedDay} is set. */
     private void renderSavedCard(DBReader.EditorialStats s) {
-        long speed, silence, ads, intros, outros, played;
+        long speed;
+        long silence;
+        long ads;
+        long intros;
+        long outros;
+        long played;
         String sectionLabel;
         if (selectedDay >= 0) {
             long[] row = s.byDaySaved[selectedDay];
-            speed = row[0]; silence = row[1]; ads = row[2]; intros = row[3]; outros = row[4];
+            speed = row[0];
+            silence = row[1];
+            ads = row[2];
+            intros = row[3];
+            outros = row[4];
             // byDay holds NET listening minutes for that weekday; use it as
             // the "played" base so the % stays comparable to the all-time view.
             played = s.byDay[selectedDay] * 60_000L;
