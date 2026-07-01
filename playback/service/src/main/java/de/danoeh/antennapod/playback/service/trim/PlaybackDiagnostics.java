@@ -6,7 +6,10 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -32,7 +35,7 @@ public final class PlaybackDiagnostics {
     private static final String TAG = "PlaybackDiagnostics";
     private static final String DIR = "diag";
     private static final String FILE = "playback-diag.log";
-    /** Roll over to {@code .1} past this size; at most 2 files => ≤ 2 MB on disk. */
+    // Roll over to ".1" past this size; at most 2 files => <= 2 MB on disk.
     private static final long MAX_BYTES = 1024 * 1024;
 
     private static final ExecutorService EXEC = Executors.newSingleThreadExecutor(r -> {
@@ -60,13 +63,15 @@ public final class PlaybackDiagnostics {
 
     private static void write(Context app, long now, String tag, String message) {
         try {
-            File dir = new File(app.getExternalFilesDir(null), DIR);
+            // getExternalFilesDir may return null when external storage isn't mounted; fall back to
+            // internal storage. (new File((File) null, child) would silently become a relative path.)
+            File base = app.getExternalFilesDir(null);
+            if (base == null) {
+                base = app.getFilesDir();
+            }
+            File dir = new File(base, DIR);
             if (!dir.exists() && !dir.mkdirs()) {
-                // External storage unavailable (ejected/emulated absent) — fall back to internal.
-                dir = new File(app.getFilesDir(), DIR);
-                if (!dir.exists() && !dir.mkdirs()) {
-                    return;
-                }
+                return;
             }
             File file = new File(dir, FILE);
             if (file.length() > MAX_BYTES) {
@@ -78,7 +83,8 @@ public final class PlaybackDiagnostics {
                     Log.w(TAG, "Could not roll over diag log");
                 }
             }
-            try (FileWriter w = new FileWriter(file, true)) {
+            try (Writer w = new OutputStreamWriter(
+                    new FileOutputStream(file, true), StandardCharsets.UTF_8)) {
                 w.append(TS.get().format(new Date(now)))
                         .append(' ').append(tag).append(": ").append(message).append('\n');
             }

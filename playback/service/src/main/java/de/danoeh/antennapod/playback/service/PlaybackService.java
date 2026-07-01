@@ -1440,13 +1440,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         // getNextInQueue() reads the database and may update the notification/session, so run the
         // DB work off the main thread (same as the auto-advance path in LocalPSMP.endPlayback).
         Disposable d = io.reactivex.rxjava3.core.Single.fromCallable(() -> {
-                    FeedMedia current = DBReader.getFeedMedia(
-                            PlaybackPreferences.getCurrentlyPlayingFeedMediaId());
-                    if (current == null) {
-                        throw new IllegalStateException("No currently-playing media in preferences");
-                    }
-                    return new androidx.core.util.Pair<Playable, Playable>(current, getNextInQueue(current));
-                })
+            FeedMedia current = DBReader.getFeedMedia(
+                    PlaybackPreferences.getCurrentlyPlayingFeedMediaId());
+            if (current == null) {
+                throw new IllegalStateException("No currently-playing media in preferences");
+            }
+            return new androidx.core.util.Pair<Playable, Playable>(current, getNextInQueue(current));
+        })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
