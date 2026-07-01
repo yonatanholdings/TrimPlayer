@@ -48,3 +48,8 @@ gradle.properties
 
 # Claude Code local runtime (harness locks, scheduled tasks)
 .claude/
+
+# Local build/capture artifacts (not versioned)
+_assemble.log
+_captures/
+_shots/
