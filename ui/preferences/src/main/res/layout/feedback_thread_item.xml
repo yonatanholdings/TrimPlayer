@@ -13,7 +13,8 @@
     View whose tint is set at bind time so each category gets its own accent.
     Expanding the card swaps in a vertical stack of message bubbles.
 -->
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -81,7 +82,7 @@
                 android:layout_marginTop="4dp"
                 android:textColor="?android:attr/textColorSecondary"
                 style="@style/TextAppearance.Material3.BodySmall"
-                tools:text="🐞 Bug · 2 messages · 3 min ago" />
+                tools:text="&#x1f41e; Bug · 2 messages · 3 min ago" />
 
             <TextView
                 android:id="@+id/threadStatusChip"

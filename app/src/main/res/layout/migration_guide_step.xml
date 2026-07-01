@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- One numbered step row (number + text, with an optional screenshot below),
      inflated per item by MigrationGuideActivity. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -30,18 +31,19 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
+
     </LinearLayout>
 
     <!-- Raw (cropped) screenshot for this step, framed so it reads as an
          intentional capture. GONE when the step has no image. -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/step_image_card"
-        style="@style/Widget.Material3.CardView.Outlined"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="42dp"
         android:layout_marginTop="10dp"
         android:visibility="gone"
+        style="@style/Widget.Material3.CardView.Outlined"
         app:cardCornerRadius="12dp">
 
         <ImageView
@@ -51,5 +53,7 @@
             android:adjustViewBounds="true"
             android:maxHeight="420dp"
             android:scaleType="fitCenter" />
+
     </com.google.android.material.card.MaterialCardView>
+
 </LinearLayout>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,13 +14,18 @@
         android:paddingBottom="32dp">
 
         <!-- Hero -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="24dp" android:paddingBottom="14dp">
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="14dp">
 
             <TextView
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="Total time recovered"
                 android:textSize="12sp"
                 android:letterSpacing="0.08"
@@ -37,260 +43,458 @@
                 tools:text="3h 42m" />
 
             <TextView
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="From speed, silence, intros, outros and ads."
                 android:textSize="14sp"
                 android:textColor="@color/editorial_ink_soft"
                 android:layout_marginTop="2dp" />
+
         </LinearLayout>
 
         <!-- Thick rule -->
-        <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="@color/editorial_ink" android:layout_marginBottom="18dp" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/editorial_ink"
+            android:layout_marginBottom="18dp" />
 
         <!-- Today / week / month -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
             android:paddingBottom="20dp">
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:id="@+id/period_today_value"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/period_today_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textSize="24sp"
                     android:includeFontPadding="false"
                     android:textColor="@color/editorial_ink"
                     android:text="—" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Today" android:textSize="12sp"
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Today"
+                    android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted"
                     android:layout_marginTop="2dp" />
+
             </LinearLayout>
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:id="@+id/period_week_value"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/period_week_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textSize="24sp"
                     android:includeFontPadding="false"
                     android:textColor="@color/editorial_ink"
                     android:text="—" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="This week" android:textSize="12sp"
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="This week"
+                    android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted"
                     android:layout_marginTop="2dp" />
+
             </LinearLayout>
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:id="@+id/period_month_value"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/period_month_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textSize="24sp"
                     android:includeFontPadding="false"
                     android:textColor="@color/editorial_ink"
                     android:text="—" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="This month" android:textSize="12sp"
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="This month"
+                    android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted"
                     android:layout_marginTop="2dp" />
+
             </LinearLayout>
+
         </LinearLayout>
 
         <!-- Where time went -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
             android:paddingBottom="10dp"
             android:gravity="bottom">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Where time went"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/category_subheader"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <TextView
+                android:id="@+id/category_subheader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="All time"
                 android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
+
         </LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <!-- Horizontal stacked bar — segments get weight set programmatically. -->
-        <LinearLayout android:id="@+id/stacked_bar"
-            android:layout_width="match_parent" android:layout_height="14dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+        <LinearLayout
+            android:id="@+id/stacked_bar"
+            android:layout_width="match_parent"
+            android:layout_height="14dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:layout_marginTop="16dp"
             android:orientation="horizontal"
             android:weightSum="1000">
-            <View android:id="@+id/stack_speed"   android:layout_width="0dp" android:layout_height="match_parent"
-                android:layout_weight="1" android:background="@color/editorial_vermilion" />
-            <View android:id="@+id/stack_silence" android:layout_width="0dp" android:layout_height="match_parent"
-                android:layout_weight="1" android:background="@color/editorial_gold" />
-            <View android:id="@+id/stack_ads"     android:layout_width="0dp" android:layout_height="match_parent"
-                android:layout_weight="1" android:background="@color/editorial_ink" />
-            <View android:id="@+id/stack_intro"   android:layout_width="0dp" android:layout_height="match_parent"
-                android:layout_weight="1" android:background="@color/editorial_ink_caption" />
-            <View android:id="@+id/stack_outro"   android:layout_width="0dp" android:layout_height="match_parent"
-                android:layout_weight="1" android:background="@color/editorial_ink_v_muted" />
+
+            <View
+                android:id="@+id/stack_speed"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/editorial_vermilion" />
+
+            <View
+                android:id="@+id/stack_silence"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/editorial_gold" />
+
+            <View
+                android:id="@+id/stack_ads"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/editorial_ink" />
+
+            <View
+                android:id="@+id/stack_intro"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/editorial_ink_caption" />
+
+            <View
+                android:id="@+id/stack_outro"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/editorial_ink_v_muted" />
+
         </LinearLayout>
 
-        <TextView android:id="@+id/stacked_caption"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <TextView
+            android:id="@+id/stacked_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textSize="11sp"
             android:textColor="@color/editorial_ink_muted"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:layout_marginTop="8dp"
             tools:text="Speed 41% · Silence 19% · Ads 22% · Intros 12% · Outros 6%" />
 
         <!-- By type -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="26dp" android:paddingBottom="10dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="26dp"
+            android:paddingBottom="10dp"
             android:gravity="bottom">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="By type"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
+
         </LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <!-- Speed row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="14dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Faster playback"
-                android:textSize="15sp" android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/value_speed"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
+
+            <TextView
+                android:id="@+id/value_speed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp"
                 tools:text="8m" />
-            <ProgressBar android:id="@+id/bar_speed"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_speed"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_vermilion"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Silence row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip silence"
-                android:textSize="15sp" android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/value_silence"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
+
+            <TextView
+                android:id="@+id/value_silence"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp"
                 tools:text="2m 10s" />
-            <ProgressBar android:id="@+id/bar_silence"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_silence"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_gold"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Ads row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip ads"
-                android:textSize="15sp" android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/value_ads"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
+
+            <TextView
+                android:id="@+id/value_ads"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp"
                 tools:text="34m" />
-            <ProgressBar android:id="@+id/bar_ads"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_ads"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_ink"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Intros row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip intros"
-                android:textSize="15sp" android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/value_intro"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
+
+            <TextView
+                android:id="@+id/value_intro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp"
                 tools:text="12m" />
-            <ProgressBar android:id="@+id/bar_intro"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_intro"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_ink_caption"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Outros row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="14dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="14dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Skip outros"
-                android:textSize="15sp" android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/value_outro"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+                android:textSize="15sp"
+                android:textColor="@color/editorial_ink" />
+
+            <TextView
+                android:id="@+id/value_outro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp"
                 tools:text="5m" />
-            <ProgressBar android:id="@+id/bar_outro"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_outro"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_ink_v_muted"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Yearly history -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="22dp" android:paddingBottom="10dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="22dp"
+            android:paddingBottom="10dp"
             android:gravity="bottom">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Yearly history"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="By year"
                 android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
+
         </LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <LinearLayout
@@ -298,7 +502,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
             android:paddingTop="8dp" />
 
         <!-- Empty state -->
@@ -316,4 +521,5 @@
             android:visibility="gone" />
 
     </LinearLayout>
+
 </ScrollView>

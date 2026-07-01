@@ -73,8 +73,8 @@
         <ProgressBar
             android:layout_width="20dp"
             android:layout_height="20dp"
-            style="?android:attr/progressBarStyleSmall"
-            android:indeterminate="true" />
+            android:indeterminate="true"
+            style="?android:attr/progressBarStyleSmall" />
 
         <TextView
             android:id="@+id/importStatusText"

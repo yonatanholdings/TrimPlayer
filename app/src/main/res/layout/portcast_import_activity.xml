@@ -65,7 +65,9 @@
                 android:layout_marginTop="16dp"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:visibility="gone" />
+
         </LinearLayout>
+
     </ScrollView>
 
     <LinearLayout
@@ -77,11 +79,11 @@
 
         <Button
             android:id="@+id/cancelButton"
-            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="@string/cancel_label" />
+            android:text="@string/cancel_label"
+            style="?attr/materialButtonOutlinedStyle" />
 
         <Button
             android:id="@+id/importButton"
@@ -89,6 +91,7 @@
             android:layout_height="wrap_content"
             android:enabled="false"
             android:text="@string/portcast_import_activity_button" />
+
     </LinearLayout>
 
 </LinearLayout>

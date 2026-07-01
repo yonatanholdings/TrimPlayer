@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/editorial_paper">
@@ -11,105 +12,191 @@
         android:paddingBottom="32dp">
 
         <!-- 2×2 episode counters -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="20dp" android:paddingBottom="16dp">
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="16dp">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:orientation="vertical"
-                    android:paddingTop="10dp" android:paddingBottom="10dp">
-                    <TextView android:id="@+id/count_started"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="—" android:textSize="32sp"
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
+
+                    <TextView
+                        android:id="@+id/count_started"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="32sp"
                         android:includeFontPadding="false"
                         android:textColor="@color/editorial_ink" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Started" android:textSize="12sp"
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Started"
+                        android:textSize="12sp"
                         android:textColor="@color/editorial_ink_muted"
                         android:layout_marginTop="2dp" />
+
                 </LinearLayout>
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:orientation="vertical"
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
                     android:paddingLeft="16dp"
-                    android:paddingTop="10dp" android:paddingBottom="10dp">
-                    <TextView android:id="@+id/count_finished"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="—" android:textSize="32sp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
+
+                    <TextView
+                        android:id="@+id/count_finished"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="32sp"
                         android:includeFontPadding="false"
                         android:textColor="@color/editorial_ink" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Finished" android:textSize="12sp"
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Finished"
+                        android:textSize="12sp"
                         android:textColor="@color/editorial_ink_muted"
                         android:layout_marginTop="2dp" />
-                    <TextView android:id="@+id/count_completed_pct"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+                    <TextView
+                        android:id="@+id/count_completed_pct"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text=""
                         android:textSize="11sp"
                         android:textColor="@color/editorial_vermilion"
                         android:layout_marginTop="2dp" />
+
                 </LinearLayout>
+
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:orientation="vertical"
-                    android:paddingTop="10dp" android:paddingBottom="10dp">
-                    <TextView android:id="@+id/count_inprogress"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="—" android:textSize="32sp"
-                        android:includeFontPadding="false"
-                        android:textColor="@color/editorial_ink" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="In progress" android:textSize="12sp"
-                        android:textColor="@color/editorial_ink_muted"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:orientation="vertical"
-                    android:paddingLeft="16dp"
-                    android:paddingTop="10dp" android:paddingBottom="10dp">
-                    <TextView android:id="@+id/count_abandoned"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="—" android:textSize="32sp"
-                        android:includeFontPadding="false"
-                        android:textColor="@color/editorial_ink" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Abandoned" android:textSize="12sp"
-                        android:textColor="@color/editorial_ink_muted"
-                        android:layout_marginTop="2dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
+
                     <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:id="@+id/count_inprogress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="32sp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/editorial_ink" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="In progress"
+                        android:textSize="12sp"
+                        android:textColor="@color/editorial_ink_muted"
+                        android:layout_marginTop="2dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingLeft="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
+
+                    <TextView
+                        android:id="@+id/count_abandoned"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="32sp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/editorial_ink" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Abandoned"
+                        android:textSize="12sp"
+                        android:textColor="@color/editorial_ink_muted"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="30+ days untouched"
                         android:textSize="11sp"
                         android:textColor="@color/editorial_ink_muted"
                         android:textStyle="italic" />
+
                 </LinearLayout>
+
             </LinearLayout>
 
         </LinearLayout>
 
         <!-- Hour-of-day -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="6dp" android:paddingBottom="10dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="10dp"
             android:gravity="bottom">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="When you listen"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="By hour"
                 android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
+
         </LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <de.danoeh.antennapod.ui.statistics.editorial.HourBarsView
@@ -119,29 +206,43 @@
             android:layout_marginTop="14dp"
             android:layout_marginBottom="4dp" />
 
-        <TextView android:id="@+id/hour_detail"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <TextView
+            android:id="@+id/hour_detail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textColor="@color/editorial_ink_muted"
             android:textStyle="italic"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:layout_marginBottom="20dp"
             android:text="Tap an hour for details" />
 
         <!-- Day of week -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
             android:paddingBottom="10dp"
             android:gravity="bottom">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Day of the week"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
+
         </LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <de.danoeh.antennapod.ui.statistics.editorial.DayMultiplesView
@@ -151,43 +252,64 @@
             android:layout_marginTop="14dp"
             android:layout_marginBottom="4dp" />
 
-        <TextView android:id="@+id/day_detail"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <TextView
+            android:id="@+id/day_detail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textColor="@color/editorial_ink_muted"
             android:textStyle="italic"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:layout_marginBottom="20dp"
             android:text="Tap a day for details" />
 
         <!-- Thick rule -->
-        <View android:layout_width="match_parent" android:layout_height="1dp"
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
             android:background="@color/editorial_ink"
-            android:layout_marginTop="4dp" android:layout_marginBottom="20dp" />
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="20dp" />
 
         <!-- Time Saved -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingLeft="24dp" android:paddingRight="24dp">
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView android:id="@+id/saved_section_label"
-                    android:layout_width="0dp" android:layout_height="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/saved_section_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Time saved"
                     android:textSize="12sp"
                     android:letterSpacing="0.08"
                     android:textAllCaps="true"
                     android:textColor="@color/editorial_ink_muted" />
-                <TextView android:id="@+id/saved_pct_label"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+                <TextView
+                    android:id="@+id/saved_pct_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textSize="11sp"
                     android:textColor="@color/editorial_vermilion" />
+
             </LinearLayout>
 
-            <TextView android:id="@+id/saved_total"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
+            <TextView
+                android:id="@+id/saved_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:textSize="44sp"
                 android:includeFontPadding="false"
                 android:textColor="@color/editorial_ink"
@@ -197,119 +319,209 @@
         </LinearLayout>
 
         <!-- Speed row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="14dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Faster playback" android:textSize="15sp"
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Faster playback"
+                    android:textSize="15sp"
                     android:textColor="@color/editorial_ink" />
-                <TextView android:id="@+id/saved_speed_detail"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="12sp" android:textColor="@color/editorial_ink_muted" />
+
+                <TextView
+                    android:id="@+id/saved_speed_detail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/editorial_ink_muted" />
+
             </LinearLayout>
-            <TextView android:id="@+id/saved_speed_val"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+
+            <TextView
+                android:id="@+id/saved_speed_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp" />
-            <ProgressBar android:id="@+id/bar_speed"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_speed"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_vermilion"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Silence row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Skip silence" android:textSize="15sp"
+                android:text="Skip silence"
+                android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/saved_silence_val"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+
+            <TextView
+                android:id="@+id/saved_silence_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp" />
-            <ProgressBar android:id="@+id/bar_silence"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_silence"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_gold"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Ads row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Skip ads" android:textSize="15sp"
+                android:text="Skip ads"
+                android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/saved_ads_val"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+
+            <TextView
+                android:id="@+id/saved_ads_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp" />
-            <ProgressBar android:id="@+id/bar_ads"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_ads"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_ink"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Intros row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Skip intros" android:textSize="15sp"
+                android:text="Skip intros"
+                android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/saved_intros_val"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+
+            <TextView
+                android:id="@+id/saved_intros_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp" />
-            <ProgressBar android:id="@+id/bar_intros"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_intros"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_ink_caption"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
         <!-- Outros row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingLeft="24dp" android:paddingRight="24dp"
-            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:gravity="center_vertical">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Skip outros" android:textSize="15sp"
+                android:text="Skip outros"
+                android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:id="@+id/saved_outros_val"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="17sp" android:textColor="@color/editorial_ink"
+
+            <TextView
+                android:id="@+id/saved_outros_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textColor="@color/editorial_ink"
                 android:layout_marginEnd="12dp" />
-            <ProgressBar android:id="@+id/bar_outros"
-                android:layout_width="84dp" android:layout_height="3dp"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+
+            <ProgressBar
+                android:id="@+id/bar_outros"
+                android:layout_width="84dp"
+                android:layout_height="3dp"
                 android:max="1000"
                 android:progressTint="@color/editorial_ink_v_muted"
-                android:progressBackgroundTint="@color/editorial_rule_faint" />
+                android:progressBackgroundTint="@color/editorial_rule_faint"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal" />
+
         </LinearLayout>
 
     </LinearLayout>
+
 </ScrollView>

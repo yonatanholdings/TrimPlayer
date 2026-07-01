@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/editorial_paper">
@@ -20,24 +21,33 @@
             android:paddingTop="24dp"
             android:paddingBottom="10dp">
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="All time"
                 android:textSize="12sp"
                 android:letterSpacing="0.08"
                 android:textAllCaps="true"
                 android:textColor="@color/editorial_ink_muted" />
-            <TextView android:id="@+id/all_time_hours"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <TextView
+                android:id="@+id/all_time_hours"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:textSize="60sp"
                 android:includeFontPadding="false"
                 android:textColor="@color/editorial_ink"
                 android:layout_marginTop="4dp"
                 android:text="—" />
-            <TextView android:id="@+id/all_time_days"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <TextView
+                android:id="@+id/all_time_days"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:textSize="14sp"
                 android:textColor="@color/editorial_ink_soft"
                 android:layout_marginTop="2dp" />
+
         </LinearLayout>
 
         <!-- Streamgraph -->
@@ -57,19 +67,29 @@
             android:paddingRight="24dp"
             android:paddingBottom="10dp"
             android:gravity="bottom">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="By year"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="Tap to drill in"
                 android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
+
         </LinearLayout>
 
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <LinearLayout
@@ -88,23 +108,38 @@
             android:visibility="gone"
             android:paddingBottom="24dp">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingLeft="24dp" android:paddingRight="24dp"
-                android:paddingTop="12dp" android:paddingBottom="10dp"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="10dp"
                 android:gravity="bottom">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Top shows"
                     android:textSize="15sp"
                     android:textColor="@color/editorial_ink" />
-                <TextView android:id="@+id/year_drilldown_year"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+
+                <TextView
+                    android:id="@+id/year_drilldown_year"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textSize="12sp"
                     android:textColor="@color/editorial_vermilion" />
+
             </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="0.5dp"
-                android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
                 android:background="@color/editorial_rule_faint" />
 
             <LinearLayout
@@ -112,9 +147,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingLeft="24dp" android:paddingRight="24dp"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
                 android:paddingTop="8dp" />
+
         </LinearLayout>
 
     </LinearLayout>
+
 </ScrollView>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -75,12 +76,12 @@
             <!-- History sources: full backups (subs + history). All open the picker; auto-detected. -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/onboarding_btn_podcast_addict"
-                style="@style/Widget.Material3.CardView.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Material3.CardView.Outlined">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -101,6 +102,7 @@
                             android:importantForAccessibility="no"
                             android:scaleType="fitCenter"
                             android:src="@drawable/ic_brand_podcast_addict" />
+
                     </FrameLayout>
 
                     <LinearLayout
@@ -123,18 +125,21 @@
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?android:attr/textColorSecondary"
                             android:text="@string/onboarding_source_podcast_addict_sub" />
+
                     </LinearLayout>
+
                 </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/onboarding_btn_antennapod"
-                style="@style/Widget.Material3.CardView.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Material3.CardView.Outlined">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -155,6 +160,7 @@
                             android:importantForAccessibility="no"
                             android:scaleType="fitCenter"
                             android:src="@drawable/ic_brand_antennapod" />
+
                     </FrameLayout>
 
                     <LinearLayout
@@ -177,18 +183,21 @@
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?android:attr/textColorSecondary"
                             android:text="@string/onboarding_source_antennapod_sub" />
+
                     </LinearLayout>
+
                 </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/onboarding_btn_portcast"
-                style="@style/Widget.Material3.CardView.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Material3.CardView.Outlined">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -209,6 +218,7 @@
                             android:importantForAccessibility="no"
                             android:scaleType="fitCenter"
                             android:src="@drawable/ic_source_portcast" />
+
                     </FrameLayout>
 
                     <LinearLayout
@@ -231,8 +241,11 @@
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?android:attr/textColorSecondary"
                             android:text="@string/onboarding_source_portcast_sub" />
+
                     </LinearLayout>
+
                 </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Honest divider: below is subscriptions-only, and we say so. -->
@@ -281,19 +294,21 @@
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?android:attr/textColorSecondary"
                         android:text="@string/onboarding_source_opml_sub" />
+
                 </LinearLayout>
+
             </LinearLayout>
 
             <!-- Start fresh, combined with the "press play / we skip ads" value prop:
                  begin with an empty library and let auto-trimming do the rest. -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/onboarding_start_fresh_button"
-                style="@style/Widget.Material3.CardView.Filled"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Material3.CardView.Filled">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -328,10 +343,15 @@
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?android:attr/textColorSecondary"
                             android:text="@string/onboarding_wedge_band" />
+
                     </LinearLayout>
+
                 </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
+
     </ScrollView>
 
     <!-- ===== Success moment (shown when an import is enqueued, before finishing) ===== -->
@@ -382,6 +402,7 @@
                 android:layout_width="28dp"
                 android:layout_height="match_parent"
                 android:background="#FFD9A8" />
+
         </LinearLayout>
 
         <TextView
@@ -429,5 +450,7 @@
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textAllCaps="false"
             android:text="@string/onboarding_success_cta" />
+
     </LinearLayout>
+
 </FrameLayout>

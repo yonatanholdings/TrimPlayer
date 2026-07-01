@@ -29,8 +29,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:indeterminate="true" />
+        android:indeterminate="true"
+        style="?android:attr/progressBarStyleHorizontal" />
 
     <WebView
         android:id="@+id/spotify_webview"
@@ -47,11 +47,11 @@
 
         <Button
             android:id="@+id/spotify_cancel_button"
-            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="@string/cancel_label" />
+            android:text="@string/cancel_label"
+            style="?attr/materialButtonOutlinedStyle" />
 
         <Button
             android:id="@+id/spotify_fetch_button"
@@ -59,6 +59,7 @@
             android:layout_height="wrap_content"
             android:enabled="false"
             android:text="@string/spotify_migration_fetch_button" />
+
     </LinearLayout>
 
 </LinearLayout>

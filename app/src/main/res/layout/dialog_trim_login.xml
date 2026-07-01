@@ -3,11 +3,12 @@
      MaterialAlertDialogBuilder with no builder buttons (all actions are in-layout)
      so it reads as a bespoke branded surface, not a stock AlertDialog.
      ScrollView guards against IME clipping on small screens. -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/login_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:id="@+id/login_root">
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -31,6 +32,7 @@
                 android:layout_gravity="center"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_trimplayer_logo" />
+
         </FrameLayout>
 
         <TextView
@@ -56,7 +58,6 @@
         <!-- Sign in with Google — official branding (white/dark bg, multicolor G) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/login_btn_google"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="24dp"
@@ -65,6 +66,7 @@
             android:textAllCaps="false"
             android:letterSpacing="0"
             android:textStyle="bold"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             app:backgroundTint="@color/google_btn_bg"
             app:strokeColor="@color/google_btn_stroke"
             app:strokeWidth="1dp"
@@ -102,16 +104,17 @@
                 android:layout_height="1dp"
                 android:layout_weight="1"
                 android:background="?android:attr/listDivider" />
+
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/login_email_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:theme="@style/ThemeOverlay.TrimLogin.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:theme="@style/ThemeOverlay.TrimLogin.TextField"
             android:layout_marginTop="18dp"
             android:hint="@string/trim_account_email_hint"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             app:boxCornerRadiusTopStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
@@ -126,16 +129,17 @@
                 android:inputType="textEmailAddress"
                 android:imeOptions="actionNext"
                 android:autofillHints="emailAddress" />
+
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/login_password_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:theme="@style/ThemeOverlay.TrimLogin.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:theme="@style/ThemeOverlay.TrimLogin.TextField"
             android:layout_marginTop="12dp"
             android:hint="@string/trim_account_password_hint"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             app:boxCornerRadiusTopStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
@@ -150,6 +154,7 @@
                 android:inputType="textPassword"
                 android:imeOptions="actionDone"
                 android:autofillHints="password" />
+
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Inline error banner — persists (unlike a toast) while the dialog stays open. -->
@@ -178,12 +183,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/login_btn_secondary"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="@string/trim_account_switch_to_signup"
             android:textAllCaps="false"
-            android:textColor="@color/trim_brand_orange" />
+            android:textColor="@color/trim_brand_orange"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
     </LinearLayout>
+
 </ScrollView>

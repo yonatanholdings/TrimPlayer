@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/editorial_paper"
@@ -81,40 +82,79 @@
             android:paddingRight="24dp"
             android:paddingBottom="20dp">
 
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:id="@+id/hang_trimmed_val"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="30sp" android:textColor="@color/editorial_ink"
-                    android:includeFontPadding="false" android:text="—" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Trimmed" android:textSize="12sp"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/hang_trimmed_val"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="30sp"
+                    android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false"
+                    android:text="—" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trimmed"
+                    android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted"
                     android:layout_marginTop="2dp" />
+
             </LinearLayout>
 
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:id="@+id/hang_finished_val"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="30sp" android:textColor="@color/editorial_ink"
-                    android:includeFontPadding="false" android:text="—" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Finished" android:textSize="12sp"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/hang_finished_val"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="30sp"
+                    android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false"
+                    android:text="—" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Finished"
+                    android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted"
                     android:layout_marginTop="2dp" />
+
             </LinearLayout>
 
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:id="@+id/hang_streak_val"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="30sp" android:textColor="@color/editorial_ink"
-                    android:includeFontPadding="false" android:text="—" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Day streak" android:textSize="12sp"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/hang_streak_val"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="30sp"
+                    android:textColor="@color/editorial_ink"
+                    android:includeFontPadding="false"
+                    android:text="—" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Day streak"
+                    android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted"
                     android:layout_marginTop="2dp" />
+
             </LinearLayout>
 
         </LinearLayout>
@@ -129,21 +169,28 @@
             android:paddingBottom="10dp"
             android:gravity="bottom">
 
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="When you listened"
                 android:textSize="15sp"
                 android:textColor="@color/editorial_ink" />
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="Last 26 weeks"
                 android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted" />
 
         </LinearLayout>
 
-        <View android:layout_width="match_parent" android:layout_height="0.5dp"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:background="@color/editorial_rule_faint" />
 
         <de.danoeh.antennapod.ui.statistics.editorial.HeatmapView
@@ -154,12 +201,15 @@
             android:layout_marginBottom="6dp" />
 
         <!-- Detail row — placeholder hint until a cell is tapped. -->
-        <TextView android:id="@+id/heatmap_detail"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <TextView
+            android:id="@+id/heatmap_detail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textColor="@color/editorial_ink_muted"
             android:textStyle="italic"
-            android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
             android:layout_marginBottom="8dp"
             android:text="Tap a day for details" />
 
@@ -183,8 +233,11 @@
                 android:paddingRight="24dp"
                 android:paddingBottom="6dp" />
 
-            <View android:layout_width="match_parent" android:layout_height="0.5dp"
-                android:layout_marginLeft="24dp" android:layout_marginRight="24dp"
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
                 android:background="@color/editorial_rule_faint" />
 
             <LinearLayout
@@ -211,4 +264,5 @@
         </LinearLayout>
 
     </LinearLayout>
+
 </ScrollView>

@@ -10,7 +10,8 @@
     reliable way to render the "chosen" state across Material library minor
     versions.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -27,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="28sp"
-        tools:text="🐞" />
+        tools:text="&#x1f41e;" />
 
     <TextView
         android:id="@+id/categoryLabel"

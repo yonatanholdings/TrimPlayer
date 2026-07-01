@@ -43,6 +43,7 @@
                 android:textSize="14sp"
                 android:textColor="@color/editorial_ink_muted"
                 android:text="@string/community_impact_empty" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -104,6 +105,7 @@
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
                     android:textColor="@color/editorial_ink_muted" />
+
             </LinearLayout>
 
             <View
@@ -123,39 +125,40 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_7d"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/community_impact_window_7d" />
+                    android:text="@string/community_impact_window_7d"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_30d"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="@string/community_impact_window_30d" />
+                    android:text="@string/community_impact_window_30d"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_90d"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/community_impact_window_90d" />
+                    android:text="@string/community_impact_window_90d"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_1y"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/community_impact_window_1y" />
+                    android:text="@string/community_impact_window_1y"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_all"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/community_impact_window_all" />
+                    android:text="@string/community_impact_window_all"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
+
             </com.google.android.material.chip.ChipGroup>
 
             <TextView
@@ -204,6 +207,7 @@
                         android:textSize="12sp"
                         android:textColor="@color/editorial_ink_muted"
                         android:text="@string/community_impact_breakdown_caption" />
+
                 </LinearLayout>
 
                 <View
@@ -218,6 +222,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
+
             </LinearLayout>
 
             <!-- ── Your contribution (a small coda, de-ranked from the section heads) ── -->
@@ -248,14 +253,14 @@
             <!-- Share CTA: lives here, after the proof — not before it. -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/share_button"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                app:cornerRadius="12dp"
-                app:strokeColor="@color/editorial_ink"
                 android:textColor="@color/editorial_vermilion"
-                android:text="@string/community_impact_share_button" />
+                android:text="@string/community_impact_share_button"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:cornerRadius="12dp"
+                app:strokeColor="@color/editorial_ink" />
 
             <!-- ── Footer ── -->
             <View
@@ -281,6 +286,9 @@
                 android:textSize="12sp"
                 android:textColor="@color/editorial_ink_muted"
                 android:text="@string/community_impact_privacy" />
+
         </LinearLayout>
+
     </LinearLayout>
+
 </androidx.core.widget.NestedScrollView>

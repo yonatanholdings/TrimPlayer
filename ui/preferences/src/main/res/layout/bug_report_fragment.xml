@@ -16,7 +16,8 @@
       - The Send CTA is full-width and pinned outside the ScrollView so it's
         always reachable, even when the IME is up.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -41,14 +42,13 @@
             android:paddingBottom="24dp">
 
             <!-- =================== HERO =================== -->
-
             <TextView
                 android:id="@+id/heroHeadline"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/feedback_headline"
-                style="@style/TextAppearance.Material3.HeadlineSmall"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                style="@style/TextAppearance.Material3.HeadlineSmall" />
 
             <TextView
                 android:id="@+id/heroSubhead"
@@ -61,7 +61,6 @@
                 style="@style/TextAppearance.Material3.BodyMedium" />
 
             <!-- =================== INBOX =================== -->
-
             <LinearLayout
                 android:id="@+id/inboxHeaderRow"
                 android:layout_width="match_parent"
@@ -82,8 +81,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/feedback_inbox_title"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        style="@style/TextAppearance.Material3.TitleMedium" />
 
                     <TextView
                         android:id="@+id/inboxSubtitle"
@@ -130,7 +129,6 @@
                 style="@style/TextAppearance.Material3.BodySmall" />
 
             <!-- =================== CATEGORY =================== -->
-
             <TextView
                 android:id="@+id/categorySectionLabel"
                 android:layout_width="wrap_content"
@@ -154,32 +152,31 @@
 
                 <include
                     android:id="@+id/categoryBug"
-                    layout="@layout/feedback_category_card"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_marginEnd="8dp"
+                    layout="@layout/feedback_category_card" />
 
                 <include
                     android:id="@+id/categoryFeature"
-                    layout="@layout/feedback_category_card"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginHorizontal="4dp" />
+                    android:layout_marginHorizontal="4dp"
+                    layout="@layout/feedback_category_card" />
 
                 <include
                     android:id="@+id/categoryOther"
-                    layout="@layout/feedback_category_card"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    layout="@layout/feedback_category_card" />
 
             </LinearLayout>
 
             <!-- =================== BODY =================== -->
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -224,7 +221,6 @@
                 android:visibility="gone" />
 
             <!-- =================== EXTRAS =================== -->
-
             <LinearLayout
                 android:id="@+id/extrasHeader"
                 android:layout_width="match_parent"
@@ -365,7 +361,6 @@
     </androidx.core.widget.NestedScrollView>
 
     <!-- ============== STICKY SEND BAR ============== -->
-
     <com.google.android.material.divider.MaterialDivider
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
@@ -379,8 +374,8 @@
         android:text="@string/feedback_send"
         android:textSize="15sp"
         android:textStyle="bold"
-        app:cornerRadius="16dp"
         android:minHeight="52dp"
+        app:cornerRadius="16dp"
         style="@style/Widget.Material3.Button" />
 
 </LinearLayout>
