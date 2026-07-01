@@ -503,7 +503,7 @@ public class BoundaryEditor extends View {
                 case "intro": return dark ? 0xFF9AA6F0 : 0xFF5566CC;
                 case "outro": return dark ? 0xFF7FD1C4 : 0xFF2A9D8F;
                 case "ad":
-                default:      return dark ? 0xFFE0A23C : 0xFFC77800;
+                    default:      return dark ? 0xFFE0A23C : 0xFFC77800;
             }
         }
 

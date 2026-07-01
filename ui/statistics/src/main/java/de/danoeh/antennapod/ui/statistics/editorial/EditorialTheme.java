@@ -31,33 +31,61 @@ public final class EditorialTheme {
         return ContextCompat.getColor(c, R.color.editorial_paper);
     }
 
-    public static int paperAlt(Context c)      { return ContextCompat.getColor(c, R.color.editorial_paper_alt); }
+    public static int paperAlt(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_paper_alt);
+    }
 
-    public static int ink(Context c)           { return ContextCompat.getColor(c, R.color.editorial_ink); }
+    public static int ink(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_ink);
+    }
 
-    public static int inkSoft(Context c)       { return ContextCompat.getColor(c, R.color.editorial_ink_soft); }
+    public static int inkSoft(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_ink_soft);
+    }
 
-    public static int inkCaption(Context c)    { return ContextCompat.getColor(c, R.color.editorial_ink_caption); }
+    public static int inkCaption(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_ink_caption);
+    }
 
-    public static int inkMuted(Context c)      { return ContextCompat.getColor(c, R.color.editorial_ink_muted); }
+    public static int inkMuted(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_ink_muted);
+    }
 
-    public static int inkVeryMuted(Context c)  { return ContextCompat.getColor(c, R.color.editorial_ink_v_muted); }
+    public static int inkVeryMuted(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_ink_v_muted);
+    }
 
-    public static int vermilion(Context c)     { return ContextCompat.getColor(c, R.color.editorial_vermilion); }
+    public static int vermilion(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_vermilion);
+    }
 
-    public static int vermilionSoft(Context c) { return ContextCompat.getColor(c, R.color.editorial_vermilion_soft); }
+    public static int vermilionSoft(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_vermilion_soft);
+    }
 
-    public static int vermilionTint(Context c) { return ContextCompat.getColor(c, R.color.editorial_vermilion_tint); }
+    public static int vermilionTint(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_vermilion_tint);
+    }
 
-    public static int gold(Context c)          { return ContextCompat.getColor(c, R.color.editorial_gold); }
+    public static int gold(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_gold);
+    }
 
-    public static int goldSoft(Context c)      { return ContextCompat.getColor(c, R.color.editorial_gold_soft); }
+    public static int goldSoft(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_gold_soft);
+    }
 
-    public static int ruleThick(Context c)     { return ContextCompat.getColor(c, R.color.editorial_rule_thick); }
+    public static int ruleThick(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_rule_thick);
+    }
 
-    public static int ruleFaint(Context c)     { return ContextCompat.getColor(c, R.color.editorial_rule_faint); }
+    public static int ruleFaint(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_rule_faint);
+    }
 
-    public static int ruleVeryFaint(Context c) { return ContextCompat.getColor(c, R.color.editorial_rule_v_faint); }
+    public static int ruleVeryFaint(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_rule_v_faint);
+    }
 
     // ── Legacy constants ──────────────────────────────────────────────────────
     // Kept for callers that don't have a Context handy (e.g. show-color palette).
