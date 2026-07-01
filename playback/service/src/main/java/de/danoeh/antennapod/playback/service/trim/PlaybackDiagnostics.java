@@ -44,8 +44,13 @@ public final class PlaybackDiagnostics {
         return t;
     });
 
-    private static final ThreadLocal<SimpleDateFormat> TS = ThreadLocal.withInitial(
-            () -> new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US));
+    // ThreadLocal.withInitial is API 26+; use an anonymous subclass so it works on minSdk 23.
+    private static final ThreadLocal<SimpleDateFormat> TS = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            return new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US);
+        }
+    };
 
     private PlaybackDiagnostics() {
     }
