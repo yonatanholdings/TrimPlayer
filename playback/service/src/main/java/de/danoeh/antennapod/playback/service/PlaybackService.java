@@ -2790,7 +2790,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         switch (current) {
             case LIGHT_REDUCTION:
             case HEAVY_REDUCTION:
-                case OFF:           return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST;
+            case OFF:           return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.LIGHT_BOOST;
             case LIGHT_BOOST:   return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.MEDIUM_BOOST;
             case MEDIUM_BOOST:  return de.danoeh.antennapod.model.feed.VolumeAdaptionSetting.HEAVY_BOOST;
             case HEAVY_BOOST:   return null;  // already at ceiling

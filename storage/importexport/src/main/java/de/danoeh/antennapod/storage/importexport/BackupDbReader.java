@@ -53,7 +53,8 @@ public final class BackupDbReader {
         }
     }
 
-    private BackupDbReader() { }
+    private BackupDbReader() {
+    }
 
     /**
      * Copy the picked backup to a private temp file and read it. SQLite can only

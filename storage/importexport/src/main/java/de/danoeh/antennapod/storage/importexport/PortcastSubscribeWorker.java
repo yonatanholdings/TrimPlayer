@@ -43,7 +43,7 @@ import de.danoeh.antennapod.ui.notifications.NotificationUtils;
  * then chains {@link PortcastStateWorker} to resolve episode states + queue
  * after the feed refresh.
  *
- * Counterpart of {@link PodcastAddictSubscribeWorker}; they intentionally
+ * <p>Counterpart of {@link PodcastAddictSubscribeWorker}; they intentionally
  * share structure so the maintenance burden is symmetric.
  */
 public class PortcastSubscribeWorker extends Worker {

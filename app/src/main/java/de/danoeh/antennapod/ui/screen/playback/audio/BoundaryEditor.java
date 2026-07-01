@@ -61,6 +61,7 @@ public class BoundaryEditor extends View {
 
     /** Which element the active pointer grabbed. */
     private enum Drag { NONE, START, END, SCRUB }
+
     private Drag drag = Drag.NONE;
 
     /** Auto-pan loop: +1 pans the window right, -1 left, 0 idle. */
@@ -502,7 +503,7 @@ public class BoundaryEditor extends View {
                 case "intro": return dark ? 0xFF9AA6F0 : 0xFF5566CC;
                 case "outro": return dark ? 0xFF7FD1C4 : 0xFF2A9D8F;
                 case "ad":
-                    default:      return dark ? 0xFFE0A23C : 0xFFC77800;
+                default:      return dark ? 0xFFE0A23C : 0xFFC77800;
             }
         }
 

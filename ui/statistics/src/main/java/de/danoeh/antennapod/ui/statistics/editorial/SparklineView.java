@@ -19,7 +19,9 @@ public class SparklineView extends View {
     private final Path fillPath = new Path();
 
     public SparklineView(Context context) { super(context); init(); }
+
     public SparklineView(Context context, AttributeSet a) { super(context, a); init(); }
+
     public SparklineView(Context context, AttributeSet a, int d) { super(context, a, d); init(); }
 
     private void init() {

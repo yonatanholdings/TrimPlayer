@@ -51,7 +51,8 @@ import java.util.concurrent.Executor;
 public final class TrimAccountDialogs {
     private static final String TAG = "TrimAccountDialogs";
 
-    private TrimAccountDialogs() { }
+    private TrimAccountDialogs() {
+    }
 
     /** Entry point: shows login when logged out, or an account/logout sheet when
      *  logged in. {@code pref} summary is refreshed to reflect the new state. */

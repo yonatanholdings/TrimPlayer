@@ -14,7 +14,7 @@ import java.util.List;
  * Full-circle donut chart. Segmented arc, 1.2dp gaps, butt caps, double hairline ring.
  * Center text slot filled via superimposed TextViews in the layout.
  *
- * Tappable: dispatches {@link OnSegmentClickListener#onSegmentClick(int)} with
+ * <p>Tappable: dispatches {@link OnSegmentClickListener#onSegmentClick(int)} with
  * the segment index the user tapped. External callers can also drive selection
  * via {@link #setSelectedIndex(int)} (e.g. from a sibling list row tap).
  */
@@ -34,7 +34,9 @@ public class DonutView extends View {
     private float downX = -1, downY = -1;
 
     public DonutView(Context context) { super(context); init(); }
+
     public DonutView(Context context, AttributeSet a) { super(context, a); init(); }
+
     public DonutView(Context context, AttributeSet a, int d) { super(context, a, d); init(); }
 
     private void init() {

@@ -505,7 +505,7 @@ public class PortcastImporter {
      *       resolver returned a hit within budget.</li>
      * </ul>
      *
-     * Resolved rows stay in {@link ImportPreview#feeds}; unresolvable rows
+     * <p>Resolved rows stay in {@link ImportPreview#feeds}; unresolvable rows
      * are removed from it and surface in the result screen for manual
      * search instead.
      */

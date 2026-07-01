@@ -22,7 +22,8 @@ public final class AntennaPodDbToPortcast {
     /** PortCast documents require an owner; a backup carries no identity of its own. */
     private static final String OWNER = "TrimPlayer User";
 
-    private AntennaPodDbToPortcast() { }
+    private AntennaPodDbToPortcast() {
+    }
 
     /**
      * Read the backup at {@code backupUri} and return an equivalent PortCast JSON

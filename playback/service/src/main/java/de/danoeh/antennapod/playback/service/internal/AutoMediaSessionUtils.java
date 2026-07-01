@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Locale;
 
 public final class AutoMediaSessionUtils {
-    private AutoMediaSessionUtils() {}
+    private AutoMediaSessionUtils() {
+    }
 
     /**
      * Returns the next speed in the preset cycle, wrapping from last back to first.

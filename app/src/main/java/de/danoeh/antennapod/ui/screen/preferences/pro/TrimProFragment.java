@@ -28,14 +28,14 @@ import retrofit2.Response;
  * Settings → TrimPlayer Pro. Shows the current entitlement state, lists Pro
  * benefits, and offers the SKU purchase buttons.
  *
- * Phase 1 (2026-05-19) ships the UI surface only. Play Billing wiring is
+ * <p>Phase 1 (2026-05-19) ships the UI surface only. Play Billing wiring is
  * blocked on:
  *   - Android package name registered in Play Console (TBD)
  *   - Product IDs being created in Play Console (TBD)
  *   - Server-side {@code _verify_with_google} being un-stubbed
  * Each upgrade button currently shows a "coming soon" snackbar.
  *
- * Tier surface (2026-05-19): v1 ships **monthly + yearly only**. The
+ * <p>Tier surface (2026-05-19): v1 ships **monthly + yearly only**. The
  * Supporter tier ($50/yr) is implemented end-to-end (SKU constant, layout
  * elements, badge + thanks, Supporter Digest fetch/render, backend endpoint
  * contract) but hidden via {@link #SUPPORTER_TIER_ENABLED}. Flip that
@@ -118,6 +118,7 @@ public class TrimProFragment extends Fragment {
                     view.post(() -> applyPriceLabels(view));
                 }
             }
+
             @Override public void onPurchaseAcknowledged(String productId) {
                 View view = getView();
                 if (view != null) {
@@ -128,12 +129,14 @@ public class TrimProFragment extends Fragment {
                 // before this listener fires — render() will re-pull via the
                 // EntitlementStore listener.
             }
+
             @Override public void onPurchaseFailed(String productId, String message) {
                 View view = getView();
                 if (view != null) {
                     Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
                 }
             }
+
             @Override public void onBillingUnavailable(String reason) {
                 View view = getView();
                 if (view != null) {
@@ -259,7 +262,7 @@ public class TrimProFragment extends Fragment {
      *   - empty (404/204) → "your first digest arrives at end of month"
      *   - other failure   → error message
      *
-     *  We don't cache the response on disk yet — the digest changes monthly,
+     *  <p>We don't cache the response on disk yet — the digest changes monthly,
      *  the call is small, and a stale-cache layer adds complexity for almost
      *  no benefit at this scale. Add SharedPreferences caching if the call
      *  becomes a noticeable cost. */

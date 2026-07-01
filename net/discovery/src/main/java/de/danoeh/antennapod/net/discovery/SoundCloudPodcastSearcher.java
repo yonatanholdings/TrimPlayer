@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * distributed RSS feed by extracting the show name from the SoundCloud HTML page
  * and querying iTunes for a match.
  *
- * SoundCloud-exclusive tracks (regular music, non-podcast content) won't have an
+ * <p>SoundCloud-exclusive tracks (regular music, non-podcast content) won't have an
  * iTunes feed, so resolution will fail for those. For shows that also publish via
  * Apple Podcasts/iTunes, the first matching feed is returned.
  */
@@ -131,6 +131,7 @@ public class SoundCloudPodcastSearcher implements PodcastSearcher {
     private static class ParseResult {
         final String show;
         final String episode;
+
         ParseResult(String show, String episode) {
             this.show = show;
             this.episode = episode;

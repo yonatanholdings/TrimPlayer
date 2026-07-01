@@ -738,7 +738,9 @@ public final class DBReader {
         }
         List<Integer> years = new ArrayList<>(yearMap.keySet());
         Collections.sort(years, new Comparator<Integer>() {
-            @Override public int compare(Integer a, Integer b) { return Integer.compare(b, a); }
+            @Override public int compare(Integer a, Integer b) {
+                return Integer.compare(b, a);
+            }
         });
         for (int year : years) {
             long[] row = yearMap.get(year);
@@ -1011,6 +1013,7 @@ public final class DBReader {
         public static class YearItem {
             public final int year;
             public final float hrs;
+
             public YearItem(int year, float hrs) {
                 this.year = year;
                 this.hrs = hrs;
@@ -1024,6 +1027,7 @@ public final class DBReader {
             public final float hrs;
             public final int pct;
             public final int color;
+
             public ShowItem(long feedId, String title, String imageUrl, float hrs, int pct, int color) {
                 this.feedId = feedId;
                 this.title = title;

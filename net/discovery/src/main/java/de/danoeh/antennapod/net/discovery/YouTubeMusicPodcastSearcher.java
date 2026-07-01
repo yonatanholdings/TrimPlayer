@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * youtu.be) to a publicly distributed RSS feed by extracting the show name from the
  * page HTML and querying iTunes for a match.
  *
- * YouTube-exclusive podcasts have no public RSS, so resolution will fail for those.
+ * <p>YouTube-exclusive podcasts have no public RSS, so resolution will fail for those.
  * For shows that also publish via Apple Podcasts/iTunes, the first matching feed is returned.
  */
 public class YouTubeMusicPodcastSearcher implements PodcastSearcher {

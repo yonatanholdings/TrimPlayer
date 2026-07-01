@@ -17,7 +17,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
  * and exposes them as {@link LiveData} so the 5 tab fragments can observe
  * shared results instead of each running its own query on every visit.
  *
- * Lifecycle: scoped to {@code StatisticsFragment} via
+ * <p>Lifecycle: scoped to {@code StatisticsFragment} via
  * {@code new ViewModelProvider(requireParentFragment()).get(...)}. Child
  * fragments observe with {@code getViewLifecycleOwner()}; their disposal is
  * handled automatically when the tab is detached. The underlying RxJava

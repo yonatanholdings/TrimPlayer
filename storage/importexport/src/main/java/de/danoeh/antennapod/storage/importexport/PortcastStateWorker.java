@@ -37,7 +37,7 @@ import de.danoeh.antennapod.storage.preferences.UserPreferences;
  * against the now-materialized FeedItems and applies them. It also applies any
  * global playback preferences carried by the import.
  *
- * Counterpart of {@link PodcastAddictStateWorker}.
+ * <p>Counterpart of {@link PodcastAddictStateWorker}.
  */
 public class PortcastStateWorker extends Worker {
     private static final String TAG = "PortcastStateWorker";

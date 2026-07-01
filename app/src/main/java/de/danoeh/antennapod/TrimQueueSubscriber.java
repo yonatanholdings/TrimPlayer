@@ -24,7 +24,7 @@ import java.util.TimerTask;
 /**
  * Bridges AntennaPod's {@link QueueEvent} to the TrimBrain backend:
  *
- *  1. For ADDED / ADDED_ITEMS: fire a one-shot
+ *  <p>1. For ADDED / ADDED_ITEMS: fire a one-shot
  *     {@link TrimPrefetcher#prefetchAnalyze(String, String, String)} per new
  *     item so the backend starts analyzing right away. Idempotent server-side.
  *  2. For ANY queue change: schedule a debounced
@@ -32,7 +32,7 @@ import java.util.TimerTask;
  *     current queue snapshot. The backend uses this to prioritize prefetch
  *     work across all users.
  *
- * Debounce window is 5s — short enough that a manual add-then-play sequence
+ * <p>Debounce window is 5s — short enough that a manual add-then-play sequence
  * gets the queue posted before playback starts, long enough that a bulk-add
  * (e.g. "add all episodes") only triggers one network call.
  */

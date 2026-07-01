@@ -29,7 +29,9 @@ public class StreamgraphView extends View {
     private final Path fillPath = new Path();
 
     public StreamgraphView(Context context) { super(context); init(); }
+
     public StreamgraphView(Context context, AttributeSet a) { super(context, a); init(); }
+
     public StreamgraphView(Context context, AttributeSet a, int d) { super(context, a, d); init(); }
 
     private void init() {

@@ -7,14 +7,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Last-seen Pro entitlement snapshot.
  *
- * Source of truth lives on the backend (a JWT + a row in device_entitlements);
+ * <p>Source of truth lives on the backend (a JWT + a row in device_entitlements);
  * this store caches what /segments returned so UI elements (Pro badge, upsell
  * modal, settings copy) can render without a network round-trip.
  *
- * Persistence is handled by {@link UserPreferences} so the snapshot survives
+ * <p>Persistence is handled by {@link UserPreferences} so the snapshot survives
  * process death between sessions. We re-hydrate lazily on first read.
  *
- * Threading: snapshots are immutable value objects; the field reference is
+ * <p>Threading: snapshots are immutable value objects; the field reference is
  * volatile. Listeners are dispatched on the caller's thread — usually the
  * Retrofit response thread — so listeners must post to the main thread
  * themselves if they touch UI.

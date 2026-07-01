@@ -6,7 +6,7 @@ package de.danoeh.antennapod.event;
  * completes mid-session. The UI shows a brief Snackbar so the user sees the
  * payoff from the analyze they kicked off earlier.
  *
- * Only fired when the refetch returns at least one segment — empty refetches
+ * <p>Only fired when the refetch returns at least one segment — empty refetches
  * are silent (the analyze ran but didn't promote canonical segments matching
  * this episode).
  */

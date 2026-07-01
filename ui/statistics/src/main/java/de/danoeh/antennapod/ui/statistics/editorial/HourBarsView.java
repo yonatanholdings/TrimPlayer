@@ -25,7 +25,9 @@ public class HourBarsView extends View {
     private float downX = -1, downY = -1;
 
     public HourBarsView(Context context) { super(context); init(); }
+
     public HourBarsView(Context context, AttributeSet a) { super(context, a); init(); }
+
     public HourBarsView(Context context, AttributeSet a, int d) { super(context, a, d); init(); }
 
     private void init() {

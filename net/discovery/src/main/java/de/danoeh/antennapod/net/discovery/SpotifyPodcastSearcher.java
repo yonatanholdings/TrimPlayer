@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  * publicly distributed RSS feed by extracting the show name from the Spotify HTML page
  * and querying iTunes for a matching podcast.
  *
- * Spotify-exclusive content has no public RSS feed, so resolution will fail for those.
+ * <p>Spotify-exclusive content has no public RSS feed, so resolution will fail for those.
  * For non-exclusive shows that exist on iTunes, the first matching feed is returned.
  */
 public class SpotifyPodcastSearcher implements PodcastSearcher {

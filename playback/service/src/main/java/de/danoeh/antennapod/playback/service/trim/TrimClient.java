@@ -85,7 +85,7 @@ public class TrimClient {
     /** Fetch the monthly Supporter Digest. Requires a Pro JWT minted from a
      *  Supporter purchase — backend returns 403 for non-Supporter callers.
      *
-     *  Note (2026-05-19): Supporter tier is hidden from v1 UI but the code
+     *  <p>Note (2026-05-19): Supporter tier is hidden from v1 UI but the code
      *  path is preserved. If the backend ever assigns source='play_supporter'
      *  to an entitlement, the digest card surfaces automatically. */
     public Call<SupporterDigest> getSupporterDigest(String clientId, String proToken) {

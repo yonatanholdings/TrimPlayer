@@ -37,7 +37,7 @@ import retrofit2.Response;
 /**
  * Wraps Google Play Billing for the TrimPlayer Pro purchase flow.
  *
- * Lifecycle:
+ * <p>Lifecycle:
  *   - {@link #get(Context)} returns a process-scoped singleton with an
  *     application Context so the BillingClient survives Pro-screen rotation.
  *   - {@link #connect()} starts the BillingClient connection; safe to call
@@ -47,12 +47,12 @@ import retrofit2.Response;
  *   - {@link #launchPurchase(Activity, String)} starts the purchase flow.
  *   - {@link #queryPurchasesAsync()} restores entitlement on app start.
  *
- * Verification flow:
+ * <p>Verification flow:
  *   purchase → onPurchasesUpdated → /api/v1/billing/verify → server mints
  *   Pro JWT + writes device_entitlements row → EntitlementStore.applyProToken
  *   on success, then acknowledgePurchase (mandatory within 3 days).
  *
- * Listeners: UI subscribes via {@link #addListener(Listener)} to learn about
+ * <p>Listeners: UI subscribes via {@link #addListener(Listener)} to learn about
  * SKU-details arrival, purchase success/failure, and connection state.
  * Dispatched on the main thread because BillingClient already calls back there.
  */
@@ -62,18 +62,22 @@ public final class TrimBillingManager {
     public interface Listener {
         /** Called whenever the SKU details cache is refreshed (success or
          *  empty). Inspect via {@link #getProductDetails(String)}. */
-        default void onProductDetailsUpdated() { }
+        default void onProductDetailsUpdated() {
+        }
 
         /** Purchase + server verification both succeeded. Pro is now active. */
-        default void onPurchaseAcknowledged(String productId) { }
+        default void onPurchaseAcknowledged(String productId) {
+        }
 
         /** Anything went wrong — Play, network, server. {@code message} is
          *  user-presentable (already localized where possible). */
-        default void onPurchaseFailed(String productId, String message) { }
+        default void onPurchaseFailed(String productId, String message) {
+        }
 
         /** Billing isn't available on this device (no Play Store, old Play
          *  Services, etc.). Hide purchase UI accordingly. */
-        default void onBillingUnavailable(String reason) { }
+        default void onBillingUnavailable(String reason) {
+        }
     }
 
     private static volatile TrimBillingManager instance;

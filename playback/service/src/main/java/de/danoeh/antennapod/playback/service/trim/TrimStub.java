@@ -16,7 +16,7 @@ import java.util.Map;
  * functionality without a running backend. The file is a JSON object keyed by
  * episode URL, each value matching {@link TrimClient.EpisodeSegmentsResponse}.
  *
- * Enabled/disabled via Settings > Playback > Stub skip segments (debug builds only).
+ * <p>Enabled/disabled via Settings > Playback > Stub skip segments (debug builds only).
  */
 public class TrimStub {
     private static final String TAG = "TrimStub";

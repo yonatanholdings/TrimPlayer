@@ -35,7 +35,8 @@ public final class SubscriptionIdIndex {
 
     private static final String PREFS_NAME = "portcast_subscription_id_index";
 
-    private SubscriptionIdIndex() {}
+    private SubscriptionIdIndex() {
+    }
 
     /** Returns null if the id has never been imported, or is null/empty. */
     @Nullable

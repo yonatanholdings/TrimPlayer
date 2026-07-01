@@ -34,13 +34,13 @@ import de.danoeh.antennapod.storage.preferences.UserPreferences;
 /**
  * Writes a PortCast v0.1.0 document (portcast.org) describing the user's library.
  *
- * The PortCast protocol is a JSON interchange format for podcast data
+ * <p>The PortCast protocol is a JSON interchange format for podcast data
  * (subscriptions, episode state, queue, preferences). This exporter is the
  * TrimPlayer reference producer. Anything that doesn't map cleanly onto a spec
  * field lives under reverse-DNS "com.trimplayer.*" extension namespaces so the
  * data round-trips when imported back into TrimPlayer.
  *
- * Off-main-thread: DBReader calls hit SQLite.
+ * <p>Off-main-thread: DBReader calls hit SQLite.
  */
 public class PortcastExporter {
 

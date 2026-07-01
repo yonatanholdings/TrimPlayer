@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * HTTP client and helpers for talking to the TrimBrain backend.
  *
- * Owns the shared {@link OkHttpClient} used by both this class and the in-app
+ * <p>Owns the shared {@link OkHttpClient} used by both this class and the in-app
  * Retrofit client ({@code TrimClient}), so a single TLS handshake / connection
  * pool is reused across prefetch, segments, analyze, and job-status calls.
  */
@@ -41,7 +41,8 @@ public final class TrimPrefetcher {
             })
             .build();
 
-    private TrimPrefetcher() { }
+    private TrimPrefetcher() {
+    }
 
     /** Shared HTTP client. The Retrofit-based TrimClient wraps this one too. */
     public static OkHttpClient client() {

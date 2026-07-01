@@ -29,7 +29,9 @@ public class HeatmapView extends View {
     private float downX = -1, downY = -1;
 
     public HeatmapView(Context context) { super(context); ramp = buildRamp(context); initLabel(); }
+
     public HeatmapView(Context context, AttributeSet a) { super(context, a); ramp = buildRamp(context); initLabel(); }
+
     public HeatmapView(Context context, AttributeSet a, int d) { super(context, a, d); ramp = buildRamp(context); initLabel(); }
 
     private static int[] buildRamp(Context c) {

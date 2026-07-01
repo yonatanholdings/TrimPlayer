@@ -20,10 +20,11 @@ import android.content.Intent;
  *   - {@link #showBetaGrandfatherWelcomeIfNeeded}: celebratory dialog the
  *     first time the backend confirms this device was grandfathered.
  *
- * Kept stateless / static — owns no fragment lifecycle.
+ * <p>Kept stateless / static — owns no fragment lifecycle.
  */
 public final class TrimProDialogs {
-    private TrimProDialogs() { }
+    private TrimProDialogs() {
+    }
 
     /** Compile-time kill-switch — last resort if the server flag goes sideways.
      *  When true, Pro UI is hidden regardless of the server response. Leave

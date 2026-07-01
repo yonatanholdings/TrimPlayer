@@ -9,7 +9,7 @@ import java.util.Calendar;
  * {@link StatisticsViewModel#refresh} returns these values instead of running
  * the real DB queries. Flip the flag back to false before shipping.
  *
- * Data is shaped to look "realistic but flattering": a regular listener with
+ * <p>Data is shaped to look "realistic but flattering": a regular listener with
  * a multi-year history, weekend-heavy listening, an evening peak, and a healthy
  * mix of trim categories.
  */
@@ -19,7 +19,8 @@ public final class DemoStats {
      *  synthetic data, false to use real DB-backed stats. */
     public static final boolean ENABLED = false;
 
-    private DemoStats() {}
+    private DemoStats() {
+    }
 
     public static DBReader.EditorialStats fakeEditorial() {
         DBReader.EditorialStats s = new DBReader.EditorialStats();
@@ -143,6 +144,7 @@ public final class DemoStats {
         public final String episodeTitle;
         public final String feedTitle;
         public final long playedMs;
+
         public FakeEpisode(String episodeTitle, String feedTitle, long playedMs) {
             this.episodeTitle = episodeTitle;
             this.feedTitle = feedTitle;

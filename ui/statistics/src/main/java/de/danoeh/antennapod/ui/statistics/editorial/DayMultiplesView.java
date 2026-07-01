@@ -26,7 +26,9 @@ public class DayMultiplesView extends View {
     private float downX = -1, downY = -1;
 
     public DayMultiplesView(Context context) { super(context); init(); }
+
     public DayMultiplesView(Context context, AttributeSet a) { super(context, a); init(); }
+
     public DayMultiplesView(Context context, AttributeSet a, int d) { super(context, a, d); init(); }
 
     private void init() {

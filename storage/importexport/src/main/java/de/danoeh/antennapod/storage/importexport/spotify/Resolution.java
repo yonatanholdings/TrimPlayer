@@ -11,7 +11,7 @@ package de.danoeh.antennapod.storage.importexport.spotify;
  *       not for showing to users.</li>
  * </ul>
  *
- * Modelled as a POJO discriminated union (not a Java 17 sealed class) to
+ * <p>Modelled as a POJO discriminated union (not a Java 17 sealed class) to
  * match the convention used elsewhere in this module.
  */
 public abstract class Resolution {

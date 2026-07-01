@@ -9,37 +9,54 @@ import de.danoeh.antennapod.ui.statistics.R;
 /**
  * Design tokens for the editorial statistics system.
  *
- * Colors are sourced from {@code res/values/colors.xml} (light) and
+ * <p>Colors are sourced from {@code res/values/colors.xml} (light) and
  * {@code res/values-night/colors.xml} (dark) so the screens follow the
  * system theme. Custom views read via {@code EditorialTheme.ink(ctx)} etc.;
  * layouts reference {@code @color/editorial_*} directly.
  *
- * Custom fonts (Instrument Serif, IBM Plex Mono) are loaded from
+ * <p>Custom fonts (Instrument Serif, IBM Plex Mono) are loaded from
  * {@code res/font/} when the .ttf files are present. To add fonts: drop
  * the TTFs as {@code instrument_serif_regular.ttf} and
  * {@code ibm_plex_mono_regular.ttf}, then flip {@link #FONTS_BUNDLED} to true.
  */
 public final class EditorialTheme {
-    private EditorialTheme() {}
+    private EditorialTheme() {
+    }
 
     // Set to true once font .ttf files are added to res/font/
     private static final boolean FONTS_BUNDLED = true;
 
     // ── Color accessors (theme-aware via resources) ──────────────────────────
-    public static int paper(Context c)         { return ContextCompat.getColor(c, R.color.editorial_paper); }
+    public static int paper(Context c) {
+        return ContextCompat.getColor(c, R.color.editorial_paper);
+    }
+
     public static int paperAlt(Context c)      { return ContextCompat.getColor(c, R.color.editorial_paper_alt); }
+
     public static int ink(Context c)           { return ContextCompat.getColor(c, R.color.editorial_ink); }
+
     public static int inkSoft(Context c)       { return ContextCompat.getColor(c, R.color.editorial_ink_soft); }
+
     public static int inkCaption(Context c)    { return ContextCompat.getColor(c, R.color.editorial_ink_caption); }
+
     public static int inkMuted(Context c)      { return ContextCompat.getColor(c, R.color.editorial_ink_muted); }
+
     public static int inkVeryMuted(Context c)  { return ContextCompat.getColor(c, R.color.editorial_ink_v_muted); }
+
     public static int vermilion(Context c)     { return ContextCompat.getColor(c, R.color.editorial_vermilion); }
+
     public static int vermilionSoft(Context c) { return ContextCompat.getColor(c, R.color.editorial_vermilion_soft); }
+
     public static int vermilionTint(Context c) { return ContextCompat.getColor(c, R.color.editorial_vermilion_tint); }
+
     public static int gold(Context c)          { return ContextCompat.getColor(c, R.color.editorial_gold); }
+
     public static int goldSoft(Context c)      { return ContextCompat.getColor(c, R.color.editorial_gold_soft); }
+
     public static int ruleThick(Context c)     { return ContextCompat.getColor(c, R.color.editorial_rule_thick); }
+
     public static int ruleFaint(Context c)     { return ContextCompat.getColor(c, R.color.editorial_rule_faint); }
+
     public static int ruleVeryFaint(Context c) { return ContextCompat.getColor(c, R.color.editorial_rule_v_faint); }
 
     // ── Legacy constants ──────────────────────────────────────────────────────

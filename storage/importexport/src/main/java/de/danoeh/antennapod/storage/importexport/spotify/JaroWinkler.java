@@ -15,7 +15,8 @@ public final class JaroWinkler {
     private static final double PREFIX_SCALE = 0.1;
     private static final int MAX_PREFIX = 4;
 
-    private JaroWinkler() {}
+    private JaroWinkler() {
+    }
 
     public static double similarity(String s1, String s2) {
         if (s1 == null) s1 = "";

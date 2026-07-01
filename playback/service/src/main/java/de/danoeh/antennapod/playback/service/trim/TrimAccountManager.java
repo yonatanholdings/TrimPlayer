@@ -13,14 +13,15 @@ import retrofit2.Response;
  * account. Blocking calls — invoke from a background thread (the login screen
  * runs these off the main thread and stores the session on success).
  *
- * On success the session token + email are persisted via {@link UserPreferences}
+ * <p>On success the session token + email are persisted via {@link UserPreferences}
  * and {@link de.danoeh.antennapod.storage.preferences.UserPreferences#isTrimAccountLoggedIn()}
  * flips to true, which is all {@code TrimSyncWorker} needs to begin syncing.
  */
 public final class TrimAccountManager {
     private static final String TAG = "TrimAccount";
 
-    private TrimAccountManager() { }
+    private TrimAccountManager() {
+    }
 
     /**
      * @return null on success, else a human-readable error message.

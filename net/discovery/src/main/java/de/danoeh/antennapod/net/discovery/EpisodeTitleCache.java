@@ -10,7 +10,7 @@ import java.util.Map;
  * the URL the user shared. The screen that opens the resolved feed can then
  * consume the hint and deep-link past the show page to the specific episode.
  *
- * Bounded LRU so a long-running process doesn't accumulate entries — entries
+ * <p>Bounded LRU so a long-running process doesn't accumulate entries — entries
  * are tiny and typically consumed within seconds of being written.
  */
 public final class EpisodeTitleCache {

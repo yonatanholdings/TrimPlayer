@@ -74,7 +74,9 @@ public final class ConflictAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         final List<ConflictRow> episodes = new ArrayList<>();
         boolean expanded = false;
 
-        Section(String title) { this.title = title; }
+        Section(String title) {
+            this.title = title;
+        }
 
         /** null = mixed; true = all from import; false = all existing. */
         Boolean groupState() {
@@ -171,7 +173,9 @@ public final class ConflictAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     }
 
     @Override
-    public int getItemCount() { return flatList.size(); }
+    public int getItemCount() {
+        return flatList.size();
+    }
 
     @NonNull
     @Override

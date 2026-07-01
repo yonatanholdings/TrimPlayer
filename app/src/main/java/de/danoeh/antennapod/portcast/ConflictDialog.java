@@ -24,7 +24,8 @@ import de.danoeh.antennapod.R;
  */
 public final class ConflictDialog {
 
-    private ConflictDialog() {}
+    private ConflictDialog() {
+    }
 
     /**
      * @param sourceLabel short name of the source ("PortCast",

@@ -17,19 +17,20 @@ import java.util.function.IntConsumer;
  * Extracts a per-feed dominant color via Glide + AndroidX Palette and caches
  * the result in-memory so repeated lookups during a scroll session are free.
  *
- * Used by the subscriptions list row indicator (and the donut chart) instead
+ * <p>Used by the subscriptions list row indicator (and the donut chart) instead
  * of the fixed 9-color palette in {@code EditorialTheme.SHOW_COLORS}. Falls
  * back to the supplied fallback color when the bitmap can't be loaded or
  * Palette can't extract a meaningful swatch.
  *
- * Color selection prefers, in order: vibrant → muted → dominant. The vibrant
+ * <p>Color selection prefers, in order: vibrant → muted → dominant. The vibrant
  * swatch is usually the cover's brand color; muted covers fall back better
  * than dominant (which can return near-black for dark covers).
  */
 public final class FeedColorCache {
     private static final LruCache<Long, Integer> CACHE = new LruCache<>(64);
 
-    private FeedColorCache() {}
+    private FeedColorCache() {
+    }
 
     /** Synchronous read; returns null if no entry. */
     @Nullable

@@ -13,13 +13,13 @@ import org.json.JSONObject;
  * Persists per-episode segment analysis state so the warm path skips the network
  * call and so the UI can show a badge on episodes the backend has weighed in on.
  *
- * Three states (see {@link State}):
+ * <p>Three states (see {@link State}):
  *   - UNKNOWN: never queried / cache miss / expired
  *   - HAS_SEGMENTS: server returned a non-empty segment list
  *   - ANALYZED_EMPTY: server confirmed analysis is complete but produced no
  *     skippable segments (intentionally "nothing to trim", not still pending)
  *
- * Entries expire after {@link #TTL_MS} so server-side analysis improvements
+ * <p>Entries expire after {@link #TTL_MS} so server-side analysis improvements
  * eventually propagate to clients.
  */
 public final class TrimSegmentCache {
@@ -29,7 +29,8 @@ public final class TrimSegmentCache {
 
     public enum State { UNKNOWN, HAS_SEGMENTS, ANALYZED_EMPTY }
 
-    private TrimSegmentCache() { }
+    private TrimSegmentCache() {
+    }
 
     public static List<TrimClient.Segment> get(Context ctx, String guid) {
         if (ctx == null || guid == null || guid.isEmpty()) {

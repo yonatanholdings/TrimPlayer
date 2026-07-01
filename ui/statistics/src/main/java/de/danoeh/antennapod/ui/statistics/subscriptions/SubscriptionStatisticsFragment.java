@@ -214,7 +214,9 @@ public class SubscriptionStatisticsFragment extends Fragment {
         }
 
         @Override
-        public int getItemCount() { return data.size(); }
+        public int getItemCount() {
+            return data.size();
+        }
 
         static class VH extends RecyclerView.ViewHolder {
             TextView ordinal;
@@ -226,6 +228,7 @@ public class SubscriptionStatisticsFragment extends Fragment {
             /** Tracks which feed this holder is currently bound to, so async
              *  Palette callbacks don't paint the wrong row after recycling. */
             long boundFeedId;
+
             VH(View v) {
                 super(v);
                 ordinal = v.findViewById(R.id.ordinal);

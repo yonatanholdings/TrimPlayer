@@ -1176,6 +1176,7 @@ public class PodDBAdapter {
     /** Defaults for columns a backup may lack. Unlisted missing columns default
      *  to NULL (→ 0/empty); the trim toggles default on, matching their migration. */
     private static final Map<String, String> BACKUP_MISSING_COLUMN_DEFAULTS = new HashMap<>();
+
     static {
         BACKUP_MISSING_COLUMN_DEFAULTS.put(KEY_FEED_TRIM_SKIP_INTROS, "1");
         BACKUP_MISSING_COLUMN_DEFAULTS.put(KEY_FEED_TRIM_SKIP_ADS, "1");

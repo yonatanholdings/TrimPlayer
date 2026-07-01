@@ -145,7 +145,7 @@ public class StatisticsFragment extends PagedToolbarFragment {
      *  on confirm, which {@link #onStatisticsEvent} forwards to the ViewModel
      *  to trigger a refresh.
      *
-     *  NOTE: the SharedPreferences keys exist and are honored end-to-end here,
+     *  <p>NOTE: the SharedPreferences keys exist and are honored end-to-end here,
      *  but the underlying {@link DBReader#getEditorialStats} doesn't yet apply
      *  a date range to its cursors — that's the open follow-up. The filter UI
      *  saves user intent so the plumbing change later is observable. */

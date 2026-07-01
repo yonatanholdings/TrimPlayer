@@ -12,7 +12,7 @@ import retrofit2.Response;
 /**
  * Fire-and-forget sender for crowd-sourced segment reports (Scope B).
  *
- * The local edit always lands in {@link TrimSegmentCache} first (Scope A), so a
+ * <p>The local edit always lands in {@link TrimSegmentCache} first (Scope A), so a
  * failed or offline report never blocks the user's edit — this just submits the
  * correction to the backend's moderation queue, where it only affects other
  * users once an admin approves it. Sends the request-time client id so reports
