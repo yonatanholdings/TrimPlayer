@@ -122,12 +122,18 @@ public class PortcastImportActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    /** VIEW intent → {@code data} URI; SEND intent → {@code EXTRA_STREAM}. */
+    /**
+     * VIEW intent → {@code data} URI; SEND intent → {@code EXTRA_STREAM}.
+     */
     @Nullable
     private static Uri extractUri(@Nullable Intent intent) {
-        if (intent == null) return null;
+        if (intent == null) {
+            return null;
+        }
         Uri data = intent.getData();
-        if (data != null) return data;
+        if (data != null) {
+            return data;
+        }
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
             return intent.getParcelableExtra(Intent.EXTRA_STREAM);
         }
@@ -185,7 +191,9 @@ public class PortcastImportActivity extends AppCompatActivity {
     }
 
     private void executeImport() {
-        if (pendingPreview == null) return;
+        if (pendingPreview == null) {
+            return;
+        }
         PortcastImporter.ImportPreview preview = pendingPreview;
 
         // If the import touches episodes with local play data, route through

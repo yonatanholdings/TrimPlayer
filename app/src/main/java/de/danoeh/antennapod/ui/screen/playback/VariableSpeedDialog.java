@@ -248,7 +248,9 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
 
     /** Refresh trim-skip checkboxes from the active feed's preferences (or global as fallback). */
     private void updateTrimSkipCheckboxes() {
-        if (skipIntrosCheckbox == null) return;
+        if (skipIntrosCheckbox == null) {
+            return;
+        }
         Feed feed = currentFeed();
         boolean intros = feed != null ? feed.getPreferences().isTrimSkipIntros() : UserPreferences.isTrimSkipIntrosEnabled();
         boolean ads    = feed != null ? feed.getPreferences().isTrimSkipAds()    : UserPreferences.isTrimSkipAdsEnabled();
@@ -270,9 +272,13 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         // controller.getMedia() from main-thread UI callbacks would trigger a
         // synchronous DB open and crash via StrictMode.
         de.danoeh.antennapod.model.playback.Playable media = cachedMedia;
-        if (!(media instanceof FeedMedia)) return null;
+        if (!(media instanceof FeedMedia)) {
+            return null;
+        }
         FeedMedia feedMedia = (FeedMedia) media;
-        if (feedMedia.getItem() == null) return null;
+        if (feedMedia.getItem() == null) {
+            return null;
+        }
         return feedMedia.getItem().getFeed();
     }
 

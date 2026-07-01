@@ -443,7 +443,9 @@ public class ImportFlowController {
     }
 
     private String describePaState(PodcastAddictImporter.EpisodeState state) {
-        if (state.played) return activity.getString(R.string.podcast_addict_state_played);
+        if (state.played) {
+            return activity.getString(R.string.podcast_addict_state_played);
+        }
         if (state.positionMs > 0) {
             int s = state.positionMs / 1000;
             return activity.getString(R.string.podcast_addict_state_inprogress,

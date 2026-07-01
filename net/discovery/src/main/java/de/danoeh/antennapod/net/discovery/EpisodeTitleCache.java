@@ -28,14 +28,18 @@ public final class EpisodeTitleCache {
     }
 
     public static synchronized void put(String shareUrl, String episodeTitle) {
-        if (shareUrl == null || episodeTitle == null || episodeTitle.isEmpty()) return;
+        if (shareUrl == null || episodeTitle == null || episodeTitle.isEmpty()) {
+            return;
+        }
         ENTRIES.put(shareUrl, episodeTitle);
     }
 
     /** One-shot read: returns and removes the cached episode title for a share URL,
      *  or null if none was captured. */
     public static synchronized String consume(String shareUrl) {
-        if (shareUrl == null) return null;
+        if (shareUrl == null) {
+            return null;
+        }
         return ENTRIES.remove(shareUrl);
     }
 }

@@ -29,7 +29,9 @@ public final class NetworkRecoveryController {
 
     /** Side effects the controller delegates to the host (scheduling, UI, terminal error). */
     public interface Host {
-        /** Run {@code retry} after {@code delayMs}. A prior pending retry is replaced. */
+        /**
+         * Run {@code retry} after {@code delayMs}. A prior pending retry is replaced.
+         */
         void scheduleRetry(long delayMs, Runnable retry);
 
         /** Cancel any pending retry. */

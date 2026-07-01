@@ -134,7 +134,9 @@ public class YouTubeMusicPodcastSearcher implements PodcastSearcher {
     }
 
     private static String stripYouTubeSuffix(String ogTitle) {
-        if (ogTitle == null) return null;
+        if (ogTitle == null) {
+            return null;
+        }
         String t = ogTitle.trim();
         if (t.endsWith(" - YouTube")) {
             t = t.substring(0, t.length() - " - YouTube".length()).trim();

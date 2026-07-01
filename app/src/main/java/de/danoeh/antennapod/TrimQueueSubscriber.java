@@ -60,7 +60,9 @@ public class TrimQueueSubscriber {
             case ADDED_ITEMS:
             case SET_QUEUE:
                 if (ev.items != null) {
-                    for (FeedItem item : ev.items) prefetchOne(item);
+                    for (FeedItem item : ev.items) {
+                        prefetchOne(item);
+                    }
                 }
                 break;
             default:
@@ -75,13 +77,17 @@ public class TrimQueueSubscriber {
     }
 
     private static void prefetchOne(FeedItem item) {
-        if (item == null) return;
+        if (item == null) {
+            return;
+        }
         try {
             String rssUrl = item.getFeed() != null ? item.getFeed().getDownloadUrl() : null;
             FeedMedia media = item.getMedia();
             String episodeUrl = media != null ? media.getStreamUrl() : null;
             String guid = item.getItemIdentifier();
-            if (rssUrl == null || episodeUrl == null) return;
+            if (rssUrl == null || episodeUrl == null) {
+                return;
+            }
             TrimPrefetcher.prefetchAnalyze(rssUrl, episodeUrl, guid);
         } catch (Exception e) {
             Log.d(TAG, "prefetchOne failed: " + e.getMessage());
@@ -89,7 +95,9 @@ public class TrimQueueSubscriber {
     }
 
     private synchronized void scheduleSnapshotPost() {
-        if (pendingTask != null) pendingTask.cancel();
+        if (pendingTask != null) {
+            pendingTask.cancel();
+        }
         pendingTask = new TimerTask() {
             @Override
             public void run() {
@@ -107,15 +115,23 @@ public class TrimQueueSubscriber {
 
     private static void postSnapshotNow() {
         List<FeedItem> queue = DBReader.getQueue();
-        if (queue == null) return;
+        if (queue == null) {
+            return;
+        }
         List<QueueItem> items = new ArrayList<>(queue.size());
         for (FeedItem fi : queue) {
-            if (fi == null || fi.getFeed() == null) continue;
+            if (fi == null || fi.getFeed() == null) {
+                continue;
+            }
             FeedMedia media = fi.getMedia();
-            if (media == null) continue;
+            if (media == null) {
+                continue;
+            }
             String rssUrl = fi.getFeed().getDownloadUrl();
             String episodeUrl = media.getStreamUrl();
-            if (rssUrl == null || episodeUrl == null) continue;
+            if (rssUrl == null || episodeUrl == null) {
+                continue;
+            }
             items.add(new QueueItem(rssUrl, episodeUrl, fi.getItemIdentifier()));
         }
         String clientId = UserPreferences.getOrCreateTrimClientId();

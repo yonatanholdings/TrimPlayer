@@ -84,11 +84,15 @@ public final class GarminAudioRenderPlan {
     public List<String> ffmpegArgs(String ffmpegBin, String inputPath, String outputPath) {
         List<String> args = new ArrayList<>();
         args.add(ffmpegBin);
-        args.add("-v"); args.add("error");
+        args.add("-v");
+        args.add("error");
         args.add("-y");
-        args.add("-i"); args.add(inputPath);
-        args.add("-filter_complex"); args.add(filterComplex());
-        args.add("-map"); args.add("[out]");
+        args.add("-i");
+        args.add(inputPath);
+        args.add("-filter_complex");
+        args.add(filterComplex());
+        args.add("-map");
+        args.add("[out]");
         args.add(outputPath);
         return args;
     }

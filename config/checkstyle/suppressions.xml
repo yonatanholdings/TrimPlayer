@@ -23,4 +23,8 @@
     <suppress checks="JavadocTagContinuationIndentation" files="(LongList.java|DBReader.java|LocalPSMP.java|GpodnetService.java|FeedDiscoverer.java|PlaybackServiceMediaPlayer.java)"/>
     <suppress checks="MemberName" files="(OpmlBackupAgent.java|ShakeListener.java|PlaybackController.java|AspectRatioVideoView.java|PlaybackService.java|PlaybackServiceMediaPlayerTest.java)"/>
     <suppress checks="LocalVariableName" files="(ShakeListener.java|ItemEnqueuePositionCalculatorTest.java)"/>
+    <!-- TrimClient's nested types are Gson JSON DTOs whose snake_case field names must match the
+         backend wire format (no @SerializedName), so MemberName camelCase can't apply. Mirrors the
+         same carve-out already in config/spotbugs/exclude.xml. -->
+    <suppress checks="MemberName" files="TrimClient.java"/>
 </suppressions>

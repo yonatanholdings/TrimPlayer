@@ -141,7 +141,9 @@ public class SoundCloudPodcastSearcher implements PodcastSearcher {
      *  isn't present — caller falls back to other extraction strategies.
      *  Format: "[Stream [episode] ]&lt;ep&gt; by &lt;show&gt;[ podcast][ | Listen online for free on SoundCloud]" */
     static ParseResult parseScTitle(String title, boolean hasWrapper) {
-        if (title == null) return null;
+        if (title == null) {
+            return null;
+        }
         String t = title.trim();
         if (hasWrapper) {
             int sfx = indexOfIgnoreCase(t, SC_TITLE_SUFFIX);
@@ -157,13 +159,17 @@ public class SoundCloudPodcastSearcher implements PodcastSearcher {
         // Split on the LAST " by " — show names with embedded " by " are rare, and
         // the SoundCloud wrapper always puts the creator last.
         int byIdx = t.toLowerCase(Locale.ROOT).lastIndexOf(BY_SEPARATOR);
-        if (byIdx <= 0) return null;
+        if (byIdx <= 0) {
+            return null;
+        }
         String episode = t.substring(0, byIdx).trim();
         String show = t.substring(byIdx + BY_SEPARATOR.length()).trim();
         if (endsWithIgnoreCase(show, SC_PODCAST_SUFFIX)) {
             show = show.substring(0, show.length() - SC_PODCAST_SUFFIX.length()).trim();
         }
-        if (show.isEmpty() || episode.isEmpty()) return null;
+        if (show.isEmpty() || episode.isEmpty()) {
+            return null;
+        }
         return new ParseResult(show, episode);
     }
 

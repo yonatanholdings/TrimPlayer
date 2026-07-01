@@ -14,7 +14,9 @@ public class TrimPrefetchSubscriber {
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onNewEpisodes(NewEpisodesPrefetchEvent ev) {
-        if (ev == null || ev.items == null) return;
+        if (ev == null || ev.items == null) {
+            return;
+        }
         for (NewEpisodesPrefetchEvent.Item it : ev.items) {
             TrimPrefetcher.prefetchAnalyze(it.rssUrl, it.episodeUrl, it.episodeGuid);
         }

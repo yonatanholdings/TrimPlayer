@@ -310,8 +310,12 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
                 // page after a redirect.
                 view.scrollTo(0, 0);
                 applyViewportManager(view, url);
-                if (url == null) return;
-                if (phase != Phase.SIGNING_IN && phase != Phase.READY) return;
+                if (url == null) {
+                    return;
+                }
+                if (phase != Phase.SIGNING_IN && phase != Phase.READY) {
+                    return;
+                }
                 if (url.startsWith(LIBRARY_PREFIX)) {
                     setPhase(Phase.READY);
                     return;
@@ -388,7 +392,9 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
     }
 
     private void startFetch() {
-        if (fetchJs == null) return;
+        if (fetchJs == null) {
+            return;
+        }
         setPhase(Phase.FETCHING);
         webView.evaluateJavascript(fetchJs, null);
     }
@@ -431,7 +437,9 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
             // Trim any stale files from prior runs so we don't accumulate.
             File[] existing = cacheDir.listFiles();
             if (existing != null) {
-                for (File f : existing) f.delete();
+                for (File f : existing) {
+                    f.delete();
+                }
             }
             File out = new File(cacheDir,
                     "spotify-" + System.currentTimeMillis() + ".portcast.json");
@@ -501,7 +509,9 @@ public class SpotifyMigrationActivity extends AppCompatActivity {
      *  language segment ({@code /en/}, {@code /de/}, …) is optional;
      *  /login/{google,facebook,apple} is the common shape. */
     private static boolean isThirdPartyOauth(String url) {
-        if (url == null) return false;
+        if (url == null) {
+            return false;
+        }
         return url.matches(
                 "https://accounts\\.spotify\\.com/(?:[a-z]{2,5}(?:-[A-Z]{2})?/)?login/(google|facebook|apple).*");
     }

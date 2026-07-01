@@ -130,9 +130,15 @@ public class ChapterSeekBar extends androidx.appcompat.widget.AppCompatSeekBar {
         for (int i = 0; i < count; i++) {
             float a = segmentStarts[i];
             float b = segmentEnds[i];
-            if (a < 0) a = 0;
-            if (b > 1) b = 1;
-            if (b <= a) continue;
+            if (a < 0) {
+                a = 0;
+            }
+            if (b > 1) {
+                b = 1;
+            }
+            if (b <= a) {
+                continue;
+            }
             float left = a * width;
             float right = b * width;
             canvas.drawRect(left, segTop, right, segBottom, paintSegment);

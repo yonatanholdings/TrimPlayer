@@ -14,7 +14,6 @@ import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.ProductDetailsResponseListener;
 import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 
@@ -113,11 +112,15 @@ public final class TrimBillingManager {
     }
 
     public void addListener(Listener l) {
-        if (l != null) listeners.addIfAbsent(l);
+        if (l != null) {
+            listeners.addIfAbsent(l);
+        }
     }
 
     public void removeListener(Listener l) {
-        if (l != null) listeners.remove(l);
+        if (l != null) {
+            listeners.remove(l);
+        }
     }
 
     @Nullable
@@ -172,7 +175,9 @@ public final class TrimBillingManager {
     /** Fetch ProductDetails for our subscription SKUs and cache them.
      *  Pro screen reads from the cache to render localized prices. */
     public void queryProductsAsync() {
-        if (!connected) return;
+        if (!connected) {
+            return;
+        }
         List<QueryProductDetailsParams.Product> wanted = new ArrayList<>();
         wanted.add(QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(TrimProFragment.SKU_MONTHLY)
@@ -205,7 +210,9 @@ public final class TrimBillingManager {
                         products.put(d.getProductId(), d);
                     }
                 }
-                for (Listener l : listeners) l.onProductDetailsUpdated();
+                for (Listener l : listeners) {
+                    l.onProductDetailsUpdated();
+                }
             }
         });
     }
@@ -255,7 +262,9 @@ public final class TrimBillingManager {
             notifyPurchaseFailed(sku, "Purchase failed: " + result.getDebugMessage());
             return;
         }
-        if (purchases == null || purchases.isEmpty()) return;
+        if (purchases == null || purchases.isEmpty()) {
+            return;
+        }
         for (Purchase p : purchases) {
             handlePurchase(p);
         }
@@ -273,7 +282,9 @@ public final class TrimBillingManager {
         }
         String sku = firstSku(p);
         String purchaseToken = p.getPurchaseToken();
-        if (sku.isEmpty() || purchaseToken.isEmpty()) return;
+        if (sku.isEmpty() || purchaseToken.isEmpty()) {
+            return;
+        }
 
         String clientId = UserPreferences.getOrCreateTrimClientId();
         TrimClient.getInstance().billingVerify(clientId, sku, purchaseToken).enqueue(
@@ -329,13 +340,19 @@ public final class TrimBillingManager {
      *  each. Run on app start so a reinstall or "Restore purchases" tap
      *  recovers Pro status without re-paying. */
     public void queryPurchasesAsync() {
-        if (!connected) return;
+        if (!connected) {
+            return;
+        }
         QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
                 .setProductType(BillingClient.ProductType.SUBS)
                 .build();
         client.queryPurchasesAsync(params, (result, purchases) -> {
-            if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) return;
-            for (Purchase p : purchases) handlePurchase(p);
+            if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                return;
+            }
+            for (Purchase p : purchases) {
+                handlePurchase(p);
+            }
         });
     }
 
@@ -347,7 +364,9 @@ public final class TrimBillingManager {
     /** Convert an ISO-8601 timestamp (with offset) to unix-ms. Returns 0 on
      *  parse failure so EntitlementStore treats expiry as unknown. */
     private static long parseIsoToMs(String iso) {
-        if (iso == null || iso.isEmpty()) return 0;
+        if (iso == null || iso.isEmpty()) {
+            return 0;
+        }
         try {
             return Instant.parse(iso).toEpochMilli();
         } catch (Exception e) {
@@ -364,14 +383,20 @@ public final class TrimBillingManager {
     // --- dispatch helpers ---
 
     private void notifyUnavailable(String reason) {
-        for (Listener l : listeners) l.onBillingUnavailable(reason);
+        for (Listener l : listeners) {
+            l.onBillingUnavailable(reason);
+        }
     }
 
     private void notifyPurchaseAcknowledged(String sku) {
-        for (Listener l : listeners) l.onPurchaseAcknowledged(sku);
+        for (Listener l : listeners) {
+            l.onPurchaseAcknowledged(sku);
+        }
     }
 
     private void notifyPurchaseFailed(String sku, String message) {
-        for (Listener l : listeners) l.onPurchaseFailed(sku, message);
+        for (Listener l : listeners) {
+            l.onPurchaseFailed(sku, message);
+        }
     }
 }

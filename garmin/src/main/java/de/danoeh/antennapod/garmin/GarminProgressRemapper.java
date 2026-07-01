@@ -53,7 +53,9 @@ public final class GarminProgressRemapper {
         }
     }
 
-    /** Remap a single {@code positionSeconds} field in place, if present numeric. */
+    /**
+     * Remap a single {@code positionSeconds} field in place, if present numeric.
+     */
     private static void remapField(Map<String, Object> obj, GarminRenderManifest manifest) {
         Object pos = obj.get("positionSeconds");
         if (pos instanceof Number) {

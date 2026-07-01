@@ -133,16 +133,22 @@ public class SpotifyPodcastSearcher implements PodcastSearcher {
      *  to recover the bare show name. Returns null if the input doesn't look
      *  like that format. */
     static String stripShowSuffix(String ogDescription) {
-        if (ogDescription == null) return null;
+        if (ogDescription == null) {
+            return null;
+        }
         Matcher m = PATTERN_SHOW_SUFFIX.matcher(ogDescription);
-        if (!m.find()) return null;
+        if (!m.find()) {
+            return null;
+        }
         String show = ogDescription.substring(0, m.start()).trim();
         return show.isEmpty() ? null : show;
     }
 
     /** Parse "<episode> - <show> | Podcast on Spotify" and return the show. */
     static String extractShowFromHtmlTitle(String htmlTitle) {
-        if (htmlTitle == null) return null;
+        if (htmlTitle == null) {
+            return null;
+        }
         String t = htmlTitle.trim();
         Matcher m = PATTERN_SPOTIFY_TITLE_SUFFIX.matcher(t);
         if (m.find()) {
@@ -151,7 +157,9 @@ public class SpotifyPodcastSearcher implements PodcastSearcher {
         // Split on the LAST " - " — episode titles can contain " - " too, but
         // the show name is always at the tail.
         int sep = t.lastIndexOf(" - ");
-        if (sep <= 0) return null;
+        if (sep <= 0) {
+            return null;
+        }
         String show = t.substring(sep + 3).trim();
         return show.isEmpty() ? null : show;
     }

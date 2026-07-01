@@ -60,7 +60,9 @@ public final class ConflictAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     }
 
     public void setAll(boolean useIncoming) {
-        for (ConflictRow c : allConflicts) c.useIncoming = useIncoming;
+        for (ConflictRow c : allConflicts) {
+            c.useIncoming = useIncoming;
+        }
         refreshFlatList();
         updateSummary();
     }
@@ -81,12 +83,16 @@ public final class ConflictAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             for (ConflictRow e : episodes) {
                 if (e.useIncoming) anyIncoming = true; else anyExisting = true;
             }
-            if (anyIncoming && anyExisting) return null;
+            if (anyIncoming && anyExisting) {
+                return null;
+            }
             return anyIncoming;
         }
 
         void setAll(boolean useIncoming) {
-            for (ConflictRow e : episodes) e.useIncoming = useIncoming;
+            for (ConflictRow e : episodes) {
+                e.useIncoming = useIncoming;
+            }
         }
     }
 
@@ -143,7 +149,9 @@ public final class ConflictAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         flatList.clear();
         for (Section s : sections) {
             flatList.add(s);
-            if (s.expanded) flatList.addAll(s.episodes);
+            if (s.expanded) {
+                flatList.addAll(s.episodes);
+            }
         }
         notifyDataSetChanged();
     }

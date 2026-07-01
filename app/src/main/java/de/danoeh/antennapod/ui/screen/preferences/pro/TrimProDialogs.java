@@ -36,7 +36,9 @@ public final class TrimProDialogs {
      *  the last /segments response. Defaults to hidden if the server hasn't
      *  spoken yet — the user only sees Pro UI once the backend opts them in. */
     public static boolean isProUiVisible() {
-        if (HIDDEN) return false;
+        if (HIDDEN) {
+            return false;
+        }
         return de.danoeh.antennapod.playback.service.trim.EntitlementStore.get()
                 .snapshot().proUiVisible;
     }
@@ -53,9 +55,15 @@ public final class TrimProDialogs {
 
     public static void showQuotaUpsell(FragmentActivity activity,
                                        EntitlementStore.Snapshot snapshot) {
-        if (!isProUiVisible()) return;
-        if (activity == null || activity.isFinishing()) return;
-        if (upsellShownThisSession) return;
+        if (!isProUiVisible()) {
+            return;
+        }
+        if (activity == null || activity.isFinishing()) {
+            return;
+        }
+        if (upsellShownThisSession) {
+            return;
+        }
         upsellShownThisSession = true;
 
         int quota = snapshot != null && snapshot.quotaLimit != null
@@ -71,10 +79,18 @@ public final class TrimProDialogs {
 
     public static void showBetaGrandfatherWelcomeIfNeeded(FragmentActivity activity,
                                                           EntitlementStore.Snapshot snapshot) {
-        if (!isProUiVisible()) return;
-        if (activity == null || activity.isFinishing()) return;
-        if (snapshot == null || !snapshot.isBetaGrandfather()) return;
-        if (UserPreferences.wasBetaGrandfatherWelcomed()) return;
+        if (!isProUiVisible()) {
+            return;
+        }
+        if (activity == null || activity.isFinishing()) {
+            return;
+        }
+        if (snapshot == null || !snapshot.isBetaGrandfather()) {
+            return;
+        }
+        if (UserPreferences.wasBetaGrandfatherWelcomed()) {
+            return;
+        }
 
         new AlertDialog.Builder(activity)
                 .setTitle(R.string.trim_grandfather_title)

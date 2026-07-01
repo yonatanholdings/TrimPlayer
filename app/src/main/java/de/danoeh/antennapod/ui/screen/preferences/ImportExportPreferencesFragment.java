@@ -49,7 +49,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.greenrobot.eventbus.EventBus;
 
-import android.view.View;
 
 import java.io.File;
 import java.io.FileOutputStream;

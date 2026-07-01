@@ -112,7 +112,9 @@ public final class TrimPrefetcher {
             JSONArray arr = new JSONArray();
             if (items != null) {
                 for (QueueItem it : items) {
-                    if (it.rssUrl == null || it.episodeUrl == null) continue;
+                    if (it.rssUrl == null || it.episodeUrl == null) {
+                        continue;
+                    }
                     JSONObject o = new JSONObject();
                     o.put("rss_url", it.rssUrl);
                     o.put("episode_url", it.episodeUrl);

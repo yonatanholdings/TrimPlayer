@@ -10,6 +10,8 @@ import java.util.List;
  * tooling and tests. Pure Java (no Android deps).
  */
 public interface GarminFfmpegExecutor {
-    /** @return true on success (exit 0). */
+    /**
+     * @return true on success (exit 0).
+     */
     boolean run(List<String> args);
 }

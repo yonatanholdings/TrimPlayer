@@ -146,7 +146,9 @@ public class BoundaryEditor extends View {
         invalidate();
     }
 
-    /** Playhead position in seconds, or {@code NaN} to hide it. */
+    /**
+     * Playhead position in seconds, or {@code NaN} to hide it.
+     */
     public void setPlayhead(float seconds) {
         this.playhead = seconds;
         invalidate();
@@ -504,7 +506,9 @@ public class BoundaryEditor extends View {
             }
         }
 
-        /** Tinted region behind the bars (the design's {@code c.bg}, softened). */
+        /**
+         * Tinted region behind the bars (the design's {@code c.bg}, softened).
+         */
         static int region(String type, boolean dark) {
             int base;
             switch (type == null ? "ad" : type) {

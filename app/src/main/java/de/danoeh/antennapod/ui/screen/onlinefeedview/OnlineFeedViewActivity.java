@@ -302,9 +302,13 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         }
         download = io.reactivex.rxjava3.core.Single.<Long>fromCallable(() -> {
                     Feed feed = DBReader.getFeed(feedId, false, 0, Integer.MAX_VALUE);
-                    if (feed == null || feed.getItems() == null) return 0L;
+                    if (feed == null || feed.getItems() == null) {
+                        return 0L;
+                    }
                     String wanted = normalizeTitle(episodeTitle);
-                    if (wanted.isEmpty()) return 0L;
+                    if (wanted.isEmpty()) {
+                        return 0L;
+                    }
                     // The hint is often "<show> | <episode>" (full og:title) while
                     // RSS items are bare "<episode>". Substring matching handles
                     // both directions, but if multiple items match (e.g. "Ep 213"
@@ -314,7 +318,9 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                     int bestScore = 0;
                     for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
                         String t = normalizeTitle(fi.getTitle());
-                        if (t.isEmpty()) continue;
+                        if (t.isEmpty()) {
+                            continue;
+                        }
                         int score;
                         if (t.equals(wanted)) {
                             score = Integer.MAX_VALUE;

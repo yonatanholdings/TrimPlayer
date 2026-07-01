@@ -45,7 +45,9 @@ public final class CommunityImpactClient {
         public long activeContributors;
     }
 
-    /** Parsed {@code /community/impact} response. */
+    /**
+     * Parsed {@code /community/impact} response.
+     */
     public static final class CommunityImpact {
         public long totalMs;
         public long adsMs;

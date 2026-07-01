@@ -15,7 +15,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
@@ -111,7 +110,9 @@ public class MainActivity extends CastEnabledActivity {
     /** Set when onboarding kicks off an import; consumed by HomeFragment to show a
      *  one-time "press play, we skip the boring parts" nudge once an episode lands. */
     public static final String PREF_PENDING_FIRST_PLAY = "prefPendingFirstPlay";
-    /** Import source string that armed {@link #PREF_PENDING_FIRST_PLAY}, for analytics. */
+    /**
+     * Import source string that armed {@link #PREF_PENDING_FIRST_PLAY}, for analytics.
+     */
     public static final String PREF_PENDING_FIRST_PLAY_SOURCE = "prefPendingFirstPlaySource";
 
     public static final String EXTRA_REFRESH_ON_START = "refresh_on_start";
@@ -663,7 +664,9 @@ public class MainActivity extends CastEnabledActivity {
 
     private void handleEntitlementSnapshot(
             de.danoeh.antennapod.playback.service.trim.EntitlementStore.Snapshot snapshot) {
-        if (snapshot == null || isFinishing()) return;
+        if (snapshot == null || isFinishing()) {
+            return;
+        }
         runOnUiThread(() -> {
             if (snapshot.isQuotaExceeded()) {
                 de.danoeh.antennapod.ui.screen.preferences.pro.TrimProDialogs
@@ -781,7 +784,9 @@ public class MainActivity extends CastEnabledActivity {
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTrimAnalyzeQueued(TrimAnalyzeQueuedEvent event) {
-        if (isFinishing() || isDestroyed()) return;
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
         String podcast = event.podcastTitle.isEmpty()
                 ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
                 : event.podcastTitle;
@@ -800,7 +805,9 @@ public class MainActivity extends CastEnabledActivity {
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTrimSegmentsUnlocked(TrimSegmentsUnlockedEvent event) {
-        if (isFinishing() || isDestroyed()) return;
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
         String podcast = event.podcastTitle.isEmpty()
                 ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
                 : event.podcastTitle;
@@ -819,7 +826,9 @@ public class MainActivity extends CastEnabledActivity {
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTrimAnalyzedEmpty(TrimAnalyzedEmptyEvent event) {
-        if (isFinishing() || isDestroyed()) return;
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
         String podcast = event.podcastTitle.isEmpty()
                 ? getString(R.string.trim_analyze_queued_fallback_podcast_name)
                 : event.podcastTitle;
@@ -875,7 +884,9 @@ public class MainActivity extends CastEnabledActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onVolumeBoostAutoChanged(
             de.danoeh.antennapod.event.VolumeBoostAutoChangedEvent event) {
-        if (isFinishing() || isDestroyed()) return;
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
         String podcast = event.podcastTitle.isEmpty()
                 ? getString(R.string.app_action_fallback_podcast_name)
                 : event.podcastTitle;
@@ -911,7 +922,9 @@ public class MainActivity extends CastEnabledActivity {
         io.reactivex.rxjava3.core.Completable.fromAction(() -> {
             de.danoeh.antennapod.model.feed.Feed feed =
                     de.danoeh.antennapod.storage.database.DBReader.getFeed(feedId, false, 0, 0);
-            if (feed == null || feed.getPreferences() == null) return;
+            if (feed == null || feed.getPreferences() == null) {
+                return;
+            }
             feed.getPreferences().setVolumeAdaptionSetting(revertTo);
             de.danoeh.antennapod.storage.database.DBWriter.setFeedPreferences(feed.getPreferences());
             org.greenrobot.eventbus.EventBus.getDefault().post(
@@ -930,7 +943,9 @@ public class MainActivity extends CastEnabledActivity {
                 .subscribeOn(io.reactivex.rxjava3.schedulers.Schedulers.io())
                 .observeOn(io.reactivex.rxjava3.android.schedulers.AndroidSchedulers.mainThread())
                 .subscribe(feed -> {
-                    if (feed == null || feed.getItems() == null) return;
+                    if (feed == null || feed.getItems() == null) {
+                        return;
+                    }
                     de.danoeh.antennapod.model.feed.FeedItem match = null;
                     for (de.danoeh.antennapod.model.feed.FeedItem fi : feed.getItems()) {
                         if (fi.getId() == feedItemId) {
@@ -938,7 +953,9 @@ public class MainActivity extends CastEnabledActivity {
                             break;
                         }
                     }
-                    if (match == null) return;
+                    if (match == null) {
+                        return;
+                    }
                     loadChildFragment(
                             de.danoeh.antennapod.ui.screen.episode.ItemPagerFragment
                                     .newInstance(feed.getItems(), match));

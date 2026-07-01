@@ -83,7 +83,9 @@ public class TrimProFragment extends Fragment {
         if (getActivity() instanceof PreferenceActivity) {
             androidx.appcompat.app.ActionBar ab =
                     ((PreferenceActivity) getActivity()).getSupportActionBar();
-            if (ab != null) ab.setTitle(R.string.trim_pro_title);
+            if (ab != null) {
+                ab.setTitle(R.string.trim_pro_title);
+            }
         }
 
         MaterialButton monthly     = v.findViewById(R.id.trimProPriceMonthly);
@@ -100,7 +102,9 @@ public class TrimProFragment extends Fragment {
 
         storeListener = snapshot -> {
             View view = getView();
-            if (view == null) return;
+            if (view == null) {
+                return;
+            }
             view.post(() -> render(snapshot, view));
         };
         EntitlementStore.get().addListener(storeListener);
@@ -110,7 +114,9 @@ public class TrimProFragment extends Fragment {
         billingListener = new de.danoeh.antennapod.billing.TrimBillingManager.Listener() {
             @Override public void onProductDetailsUpdated() {
                 View view = getView();
-                if (view != null) view.post(() -> applyPriceLabels(view));
+                if (view != null) {
+                    view.post(() -> applyPriceLabels(view));
+                }
             }
             @Override public void onPurchaseAcknowledged(String productId) {
                 View view = getView();
@@ -130,7 +136,9 @@ public class TrimProFragment extends Fragment {
             }
             @Override public void onBillingUnavailable(String reason) {
                 View view = getView();
-                if (view != null) view.post(() -> hidePurchaseButtons(view));
+                if (view != null) {
+                    view.post(() -> hidePurchaseButtons(view));
+                }
             }
         };
         billing.addListener(billingListener);
@@ -270,7 +278,9 @@ public class TrimProFragment extends Fragment {
                     public void onResponse(Call<TrimClient.SupporterDigest> call,
                                            Response<TrimClient.SupporterDigest> resp) {
                         View v = getView();
-                        if (v == null) return;
+                        if (v == null) {
+                            return;
+                        }
                         // 404 / 204 → endpoint not yet built or no digest this
                         // period. Surface as "empty" so the card stays calm.
                         if (resp.code() == 404 || resp.code() == 204
@@ -288,7 +298,9 @@ public class TrimProFragment extends Fragment {
                     @Override
                     public void onFailure(Call<TrimClient.SupporterDigest> call, Throwable t) {
                         View v = getView();
-                        if (v == null) return;
+                        if (v == null) {
+                            return;
+                        }
                         showDigestMessage(v, R.string.trim_digest_error);
                     }
                 });
@@ -443,7 +455,9 @@ public class TrimProFragment extends Fragment {
     private void renderTopPodcasts(LinearLayout container,
                                    java.util.List<TrimClient.TopPodcast> items) {
         container.removeAllViews();
-        if (items == null) return;
+        if (items == null) {
+            return;
+        }
         NumberFormat nf = NumberFormat.getIntegerInstance(Locale.getDefault());
         for (TrimClient.TopPodcast p : items) {
             TextView t = new TextView(container.getContext());
@@ -455,7 +469,9 @@ public class TrimProFragment extends Fragment {
 
     private void renderBullets(LinearLayout container, java.util.List<String> items) {
         container.removeAllViews();
-        if (items == null) return;
+        if (items == null) {
+            return;
+        }
         for (String item : items) {
             TextView t = new TextView(container.getContext());
             t.setText("· " + item);
@@ -471,7 +487,9 @@ public class TrimProFragment extends Fragment {
     /** Kick off Play Billing for {@code sku}. Errors are surfaced via the
      *  TrimBillingManager listener (snackbar in this fragment). */
     private void launchPurchase(String sku) {
-        if (getActivity() == null) return;
+        if (getActivity() == null) {
+            return;
+        }
         de.danoeh.antennapod.billing.TrimBillingManager billing =
                 de.danoeh.antennapod.billing.TrimBillingManager.get(requireContext());
         if (billing.isUnavailable()) {
@@ -504,10 +522,14 @@ public class TrimProFragment extends Fragment {
         if (details == null) return;  // keep the fallback hardcoded label
         java.util.List<com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails> offers =
                 details.getSubscriptionOfferDetails();
-        if (offers == null || offers.isEmpty()) return;
+        if (offers == null || offers.isEmpty()) {
+            return;
+        }
         java.util.List<com.android.billingclient.api.ProductDetails.PricingPhase> phases =
                 offers.get(0).getPricingPhases().getPricingPhaseList();
-        if (phases == null || phases.isEmpty()) return;
+        if (phases == null || phases.isEmpty()) {
+            return;
+        }
         String formatted = phases.get(0).getFormattedPrice();  // already localized
         btn.setText(getString(labelRes, formatted));
     }

@@ -42,7 +42,9 @@ public final class PortcastImportProgress {
         return phase;
     }
 
-    /** Feeds subscribed so far. Only meaningful for {@link Phase#SUBSCRIBING}. */
+    /**
+     * Feeds subscribed so far. Only meaningful for {@link Phase#SUBSCRIBING}.
+     */
     public int getCurrent() {
         return current;
     }
@@ -52,7 +54,9 @@ public final class PortcastImportProgress {
         return total;
     }
 
-    /** True when there is a concrete {@code X of Y} to show. */
+    /**
+     * True when there is a concrete {@code X of Y} to show.
+     */
     public boolean hasCount() {
         return phase == Phase.SUBSCRIBING && total > 0;
     }

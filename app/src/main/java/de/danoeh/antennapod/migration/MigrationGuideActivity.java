@@ -59,7 +59,9 @@ public class MigrationGuideActivity extends AppCompatActivity {
         @StringRes final int appName;
         @StringRes final int intro;
         @ArrayRes final int steps;
-        /** Drawables parallel to {@link #steps}; an entry may be 0 for a text-only step. */
+        /**
+         * Drawables parallel to {@link #steps}; an entry may be 0 for a text-only step.
+         */
         @ArrayRes final int stepImages;
         /** 0 ⇒ no tip line. */
         @StringRes final int note;
