@@ -681,8 +681,8 @@
     <string name="trim_account_google_unavailable">Google sign-in isn\'t available right now</string>
     <string name="trim_account_google_no_account">No Google account found on this device. Add one in Settings, then try again.</string>
     <string name="trim_account_google_failed">Couldn\'t sign in with Google. Please try again.</string>
-    <string name="trim_account_link_watch">Link a watch</string>
-    <string name="trim_account_link_watch_message">Enter the code shown on your watch\'s sign-in screen.</string>
+    <string name="trim_account_link_watch">Link a watch (Garmin)</string>
+    <string name="trim_account_link_watch_message">Only Garmin watches are supported right now. Open TRIM Player on your watch and enter the code shown on its sign-in screen.</string>
     <!-- Deliberately NOT an example code like "ABCD-1234": users read that as a
          code to compare against and got confused when it didn't match. -->
     <string name="trim_account_link_watch_hint">Code from your watch</string>
