@@ -695,8 +695,8 @@
     <string name="trim_account_watch_episodes_failed">Couldn\'t save the selection. Please try again.</string>
     <string name="trim_account_watch_episodes_select_all">All</string>
     <string name="trim_account_watch_episodes_select_none">None</string>
-    <!-- %1$d selected, %2$d total, %3$d estimated MB on the watch -->
-    <string name="trim_account_watch_episodes_summary">%1$d of %2$d selected · ~%3$d MB on the watch</string>
+    <!-- %1$d selected, %2$d total, %3$d estimated MB, %4$s estimated listening time -->
+    <string name="trim_account_watch_episodes_summary">%1$d of %2$d selected · ~%3$d MB · %4$s</string>
     <!-- %1$s = link date, e.g. 2026-07-03 -->
     <string name="trim_account_watch_linked">Watch linked (%1$s) — unlink</string>
     <string name="trim_account_unlink_watch_title">Unlink this watch?</string>

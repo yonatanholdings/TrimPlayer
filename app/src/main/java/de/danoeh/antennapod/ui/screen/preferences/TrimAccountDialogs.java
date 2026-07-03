@@ -248,12 +248,15 @@ public final class TrimAccountDialogs {
         return Math.max(0, (long) ((durationSec - skippedSec) / speed));
     }
 
-    private static String formatOnWatch(long renderedSec) {
-        long mb = Math.max(1, renderedSec * 16_000 / 1_000_000);
+    private static String formatListeningTime(long renderedSec) {
         long h = renderedSec / 3600;
         long min = (renderedSec % 3600) / 60;
-        String time = (h > 0) ? h + " h " + min + " min" : min + " min";
-        return "~" + mb + " MB · " + time;
+        return (h > 0) ? h + " h " + min + " min" : min + " min";
+    }
+
+    private static String formatOnWatch(long renderedSec) {
+        long mb = Math.max(1, renderedSec * 16_000 / 1_000_000);
+        return "~" + mb + " MB · " + formatListeningTime(renderedSec);
     }
 
     /** Pick which queued episodes sync to the watch: grouped by podcast (header
@@ -371,7 +374,8 @@ public final class TrimAccountDialogs {
             }
             summary.setText(context.getString(
                     R.string.trim_account_watch_episodes_summary,
-                    picked, total, Math.max(1, totalSec * 16_000 / 1_000_000)));
+                    picked, total, Math.max(1, totalSec * 16_000 / 1_000_000),
+                    formatListeningTime(totalSec)));
         };
 
         BaseAdapter adapter = new BaseAdapter() {
