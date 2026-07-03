@@ -9,6 +9,7 @@ import androidx.work.WorkerParameters;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedMedia;
+import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.storage.database.DBReader;
@@ -32,9 +33,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Pushes the phone's library (subscriptions, listening queue, playback progress)
- * to the TrimBrain account so the web player and other devices stay in sync, and
- * stores the returned delta cursor.
+ * Pushes the phone's library (subscriptions, listening queue, playback progress,
+ * and per-podcast playback-speed preferences) to the TrimBrain account so the web
+ * player and other devices stay in sync, and stores the returned delta cursor.
  *
  * <p>Scope (v1): this is the <b>push</b> half plus cursor bookkeeping. Progress is
  * stamped with the media's real last-played time, so last-writer-wins resolves it
@@ -73,16 +74,19 @@ public class TrimSyncWorker extends Worker {
         // reorders / removals) and never re-assert unchanged rows over a web edit.
         Map<String, String> prevSubs = parseSubsSnapshot(UserPreferences.getTrimSyncSubsSnapshot());
         List<String> prevQueue = parseQueueSnapshot(UserPreferences.getTrimSyncQueueSnapshot());
+        Map<String, Float> prevPrefs = parsePrefsSnapshot(UserPreferences.getTrimSyncPrefsSnapshot());
         List<Feed> feeds = DBReader.getFeedList();
         List<FeedItem> queue = DBReader.getQueue();
         Map<String, String> curSubs = currentSubs(feeds);
         List<String> curQueueUrls = currentQueueUrls(queue);
+        Map<String, Float> curPrefs = currentPrefs(feeds);
 
         TrimClient.SyncRequest req = new TrimClient.SyncRequest();
         req.cursor = UserPreferences.getTrimSyncCursor();
         req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
         req.queue = diffQueue(prevQueue, queue, curQueueUrls, now);
         req.progress = buildProgress(queue, now);
+        req.prefs = diffPrefs(prevPrefs, curPrefs, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
         if (resp.networkError) {
@@ -105,15 +109,20 @@ public class TrimSyncWorker extends Worker {
         int appliedSubs = applySubscriptions(getApplicationContext(), resp.body.subscriptions, curSubs);
         int appliedProgress = applyProgress(resp.body.progress);
         int appliedQueue = applyQueue(getApplicationContext(), resp.body.queue);
+        int appliedPrefs = applyPrefs(resp.body.prefs);
         UserPreferences.setTrimSyncCursor(resp.body.cursor);
         // Snapshot the reconciled (post-apply) local state so the next diff is
         // clean — i.e. we don't echo server-applied changes back as local ones.
-        UserPreferences.setTrimSyncSubsSnapshot(serializeSubs(currentSubs(DBReader.getFeedList())));
+        List<Feed> reconciled = DBReader.getFeedList();
+        UserPreferences.setTrimSyncSubsSnapshot(serializeSubs(currentSubs(reconciled)));
         UserPreferences.setTrimSyncQueueSnapshot(serializeQueue(currentQueueUrls(DBReader.getQueue())));
+        UserPreferences.setTrimSyncPrefsSnapshot(serializePrefs(currentPrefs(reconciled)));
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
+                + " prefs=" + req.prefs.size()
                 + "; applied subs=" + appliedSubs + " progress=" + appliedProgress
-                + " queue=" + appliedQueue + ", cursor=" + resp.body.cursor);
+                + " queue=" + appliedQueue + " prefs=" + appliedPrefs
+                + ", cursor=" + resp.body.cursor);
         return Result.success();
     }
 
@@ -240,6 +249,48 @@ public class TrimSyncWorker extends Worker {
         return applied;
     }
 
+    /** Apply server-side per-feed preferences (playback speed) to the local DB.
+     *  Returns how many feeds changed. A {@code deleted} row (or a null
+     *  playback_rate) clears the override back to {@link FeedPreferences#SPEED_USE_GLOBAL}.
+     *  Feeds not subscribed locally are skipped.
+     *
+     *  <p>Prefs carry no local edit timestamp (unlike progress), so LWW is handled
+     *  by ordering: the push above runs first, so a local override edited before
+     *  this run is already on the server and comes back unchanged in the delta —
+     *  {@code applyPrefs} then no-ops on it (equal-value skip). Only genuine
+     *  other-device changes get written here. */
+    private static int applyPrefs(List<TrimClient.PrefChange> prefs) {
+        if (prefs == null || prefs.isEmpty()) {
+            return 0;
+        }
+        Map<String, Feed> byUrl = new HashMap<>();
+        for (Feed f : DBReader.getFeedList()) {
+            if (f.getDownloadUrl() != null && !f.getDownloadUrl().isEmpty()) {
+                byUrl.put(f.getDownloadUrl(), f);
+            }
+        }
+        int applied = 0;
+        for (TrimClient.PrefChange p : prefs) {
+            if (p == null || p.rss_url == null) {
+                continue;
+            }
+            Feed feed = byUrl.get(p.rss_url);
+            if (feed == null || feed.getPreferences() == null) {
+                continue; // not subscribed locally
+            }
+            float target = (p.deleted || p.playback_rate == null)
+                    ? FeedPreferences.SPEED_USE_GLOBAL : p.playback_rate;
+            FeedPreferences fp = feed.getPreferences();
+            if (fp.getFeedPlaybackSpeed() == target) {
+                continue; // already at the server value — nothing to write
+            }
+            fp.setFeedPlaybackSpeed(target);
+            DBWriter.setFeedPreferences(fp);
+            applied++;
+        }
+        return applied;
+    }
+
     // --- change-journal: current state, snapshots, and diffs ------------------
 
     private static Map<String, String> currentSubs(List<Feed> feeds) {
@@ -248,6 +299,25 @@ public class TrimSyncWorker extends Worker {
             String url = f.getDownloadUrl();
             if (url != null && !url.isEmpty()) {
                 m.put(url, f.getTitle());
+            }
+        }
+        return m;
+    }
+
+    /** Feeds with a per-podcast playback-speed override (i.e. not SPEED_USE_GLOBAL),
+     *  keyed by feed download-url. Feeds on the global speed are omitted — a
+     *  removal from this map is what emits a "cleared" tombstone in {@link #diffPrefs}. */
+    private static Map<String, Float> currentPrefs(List<Feed> feeds) {
+        Map<String, Float> m = new HashMap<>();
+        for (Feed f : feeds) {
+            String url = f.getDownloadUrl();
+            FeedPreferences prefs = f.getPreferences();
+            if (url == null || url.isEmpty() || prefs == null) {
+                continue;
+            }
+            float speed = prefs.getFeedPlaybackSpeed();
+            if (speed != FeedPreferences.SPEED_USE_GLOBAL) {
+                m.put(url, speed);
             }
         }
         return m;
@@ -332,6 +402,36 @@ public class TrimSyncWorker extends Worker {
         return out;
     }
 
+    /** Per-feed speed overrides that are new or changed (deleted=false), plus
+     *  clears (deleted=true) for feeds that dropped back to the global speed or
+     *  were unsubscribed. Unchanged overrides are omitted. */
+    private static List<TrimClient.PrefChange> diffPrefs(
+            Map<String, Float> prev, Map<String, Float> cur, long ts) {
+        List<TrimClient.PrefChange> out = new ArrayList<>();
+        for (Map.Entry<String, Float> e : cur.entrySet()) {
+            Float p = prev.get(e.getKey());
+            if (p == null || !p.equals(e.getValue())) {
+                TrimClient.PrefChange pc = new TrimClient.PrefChange();
+                pc.rss_url = e.getKey();
+                pc.playback_rate = e.getValue();
+                pc.deleted = false;
+                pc.client_ts = ts;
+                out.add(pc);
+            }
+        }
+        for (String url : prev.keySet()) {
+            if (!cur.containsKey(url)) {
+                TrimClient.PrefChange pc = new TrimClient.PrefChange();
+                pc.rss_url = url;
+                pc.playback_rate = null;
+                pc.deleted = true;
+                pc.client_ts = ts;
+                out.add(pc);
+            }
+        }
+        return out;
+    }
+
     private static boolean equalsNullable(String a, String b) {
         return a == null ? b == null : a.equals(b);
     }
@@ -388,6 +488,36 @@ public class TrimSyncWorker extends Worker {
             a.put(u);
         }
         return a.toString();
+    }
+
+    private static Map<String, Float> parsePrefsSnapshot(String json) {
+        Map<String, Float> m = new HashMap<>();
+        if (json == null || json.isEmpty()) {
+            return m;
+        }
+        try {
+            JSONObject o = new JSONObject(json);
+            Iterator<String> it = o.keys();
+            while (it.hasNext()) {
+                String k = it.next();
+                m.put(k, (float) o.optDouble(k, FeedPreferences.SPEED_USE_GLOBAL));
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "bad prefs snapshot, treating as empty: " + e.getMessage());
+        }
+        return m;
+    }
+
+    private static String serializePrefs(Map<String, Float> prefs) {
+        JSONObject o = new JSONObject();
+        try {
+            for (Map.Entry<String, Float> e : prefs.entrySet()) {
+                o.put(e.getKey(), (double) e.getValue());
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "failed to serialize prefs snapshot: " + e.getMessage());
+        }
+        return o.toString();
     }
 
     /** Progress for queued + recently-played episodes, deduped by episode URL.

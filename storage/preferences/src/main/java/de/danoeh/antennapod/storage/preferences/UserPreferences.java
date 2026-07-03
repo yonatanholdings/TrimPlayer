@@ -1014,6 +1014,7 @@ public abstract class UserPreferences {
                 .remove(PREF_TRIM_SYNC_CURSOR)
                 .remove(PREF_TRIM_SYNC_SNAP_SUBS)
                 .remove(PREF_TRIM_SYNC_SNAP_QUEUE)
+                .remove(PREF_TRIM_SYNC_SNAP_PREFS)
                 .apply();
     }
 
@@ -1023,6 +1024,7 @@ public abstract class UserPreferences {
     // of re-asserting everything every run — which would clobber web-side edits.
     public static final String PREF_TRIM_SYNC_SNAP_SUBS = "prefTrimSyncSnapSubs";
     public static final String PREF_TRIM_SYNC_SNAP_QUEUE = "prefTrimSyncSnapQueue";
+    public static final String PREF_TRIM_SYNC_SNAP_PREFS = "prefTrimSyncSnapPrefs";
 
     public static String getTrimSyncSubsSnapshot() {
         return prefs.getString(PREF_TRIM_SYNC_SNAP_SUBS, "");
@@ -1030,6 +1032,14 @@ public abstract class UserPreferences {
 
     public static void setTrimSyncSubsSnapshot(String json) {
         prefs.edit().putString(PREF_TRIM_SYNC_SNAP_SUBS, json == null ? "" : json).apply();
+    }
+
+    public static String getTrimSyncPrefsSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_PREFS, "");
+    }
+
+    public static void setTrimSyncPrefsSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_PREFS, json == null ? "" : json).apply();
     }
 
     public static String getTrimSyncQueueSnapshot() {

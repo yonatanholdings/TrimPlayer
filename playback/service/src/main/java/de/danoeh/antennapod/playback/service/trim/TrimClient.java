@@ -305,11 +305,23 @@ public class TrimClient {
         public long client_ts;
     }
 
+    /** Per-podcast preferences, keyed by feed URL. Currently just playback speed;
+     *  mirrors the backend PrefChange (account_sync.py) and the web player's
+     *  per-feed playbackRate. {@code playback_rate} null (or {@code deleted}) means
+     *  "no override — use the global speed" (FeedPreferences.SPEED_USE_GLOBAL). */
+    public static class PrefChange {
+        public String rss_url;
+        public Float playback_rate;
+        public boolean deleted;
+        public long client_ts;
+    }
+
     public static class SyncRequest {
         public long cursor;
         public List<SubscriptionChange> subscriptions;
         public List<ProgressChange> progress;
         public List<QueueChange> queue;
+        public List<PrefChange> prefs;
     }
 
     public static class SyncResponse {
@@ -317,6 +329,7 @@ public class TrimClient {
         public List<SubscriptionChange> subscriptions;
         public List<ProgressChange> progress;
         public List<QueueChange> queue;
+        public List<PrefChange> prefs;
     }
 
     /** Retrofit-free result wrapper so the app module can drive sync without a
