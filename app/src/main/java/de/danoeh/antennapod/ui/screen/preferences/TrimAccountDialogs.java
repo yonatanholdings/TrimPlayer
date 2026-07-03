@@ -157,14 +157,15 @@ public final class TrimAccountDialogs {
 
     /** Ask the watch (over BLE, via Garmin Connect) to transmit its buffered
      *  listen progress now instead of waiting for its next pause/stop/sync
-     *  trigger. Shows a dialog that stays up and reports the actual outcome:
-     *  the reply lands through TrimGarminWatchSync, which posts a
-     *  {@link GarminWatchProgressEvent} once the library is updated. */
+     *  trigger. The dialog narrates each stage — sending, delivered (or exactly
+     *  why not), then the applied result — so a hiccup is diagnosable instead
+     *  of a silent wait. The reply lands through TrimGarminWatchSync, which
+     *  posts a {@link GarminWatchProgressEvent} once the library is updated. */
     private static void pullWatchProgress(Context context) {
         TextView message = new TextView(context);
         int pad = (int) (24 * context.getResources().getDisplayMetrics().density);
         message.setPadding(pad, pad / 2, pad, 0);
-        message.setText(R.string.trim_account_pull_watch_progress_waiting);
+        message.setText(R.string.trim_account_pull_watch_progress_sending);
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.trim_account_pull_watch_progress)
@@ -195,9 +196,27 @@ public final class TrimAccountDialogs {
             main.removeCallbacks(timeout);
             EventBus.getDefault().unregister(subscriber);
         });
-        main.postDelayed(timeout, 30_000);
 
-        de.danoeh.antennapod.garmin.GarminCompanionManager.requestProgressFlush();
+        de.danoeh.antennapod.garmin.GarminCompanionManager.requestProgressFlush(result ->
+                main.post(() -> {
+                    switch (result) {
+                        case de.danoeh.antennapod.garmin.GarminCompanionManager.SEND_DELIVERED:
+                            message.setText(R.string.trim_account_pull_watch_progress_delivered);
+                            // The watch got the request — only now is a
+                            // no-reply timeout meaningful.
+                            main.postDelayed(timeout, 30_000);
+                            break;
+                        case de.danoeh.antennapod.garmin.GarminCompanionManager.SEND_NO_WATCH:
+                            message.setText(R.string.trim_account_pull_watch_progress_no_watch);
+                            break;
+                        case de.danoeh.antennapod.garmin.GarminCompanionManager.SEND_UNAVAILABLE:
+                            message.setText(R.string.trim_account_pull_watch_progress_unavailable);
+                            break;
+                        default:
+                            message.setText(R.string.trim_account_pull_watch_progress_not_delivered);
+                            break;
+                    }
+                }));
         dialog.show();
     }
 

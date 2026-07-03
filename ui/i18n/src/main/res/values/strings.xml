@@ -704,7 +704,11 @@
     <string name="trim_account_unlink">Unlink</string>
     <string name="trim_account_unlinked">Watch unlinked — it will return to sign-in</string>
     <string name="trim_account_pull_watch_progress">Get watch progress</string>
-    <string name="trim_account_pull_watch_progress_waiting">Contacting your watch…\n\nMake sure TRIM Player is open on the watch (playing or on screen). Progress also syncs automatically when you pause on the watch.</string>
+    <string name="trim_account_pull_watch_progress_sending">Sending the request to your watch…</string>
+    <string name="trim_account_pull_watch_progress_delivered">Request delivered ✓\n\nWaiting for the watch to send its progress…</string>
+    <string name="trim_account_pull_watch_progress_no_watch">No paired Garmin watch found.\n\nPair your watch in the Garmin Connect app first, then try again.</string>
+    <string name="trim_account_pull_watch_progress_unavailable">Garmin Connect isn\'t available on this phone.\n\nInstall and set up the Garmin Connect app, then restart TrimPlayer.</string>
+    <string name="trim_account_pull_watch_progress_not_delivered">Couldn\'t deliver the request to the watch.\n\nOpen TRIM Player on the watch (Music → Music Providers → TRIM Player), keep it on screen, and try again. Progress also syncs automatically when you pause playback on the watch.</string>
     <plurals name="trim_account_pull_watch_progress_received">
         <item quantity="one">Received %d episode update from the watch. Playback positions are up to date — episodes will resume past what you already heard.</item>
         <item quantity="other">Received %d episode updates from the watch. Playback positions are up to date — episodes will resume past what you already heard.</item>

@@ -132,33 +132,78 @@ public final class GarminCompanionManager {
         }
     }
 
+    /** Outcome of a {@link #requestProgressFlush} delivery attempt, reported to
+     *  the caller's listener so UI can say what actually happened instead of
+     *  waiting blind. */
+    public static final int SEND_UNAVAILABLE = 0;  // SDK not up (no Garmin Connect)
+    public static final int SEND_NO_WATCH = 1;     // no paired/registered device
+    public static final int SEND_DELIVERED = 2;    // watch accepted the message
+    public static final int SEND_FAILED = 3;       // delivery failed (app not running?)
+
+    /** Delivery-status callback for {@link #requestProgressFlush}. Called once
+     *  per request with the best outcome across devices (delivered wins). May be
+     *  invoked on a binder thread — marshal to main before touching UI. */
+    public interface SendStatusListener {
+        void onSendResult(int result);
+    }
+
     /** Ask the watch to flush its buffered listen progress now (it answers by
      *  transmitting a PortCast doc, which arrives via the normal receive path).
-     *  Best-effort: sent to every registered device; delivery requires the TRIM
-     *  Player watch app to be running (e.g. mid-playback or recently used). */
-    public static void requestProgressFlush() {
+     *  Delivery requires the TRIM Player watch app to be RUNNING on the watch
+     *  (mid-playback or on screen); the listener hears how delivery went. */
+    public static void requestProgressFlush(SendStatusListener listener) {
         GarminCompanionManager mgr;
         synchronized (GarminCompanionManager.class) {
             mgr = instance;
         }
         if (mgr == null || mgr.connectIQ == null) {
             Log.i(TAG, "requestProgressFlush: companion not started");
+            listener.onSendResult(SEND_UNAVAILABLE);
             return;
         }
-        Map<String, Object> req = new HashMap<>();
-        req.put("action", "flushProgress");
         List<IQDevice> targets;
         synchronized (mgr.registered) {
             targets = new java.util.ArrayList<>(mgr.registered.values());
         }
+        if (targets.isEmpty()) {
+            listener.onSendResult(SEND_NO_WATCH);
+            return;
+        }
+
+        Map<String, Object> req = new HashMap<>();
+        req.put("action", "flushProgress");
+        // Report once: DELIVERED as soon as any device accepts; FAILED only
+        // after every device has answered without a success.
+        final int[] remaining = {targets.size()};
+        final boolean[] reported = {false};
         for (IQDevice device : targets) {
             try {
-                mgr.connectIQ.sendMessage(device, mgr.watchApp, req,
-                        (d, a, status) -> Log.i(TAG, "flush request -> "
-                                + d.getFriendlyName() + ": " + status));
+                mgr.connectIQ.sendMessage(device, mgr.watchApp, req, (d, a, status) -> {
+                    Log.i(TAG, "flush request -> " + d.getFriendlyName() + ": " + status);
+                    synchronized (remaining) {
+                        remaining[0]--;
+                        if (reported[0]) {
+                            return;
+                        }
+                        if (status == ConnectIQ.IQMessageStatus.SUCCESS) {
+                            reported[0] = true;
+                            listener.onSendResult(SEND_DELIVERED);
+                        } else if (remaining[0] == 0) {
+                            reported[0] = true;
+                            listener.onSendResult(SEND_FAILED);
+                        }
+                    }
+                });
             } catch (Exception e) {
                 Log.w(TAG, "flush request failed for " + device.getFriendlyName()
                         + ": " + e.getMessage());
+                synchronized (remaining) {
+                    remaining[0]--;
+                    if (!reported[0] && remaining[0] == 0) {
+                        reported[0] = true;
+                        listener.onSendResult(SEND_FAILED);
+                    }
+                }
             }
         }
     }
