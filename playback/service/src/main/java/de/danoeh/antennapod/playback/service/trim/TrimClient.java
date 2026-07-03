@@ -10,6 +10,7 @@ import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -174,6 +175,18 @@ public class TrimClient {
         return api.deviceApprove(bearer, new DeviceApproveBody(userCode));
     }
 
+    /** The episode URLs picked to sync to the watch (empty = whole queue syncs). */
+    public Call<WatchSelection> getWatchSelection(String bearer) {
+        return api.getWatchSelection(bearer);
+    }
+
+    /** Replace the watch-sync selection wholesale with the checked set. */
+    public Call<WatchSelection> putWatchSelection(String bearer, java.util.List<String> episodeUrls) {
+        WatchSelection body = new WatchSelection();
+        body.episode_urls = episodeUrls;
+        return api.putWatchSelection(bearer, body);
+    }
+
     /** Blocking sync that keeps Retrofit types out of caller modules (the app
      *  module depends on playback:service via {@code implementation}, so it can
      *  see {@link SyncResult}/{@link SyncResponse} but not {@code retrofit2.*}).
@@ -255,6 +268,13 @@ public class TrimClient {
         @POST("auth/device/approve")
         Call<StatusResponse> deviceApprove(@Header("Authorization") String bearer,
                                            @Body DeviceApproveBody body);
+
+        @GET("account/watch-selection")
+        Call<WatchSelection> getWatchSelection(@Header("Authorization") String bearer);
+
+        @PUT("account/watch-selection")
+        Call<WatchSelection> putWatchSelection(@Header("Authorization") String bearer,
+                                               @Body WatchSelection body);
     }
 
     // --- Account DTOs (mirror backend accounts.py / account_sync.py) --------
@@ -294,6 +314,10 @@ public class TrimClient {
 
     public static class StatusResponse {
         public String status;
+    }
+
+    public static class WatchSelection {
+        public java.util.List<String> episode_urls;
     }
 
     public static class AuthConfig {

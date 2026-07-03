@@ -686,6 +686,15 @@
     <string name="trim_watch_brand_garmin">Garmin</string>
     <string name="trim_watch_brand_apple">Apple Watch — coming soon</string>
     <string name="trim_watch_brand_samsung">Samsung — coming soon</string>
+    <string name="trim_account_watch_episodes">Choose watch episodes</string>
+    <string name="trim_account_watch_episodes_empty">Your queue is empty — queue some episodes first.</string>
+    <string name="trim_account_watch_episodes_save">Save</string>
+    <!-- %1$d = number of selected episodes -->
+    <string name="trim_account_watch_episodes_saved">%1$d episode(s) will sync to the watch</string>
+    <string name="trim_account_watch_episodes_all">The whole queue will sync to the watch</string>
+    <string name="trim_account_watch_episodes_failed">Couldn\'t save the selection. Please try again.</string>
+    <string name="trim_account_pull_watch_progress">Get watch progress</string>
+    <string name="trim_account_pull_watch_progress_sent">Asked the watch for its progress — make sure TRIM Player is open on the watch</string>
     <!-- Deliberately NOT an example code like "ABCD-1234": users read that as a
          code to compare against and got confused when it didn't match. -->
     <string name="trim_account_link_watch_hint">Code from your watch</string>

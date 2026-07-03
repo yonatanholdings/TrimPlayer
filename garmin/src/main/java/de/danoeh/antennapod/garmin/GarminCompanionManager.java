@@ -9,10 +9,9 @@ import com.garmin.android.connectiq.IQDevice;
 import com.garmin.android.connectiq.exception.InvalidStateException;
 import com.garmin.android.connectiq.exception.ServiceUnavailableException;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * BLE link to the TRIM Player Garmin watch app, via the Connect IQ Mobile SDK
@@ -44,7 +43,7 @@ public final class GarminCompanionManager {
     private final WatchMessageHandler handler;
     private ConnectIQ connectIQ;
     private final IQApp watchApp = new IQApp(WATCH_APP_ID);
-    private final Set<Long> registered = new HashSet<>();
+    private final Map<Long, IQDevice> registered = new HashMap<>();
 
     private GarminCompanionManager(Context context, WatchMessageHandler handler) {
         this.context = context.getApplicationContext();
@@ -116,9 +115,10 @@ public final class GarminCompanionManager {
 
     private void registerAppEvents(IQDevice device) {
         synchronized (registered) {
-            if (!registered.add(device.getDeviceIdentifier())) {
+            if (registered.containsKey(device.getDeviceIdentifier())) {
                 return; // already listening on this device
             }
+            registered.put(device.getDeviceIdentifier(), device);
         }
         try {
             connectIQ.registerForAppEvents(device, watchApp,
@@ -129,6 +129,37 @@ public final class GarminCompanionManager {
                 registered.remove(device.getDeviceIdentifier());
             }
             Log.w(TAG, "registerForAppEvents failed: " + e.getMessage());
+        }
+    }
+
+    /** Ask the watch to flush its buffered listen progress now (it answers by
+     *  transmitting a PortCast doc, which arrives via the normal receive path).
+     *  Best-effort: sent to every registered device; delivery requires the TRIM
+     *  Player watch app to be running (e.g. mid-playback or recently used). */
+    public static void requestProgressFlush() {
+        GarminCompanionManager mgr;
+        synchronized (GarminCompanionManager.class) {
+            mgr = instance;
+        }
+        if (mgr == null || mgr.connectIQ == null) {
+            Log.i(TAG, "requestProgressFlush: companion not started");
+            return;
+        }
+        Map<String, Object> req = new HashMap<>();
+        req.put("action", "flushProgress");
+        List<IQDevice> targets;
+        synchronized (mgr.registered) {
+            targets = new java.util.ArrayList<>(mgr.registered.values());
+        }
+        for (IQDevice device : targets) {
+            try {
+                mgr.connectIQ.sendMessage(device, mgr.watchApp, req,
+                        (d, a, status) -> Log.i(TAG, "flush request -> "
+                                + d.getFriendlyName() + ": " + status));
+            } catch (Exception e) {
+                Log.w(TAG, "flush request failed for " + device.getFriendlyName()
+                        + ": " + e.getMessage());
+            }
         }
     }
 

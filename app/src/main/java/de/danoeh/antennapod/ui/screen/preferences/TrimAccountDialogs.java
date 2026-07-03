@@ -38,9 +38,16 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.TrimSyncWorker;
+import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.playback.service.trim.TrimAccountManager;
+import de.danoeh.antennapod.playback.service.trim.TrimClient;
+import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
@@ -67,18 +74,133 @@ public final class TrimAccountDialogs {
     }
 
     private static void showAccount(Context context, Preference pref) {
-        new AlertDialog.Builder(context)
-                .setTitle(R.string.trim_account_title)
-                .setMessage(context.getString(R.string.trim_account_pref_summary_logged_in,
+        String[] items = {
+                context.getString(R.string.trim_account_link_watch),
+                context.getString(R.string.trim_account_watch_episodes),
+                context.getString(R.string.trim_account_pull_watch_progress),
+                context.getString(R.string.trim_account_logout),
+        };
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(context.getString(R.string.trim_account_pref_summary_logged_in,
                         UserPreferences.getTrimAccountEmail()))
-                .setPositiveButton(R.string.trim_account_logout, (d, w) -> {
-                    TrimAccountManager.logout();
-                    refreshSummary(pref);
+                .setItems(items, (d, which) -> {
+                    if (which == 0) {
+                        showLinkWatch(context);
+                    } else if (which == 1) {
+                        showWatchEpisodes(context);
+                    } else if (which == 2) {
+                        pullWatchProgress(context);
+                    } else {
+                        TrimAccountManager.logout();
+                        refreshSummary(pref);
+                    }
                 })
-                .setNeutralButton(R.string.trim_account_link_watch,
-                        (d, w) -> showLinkWatch(context))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    /** Ask the watch (over BLE, via Garmin Connect) to transmit its buffered
+     *  listen progress now instead of waiting for its next pause/stop/sync
+     *  trigger. The reply arrives asynchronously through TrimGarminWatchSync,
+     *  which marks the listened parts in the library — so an episode continued
+     *  on the phone resumes after what was already heard on the watch. */
+    private static void pullWatchProgress(Context context) {
+        de.danoeh.antennapod.garmin.GarminCompanionManager.requestProgressFlush();
+        Toast.makeText(context, R.string.trim_account_pull_watch_progress_sent,
+                Toast.LENGTH_LONG).show();
+    }
+
+    /** Pick which queued episodes sync to the watch. Checked state loads from
+     *  the account (empty selection = everything syncs); saving PUTs the full
+     *  checked set. Unchecking everything is treated as "sync all" — an empty
+     *  selection is the backend's no-filter state, and "sync nothing" isn't a
+     *  state anyone asks for on purpose. */
+    private static void showWatchEpisodes(Context context) {
+        String token = UserPreferences.getTrimAccountToken();
+        if (token == null) {
+            return;
+        }
+        String bearer = "Bearer " + token;
+        Handler main = new Handler(Looper.getMainLooper());
+        new Thread(() -> {
+            List<FeedItem> queue;
+            Set<String> selected = new HashSet<>();
+            try {
+                queue = DBReader.getQueue();
+                retrofit2.Response<TrimClient.WatchSelection> resp =
+                        TrimClient.getInstance().getWatchSelection(bearer).execute();
+                if (resp.isSuccessful() && resp.body() != null
+                        && resp.body().episode_urls != null) {
+                    selected.addAll(resp.body().episode_urls);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "watch selection load failed: " + e.getMessage());
+                queue = DBReader.getQueue();
+            }
+
+            List<String> titles = new ArrayList<>();
+            List<String> urls = new ArrayList<>();
+            for (FeedItem item : queue) {
+                if (item.getMedia() == null || item.getMedia().getDownloadUrl() == null) {
+                    continue;
+                }
+                titles.add(item.getTitle() == null ? "Episode" : item.getTitle());
+                urls.add(item.getMedia().getDownloadUrl());
+            }
+            boolean[] checked = new boolean[urls.size()];
+            for (int i = 0; i < urls.size(); i++) {
+                // Empty selection = no filter = everything syncs; show that truthfully.
+                checked[i] = selected.isEmpty() || selected.contains(urls.get(i));
+            }
+
+            main.post(() -> {
+                if (titles.isEmpty()) {
+                    Toast.makeText(context, R.string.trim_account_watch_episodes_empty,
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                new MaterialAlertDialogBuilder(context)
+                        .setTitle(R.string.trim_account_watch_episodes)
+                        .setMultiChoiceItems(titles.toArray(new String[0]), checked,
+                                (d, which, isChecked) -> checked[which] = isChecked)
+                        .setPositiveButton(R.string.trim_account_watch_episodes_save,
+                                (d, w) -> saveWatchEpisodes(context, bearer, urls, checked))
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show();
+            });
+        }, "trim-watch-selection").start();
+    }
+
+    private static void saveWatchEpisodes(Context context, String bearer,
+                                          List<String> urls, boolean[] checked) {
+        List<String> picked = new ArrayList<>();
+        for (int i = 0; i < urls.size(); i++) {
+            if (checked[i]) {
+                picked.add(urls.get(i));
+            }
+        }
+        // All checked (or none) -> clear the filter so the whole queue syncs,
+        // including episodes queued later.
+        List<String> toSend = (picked.size() == urls.size() || picked.isEmpty())
+                ? new ArrayList<>() : picked;
+        Handler main = new Handler(Looper.getMainLooper());
+        new Thread(() -> {
+            String msg;
+            try {
+                retrofit2.Response<TrimClient.WatchSelection> resp =
+                        TrimClient.getInstance().putWatchSelection(bearer, toSend).execute();
+                msg = resp.isSuccessful()
+                        ? context.getString(toSend.isEmpty()
+                                ? R.string.trim_account_watch_episodes_all
+                                : R.string.trim_account_watch_episodes_saved, picked.size())
+                        : context.getString(R.string.trim_account_watch_episodes_failed);
+            } catch (Exception e) {
+                Log.w(TAG, "watch selection save failed: " + e.getMessage());
+                msg = context.getString(R.string.trim_account_watch_episodes_failed);
+            }
+            String finalMsg = msg;
+            main.post(() -> Toast.makeText(context, finalMsg, Toast.LENGTH_LONG).show());
+        }, "trim-watch-selection-save").start();
     }
 
     /** Watch pairing, step 1: pick the watch brand. Only Garmin is supported
