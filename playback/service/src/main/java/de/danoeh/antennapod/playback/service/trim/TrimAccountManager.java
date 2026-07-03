@@ -80,6 +80,58 @@ public final class TrimAccountManager {
         }
     }
 
+    /** The account's linked watch (latest client with the watch's "tpg-" id
+     *  prefix), or null when none / not signed in / request failed. Blocking. */
+    public static TrimClient.Device linkedWatch() {
+        String token = UserPreferences.getTrimAccountToken();
+        if (token == null) {
+            return null;
+        }
+        try {
+            Response<TrimClient.DevicesResponse> resp =
+                    TrimClient.getInstance().getDevices("Bearer " + token).execute();
+            if (resp.isSuccessful() && resp.body() != null && resp.body().devices != null) {
+                TrimClient.Device latest = null;
+                for (TrimClient.Device d : resp.body().devices) {
+                    if (d.client_id != null && d.client_id.startsWith("tpg-")) {
+                        latest = d; // list is oldest-first; keep the last match
+                    }
+                }
+                return latest;
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "device list failed: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /** Unlink a watch from the account. The backend revokes every outstanding
+     *  session (so the watch 401s back to sign-in) and returns a fresh token for
+     *  this phone, which is persisted here. Blocking.
+     *  @return null on success, else a human-readable error message. */
+    public static String unlinkDevice(String clientId) {
+        String token = UserPreferences.getTrimAccountToken();
+        if (token == null) {
+            return "Sign in to your TrimPlayer account first.";
+        }
+        try {
+            Response<TrimClient.UnlinkResponse> resp =
+                    TrimClient.getInstance().unlinkDevice("Bearer " + token, clientId).execute();
+            if (resp.isSuccessful() && resp.body() != null && resp.body().token != null) {
+                // The unlink revoked ALL sessions; adopt the replacement token.
+                UserPreferences.setTrimAccount(resp.body().token, resp.body().email);
+                return null;
+            }
+            if (resp.code() == 404) {
+                return "That watch is no longer linked.";
+            }
+            return "Unlinking failed (" + resp.code() + "). Please try again.";
+        } catch (IOException e) {
+            Log.w(TAG, "unlink network failure: " + e.getMessage());
+            return "Network error. Check your connection and try again.";
+        }
+    }
+
     /** Approve the pairing code shown on a watch's sign-in screen, binding the
      *  watch to this account (device-link flow — same as the web player's /link
      *  page). Blocking.

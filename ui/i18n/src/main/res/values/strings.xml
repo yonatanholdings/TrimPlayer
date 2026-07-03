@@ -693,8 +693,25 @@
     <string name="trim_account_watch_episodes_saved">%1$d episode(s) will sync to the watch</string>
     <string name="trim_account_watch_episodes_all">The whole queue will sync to the watch</string>
     <string name="trim_account_watch_episodes_failed">Couldn\'t save the selection. Please try again.</string>
+    <string name="trim_account_watch_episodes_select_all">All</string>
+    <string name="trim_account_watch_episodes_select_none">None</string>
+    <!-- %1$d selected, %2$d total, %3$d estimated MB on the watch -->
+    <string name="trim_account_watch_episodes_summary">%1$d of %2$d selected · ~%3$d MB on the watch</string>
+    <!-- %1$s = link date, e.g. 2026-07-03 -->
+    <string name="trim_account_watch_linked">Watch linked (%1$s) — unlink</string>
+    <string name="trim_account_unlink_watch_title">Unlink this watch?</string>
+    <string name="trim_account_unlink_watch_message">The watch will be signed out and stop syncing episodes. You can link it again anytime with a new code.</string>
+    <string name="trim_account_unlink">Unlink</string>
+    <string name="trim_account_unlinked">Watch unlinked — it will return to sign-in</string>
     <string name="trim_account_pull_watch_progress">Get watch progress</string>
-    <string name="trim_account_pull_watch_progress_sent">Asked the watch for its progress — make sure TRIM Player is open on the watch</string>
+    <string name="trim_account_pull_watch_progress_waiting">Contacting your watch…\n\nMake sure TRIM Player is open on the watch (playing or on screen). Progress also syncs automatically when you pause on the watch.</string>
+    <plurals name="trim_account_pull_watch_progress_received">
+        <item quantity="one">Received %d episode update from the watch. Playback positions are up to date — episodes will resume past what you already heard.</item>
+        <item quantity="other">Received %d episode updates from the watch. Playback positions are up to date — episodes will resume past what you already heard.</item>
+    </plurals>
+    <string name="trim_account_pull_watch_progress_none">The watch replied, but it had no new listening progress to report.</string>
+    <string name="trim_account_pull_watch_progress_failed">The watch sent a report, but applying it failed. Please try again.</string>
+    <string name="trim_account_pull_watch_progress_timeout">No reply from the watch after 30 seconds.\n\nMake sure TRIM Player is open on the watch and your phone\'s Garmin Connect app is connected, then try again.</string>
     <!-- Deliberately NOT an example code like "ABCD-1234": users read that as a
          code to compare against and got confused when it didn't match. -->
     <string name="trim_account_link_watch_hint">Code from your watch</string>

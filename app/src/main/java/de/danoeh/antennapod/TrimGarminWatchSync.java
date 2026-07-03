@@ -54,7 +54,10 @@ public final class TrimGarminWatchSync implements GarminCompanionManager.WatchMe
     @Override
     public void onWatchMessage(Map<String, Object> portcastDoc) {
         GarminManifestLookup lookup = buildLookup(portcastDoc);
-        new GarminPortcastBridge(context, lookup).applyFromWatchMessage(portcastDoc);
+        int applied = new GarminPortcastBridge(context, lookup).applyFromWatchMessage(portcastDoc);
+        // Tell any waiting UI (the "Get watch progress" dialog) what landed.
+        org.greenrobot.eventbus.EventBus.getDefault()
+                .post(new GarminWatchProgressEvent(applied));
     }
 
     /** Compose the manifest lookup for this document: the persisted store first

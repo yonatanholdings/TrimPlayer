@@ -50,8 +50,9 @@ public class GarminPortcastBridge {
      * rendered-time positions to original time, then import.
      *
      * @param message the top-level PortCast document as a nested Map (from the SDK)
+     * @return how many episode states were applied, or -1 on failure
      */
-    public void applyFromWatchMessage(Map<String, Object> message) {
+    public int applyFromWatchMessage(Map<String, Object> message) {
         try {
             GarminProgressRemapper.remap(message, manifests);
             byte[] bytes = new JSONObject(message).toString().getBytes(StandardCharsets.UTF_8);
@@ -60,8 +61,10 @@ public class GarminPortcastBridge {
             PortcastImporter.executeImport(context, preview);
             Log.i(TAG, "Applied watch PortCast doc: " + preview.nonConflictingStates.size()
                     + " episode state(s)");
+            return preview.nonConflictingStates.size();
         } catch (Exception e) {
             Log.e(TAG, "Failed to apply PortCast doc from watch", e);
+            return -1;
         }
     }
 }

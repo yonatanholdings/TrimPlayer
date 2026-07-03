@@ -180,6 +180,19 @@ public class TrimClient {
         return api.getWatchSelection(bearer);
     }
 
+    /** Clients linked to the account (watch installs carry a "tpg-" prefix). */
+    public Call<DevicesResponse> getDevices(String bearer) {
+        return api.getDevices(bearer);
+    }
+
+    /** Unlink a device. Revokes ALL outstanding sessions (token_version bump) —
+     *  the response carries a fresh token for this caller; persist it. */
+    public Call<UnlinkResponse> unlinkDevice(String bearer, String clientId) {
+        UnlinkDeviceBody body = new UnlinkDeviceBody();
+        body.client_id = clientId;
+        return api.unlinkDevice(bearer, body);
+    }
+
     /** Replace the watch-sync selection wholesale with the checked set. */
     public Call<WatchSelection> putWatchSelection(String bearer, java.util.List<String> episodeUrls) {
         WatchSelection body = new WatchSelection();
@@ -272,6 +285,13 @@ public class TrimClient {
         @GET("account/watch-selection")
         Call<WatchSelection> getWatchSelection(@Header("Authorization") String bearer);
 
+        @GET("account/devices")
+        Call<DevicesResponse> getDevices(@Header("Authorization") String bearer);
+
+        @POST("account/devices/unlink")
+        Call<UnlinkResponse> unlinkDevice(@Header("Authorization") String bearer,
+                                          @Body UnlinkDeviceBody body);
+
         @PUT("account/watch-selection")
         Call<WatchSelection> putWatchSelection(@Header("Authorization") String bearer,
                                                @Body WatchSelection body);
@@ -318,6 +338,24 @@ public class TrimClient {
 
     public static class WatchSelection {
         public java.util.List<String> episode_urls;
+    }
+
+    public static class Device {
+        public String client_id;
+        public String linked_at;
+    }
+
+    public static class DevicesResponse {
+        public java.util.List<Device> devices;
+    }
+
+    public static class UnlinkDeviceBody {
+        public String client_id;
+    }
+
+    /** Unlink response: status + a fresh session (the old one was revoked). */
+    public static class UnlinkResponse extends AuthResponse {
+        public String status;
     }
 
     public static class AuthConfig {

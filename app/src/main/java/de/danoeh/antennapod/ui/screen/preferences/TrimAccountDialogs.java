@@ -4,13 +4,18 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,17 +41,26 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import de.danoeh.antennapod.GarminWatchProgressEvent;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.TrimSyncWorker;
 import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.playback.service.trim.TrimAccountManager;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
+import de.danoeh.antennapod.playback.service.trim.TrimSegmentCache;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
@@ -74,8 +88,21 @@ public final class TrimAccountDialogs {
     }
 
     private static void showAccount(Context context, Preference pref) {
+        // The first row reflects the real link state, so look it up first.
+        Handler main = new Handler(Looper.getMainLooper());
+        new Thread(() -> {
+            TrimClient.Device watch = TrimAccountManager.linkedWatch();
+            main.post(() -> showAccountMenu(context, pref, watch));
+        }, "trim-account-devices").start();
+    }
+
+    private static void showAccountMenu(Context context, Preference pref,
+                                        TrimClient.Device watch) {
+        String watchRow = (watch == null)
+                ? context.getString(R.string.trim_account_link_watch)
+                : context.getString(R.string.trim_account_watch_linked, shortDate(watch.linked_at));
         String[] items = {
-                context.getString(R.string.trim_account_link_watch),
+                watchRow,
                 context.getString(R.string.trim_account_watch_episodes),
                 context.getString(R.string.trim_account_pull_watch_progress),
                 context.getString(R.string.trim_account_logout),
@@ -85,7 +112,11 @@ public final class TrimAccountDialogs {
                         UserPreferences.getTrimAccountEmail()))
                 .setItems(items, (d, which) -> {
                     if (which == 0) {
-                        showLinkWatch(context);
+                        if (watch == null) {
+                            showLinkWatch(context);
+                        } else {
+                            confirmUnlinkWatch(context, watch);
+                        }
                     } else if (which == 1) {
                         showWatchEpisodes(context);
                     } else if (which == 2) {
@@ -99,22 +130,138 @@ public final class TrimAccountDialogs {
                 .show();
     }
 
-    /** Ask the watch (over BLE, via Garmin Connect) to transmit its buffered
-     *  listen progress now instead of waiting for its next pause/stop/sync
-     *  trigger. The reply arrives asynchronously through TrimGarminWatchSync,
-     *  which marks the listened parts in the library — so an episode continued
-     *  on the phone resumes after what was already heard on the watch. */
-    private static void pullWatchProgress(Context context) {
-        de.danoeh.antennapod.garmin.GarminCompanionManager.requestProgressFlush();
-        Toast.makeText(context, R.string.trim_account_pull_watch_progress_sent,
-                Toast.LENGTH_LONG).show();
+    /** "2026-07-03T16:08:09+00:00" -> "2026-07-03" (readable without java.time,
+     *  which needs API 26 / desugaring). */
+    private static String shortDate(String iso) {
+        return (iso != null && iso.length() >= 10) ? iso.substring(0, 10) : "";
     }
 
-    /** Pick which queued episodes sync to the watch. Checked state loads from
-     *  the account (empty selection = everything syncs); saving PUTs the full
-     *  checked set. Unchecking everything is treated as "sync all" — an empty
-     *  selection is the backend's no-filter state, and "sync nothing" isn't a
-     *  state anyone asks for on purpose. */
+    private static void confirmUnlinkWatch(Context context, TrimClient.Device watch) {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.trim_account_unlink_watch_title)
+                .setMessage(R.string.trim_account_unlink_watch_message)
+                .setPositiveButton(R.string.trim_account_unlink, (d, w) -> {
+                    Handler main = new Handler(Looper.getMainLooper());
+                    new Thread(() -> {
+                        String error = TrimAccountManager.unlinkDevice(watch.client_id);
+                        main.post(() -> Toast.makeText(context,
+                                error == null
+                                        ? context.getString(R.string.trim_account_unlinked)
+                                        : error,
+                                Toast.LENGTH_LONG).show());
+                    }, "trim-unlink-watch").start();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Ask the watch (over BLE, via Garmin Connect) to transmit its buffered
+     *  listen progress now instead of waiting for its next pause/stop/sync
+     *  trigger. Shows a dialog that stays up and reports the actual outcome:
+     *  the reply lands through TrimGarminWatchSync, which posts a
+     *  {@link GarminWatchProgressEvent} once the library is updated. */
+    private static void pullWatchProgress(Context context) {
+        TextView message = new TextView(context);
+        int pad = (int) (24 * context.getResources().getDisplayMetrics().density);
+        message.setPadding(pad, pad / 2, pad, 0);
+        message.setText(R.string.trim_account_pull_watch_progress_waiting);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.trim_account_pull_watch_progress)
+                .setView(message)
+                .setNegativeButton(R.string.close_label, null)
+                .create();
+
+        Handler main = new Handler(Looper.getMainLooper());
+        Runnable timeout = () -> message.setText(
+                R.string.trim_account_pull_watch_progress_timeout);
+        Object subscriber = new Object() {
+            @Subscribe(threadMode = ThreadMode.MAIN)
+            public void onEventMainThread(GarminWatchProgressEvent event) {
+                main.removeCallbacks(timeout);
+                if (event.appliedCount > 0) {
+                    message.setText(context.getResources().getQuantityString(
+                            R.plurals.trim_account_pull_watch_progress_received,
+                            event.appliedCount, event.appliedCount));
+                } else if (event.appliedCount == 0) {
+                    message.setText(R.string.trim_account_pull_watch_progress_none);
+                } else {
+                    message.setText(R.string.trim_account_pull_watch_progress_failed);
+                }
+            }
+        };
+        EventBus.getDefault().register(subscriber);
+        dialog.setOnDismissListener(d -> {
+            main.removeCallbacks(timeout);
+            EventBus.getDefault().unregister(subscriber);
+        });
+        main.postDelayed(timeout, 30_000);
+
+        de.danoeh.antennapod.garmin.GarminCompanionManager.requestProgressFlush();
+        dialog.show();
+    }
+
+    // --- watch episode picker ----------------------------------------------
+
+    /** One row in the picker: a podcast header (toggles its group) or an episode
+     *  (title + estimated on-watch size/duration). */
+    private static class WatchRow {
+        final boolean header;
+        final String title;
+        final String subtitle;   // episode: "~26 MB · 41 min"; header: null
+        final String url;        // episode only
+        final int groupStart;    // header only: index of first episode row
+        int groupEnd;            // header only: exclusive end
+        boolean checked;         // episode only
+
+        WatchRow(boolean header, String title, String subtitle, String url, int groupStart) {
+            this.header = header;
+            this.title = title;
+            this.subtitle = subtitle;
+            this.url = url;
+            this.groupStart = groupStart;
+        }
+    }
+
+    /** Estimated rendered size/length of an episode on the watch: the file is
+     *  trimmed (skip segments removed) and sped to the feed's synced rate, at
+     *  ~128 kbps mp3 (16 KB/s). Mirrors the backend render inputs. */
+    private static long estimatedRenderedSeconds(Context context, FeedItem item) {
+        long durationSec = item.getMedia().getDuration() / 1000L;
+        double skippedSec = 0;
+        List<TrimClient.Segment> segments =
+                TrimSegmentCache.get(context, item.getItemIdentifier());
+        if (segments != null) {
+            for (TrimClient.Segment s : segments) {
+                if (s != null && s.end > s.start) {
+                    skippedSec += s.end - s.start;
+                }
+            }
+        }
+        double speed = 1.0;
+        if (item.getFeed() != null && item.getFeed().getPreferences() != null) {
+            float feedSpeed = item.getFeed().getPreferences().getFeedPlaybackSpeed();
+            if (feedSpeed != FeedPreferences.SPEED_USE_GLOBAL) {
+                speed = feedSpeed;
+            }
+        }
+        return Math.max(0, (long) ((durationSec - skippedSec) / speed));
+    }
+
+    private static String formatOnWatch(long renderedSec) {
+        long mb = Math.max(1, renderedSec * 16_000 / 1_000_000);
+        long h = renderedSec / 3600;
+        long min = (renderedSec % 3600) / 60;
+        String time = (h > 0) ? h + " h " + min + " min" : min + " min";
+        return "~" + mb + " MB · " + time;
+    }
+
+    /** Pick which queued episodes sync to the watch: grouped by podcast (header
+     *  toggles the group), each episode showing its estimated on-watch size and
+     *  listening time, with All/None bulk actions and a live size total.
+     *  Checked state loads from the account (empty selection = everything
+     *  syncs); saving PUTs the full checked set. All-checked (or none) clears
+     *  the filter so future queue adds keep syncing. */
     private static void showWatchEpisodes(Context context) {
         String token = UserPreferences.getTrimAccountToken();
         if (token == null) {
@@ -123,10 +270,9 @@ public final class TrimAccountDialogs {
         String bearer = "Bearer " + token;
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
-            List<FeedItem> queue;
+            List<FeedItem> queue = DBReader.getQueue();
             Set<String> selected = new HashSet<>();
             try {
-                queue = DBReader.getQueue();
                 retrofit2.Response<TrimClient.WatchSelection> resp =
                         TrimClient.getInstance().getWatchSelection(bearer).execute();
                 if (resp.isSuccessful() && resp.body() != null
@@ -135,54 +281,246 @@ public final class TrimAccountDialogs {
                 }
             } catch (Exception e) {
                 Log.w(TAG, "watch selection load failed: " + e.getMessage());
-                queue = DBReader.getQueue();
             }
 
-            List<String> titles = new ArrayList<>();
-            List<String> urls = new ArrayList<>();
+            // Group by podcast, preserving queue order of first appearance.
+            Map<String, List<FeedItem>> byPodcast = new LinkedHashMap<>();
             for (FeedItem item : queue) {
                 if (item.getMedia() == null || item.getMedia().getDownloadUrl() == null) {
                     continue;
                 }
-                titles.add(item.getTitle() == null ? "Episode" : item.getTitle());
-                urls.add(item.getMedia().getDownloadUrl());
+                String podcast = (item.getFeed() != null && item.getFeed().getTitle() != null)
+                        ? item.getFeed().getTitle() : "Podcast";
+                byPodcast.computeIfAbsent(podcast, k -> new ArrayList<>()).add(item);
             }
-            boolean[] checked = new boolean[urls.size()];
-            for (int i = 0; i < urls.size(); i++) {
-                // Empty selection = no filter = everything syncs; show that truthfully.
-                checked[i] = selected.isEmpty() || selected.contains(urls.get(i));
+
+            List<WatchRow> rows = new ArrayList<>();
+            List<long[]> renderedSecByRow = new ArrayList<>(); // parallel: [renderedSec]
+            for (Map.Entry<String, List<FeedItem>> group : byPodcast.entrySet()) {
+                WatchRow header = new WatchRow(true, group.getKey(), null, null, rows.size() + 1);
+                rows.add(header);
+                renderedSecByRow.add(new long[] {0});
+                for (FeedItem item : group.getValue()) {
+                    long renderedSec = estimatedRenderedSeconds(context, item);
+                    WatchRow row = new WatchRow(false,
+                            item.getTitle() == null ? "Episode" : item.getTitle(),
+                            formatOnWatch(renderedSec),
+                            item.getMedia().getDownloadUrl(), -1);
+                    row.checked = selected.isEmpty() || selected.contains(row.url);
+                    rows.add(row);
+                    renderedSecByRow.add(new long[] {renderedSec});
+                }
+                header.groupEnd = rows.size();
             }
 
             main.post(() -> {
-                if (titles.isEmpty()) {
+                if (rows.isEmpty()) {
                     Toast.makeText(context, R.string.trim_account_watch_episodes_empty,
                             Toast.LENGTH_LONG).show();
                     return;
                 }
-                new MaterialAlertDialogBuilder(context)
-                        .setTitle(R.string.trim_account_watch_episodes)
-                        .setMultiChoiceItems(titles.toArray(new String[0]), checked,
-                                (d, which, isChecked) -> checked[which] = isChecked)
-                        .setPositiveButton(R.string.trim_account_watch_episodes_save,
-                                (d, w) -> saveWatchEpisodes(context, bearer, urls, checked))
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show();
+                showWatchEpisodesDialog(context, bearer, rows, renderedSecByRow);
             });
         }, "trim-watch-selection").start();
     }
 
-    private static void saveWatchEpisodes(Context context, String bearer,
-                                          List<String> urls, boolean[] checked) {
+    private static void showWatchEpisodesDialog(Context context, String bearer,
+                                                List<WatchRow> rows,
+                                                List<long[]> renderedSecByRow) {
+        float dp = context.getResources().getDisplayMetrics().density;
+
+        TextView summary = new TextView(context);
+        summary.setPadding((int) (24 * dp), (int) (4 * dp), (int) (24 * dp), (int) (4 * dp));
+
+        LinearLayout bulkBar = new LinearLayout(context);
+        bulkBar.setOrientation(LinearLayout.HORIZONTAL);
+        bulkBar.setPadding((int) (16 * dp), 0, (int) (16 * dp), 0);
+        MaterialButton allBtn = new MaterialButton(context, null,
+                com.google.android.material.R.attr.borderlessButtonStyle);
+        allBtn.setText(R.string.trim_account_watch_episodes_select_all);
+        MaterialButton noneBtn = new MaterialButton(context, null,
+                com.google.android.material.R.attr.borderlessButtonStyle);
+        noneBtn.setText(R.string.trim_account_watch_episodes_select_none);
+        bulkBar.addView(allBtn);
+        bulkBar.addView(noneBtn);
+
+        ListView list = new ListView(context);
+        list.setDivider(null);
+
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.addView(bulkBar);
+        container.addView(summary);
+        container.addView(list, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        Runnable updateSummary = () -> {
+            int total = 0;
+            int picked = 0;
+            long totalSec = 0;
+            for (int i = 0; i < rows.size(); i++) {
+                WatchRow r = rows.get(i);
+                if (r.header) {
+                    continue;
+                }
+                total++;
+                if (r.checked) {
+                    picked++;
+                    totalSec += renderedSecByRow.get(i)[0];
+                }
+            }
+            summary.setText(context.getString(
+                    R.string.trim_account_watch_episodes_summary,
+                    picked, total, Math.max(1, totalSec * 16_000 / 1_000_000)));
+        };
+
+        BaseAdapter adapter = new BaseAdapter() {
+            @Override
+            public int getCount() {
+                return rows.size();
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return rows.get(position);
+            }
+
+            @Override
+            public long getItemId(int position) {
+                return position;
+            }
+
+            @Override
+            public int getViewTypeCount() {
+                return 2;
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                return rows.get(position).header ? 0 : 1;
+            }
+
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                WatchRow row = rows.get(position);
+                LinearLayout line;
+                CheckBox box;
+                TextView title;
+                TextView subtitle = null;
+                if (convertView instanceof LinearLayout) {
+                    line = (LinearLayout) convertView;
+                    box = (CheckBox) line.getChildAt(0);
+                    LinearLayout textCol = (LinearLayout) line.getChildAt(1);
+                    title = (TextView) textCol.getChildAt(0);
+                    if (textCol.getChildCount() > 1) {
+                        subtitle = (TextView) textCol.getChildAt(1);
+                    }
+                } else {
+                    line = new LinearLayout(context);
+                    line.setOrientation(LinearLayout.HORIZONTAL);
+                    line.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                    int lead = row.header ? (int) (12 * dp) : (int) (28 * dp);
+                    line.setPadding(lead, (int) (6 * dp), (int) (16 * dp), (int) (6 * dp));
+                    box = new CheckBox(context);
+                    line.addView(box);
+                    LinearLayout textCol = new LinearLayout(context);
+                    textCol.setOrientation(LinearLayout.VERTICAL);
+                    title = new TextView(context);
+                    textCol.addView(title);
+                    if (row.header) {
+                        title.setTypeface(null, android.graphics.Typeface.BOLD);
+                    } else {
+                        subtitle = new TextView(context);
+                        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+                        subtitle.setAlpha(0.6f);
+                        textCol.addView(subtitle);
+                    }
+                    line.addView(textCol);
+                }
+
+                title.setText(row.title);
+                if (!row.header && subtitle != null) {
+                    subtitle.setText(row.subtitle);
+                }
+                box.setOnCheckedChangeListener(null);
+                if (row.header) {
+                    boolean allChecked = true;
+                    for (int i = row.groupStart; i < row.groupEnd; i++) {
+                        if (!rows.get(i).checked) {
+                            allChecked = false;
+                            break;
+                        }
+                    }
+                    box.setChecked(allChecked);
+                    box.setOnCheckedChangeListener((b, isChecked) -> {
+                        for (int i = row.groupStart; i < row.groupEnd; i++) {
+                            rows.get(i).checked = isChecked;
+                        }
+                        notifyDataSetChanged();
+                        updateSummary.run();
+                    });
+                } else {
+                    box.setChecked(row.checked);
+                    box.setOnCheckedChangeListener((b, isChecked) -> {
+                        row.checked = isChecked;
+                        notifyDataSetChanged(); // refresh the group header state
+                        updateSummary.run();
+                    });
+                }
+                View.OnClickListener rowClick = v -> box.toggle();
+                line.setOnClickListener(rowClick);
+                title.setOnClickListener(rowClick);
+                return line;
+            }
+        };
+        list.setAdapter(adapter);
+
+        allBtn.setOnClickListener(v -> {
+            for (WatchRow r : rows) {
+                if (!r.header) {
+                    r.checked = true;
+                }
+            }
+            adapter.notifyDataSetChanged();
+            updateSummary.run();
+        });
+        noneBtn.setOnClickListener(v -> {
+            for (WatchRow r : rows) {
+                if (!r.header) {
+                    r.checked = false;
+                }
+            }
+            adapter.notifyDataSetChanged();
+            updateSummary.run();
+        });
+        updateSummary.run();
+
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.trim_account_watch_episodes)
+                .setView(container)
+                .setPositiveButton(R.string.trim_account_watch_episodes_save,
+                        (d, w) -> saveWatchEpisodes(context, bearer, rows))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private static void saveWatchEpisodes(Context context, String bearer, List<WatchRow> rows) {
         List<String> picked = new ArrayList<>();
-        for (int i = 0; i < urls.size(); i++) {
-            if (checked[i]) {
-                picked.add(urls.get(i));
+        int total = 0;
+        for (WatchRow r : rows) {
+            if (r.header) {
+                continue;
+            }
+            total++;
+            if (r.checked) {
+                picked.add(r.url);
             }
         }
         // All checked (or none) -> clear the filter so the whole queue syncs,
         // including episodes queued later.
-        List<String> toSend = (picked.size() == urls.size() || picked.isEmpty())
+        List<String> toSend = (picked.size() == total || picked.isEmpty())
                 ? new ArrayList<>() : picked;
+        int pickedCount = picked.size();
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
             String msg;
@@ -192,7 +530,7 @@ public final class TrimAccountDialogs {
                 msg = resp.isSuccessful()
                         ? context.getString(toSend.isEmpty()
                                 ? R.string.trim_account_watch_episodes_all
-                                : R.string.trim_account_watch_episodes_saved, picked.size())
+                                : R.string.trim_account_watch_episodes_saved, pickedCount)
                         : context.getString(R.string.trim_account_watch_episodes_failed);
             } catch (Exception e) {
                 Log.w(TAG, "watch selection save failed: " + e.getMessage());
