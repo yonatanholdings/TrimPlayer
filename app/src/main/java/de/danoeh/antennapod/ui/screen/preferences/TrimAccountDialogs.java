@@ -6,8 +6,10 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -79,10 +81,51 @@ public final class TrimAccountDialogs {
                 .show();
     }
 
-    /** Watch pairing: enter the code from the watch's sign-in screen and approve
-     *  it against the account (device-link flow — the in-app equivalent of the
-     *  web player's /link page, so pairing needs no second device). */
+    /** Watch pairing, step 1: pick the watch brand. Only Garmin is supported
+     *  today — Apple/Samsung rows are visible but disabled ("coming soon"), so
+     *  the roadmap is explicit instead of users guessing what works. */
     private static void showLinkWatch(Context context) {
+        String[] brands = {
+                context.getString(R.string.trim_watch_brand_garmin),
+                context.getString(R.string.trim_watch_brand_apple),
+                context.getString(R.string.trim_watch_brand_samsung),
+        };
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                context, android.R.layout.simple_list_item_1, brands) {
+            @Override
+            public boolean areAllItemsEnabled() {
+                return false;
+            }
+
+            @Override
+            public boolean isEnabled(int position) {
+                return position == 0; // Garmin only
+            }
+
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View v = super.getView(position, convertView, parent);
+                TextView tv = v.findViewById(android.R.id.text1);
+                tv.setEnabled(position == 0); // grey out the coming-soon rows
+                return v;
+            }
+        };
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.trim_account_link_watch)
+                .setAdapter(adapter, (d, which) -> {
+                    if (which == 0) {
+                        showGarminCodeDialog(context);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Watch pairing, step 2 (Garmin): enter the code from the watch's sign-in
+     *  screen and approve it against the account (device-link flow — the in-app
+     *  equivalent of the web player's /link page, so pairing needs no second
+     *  device). */
+    private static void showGarminCodeDialog(Context context) {
         TextInputLayout layout = new TextInputLayout(context);
         TextInputEditText input = new TextInputEditText(context);
         input.setHint(R.string.trim_account_link_watch_hint);
