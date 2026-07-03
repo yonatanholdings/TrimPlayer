@@ -40,90 +40,32 @@ whole chain (forward-map a position → render → simulate the watch reporting 
 remap → recover the original) and checks a real ffmpeg render's duration matches the
 manifest's prediction.
 
-## Still to wire (needs the Garmin AAR + an Android build)
+## BLE transport + receive path (wired 2026-07-03)
 
-**1. Connect IQ Mobile SDK dependency.** Not on Maven Central — download the
-Android Companion SDK AAR from developer.garmin.com, drop it in `garmin/libs/`, add
-a `flatDir` repo to `settings.gradle`'s `dependencyResolutionManagement`, and
-uncomment the dependency in `garmin/build.gradle`.
+The Connect IQ Mobile SDK is now on **Maven Central**
+(`com.garmin.connectiq:ciq-companion-app-sdk:2.4.0@aar`, enabled in
+`garmin/build.gradle`) — no manual AAR drop needed.
 
-**2. `GarminConnectIqManager`** — the BLE transport. Reference implementation to
-add as `src/main/java/.../GarminConnectIqManager.java` once the SDK resolves:
+- **`GarminCompanionManager`** (this module): binds the SDK (relayed through the
+  Garmin Connect Mobile app), registers for app events on every known device
+  (re-registering on device connect) for the watch app UUID, and hands each
+  received PortCast document to a `WatchMessageHandler`. Failure-tolerant: no
+  Garmin Connect / no watch is a logged no-op.
+- **`TrimGarminWatchSync`** (app module): the handler. Composes the manifest
+  lookup — `GarminRenderManifestStore` first (phone renders), else it **rebuilds
+  the manifest for server-rendered episodes** from the episode's cached segments
+  (`TrimSegmentCache`, the same canonical segments the backend rendered with) and
+  the feed's synced playback rate (global-default feeds render at 1.0×, matching
+  the backend's query default) — then runs `GarminPortcastBridge`. Started from
+  `PodcastApp.onCreate`.
+- **Send (phone → watch)** is not wired: resume points are informational-only
+  today (the watch cannot seek cached audio), so there's nothing user-visible to
+  send yet. `ConnectIQ.sendMessage` is the one-liner when that changes.
 
-```java
-package de.danoeh.antennapod.garmin;
-
-import android.content.Context;
-import com.garmin.android.connectiq.ConnectIQ;
-import com.garmin.android.connectiq.IQApp;
-import com.garmin.android.connectiq.IQDevice;
-import java.util.List;
-import java.util.Map;
-
-/** Connects to the TRIM Player watch app and bridges PortCast over BLE. */
-public class GarminConnectIqManager {
-    // Must match manifest.xml id in the trimplayer-garmin watch repo.
-    private static final String WATCH_APP_ID = "50484e2303d1f3bf95a607033cb57079";
-
-    private final ConnectIQ connectIQ;
-    private final GarminPortcastBridge bridge;
-    private IQDevice device;
-    private IQApp app;
-
-    public GarminConnectIqManager(Context ctx) {
-        this.connectIQ = ConnectIQ.getInstance(ctx, ConnectIQ.IQConnectType.WIRELESS);
-        this.bridge = new GarminPortcastBridge(ctx);
-    }
-
-    public void start(Context ctx) {
-        connectIQ.initialize(ctx, true, new ConnectIQ.ConnectIQListener() {
-            public void onSdkReady() { attachFirstDevice(); }
-            public void onInitializeError(ConnectIQ.IQSdkErrorStatus s) { /* log */ }
-            public void onSdkShutDown() { }
-        });
-    }
-
-    private void attachFirstDevice() {
-        try {
-            List<IQDevice> known = connectIQ.getKnownDevices();
-            if (known == null || known.isEmpty()) return;
-            device = known.get(0);
-            app = new IQApp(WATCH_APP_ID);
-            // Receive: watch -> phone (PortCast progress)
-            connectIQ.registerForAppEvents(device, app, (d, a, message, status) -> {
-                for (Object o : message) {
-                    if (o instanceof Map) {
-                        //noinspection unchecked
-                        bridge.applyFromWatchMessage((Map<String, Object>) o);
-                    }
-                }
-            });
-        } catch (Exception e) { /* log */ }
-    }
-
-    /** Send: phone -> watch (resume points / sync hints) as a PortCast document. */
-    public void send(Map<String, Object> portcastDoc) {
-        try {
-            connectIQ.sendMessage(device, app, portcastDoc, (d, a, status) -> { /* log */ });
-        } catch (Exception e) { /* log */ }
-    }
-}
-```
-
-**3. Render** is implemented and tested end-to-end against real ffmpeg:
-`GarminAudioRenderPlan` builds the verified graph + manifest, `GarminRenderer` runs
-it via a `GarminFfmpegExecutor` and persists the manifest, and
-`GarminProcessFfmpegExecutor` is a working binary-backed executor. Two things remain
-to connect it on a phone:
-   - provide a `GarminFfmpegExecutor` backed by a maintained ffmpeg lib (ffmpeg-kit
-     is retired) or MediaCodec+SoundTouch (the ProcessBuilder impl needs an ffmpeg
-     binary, which stock phones lack);
-   - feed it real inputs: skip ranges from `TrimClient`/`TrimSegmentCache`, speed
-     from `UserPreferences`, source file from the downloaded `FeedMedia`.
-
-**4. Delivery** (the remaining piece): upload the rendered file to the thin HTTPS
-bucket and expose the listing the watch fetches (`guid`/`subscriptionRef`/
-`enclosureUrl` + signed `url`). See the watch repo spec §3.
+**Render (phone-side) is dormant but tested**: production delivery is the
+backend's server-side render (`TrimPlayer-Unified` `garmin.py`), so
+`GarminRenderer`/`GarminFfmpegExecutor` stay as the private-episode option. The
+verified position math is shared either way.
 
 ## Tests
 

@@ -38,7 +38,9 @@ public class GarminPortcastBridge {
         this(context, new GarminRenderManifestStore(context));
     }
 
-    GarminPortcastBridge(Context context, GarminManifestLookup manifests) {
+    /** Public so callers can compose a fallback lookup (e.g. rebuild manifests
+     *  for server-rendered episodes from cached segments) around the store. */
+    public GarminPortcastBridge(Context context, GarminManifestLookup manifests) {
         this.context = context.getApplicationContext();
         this.manifests = manifests;
     }

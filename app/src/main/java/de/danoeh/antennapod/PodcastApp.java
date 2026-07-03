@@ -48,6 +48,13 @@ public class PodcastApp extends Application {
         // Warm the first few minutes of the next queued episodes on disk so playback survives a
         // connectivity gap at episode boundaries. Cached prefixes persist across restarts.
         QueuePrefetchManager.prefetchTopOfQueue(this);
+        // Garmin watch companion: receive listen-progress PortCast docs over BLE
+        // (relayed by Garmin Connect Mobile). No-op for users without a watch.
+        try {
+            TrimGarminWatchSync.start(this);
+        } catch (Throwable t) {
+            Log.w(TAG, "Garmin companion init failed: " + t.getMessage());
+        }
         // Restore Pro entitlement on every cold start so a reinstall or a
         // device swap recovers Pro without the user re-paying. The call is
         // a no-op for free users (queryPurchasesAsync returns empty).

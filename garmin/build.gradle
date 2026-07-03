@@ -15,12 +15,10 @@ dependencies {
 
     annotationProcessor "androidx.annotation:annotation:$annotationVersion"
 
-    // Connect IQ Mobile SDK for Android (watch <-> phone BLE). NOT on Maven
-    // Central — download the AAR from developer.garmin.com and drop it in
-    // garmin/libs/, then add a flatDir repo to settings.gradle's
-    // dependencyResolutionManagement and uncomment the line below + the
-    // GarminConnectIqManager source (see garmin/README.md).
-    // implementation "com.garmin.connectiq:ciq-companion-app-sdk:2.2.0"
+    // Connect IQ Mobile SDK for Android (watch <-> phone BLE, relayed through
+    // the Garmin Connect Mobile app). Published on Maven Central since 2.x —
+    // the old "download the AAR from developer.garmin.com" era is over.
+    implementation "com.garmin.connectiq:ciq-companion-app-sdk:2.4.0@aar"
 
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.robolectric:robolectric:$robolectricVersion"

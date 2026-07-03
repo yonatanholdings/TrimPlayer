@@ -33,22 +33,20 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Pushes the phone's library (subscriptions, listening queue, playback progress,
- * and per-podcast playback-speed preferences) to the TrimBrain account so the web
- * player and other devices stay in sync, and stores the returned delta cursor.
+ * Two-way library sync between the phone and the TrimBrain account (subscriptions,
+ * listening queue, playback progress, per-podcast playback speed).
  *
- * <p>Scope (v1): this is the <b>push</b> half plus cursor bookkeeping. Progress is
- * stamped with the media's real last-played time, so last-writer-wins resolves it
- * correctly against web edits. Subscriptions and the queue are currently pushed
- * <i>phone-authoritative</i> (stamped "now"); that's fine while the phone is the
- * primary place a user manages their library, but it means a web-side
- * unsubscribe/dequeue can be re-asserted by the phone on the next run.
+ * <p><b>Push:</b> a change-journal (snapshots of what was last pushed) diffs the
+ * current local state so only genuine local changes are sent — never blanket
+ * re-assertions that would clobber web edits. Progress is stamped with the media's
+ * real last-played time for correct last-writer-wins.
  *
- * <p>TODO(sync-phase-2): apply the server delta back to the local DB
- * ({@code resp.subscriptions/progress/queue}) — update {@link FeedMedia} positions,
- * mark played, reconcile queue order, and auto-subscribe — and add a local change
- * journal so web-authoritative subscription/queue edits are honored instead of
- * clobbered. That half writes to the DB and must be validated on-device.
+ * <p><b>Apply (the pull half):</b> the server delta is applied to the local DB
+ * before the cursor advances (idempotent + LWW-guarded, so a crash mid-apply just
+ * re-pulls): progress positions/played flags, queue adds/removes/<b>reorders</b>,
+ * per-feed speed, auto-subscribe of feeds added elsewhere, and unsubscribes of
+ * feeds removed elsewhere (only when the feed was already known at the last sync,
+ * so a stale tombstone can never wipe a fresh local subscribe).
  */
 public class TrimSyncWorker extends Worker {
     private static final String TAG = "TrimSync";
@@ -103,10 +101,9 @@ public class TrimSyncWorker extends Worker {
             return Result.retry();
         }
         // Apply the server delta locally BEFORE advancing the cursor, so a crash
-        // mid-apply just re-pulls (apply is idempotent + LWW-guarded). v1 applies
-        // playback progress only; queue reorder + auto-subscribe stay deferred
-        // (they mutate the subscription set and need on-device validation).
-        int appliedSubs = applySubscriptions(getApplicationContext(), resp.body.subscriptions, curSubs);
+        // mid-apply just re-pulls (apply is idempotent + LWW-guarded).
+        int appliedSubs = applySubscriptions(getApplicationContext(), resp.body.subscriptions,
+                curSubs, prevSubs);
         int appliedProgress = applyProgress(resp.body.progress);
         int appliedQueue = applyQueue(getApplicationContext(), resp.body.queue);
         int appliedPrefs = applyPrefs(resp.body.prefs);
@@ -126,24 +123,55 @@ public class TrimSyncWorker extends Worker {
         return Result.success();
     }
 
-    /** Auto-subscribe to feeds present on the account but not locally (e.g. added
-     *  from the web player). Creates the Feed shell via FeedDatabaseWriter and, if
-     *  any were added, triggers a single feed refresh so episodes are fetched.
-     *  Web-side unsubscribes (deleted=true) are NOT auto-unsubscribed here — that
-     *  would let one device silently wipe another's subscription on a stale push;
-     *  removals stay a deliberate per-device action for now. Returns count added.
+    /** Reconcile server-side subscription changes: auto-subscribe feeds present on
+     *  the account but not locally (e.g. added from the web player), and apply
+     *  web-side unsubscribes (deleted=true tombstones). Returns rows changed.
+     *
+     *  <p>Unsubscribe guard: a tombstone is honored only when the feed was already
+     *  in the change-journal snapshot ({@code prevSubs}) — i.e. it was known at the
+     *  last sync and hasn't just been (re-)added locally. A locally-fresh subscribe
+     *  (in {@code localSubs} but not {@code prevSubs}) was pushed THIS run with a
+     *  newer client_ts, so the server keeps it and the stale tombstone must not
+     *  delete it here.
      *
      *  {@code localSubs} is the set of local feed download-urls captured before the
      *  push, so we only add genuinely-missing feeds. */
     private static int applySubscriptions(android.content.Context ctx,
                                           List<TrimClient.SubscriptionChange> subs,
-                                          java.util.Map<String, String> localSubs) {
+                                          java.util.Map<String, String> localSubs,
+                                          java.util.Map<String, String> prevSubs) {
         if (subs == null || subs.isEmpty()) {
             return 0;
         }
         int added = 0;
+        int removed = 0;
+        Map<String, Feed> feedsByUrl = null; // lazy — only built if a tombstone applies
         for (TrimClient.SubscriptionChange s : subs) {
-            if (s == null || s.deleted || s.rss_url == null || s.rss_url.isEmpty()) {
+            if (s == null || s.rss_url == null || s.rss_url.isEmpty()) {
+                continue;
+            }
+            if (s.deleted) {
+                if (!localSubs.containsKey(s.rss_url) || !prevSubs.containsKey(s.rss_url)) {
+                    continue; // not present locally, or a fresh local add — keep it
+                }
+                try {
+                    if (feedsByUrl == null) {
+                        feedsByUrl = new HashMap<>();
+                        for (Feed f : DBReader.getFeedList()) {
+                            if (f.getDownloadUrl() != null) {
+                                feedsByUrl.put(f.getDownloadUrl(), f);
+                            }
+                        }
+                    }
+                    Feed feed = feedsByUrl.get(s.rss_url);
+                    if (feed != null) {
+                        DBWriter.deleteFeed(ctx, feed.getId()).get();
+                        localSubs.remove(s.rss_url);
+                        removed++;
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "unsubscribe apply failed for " + s.rss_url + ": " + e.getMessage());
+                }
                 continue;
             }
             if (localSubs.containsKey(s.rss_url)) {
@@ -163,26 +191,32 @@ public class TrimSyncWorker extends Worker {
             // Fetch episodes for the newly-added feeds (and any others due).
             FeedUpdateManager.getInstance().runOnce(ctx);
         }
-        return added;
+        return added + removed;
     }
 
     /** Apply server-side queue changes to the local queue (delta only, so we
      *  touch just the items that changed server-side rather than rebuilding the
-     *  queue). Conservative for v1: web-side removals and additions propagate,
-     *  but reordering of already-queued items is left to the phone (precise
-     *  cross-device reorder needs the change-journal — deferred). Episodes not
-     *  present locally are skipped (queue auto-subscribe deferred). */
+     *  queue): removals, additions (at their server position), and reorders of
+     *  already-queued items. Reorders are applied in ascending target-position
+     *  order against a live mirror of the queue, so each move lands the item at
+     *  its final index even when several rows move at once. Episodes not present
+     *  locally are skipped (queue auto-subscribe deferred). */
     private static int applyQueue(android.content.Context ctx,
                                   List<TrimClient.QueueChange> queue) {
         if (queue == null || queue.isEmpty()) {
             return 0;
         }
+        // Ordered mirror of the queue — updated alongside every DB mutation so
+        // subsequent indices stay correct without re-reading the DB each step.
         LongList ids = DBReader.getQueueIDList();
-        Set<Long> inQueue = new HashSet<>();
+        List<Long> order = new ArrayList<>();
         for (int i = 0; i < ids.size(); i++) {
-            inQueue.add(ids.get(i));
+            order.add(ids.get(i));
         }
+
         int changed = 0;
+        // Pass 1: removals and additions.
+        List<long[]> reorders = new ArrayList<>(); // [itemId, targetPosition]
         for (TrimClient.QueueChange q : queue) {
             if (q == null || q.episode_url == null) {
                 continue;
@@ -191,23 +225,43 @@ public class TrimSyncWorker extends Worker {
             if (item == null) {
                 continue; // not subscribed/present locally
             }
-            boolean present = inQueue.contains(item.getId());
+            boolean present = order.contains(item.getId());
             try {
                 if (q.deleted) {
                     if (present) {
                         DBWriter.removeQueueItem(ctx, false, item).get();
-                        inQueue.remove(item.getId());
+                        order.remove(Long.valueOf(item.getId()));
                         changed++;
                     }
                 } else if (!present) {
-                    int size = inQueue.size();
-                    int idx = q.position == null ? size : Math.max(0, Math.min(q.position, size));
+                    int idx = q.position == null ? order.size()
+                            : Math.max(0, Math.min(q.position, order.size()));
                     DBWriter.addQueueItemAt(ctx, item.getId(), idx).get();
-                    inQueue.add(item.getId());
+                    order.add(idx, item.getId());
                     changed++;
+                } else if (q.position != null) {
+                    reorders.add(new long[] {item.getId(), q.position});
                 }
             } catch (Exception e) {
                 Log.w(TAG, "queue apply failed for " + q.episode_url + ": " + e.getMessage());
+            }
+        }
+        // Pass 2: reorders of items already in the queue, smallest target first.
+        Collections.sort(reorders, (a, b) -> Long.compare(a[1], b[1]));
+        for (long[] move : reorders) {
+            long itemId = move[0];
+            int from = order.indexOf(itemId);
+            int to = Math.max(0, Math.min((int) move[1], order.size() - 1));
+            if (from < 0 || from == to) {
+                continue;
+            }
+            try {
+                DBWriter.moveQueueItem(from, to, false).get();
+                order.remove(Long.valueOf(itemId));
+                order.add(to, itemId);
+                changed++;
+            } catch (Exception e) {
+                Log.w(TAG, "queue reorder failed for item " + itemId + ": " + e.getMessage());
             }
         }
         return changed;
