@@ -73,8 +73,58 @@ public final class TrimAccountDialogs {
                     TrimAccountManager.logout();
                     refreshSummary(pref);
                 })
+                .setNeutralButton(R.string.trim_account_link_watch,
+                        (d, w) -> showLinkWatch(context))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    /** Watch pairing: enter the code from the watch's sign-in screen and approve
+     *  it against the account (device-link flow — the in-app equivalent of the
+     *  web player's /link page, so pairing needs no second device). */
+    private static void showLinkWatch(Context context) {
+        TextInputLayout layout = new TextInputLayout(context);
+        TextInputEditText input = new TextInputEditText(context);
+        input.setHint(R.string.trim_account_link_watch_hint);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
+        input.setSingleLine(true);
+        layout.addView(input);
+        int pad = (int) (20 * context.getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad / 2, pad, 0);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.trim_account_link_watch)
+                .setMessage(R.string.trim_account_link_watch_message)
+                .setView(layout)
+                .setPositiveButton(R.string.trim_account_link_watch_action, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+
+        // Custom click handler (set after show) so a failed attempt keeps the
+        // dialog open with an inline error instead of dismissing.
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String code = input.getText() == null ? "" : input.getText().toString();
+                    v.setEnabled(false);
+                    layout.setError(null);
+                    Handler main = new Handler(Looper.getMainLooper());
+                    new Thread(() -> {
+                        String error = TrimAccountManager.approveDevice(code);
+                        main.post(() -> {
+                            if (error == null) {
+                                dialog.dismiss();
+                                Toast.makeText(context,
+                                        R.string.trim_account_link_watch_success,
+                                        Toast.LENGTH_LONG).show();
+                            } else {
+                                v.setEnabled(true);
+                                layout.setError(error);
+                            }
+                        });
+                    }, "trim-device-approve").start();
+                }));
+        dialog.show();
     }
 
     private static void showLogin(Context context, Preference pref, boolean startSignup) {

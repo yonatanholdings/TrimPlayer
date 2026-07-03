@@ -168,6 +168,12 @@ public class TrimClient {
         return api.accountSync(bearer, request);
     }
 
+    /** Approve a device-link code shown on a watch (or other device), binding it
+     *  to this account. {@code bearer} is "Bearer &lt;session token&gt;". */
+    public Call<StatusResponse> deviceApprove(String bearer, String userCode) {
+        return api.deviceApprove(bearer, new DeviceApproveBody(userCode));
+    }
+
     /** Blocking sync that keeps Retrofit types out of caller modules (the app
      *  module depends on playback:service via {@code implementation}, so it can
      *  see {@link SyncResult}/{@link SyncResponse} but not {@code retrofit2.*}).
@@ -245,6 +251,10 @@ public class TrimClient {
         @POST("account/sync")
         Call<SyncResponse> accountSync(@Header("Authorization") String bearer,
                                        @Body SyncRequest request);
+
+        @POST("auth/device/approve")
+        Call<StatusResponse> deviceApprove(@Header("Authorization") String bearer,
+                                           @Body DeviceApproveBody body);
     }
 
     // --- Account DTOs (mirror backend accounts.py / account_sync.py) --------
@@ -272,6 +282,18 @@ public class TrimClient {
         public GoogleAuthBody(String idToken) {
             this.id_token = idToken;
         }
+    }
+
+    public static class DeviceApproveBody {
+        public String user_code;
+
+        public DeviceApproveBody(String userCode) {
+            this.user_code = userCode;
+        }
+    }
+
+    public static class StatusResponse {
+        public String status;
     }
 
     public static class AuthConfig {

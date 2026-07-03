@@ -80,6 +80,38 @@ public final class TrimAccountManager {
         }
     }
 
+    /** Approve the pairing code shown on a watch's sign-in screen, binding the
+     *  watch to this account (device-link flow — same as the web player's /link
+     *  page). Blocking.
+     *  @return null on success, else a human-readable error message. */
+    public static String approveDevice(String userCode) {
+        String token = UserPreferences.getTrimAccountToken();
+        if (token == null) {
+            return "Sign in to your TrimPlayer account first.";
+        }
+        String code = (userCode == null) ? "" : userCode.trim();
+        if (code.isEmpty()) {
+            return "Enter the code shown on your watch.";
+        }
+        try {
+            Response<TrimClient.StatusResponse> resp =
+                    TrimClient.getInstance().deviceApprove("Bearer " + token, code).execute();
+            if (resp.isSuccessful()) {
+                return null;
+            }
+            if (resp.code() == 404 || resp.code() == 400) {
+                return "That code wasn't recognized — check it on the watch and try again.";
+            }
+            if (resp.code() == 401) {
+                return "Your session expired. Log in again, then retry.";
+            }
+            return "Linking failed (" + resp.code() + "). Please try again.";
+        } catch (IOException e) {
+            Log.w(TAG, "device approve network failure: " + e.getMessage());
+            return "Network error. Check your connection and try again.";
+        }
+    }
+
     private static String authenticate(boolean isSignup, String email, String password) {
         String clientId = UserPreferences.getOrCreateTrimClientId();
         try {
