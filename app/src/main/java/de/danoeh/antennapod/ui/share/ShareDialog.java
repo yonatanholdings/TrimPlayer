@@ -48,16 +48,6 @@ public class ShareDialog extends BottomSheetDialogFragment {
             viewBinding.mediaFileCardCard.setVisibility(View.GONE);
         }
 
-        if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
-            viewBinding.mediaAddressText.setText(item.getMedia().getDownloadUrl());
-            viewBinding.mediaAddressCard.setOnClickListener(v -> {
-                ShareUtils.shareLink(getContext(), item.getMedia().getDownloadUrl());
-                dismiss();
-            });
-        } else {
-            viewBinding.mediaAddressCard.setVisibility(View.GONE);
-        }
-
         SharedPreferences prefs = getContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         viewBinding.sharePositionCheckbox.setChecked(prefs.getBoolean(PREF_SHARE_EPISODE_START_AT, false));
         viewBinding.socialMessageText.setText(ShareUtils.getSocialFeedItemShareText(
