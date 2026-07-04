@@ -97,6 +97,9 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
     // From TrimPlayer's own share deep link (...&episode=<guid|mediaUrl>): an exact
     // episode key that lets us open the specific episode rather than the feed.
     private String shareEpisodeId;
+    // Resume position (ms) from a "share current position" link (...&pos=<seconds>),
+    // or 0 when absent. Applied to the matched episode so the recipient resumes there.
+    private int sharePositionMs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +133,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                 password = savedInstanceState.getString("password");
             }
             shareEpisodeId = extractEpisodeId(feedUrl);
+            sharePositionMs = extractPositionMs(feedUrl);
             // An explicit episode extra (onboarding curated rail → withEpisode())
             // takes precedence over any ?episode= in the URL.
             if (getIntent().hasExtra(ARG_EPISODE)) {
@@ -286,6 +290,21 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         }
     }
 
+    /** Pull the {@code pos} resume position (whole seconds) out of a share deep
+     *  link and return it in milliseconds, or 0 when absent / malformed. */
+    private static int extractPositionMs(String url) {
+        try {
+            String pos = Uri.parse(url).getQueryParameter("pos");
+            if (pos == null || pos.isEmpty()) {
+                return 0;
+            }
+            int seconds = Integer.parseInt(pos);
+            return seconds > 0 ? seconds * 1000 : 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private void maybeRouteToEpisode(long feedId, Runnable fallback) {
         // TrimPlayer's own deep link carries an exact episode key — prefer it over
         // the title-cache heuristic used for searcher-resolved share links.
@@ -375,6 +394,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                 boolean mediaMatch = fi.getMedia() != null
                                 && episodeId.equals(fi.getMedia().getDownloadUrl());
                 if (guidMatch || mediaMatch) {
+                    applySharedPosition(fi);
                     return fi.getId();
                 }
             }
@@ -398,6 +418,23 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                     Log.e(TAG, "routeToEpisodeById failed", error);
                     fallback.run();
                 });
+    }
+
+    /** Seed the shared "current position" onto a freshly-matched episode so the
+     *  recipient resumes where the sharer was. Runs on the DB thread (called from
+     *  inside the fromCallable). Only seeds when the episode hasn't been started
+     *  locally, so we never clobber the recipient's own progress. */
+    private void applySharedPosition(de.danoeh.antennapod.model.feed.FeedItem item) {
+        if (sharePositionMs <= 0 || item.getMedia() == null) {
+            return;
+        }
+        de.danoeh.antennapod.model.feed.FeedMedia media = item.getMedia();
+        if (media.getPosition() > 0 || item.isPlayed()) {
+            return; // recipient already has progress here — don't overwrite it
+        }
+        media.setPosition(sharePositionMs);
+        DBWriter.setFeedMediaPlaybackInformation(media);
+        Log.i(TAG, "applySharedPosition itemId=" + item.getId() + " posMs=" + sharePositionMs);
     }
 
     private static String normalizeTitle(String s) {

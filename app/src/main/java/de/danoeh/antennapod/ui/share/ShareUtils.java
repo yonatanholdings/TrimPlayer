@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ShareCompat;
 import androidx.core.content.FileProvider;
 
-import de.danoeh.antennapod.ui.common.Converter;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -55,16 +54,14 @@ public class ShareUtils {
             text += item.getTitle();
         }
 
-        if (item.getMedia() != null && withPosition) {
-            text += "\n" + context.getResources().getString(R.string.share_starting_position_label) + ": ";
-            text +=  Converter.getDurationStringLong(item.getMedia().getPosition());
-        }
-
         // A single TrimPlayer deep link replaces the inherited "Episode webpage"
         // and "Media file" links: it opens the exact episode in the app (and falls
         // back to the web for non-users). OnlineFeedViewActivity extracts it from
-        // the shared text again on the receiving side.
-        String deepLink = trimPlayerDeepLink(item);
+        // the shared text again on the receiving side. The playback position (when
+        // requested) rides IN the link (&pos=), so the recipient actually resumes
+        // there — a separate human-readable "starting from" line would look right
+        // but do nothing.
+        String deepLink = trimPlayerDeepLink(item, withPosition);
         if (deepLink != null) {
             text += "\n\n" + context.getResources().getString(R.string.share_dialog_trimplayer_branding) + "\n";
             if (abbreviate && deepLink.length() > ABBREVIATE_MAX_LENGTH) {
@@ -96,9 +93,12 @@ public class ShareUtils {
      *       no account. Title/podcast/icon are omitted for brevity; the guest
      *       player shows a generic header and the backend resolves ad-skip segments
      *       by the audio URL.</li>
+     *   <li>{@code pos} — optional resume position in whole seconds, present only
+     *       when the sharer ticked "Share current position". Both the web guest
+     *       player and the app receiver seek here.</li>
      * </ul>
      */
-    private static String trimPlayerDeepLink(FeedItem item) {
+    private static String trimPlayerDeepLink(FeedItem item, boolean withPosition) {
         if (item.getFeed() == null || item.getFeed().getDownloadUrl() == null) {
             return null;
         }
@@ -114,6 +114,10 @@ public class ShareUtils {
         // present for playback to start.
         if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
             link.append("&ep=").append(encode(item.getMedia().getDownloadUrl()));
+        }
+        // Resume position (seconds) so the recipient starts where the sharer is.
+        if (withPosition && item.getMedia() != null && item.getMedia().getPosition() > 0) {
+            link.append("&pos=").append(item.getMedia().getPosition() / 1000);
         }
         return link.toString();
     }
