@@ -182,6 +182,13 @@
                     android:host="trimplayer.com"
                     android:pathPrefix="/deeplink/main"
                     android:scheme="https" />
+                <!-- Web-player host: shares now target app.trimplayer.com so a
+                     recipient without the app lands on the web player, not the
+                     marketing site. Both hosts verify this app. -->
+                <data
+                    android:host="app.trimplayer.com"
+                    android:pathPrefix="/deeplink/main"
+                    android:scheme="https" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -191,6 +198,10 @@
 
                 <data
                     android:host="trimplayer.com"
+                    android:pathPrefix="/deeplink/search"
+                    android:scheme="https" />
+                <data
+                    android:host="app.trimplayer.com"
                     android:pathPrefix="/deeplink/search"
                     android:scheme="https" />
             </intent-filter>
@@ -354,7 +365,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
+                <!-- Episode/feed shares. app.trimplayer.com is the primary host now
+                     (recipients without the app get the web player); trimplayer.com
+                     stays for links already in the wild. Both verify this app. -->
                 <data android:host="trimplayer.com" />
+                <data android:host="app.trimplayer.com" />
                 <data android:pathPrefix="/deeplink/subscribe" />
                 <data android:scheme="http" />
                 <data android:scheme="https" />

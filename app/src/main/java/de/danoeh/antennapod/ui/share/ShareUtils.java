@@ -77,26 +77,57 @@ public class ShareUtils {
     }
 
     /**
-     * Builds a {@code https://trimplayer.com/deeplink/subscribe?url=…&episode=…&web=…}
-     * link for the episode, or {@code null} if the feed URL is unknown. The
-     * {@code url} param lets the receiving TrimPlayer resolve the show; the
-     * {@code episode} param (the RSS GUID, falling back to the media URL) lets it
-     * open the exact episode; the {@code web} param (the episode webpage) gives
-     * the landing page an external link for recipients without the app.
+     * Builds an episode deep link on {@code app.trimplayer.com} (the web-player
+     * host), or {@code null} if the feed URL is unknown.
+     *
+     * <p>The host is deliberately {@code app.trimplayer.com}, not the marketing
+     * site {@code trimplayer.com}: both verify the app via Digital Asset Links, so
+     * an <i>installed</i> app still opens the link directly (see the manifest
+     * App-Links filters) — but a recipient <i>without</i> the app now lands on the
+     * web player instead of the marketing page.
+     *
+     * <p>Two param sets ride the one URL:
+     * <ul>
+     *   <li>App receiver ({@link OnlineFeedViewActivity}): {@code url} = feed to
+     *       resolve/subscribe, {@code episode} = exact episode key (GUID, or the
+     *       media URL when the feed omits GUIDs), {@code web} = episode webpage.</li>
+     *   <li>Web guest player (App.tsx / AnonymousView, no account needed):
+     *       {@code ep} = the enclosure/audio URL to play, plus {@code guid},
+     *       {@code t} (title), {@code p} (podcast) and {@code i} (show icon).</li>
+     * </ul>
      */
     private static String trimPlayerDeepLink(FeedItem item) {
         if (item.getFeed() == null || item.getFeed().getDownloadUrl() == null) {
             return null;
         }
-        String link = "https://trimplayer.com/deeplink/subscribe?url=" + encode(item.getFeed().getDownloadUrl());
+        StringBuilder link = new StringBuilder("https://app.trimplayer.com/deeplink/subscribe?url=")
+                .append(encode(item.getFeed().getDownloadUrl()));
         String episodeId = episodeIdentifier(item);
         if (episodeId != null) {
-            link += "&episode=" + encode(episodeId);
+            link.append("&episode=").append(encode(episodeId));
         }
         if (item.getLinkWithFallback() != null && !item.getLinkWithFallback().isEmpty()) {
-            link += "&web=" + encode(item.getLinkWithFallback());
+            link.append("&web=").append(encode(item.getLinkWithFallback()));
         }
-        return link;
+        // Web guest-player params: let a recipient without the app play the exact
+        // episode straight away. Needs the audio (enclosure) URL — a GUID isn't
+        // playable in the browser — so only emit these when we have media.
+        if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
+            link.append("&ep=").append(encode(item.getMedia().getDownloadUrl()));
+            if (item.getItemIdentifier() != null && !item.getItemIdentifier().isEmpty()) {
+                link.append("&guid=").append(encode(item.getItemIdentifier()));
+            }
+            if (item.getTitle() != null) {
+                link.append("&t=").append(encode(item.getTitle()));
+            }
+            if (item.getFeed().getTitle() != null) {
+                link.append("&p=").append(encode(item.getFeed().getTitle()));
+            }
+            if (item.getFeed().getImageUrl() != null) {
+                link.append("&i=").append(encode(item.getFeed().getImageUrl()));
+            }
+        }
+        return link.toString();
     }
 
     /** RSS GUID is the most stable cross-device episode key; fall back to the
