@@ -435,7 +435,15 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
             return;
         }
         de.danoeh.antennapod.model.feed.FeedMedia media = item.getMedia();
+        long now = System.currentTimeMillis();
         media.setPosition(sharePositionMs);
+        // Stamp a fresh last-played time. TrimSyncWorker keys progress LWW on
+        // lastPlayedTimeStatistics: without a newer stamp the next sync pull would
+        // overwrite this seed with the server's (older) position, and the push
+        // wouldn't propagate it. Stamping "now" makes the shared position the
+        // newest, so it survives sync and reaches the recipient's other devices.
+        media.setLastPlayedTimeStatistics(now);
+        media.setLastPlayedTimeHistory(new java.util.Date(now));
         try {
             DBWriter.setFeedMediaPlaybackInformation(media).get();
         } catch (Exception e) {
