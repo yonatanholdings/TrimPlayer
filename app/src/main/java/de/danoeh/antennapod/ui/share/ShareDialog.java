@@ -9,8 +9,10 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.databinding.ShareEpisodeDialogBinding;
 import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.ui.common.Converter;
 
 public class ShareDialog extends BottomSheetDialogFragment {
     private static final String ARGUMENT_FEED_ITEM = "feedItem";
@@ -43,9 +45,14 @@ public class ShareDialog extends BottomSheetDialogFragment {
 
         SharedPreferences prefs = getContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         viewBinding.sharePositionCheckbox.setChecked(prefs.getBoolean(PREF_SHARE_EPISODE_START_AT, false));
-        // The checkbox only exists when there's a playback position to start from.
+        // The checkbox only exists when there's a playback position to share; its
+        // label shows that position (e.g. "Share current position (00:12:34)").
         boolean hasPosition = item.getMedia() != null && item.getMedia().getPosition() > 0;
         viewBinding.sharePositionCheckbox.setVisibility(hasPosition ? View.VISIBLE : View.GONE);
+        if (hasPosition) {
+            viewBinding.sharePositionCheckbox.setText(getString(R.string.share_dialog_start_position,
+                    Converter.getDurationStringLong(item.getMedia().getPosition())));
+        }
         viewBinding.sharePositionCheckbox.setOnCheckedChangeListener((buttonView, isChecked) ->
                 prefs.edit().putBoolean(PREF_SHARE_EPISODE_START_AT, isChecked).apply());
 

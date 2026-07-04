@@ -1434,7 +1434,7 @@
     <string name="share_dialog_trimplayer_branding">Shared via TrimPlayer — open in the app:</string>
     <string name="share_dialog_title">Share episode</string>
     <string name="share_dialog_link_hint">Opens in the TrimPlayer app — or the web player for anyone without it.</string>
-    <string name="share_dialog_start_position">Start from current position</string>
+    <string name="share_dialog_start_position">Share current position (%1$s)</string>
     <string name="share_dialog_audio_file">Share audio file instead</string>
 
     <!-- Audio controls -->

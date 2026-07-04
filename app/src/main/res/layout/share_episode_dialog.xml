@@ -75,7 +75,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
-        android:text="@string/share_dialog_start_position" />
+        tools:text="Share current position (00:00:16)"
+        xmlns:tools="http://schemas.android.com/tools" />
 
     <!-- Primary action: share the episode link -->
     <com.google.android.material.button.MaterialButton
