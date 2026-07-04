@@ -39,29 +39,35 @@ public class ShareDialog extends BottomSheetDialogFragment {
         FeedItem item = (FeedItem) getArguments().getSerializable(ARGUMENT_FEED_ITEM);
         ShareEpisodeDialogBinding viewBinding = ShareEpisodeDialogBinding.inflate(inflater);
 
-        if (item.getMedia() != null && item.getMedia().isDownloaded()) {
-            viewBinding.mediaFileCardCard.setOnClickListener(v -> {
-                ShareUtils.shareFeedItemFile(getContext(), item.getMedia());
-                dismiss();
-            });
-        } else {
-            viewBinding.mediaFileCardCard.setVisibility(View.GONE);
-        }
+        viewBinding.episodeTitle.setText(item.getTitle());
 
         SharedPreferences prefs = getContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         viewBinding.sharePositionCheckbox.setChecked(prefs.getBoolean(PREF_SHARE_EPISODE_START_AT, false));
-        viewBinding.socialMessageText.setText(ShareUtils.getSocialFeedItemShareText(
-                getContext(), item, viewBinding.sharePositionCheckbox.isChecked(), true));
-        viewBinding.sharePositionCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.edit().putBoolean(PREF_SHARE_EPISODE_START_AT, isChecked).apply();
-            viewBinding.socialMessageText.setText(
-                    ShareUtils.getSocialFeedItemShareText(getContext(), item, isChecked, true));
-        });
-        viewBinding.socialMessageCard.setOnClickListener(v -> {
+        // The checkbox only exists when there's a playback position to start from.
+        boolean hasPosition = item.getMedia() != null && item.getMedia().getPosition() > 0;
+        viewBinding.sharePositionCheckbox.setVisibility(hasPosition ? View.VISIBLE : View.GONE);
+        viewBinding.sharePositionCheckbox.setOnCheckedChangeListener((buttonView, isChecked) ->
+                prefs.edit().putBoolean(PREF_SHARE_EPISODE_START_AT, isChecked).apply());
+
+        // Primary: share the TrimPlayer episode link (opens the app, or the web
+        // player for recipients without it). Text is resolved at click time so it
+        // reflects the current position-checkbox state.
+        viewBinding.shareLinkButton.setOnClickListener(v -> {
             ShareUtils.shareLink(getContext(), ShareUtils.getSocialFeedItemShareText(
                     getContext(), item, viewBinding.sharePositionCheckbox.isChecked(), false));
             dismiss();
         });
+
+        // Secondary: share the downloaded audio file itself — only meaningful when
+        // the episode is actually downloaded.
+        if (item.getMedia() != null && item.getMedia().isDownloaded()) {
+            viewBinding.shareAudioFileButton.setOnClickListener(v -> {
+                ShareUtils.shareFeedItemFile(getContext(), item.getMedia());
+                dismiss();
+            });
+        } else {
+            viewBinding.shareAudioFileButton.setVisibility(View.GONE);
+        }
 
         return viewBinding.getRoot();
     }

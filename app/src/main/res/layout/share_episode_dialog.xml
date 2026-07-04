@@ -12,175 +12,95 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <!-- Brand icon chip -->
+    <FrameLayout
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_share_icon_circle"
+        android:backgroundTint="?attr/colorSecondaryContainer">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            app:srcCompat="@drawable/ic_share"
+            app:tint="?attr/colorOnSecondaryContainer" />
+
+    </FrameLayout>
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:text="@string/share_label"
+        android:paddingTop="14dp"
+        android:gravity="center_horizontal"
+        android:text="@string/share_dialog_title"
         style="@style/TextAppearance.Material3.HeadlineSmall" />
 
+    <!-- The episode being shared -->
+    <TextView
+        android:id="@+id/episodeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="4dp"
+        android:gravity="center_horizontal"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        tools:text="Episode title"
+        style="@style/TextAppearance.Material3.BodyMedium"
+        xmlns:tools="http://schemas.android.com/tools" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="16dp"
-        android:text="@string/share_dialog_subtitle"
+        android:paddingTop="10dp"
+        android:gravity="center_horizontal"
+        android:text="@string/share_dialog_link_hint"
         android:textColor="?attr/colorOnSurfaceVariant"
-        style="@style/TextAppearance.Material3.BodyMedium" />
+        style="@style/TextAppearance.Material3.BodySmall" />
 
-    <!-- Deep link: opens the app, or the web player for recipients without it. -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/socialMessageCard"
+    <!-- Include-position toggle (functionality preserved) -->
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/share_position_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:text="@string/share_dialog_start_position" />
+
+    <!-- Primary action: share the episode link -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/shareLinkButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="12dp"
-        android:checkable="false"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        android:layout_marginTop="12dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:text="@string/share_label"
+        app:icon="@drawable/ic_share"
+        app:iconGravity="textStart"
+        style="@style/Widget.Material3.Button" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_share_icon_circle"
-                    android:backgroundTint="?attr/colorSecondaryContainer">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:importantForAccessibility="no"
-                        app:srcCompat="@drawable/ic_share"
-                        app:tint="?attr/colorOnSecondaryContainer" />
-
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/share_dialog_link_title"
-                        style="@style/TextAppearance.Material3.TitleMedium" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/share_dialog_link_desc"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        style="@style/TextAppearance.Material3.BodySmall" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/socialMessageText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_share_preview"
-                android:backgroundTint="?attr/colorSurface"
-                android:ellipsize="end"
-                android:maxLines="3"
-                android:padding="12dp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                style="@style/TextAppearance.Material3.BodySmall" />
-
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/share_position_checkbox"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/share_playback_position_dialog_label" />
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Downloaded audio file (only shown when the episode is downloaded). -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/mediaFileCardCard"
+    <!-- Secondary: share the downloaded audio file (only when downloaded) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/shareAudioFileButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:checkable="false"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_share_icon_circle"
-                android:backgroundTint="?attr/colorSecondaryContainer">
-
-                <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_gravity="center"
-                    android:importantForAccessibility="no"
-                    app:srcCompat="@drawable/ic_download"
-                    app:tint="?attr/colorOnSecondaryContainer" />
-
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/share_dialog_media_file_label"
-                    style="@style/TextAppearance.Material3.TitleMedium" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/share_dialog_media_file_desc"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    style="@style/TextAppearance.Material3.BodySmall" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
+        android:layout_marginTop="4dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:text="@string/share_dialog_audio_file"
+        app:icon="@drawable/ic_download"
+        app:iconGravity="textStart"
+        style="@style/Widget.Material3.Button.TextButton" />
 
 </LinearLayout>
