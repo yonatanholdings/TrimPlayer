@@ -86,14 +86,16 @@ public class ShareUtils {
      * App-Links filters) — but a recipient <i>without</i> the app now lands on the
      * web player instead of the marketing page.
      *
-     * <p>Two param sets ride the one URL:
+     * <p>Kept deliberately short (it's user-facing shared text). Only the three
+     * params both sides actually need:
      * <ul>
-     *   <li>App receiver ({@link OnlineFeedViewActivity}): {@code url} = feed to
-     *       resolve/subscribe, {@code episode} = exact episode key (GUID, or the
-     *       media URL when the feed omits GUIDs), {@code web} = episode webpage.</li>
-     *   <li>Web guest player (App.tsx / AnonymousView, no account needed):
-     *       {@code ep} = the enclosure/audio URL to play, plus {@code guid},
-     *       {@code t} (title), {@code p} (podcast) and {@code i} (show icon).</li>
+     *   <li>{@code url} — feed, so the app resolves/subscribes the show.</li>
+     *   <li>{@code episode} — exact-episode key for the app (RSS GUID, or the media
+     *       URL when the feed omits GUIDs).</li>
+     *   <li>{@code ep} — enclosure/audio URL, which the web guest player plays with
+     *       no account. Title/podcast/icon are omitted for brevity; the guest
+     *       player shows a generic header and the backend resolves ad-skip segments
+     *       by the audio URL.</li>
      * </ul>
      */
     private static String trimPlayerDeepLink(FeedItem item) {
@@ -106,26 +108,12 @@ public class ShareUtils {
         if (episodeId != null) {
             link.append("&episode=").append(encode(episodeId));
         }
-        if (item.getLinkWithFallback() != null && !item.getLinkWithFallback().isEmpty()) {
-            link.append("&web=").append(encode(item.getLinkWithFallback()));
-        }
-        // Web guest-player params: let a recipient without the app play the exact
-        // episode straight away. Needs the audio (enclosure) URL — a GUID isn't
-        // playable in the browser — so only emit these when we have media.
+        // Audio URL for web guest playback (App.tsx keys the guest player off ?ep=).
+        // Always sent when we have media — a GUID-less feed makes this equal to the
+        // episode key above, but the web reads `ep`, not `episode`, so it must be
+        // present for playback to start.
         if (item.getMedia() != null && item.getMedia().getDownloadUrl() != null) {
             link.append("&ep=").append(encode(item.getMedia().getDownloadUrl()));
-            if (item.getItemIdentifier() != null && !item.getItemIdentifier().isEmpty()) {
-                link.append("&guid=").append(encode(item.getItemIdentifier()));
-            }
-            if (item.getTitle() != null) {
-                link.append("&t=").append(encode(item.getTitle()));
-            }
-            if (item.getFeed().getTitle() != null) {
-                link.append("&p=").append(encode(item.getFeed().getTitle()));
-            }
-            if (item.getFeed().getImageUrl() != null) {
-                link.append("&i=").append(encode(item.getFeed().getImageUrl()));
-            }
         }
         return link.toString();
     }
