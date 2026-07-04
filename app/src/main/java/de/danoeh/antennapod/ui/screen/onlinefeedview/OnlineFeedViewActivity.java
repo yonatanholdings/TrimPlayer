@@ -89,6 +89,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
     private Dialog dialog;
     private Disposable download;
     private Disposable parser;
+    private Disposable playback;
     private OnlinefeedviewActivityBinding viewBinding;
     // Remembered for share-link deep-linking (e.g. YouTube watch URLs): if the
     // searcher cached an episode title for this URL, we navigate to the matching
@@ -184,6 +185,9 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         }
         if (parser != null) {
             parser.dispose();
+        }
+        if (playback != null) {
+            playback.dispose();
         }
     }
 
@@ -409,14 +413,46 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                         fallback.run();
                         return;
                     }
-                    MainActivityStarter starter = new MainActivityStarter(this)
-                            .withOpenFeed(feedId)
-                            .withOpenFeedItem(itemId);
-                    finish();
-                    startActivity(starter.getIntent());
+                    openMatchedEpisode(feedId, itemId);
                 }, error -> {
                     Log.e(TAG, "routeToEpisodeById failed", error);
                     fallback.run();
+                });
+    }
+
+    /** Open the matched episode. For a share-"position" link, start playback so the
+     *  shared episode becomes the CURRENTLY PLAYING one and resumes at the seeded
+     *  position (parity with the web guest player); otherwise just open the episode
+     *  detail. The media already carries the seeded position (applySharedPosition
+     *  awaited its write), so the playback service resumes there. */
+    private void openMatchedEpisode(long feedId, long itemId) {
+        if (sharePositionMs <= 0) {
+            MainActivityStarter starter = new MainActivityStarter(this)
+                    .withOpenFeed(feedId)
+                    .withOpenFeedItem(itemId);
+            finish();
+            startActivity(starter.getIntent());
+            return;
+        }
+        playback = io.reactivex.rxjava3.core.Single.<de.danoeh.antennapod.model.feed.FeedItem>fromCallable(
+                        () -> DBReader.getFeedItem(itemId))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(item -> {
+                    if (item != null && item.getMedia() != null) {
+                        new de.danoeh.antennapod.playback.service.PlaybackServiceStarter(this, item.getMedia())
+                                .callEvenIfRunning(true)
+                                .shouldStreamThisTime(!item.getMedia().isDownloaded())
+                                .start();
+                        new MainActivityStarter(this).withOpenPlayer().start();
+                    } else {
+                        new MainActivityStarter(this).withOpenFeed(feedId).withOpenFeedItem(itemId).start();
+                    }
+                    finish();
+                }, error -> {
+                    Log.e(TAG, "openMatchedEpisode playback failed", error);
+                    new MainActivityStarter(this).withOpenFeed(feedId).withOpenFeedItem(itemId).start();
+                    finish();
                 });
     }
 
