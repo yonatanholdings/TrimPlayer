@@ -1,0 +1,7 @@
+<!-- Tonal disc behind a share-option's leading icon. Base is white and tinted via
+     android:backgroundTint in the layout, so it follows the Material3 theme
+     (colorSecondaryContainer) in both light and dark. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white" />
+</shape>

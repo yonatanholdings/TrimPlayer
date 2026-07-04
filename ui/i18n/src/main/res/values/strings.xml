@@ -1432,6 +1432,10 @@
     <string name="share_dialog_media_file_label">Media file</string>
     <string name="share_starting_position_label">Starting from</string>
     <string name="share_dialog_trimplayer_branding">Shared via TrimPlayer — open in the app:</string>
+    <string name="share_dialog_subtitle">Send a link, or the audio file</string>
+    <string name="share_dialog_link_title">Share link</string>
+    <string name="share_dialog_link_desc">Opens in the TrimPlayer app — or the web player for anyone without it</string>
+    <string name="share_dialog_media_file_desc">Send the downloaded audio file</string>
 
     <!-- Audio controls -->
     <string name="audio_controls">Audio controls</string>
