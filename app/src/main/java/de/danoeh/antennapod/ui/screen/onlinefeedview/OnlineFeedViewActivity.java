@@ -421,19 +421,26 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
     }
 
     /** Seed the shared "current position" onto a freshly-matched episode so the
-     *  recipient resumes where the sharer was. Runs on the DB thread (called from
-     *  inside the fromCallable). Only seeds when the episode hasn't been started
-     *  locally, so we never clobber the recipient's own progress. */
+     *  recipient resumes where the sharer was. Runs on a background thread (called
+     *  from inside the routeToEpisodeById fromCallable).
+     *
+     *  The shared position is an explicit intent — the sharer picked this spot and
+     *  the recipient chose to open THIS link — so it takes precedence even if the
+     *  episode already has local progress (otherwise "Share current position" would
+     *  silently do nothing whenever the recipient had started the episode, e.g. a
+     *  self-share while listening). The write is awaited so the episode opens (and
+     *  plays) at the position rather than racing the DB flush. */
     private void applySharedPosition(de.danoeh.antennapod.model.feed.FeedItem item) {
         if (sharePositionMs <= 0 || item.getMedia() == null) {
             return;
         }
         de.danoeh.antennapod.model.feed.FeedMedia media = item.getMedia();
-        if (media.getPosition() > 0 || item.isPlayed()) {
-            return; // recipient already has progress here — don't overwrite it
-        }
         media.setPosition(sharePositionMs);
-        DBWriter.setFeedMediaPlaybackInformation(media);
+        try {
+            DBWriter.setFeedMediaPlaybackInformation(media).get();
+        } catch (Exception e) {
+            Log.e(TAG, "applySharedPosition write failed", e);
+        }
         Log.i(TAG, "applySharedPosition itemId=" + item.getId() + " posMs=" + sharePositionMs);
     }
 
