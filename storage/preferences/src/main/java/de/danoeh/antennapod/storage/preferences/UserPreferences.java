@@ -983,6 +983,10 @@ public abstract class UserPreferences {
     public static final String PREF_TRIM_ACCOUNT_TOKEN = "prefTrimAccountToken";
     public static final String PREF_TRIM_ACCOUNT_EMAIL = "prefTrimAccountEmail";
     public static final String PREF_TRIM_SYNC_CURSOR = "prefTrimSyncCursor";
+    // Consecutive no-progress sync runs during which the worker held the cursor
+    // because queue/progress rows referenced episodes not yet fetched locally. Caps
+    // the hold so a permanently-absent episode can't wedge sync forever.
+    public static final String PREF_TRIM_SYNC_DEFER_RETRIES = "prefTrimSyncDeferRetries";
 
     public static String getTrimAccountToken() {
         return prefs.getString(PREF_TRIM_ACCOUNT_TOKEN, "");
@@ -1012,9 +1016,11 @@ public abstract class UserPreferences {
                 .remove(PREF_TRIM_ACCOUNT_TOKEN)
                 .remove(PREF_TRIM_ACCOUNT_EMAIL)
                 .remove(PREF_TRIM_SYNC_CURSOR)
+                .remove(PREF_TRIM_SYNC_DEFER_RETRIES)
                 .remove(PREF_TRIM_SYNC_SNAP_SUBS)
                 .remove(PREF_TRIM_SYNC_SNAP_QUEUE)
                 .remove(PREF_TRIM_SYNC_SNAP_PREFS)
+                .remove(PREF_TRIM_SYNC_SNAP_FAV)
                 .apply();
     }
 
@@ -1025,6 +1031,9 @@ public abstract class UserPreferences {
     public static final String PREF_TRIM_SYNC_SNAP_SUBS = "prefTrimSyncSnapSubs";
     public static final String PREF_TRIM_SYNC_SNAP_QUEUE = "prefTrimSyncSnapQueue";
     public static final String PREF_TRIM_SYNC_SNAP_PREFS = "prefTrimSyncSnapPrefs";
+    // Episode download-urls that were favorited as of the last push, so the worker
+    // pushes only genuine favorite toggles (mirrors PortCast episodes[].starred).
+    public static final String PREF_TRIM_SYNC_SNAP_FAV = "prefTrimSyncSnapFav";
 
     public static String getTrimSyncSubsSnapshot() {
         return prefs.getString(PREF_TRIM_SYNC_SNAP_SUBS, "");
@@ -1050,12 +1059,28 @@ public abstract class UserPreferences {
         prefs.edit().putString(PREF_TRIM_SYNC_SNAP_QUEUE, json == null ? "" : json).apply();
     }
 
+    public static String getTrimSyncFavSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_FAV, "");
+    }
+
+    public static void setTrimSyncFavSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_FAV, json == null ? "" : json).apply();
+    }
+
     public static long getTrimSyncCursor() {
         return prefs.getLong(PREF_TRIM_SYNC_CURSOR, 0L);
     }
 
     public static void setTrimSyncCursor(long cursor) {
         prefs.edit().putLong(PREF_TRIM_SYNC_CURSOR, cursor).apply();
+    }
+
+    public static int getTrimSyncDeferRetries() {
+        return prefs.getInt(PREF_TRIM_SYNC_DEFER_RETRIES, 0);
+    }
+
+    public static void setTrimSyncDeferRetries(int n) {
+        prefs.edit().putInt(PREF_TRIM_SYNC_DEFER_RETRIES, n).apply();
     }
 
     // Per-type auto-skip toggles. Each defaults to true (preserves existing behaviour

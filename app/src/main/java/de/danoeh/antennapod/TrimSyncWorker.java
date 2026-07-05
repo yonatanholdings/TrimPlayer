@@ -3,13 +3,20 @@ package de.danoeh.antennapod;
 import android.content.Context;
 import android.util.Log;
 import androidx.annotation.NonNull;
+import androidx.work.Constraints;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.model.feed.FeedItemFilter;
 import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.model.feed.FeedPreferences;
+import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.playback.service.trim.TrimClient;
 import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.storage.database.DBReader;
@@ -31,6 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Two-way library sync between the phone and the TrimBrain account (subscriptions,
@@ -53,6 +61,22 @@ public class TrimSyncWorker extends Worker {
     // Window for "recently active" episodes whose progress we push. Bounds the
     // payload so we don't ship the entire history every run.
     private static final long PROGRESS_WINDOW_MS = 60L * 24 * 60 * 60 * 1000; // 60 days
+    // Upper bound on favorites we reconcile per sync (favorites are normally few).
+    private static final int FAV_LIMIT = 1000;
+    // How many consecutive no-progress runs we tolerate while queue/progress rows
+    // stay deferred (their episode never appears locally) before we give up holding
+    // the cursor and let sync advance — so a row for an episode that's genuinely
+    // gone from its feed can't wedge sync forever.
+    private static final int MAX_DEFER_NOPROGRESS_RUNS = 5;
+
+    /** Outcome of applying one entity's server delta: how many local rows we
+     *  actually changed, and how many we had to DEFER because the referenced
+     *  episode isn't in the local DB yet (feeds are fetched asynchronously after
+     *  an auto-subscribe, so the episode arrives a moment later). */
+    private static final class ApplyResult {
+        int changed;
+        int deferred;
+    }
 
     public TrimSyncWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -79,11 +103,32 @@ public class TrimSyncWorker extends Worker {
         List<String> curQueueUrls = currentQueueUrls(queue);
         Map<String, Float> curPrefs = currentPrefs(feeds);
 
+        // Favorites -> PortCast episodes[].starred. Change-journalled like the queue:
+        // curFav is the current favorite episode-urls; changedFav (toggles since the
+        // last push) get a fresh client_ts so the star change wins LWW even when the
+        // episode's position/played (and thus its normal client_ts) didn't change.
+        List<FeedItem> favItems = DBReader.getEpisodes(0, FAV_LIMIT,
+                new FeedItemFilter(FeedItemFilter.IS_FAVORITE), SortOrder.DATE_NEW_OLD);
+        java.util.Set<String> curFav = mediaUrlSet(favItems);
+        java.util.Set<String> prevFav = new HashSet<>(parseQueueSnapshot(
+                UserPreferences.getTrimSyncFavSnapshot()));
+        java.util.Set<String> changedFav = new HashSet<>();
+        for (String u : curFav) {
+            if (!prevFav.contains(u)) {
+                changedFav.add(u);
+            }
+        }
+        for (String u : prevFav) {
+            if (!curFav.contains(u)) {
+                changedFav.add(u);
+            }
+        }
+
         TrimClient.SyncRequest req = new TrimClient.SyncRequest();
         req.cursor = UserPreferences.getTrimSyncCursor();
         req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
         req.queue = diffQueue(prevQueue, queue, curQueueUrls, now);
-        req.progress = buildProgress(queue, now);
+        req.progress = buildProgress(queue, favItems, curFav, changedFav, now);
         req.prefs = diffPrefs(prevPrefs, curPrefs, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
@@ -104,22 +149,57 @@ public class TrimSyncWorker extends Worker {
         // mid-apply just re-pulls (apply is idempotent + LWW-guarded).
         int appliedSubs = applySubscriptions(getApplicationContext(), resp.body.subscriptions,
                 curSubs, prevSubs);
-        int appliedProgress = applyProgress(resp.body.progress);
-        int appliedQueue = applyQueue(getApplicationContext(), resp.body.queue);
+        java.util.Set<Long> favIds = new HashSet<>();
+        for (FeedItem f : favItems) {
+            favIds.add(f.getId());
+        }
+        ApplyResult progressRes = applyProgress(resp.body.progress, favIds);
+        ApplyResult queueRes = applyQueue(getApplicationContext(), resp.body.queue);
         int appliedPrefs = applyPrefs(resp.body.prefs);
-        UserPreferences.setTrimSyncCursor(resp.body.cursor);
+
+        // Cursor-advance guard. Queue/progress rows whose episode isn't in the local
+        // DB yet are DEFERRED, not applied — which happens routinely right after an
+        // auto-subscribe, because feed episodes are fetched asynchronously
+        // (FeedUpdateManager.runOnce enqueues a WorkManager job). If we advanced the
+        // cursor past those rows, the server would never re-send them and the queue +
+        // history would be permanently lost on this device while the account still
+        // holds them. So when items are deferred we HOLD the cursor (re-pull next run,
+        // once the episodes exist) and nudge a follow-up sync. Bounded by a
+        // no-progress retry cap so a row for an episode that's gone from its feed
+        // can't wedge sync forever.
+        int deferred = progressRes.deferred + queueRes.deferred;
+        boolean progressed = (progressRes.changed + queueRes.changed) > 0;
+        long newCursor = resp.body.cursor;
+        if (deferred > 0) {
+            int noProgressRuns = progressed ? 0 : UserPreferences.getTrimSyncDeferRetries() + 1;
+            if (noProgressRuns <= MAX_DEFER_NOPROGRESS_RUNS) {
+                newCursor = req.cursor; // hold — don't advance past the deferred rows
+                UserPreferences.setTrimSyncDeferRetries(noProgressRuns);
+                scheduleFollowupSync(getApplicationContext());
+            } else {
+                UserPreferences.setTrimSyncDeferRetries(0);
+                Log.w(TAG, "advancing cursor past " + deferred + " unresolved item(s) after "
+                        + noProgressRuns + " no-progress runs");
+            }
+        } else {
+            UserPreferences.setTrimSyncDeferRetries(0);
+        }
+        UserPreferences.setTrimSyncCursor(newCursor);
         // Snapshot the reconciled (post-apply) local state so the next diff is
         // clean — i.e. we don't echo server-applied changes back as local ones.
         List<Feed> reconciled = DBReader.getFeedList();
         UserPreferences.setTrimSyncSubsSnapshot(serializeSubs(currentSubs(reconciled)));
         UserPreferences.setTrimSyncQueueSnapshot(serializeQueue(currentQueueUrls(DBReader.getQueue())));
         UserPreferences.setTrimSyncPrefsSnapshot(serializePrefs(currentPrefs(reconciled)));
+        UserPreferences.setTrimSyncFavSnapshot(serializeQueue(new ArrayList<>(mediaUrlSet(
+                DBReader.getEpisodes(0, FAV_LIMIT,
+                        new FeedItemFilter(FeedItemFilter.IS_FAVORITE), SortOrder.DATE_NEW_OLD)))));
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
                 + " prefs=" + req.prefs.size()
-                + "; applied subs=" + appliedSubs + " progress=" + appliedProgress
-                + " queue=" + appliedQueue + " prefs=" + appliedPrefs
-                + ", cursor=" + resp.body.cursor);
+                + "; applied subs=" + appliedSubs + " progress=" + progressRes.changed
+                + " queue=" + queueRes.changed + " prefs=" + appliedPrefs
+                + "; deferred=" + deferred + ", cursor=" + newCursor);
         return Result.success();
     }
 
@@ -201,10 +281,11 @@ public class TrimSyncWorker extends Worker {
      *  order against a live mirror of the queue, so each move lands the item at
      *  its final index even when several rows move at once. Episodes not present
      *  locally are skipped (queue auto-subscribe deferred). */
-    private static int applyQueue(android.content.Context ctx,
+    private static ApplyResult applyQueue(android.content.Context ctx,
                                   List<TrimClient.QueueChange> queue) {
+        ApplyResult r = new ApplyResult();
         if (queue == null || queue.isEmpty()) {
-            return 0;
+            return r;
         }
         // Ordered mirror of the queue — updated alongside every DB mutation so
         // subsequent indices stay correct without re-reading the DB each step.
@@ -214,7 +295,6 @@ public class TrimSyncWorker extends Worker {
             order.add(ids.get(i));
         }
 
-        int changed = 0;
         // Pass 1: removals and additions.
         List<long[]> reorders = new ArrayList<>(); // [itemId, targetPosition]
         for (TrimClient.QueueChange q : queue) {
@@ -223,7 +303,13 @@ public class TrimSyncWorker extends Worker {
             }
             FeedItem item = DBReader.getFeedItemByGuidOrEpisodeUrl(q.guid, q.episode_url);
             if (item == null) {
-                continue; // not subscribed/present locally
+                // A removal of an absent item is already satisfied; but an add/move
+                // we can't apply because the episode isn't fetched locally yet is a
+                // deferral — hold the cursor so it re-pulls once the episode exists.
+                if (!q.deleted) {
+                    r.deferred++;
+                }
+                continue;
             }
             boolean present = order.contains(item.getId());
             try {
@@ -231,14 +317,14 @@ public class TrimSyncWorker extends Worker {
                     if (present) {
                         DBWriter.removeQueueItem(ctx, false, item).get();
                         order.remove(Long.valueOf(item.getId()));
-                        changed++;
+                        r.changed++;
                     }
                 } else if (!present) {
                     int idx = q.position == null ? order.size()
                             : Math.max(0, Math.min(q.position, order.size()));
                     DBWriter.addQueueItemAt(ctx, item.getId(), idx).get();
                     order.add(idx, item.getId());
-                    changed++;
+                    r.changed++;
                 } else if (q.position != null) {
                     reorders.add(new long[] {item.getId(), q.position});
                 }
@@ -259,29 +345,31 @@ public class TrimSyncWorker extends Worker {
                 DBWriter.moveQueueItem(from, to, false).get();
                 order.remove(Long.valueOf(itemId));
                 order.add(to, itemId);
-                changed++;
+                r.changed++;
             } catch (Exception e) {
                 Log.w(TAG, "queue reorder failed for item " + itemId + ": " + e.getMessage());
             }
         }
-        return changed;
+        return r;
     }
 
     /** Apply server-side progress to the local DB. Returns how many rows changed.
      *  Last-writer-wins by the media's local last-played time, so newer on-device
      *  progress is never clobbered by an older web update. Episodes not present
      *  locally are skipped (auto-subscribe is deferred). */
-    private static int applyProgress(List<TrimClient.ProgressChange> progress) {
+    private static ApplyResult applyProgress(List<TrimClient.ProgressChange> progress,
+                                             Set<Long> favIds) {
+        ApplyResult r = new ApplyResult();
         if (progress == null) {
-            return 0;
+            return r;
         }
-        int applied = 0;
         for (TrimClient.ProgressChange p : progress) {
             if (p == null || p.episode_url == null || p.deleted) {
                 continue;
             }
             FeedItem item = DBReader.getFeedItemByGuidOrEpisodeUrl(p.guid, p.episode_url);
             if (item == null || item.getMedia() == null) {
+                r.deferred++; // episode not fetched locally yet — retry after feed update
                 continue;
             }
             FeedMedia media = item.getMedia();
@@ -292,15 +380,41 @@ public class TrimSyncWorker extends Worker {
             if (p.position_ms != null) {
                 long pos = Math.max(0, Math.min(p.position_ms, Integer.MAX_VALUE));
                 media.setPosition((int) pos);
-                DBWriter.setFeedMedia(media);
             }
+            // Restore the "played-at" timestamps from the server's client_ts (which
+            // the push side stamps from the media's last-played time). Without this a
+            // synced play carries only the read flag + position, with no timestamp —
+            // so it never appears in Playback History (filtered on
+            // playback_completion_date > 0) or in listening statistics. The LWW guard
+            // above means p.client_ts is strictly newer, so we never move them back.
+            if (p.client_ts > 0) {
+                media.setLastPlayedTimeStatistics(p.client_ts);
+                media.setLastPlayedTimeHistory(new java.util.Date(p.client_ts));
+            }
+            DBWriter.setFeedMedia(media);
             if (p.played != item.isPlayed()) {
                 DBWriter.markItemPlayed(p.played ? FeedItem.PLAYED : FeedItem.UNPLAYED,
                         false, item.getId());
             }
-            applied++;
+            // Reconcile the local Favorite tag with the server's starred flag (null =
+            // an older client that doesn't send it — leave the local favorite as-is).
+            if (p.starred != null) {
+                boolean isFav = favIds.contains(item.getId());
+                try {
+                    if (p.starred && !isFav) {
+                        DBWriter.addFavoriteItem(item).get();
+                        favIds.add(item.getId());
+                    } else if (!p.starred && isFav) {
+                        DBWriter.removeFavoriteItem(item).get();
+                        favIds.remove(item.getId());
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "favorite apply failed for " + p.episode_url + ": " + e.getMessage());
+                }
+            }
+            r.changed++;
         }
-        return applied;
+        return r;
     }
 
     /** Apply server-side per-feed preferences (playback speed) to the local DB.
@@ -343,6 +457,19 @@ public class TrimSyncWorker extends Worker {
             applied++;
         }
         return applied;
+    }
+
+    /** Nudge another sync a short while out so deferred queue/progress rows — whose
+     *  episodes are being fetched asynchronously after an auto-subscribe — get
+     *  re-pulled and applied promptly, instead of waiting for the periodic sync. */
+    private static void scheduleFollowupSync(Context ctx) {
+        WorkManager.getInstance(ctx).enqueueUniqueWork(
+                "trimAccountSyncRetry", ExistingWorkPolicy.REPLACE,
+                new OneTimeWorkRequest.Builder(TrimSyncWorker.class)
+                        .setInitialDelay(45, TimeUnit.SECONDS)
+                        .setConstraints(new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                        .build());
     }
 
     // --- change-journal: current state, snapshots, and diffs ------------------
@@ -574,15 +701,21 @@ public class TrimSyncWorker extends Worker {
         return o.toString();
     }
 
-    /** Progress for queued + recently-played episodes, deduped by episode URL.
+    /** Progress for queued + recently-played + favorited episodes, deduped by URL.
      *  Each row is stamped with the media's real last-played time so it resolves
-     *  correctly against web playback under last-writer-wins. */
-    private static List<TrimClient.ProgressChange> buildProgress(List<FeedItem> queue, long now) {
+     *  correctly against web playback under last-writer-wins — except a favorite that
+     *  was just toggled ({@code changedFav}), which is stamped {@code now} so the star
+     *  change wins even though its position/played didn't move. {@code starred} rides
+     *  every row so the account mirrors the phone's Favorites. */
+    private static List<TrimClient.ProgressChange> buildProgress(
+            List<FeedItem> queue, List<FeedItem> favItems, Set<String> curFav,
+            Set<String> changedFav, long now) {
         List<TrimClient.ProgressChange> out = new ArrayList<>();
         Set<String> seen = new HashSet<>();
 
         List<FeedItem> candidates = new ArrayList<>(queue);
         candidates.addAll(DBReader.getEpisodesPlayedInPeriod(now - PROGRESS_WINDOW_MS, now));
+        candidates.addAll(favItems);
 
         for (FeedItem item : candidates) {
             FeedMedia media = item.getMedia();
@@ -593,8 +726,11 @@ public class TrimSyncWorker extends Worker {
             if (!seen.add(url)) {
                 continue;
             }
-            // Skip untouched episodes (no position, never played) to keep the push small.
-            if (media.getPosition() <= 0 && !item.isPlayed()) {
+            boolean touched = media.getPosition() > 0 || item.isPlayed();
+            boolean favChanged = changedFav.contains(url);
+            // Skip untouched episodes (no position, never played) whose favorite
+            // state also didn't change — nothing worth pushing.
+            if (!touched && !favChanged) {
                 continue;
             }
             TrimClient.ProgressChange p = new TrimClient.ProgressChange();
@@ -604,10 +740,25 @@ public class TrimSyncWorker extends Worker {
             p.position_ms = (long) media.getPosition();
             p.duration_ms = (long) media.getDuration();
             p.played = item.isPlayed();
+            p.starred = curFav.contains(url);
             long lastPlayed = media.getLastPlayedTimeStatistics();
-            p.client_ts = lastPlayed > 0 ? lastPlayed : now;
+            // A favorite toggle must win LWW even if position/played are unchanged.
+            p.client_ts = favChanged ? now : (lastPlayed > 0 ? lastPlayed : now);
             out.add(p);
         }
         return out;
+    }
+
+    /** Media download-urls of the given items (the sync key), skipping any without
+     *  a usable enclosure url. */
+    private static Set<String> mediaUrlSet(List<FeedItem> items) {
+        Set<String> urls = new HashSet<>();
+        for (FeedItem item : items) {
+            FeedMedia media = item.getMedia();
+            if (media != null && media.getDownloadUrl() != null && !media.getDownloadUrl().isEmpty()) {
+                urls.add(media.getDownloadUrl());
+            }
+        }
+        return urls;
     }
 }

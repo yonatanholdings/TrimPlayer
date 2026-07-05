@@ -378,6 +378,9 @@ public class TrimClient {
         public boolean played;
         public boolean deleted;
         public long client_ts;
+        // PortCast episodes[].starred — the phone's "Favorite" tag. Boxed so an
+        // older payload without it deserializes to null (= unknown, leave as-is).
+        public Boolean starred;
     }
 
     public static class QueueChange {

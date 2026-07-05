@@ -460,7 +460,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
      *  recipient resumes where the sharer was. Runs on a background thread (called
      *  from inside the routeToEpisodeById fromCallable).
      *
-     *  The shared position is an explicit intent — the sharer picked this spot and
+     *  <p>The shared position is an explicit intent — the sharer picked this spot and
      *  the recipient chose to open THIS link — so it takes precedence even if the
      *  episode already has local progress (otherwise "Share current position" would
      *  silently do nothing whenever the recipient had started the episode, e.g. a
