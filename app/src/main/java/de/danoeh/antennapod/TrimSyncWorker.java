@@ -387,7 +387,10 @@ public class TrimSyncWorker extends Worker {
             // so it never appears in Playback History (filtered on
             // playback_completion_date > 0) or in listening statistics. The LWW guard
             // above means p.client_ts is strictly newer, so we never move them back.
-            if (p.client_ts > 0) {
+            // Only stamp when the row represents actual playback (played, or a real
+            // position) — a starred-only/position-0 row must not fabricate history.
+            boolean hasPlayback = p.played || (p.position_ms != null && p.position_ms > 0);
+            if (p.client_ts > 0 && hasPlayback) {
                 media.setLastPlayedTimeStatistics(p.client_ts);
                 media.setLastPlayedTimeHistory(new java.util.Date(p.client_ts));
             }
