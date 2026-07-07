@@ -130,10 +130,15 @@ public class DBWriter {
      * Adds a bookmark at the given playback position of an episode.
      */
     public static Future<?> addBookmark(long feedItemId, int positionMs, @Nullable String note) {
+        return addBookmark(feedItemId, positionMs, note, System.currentTimeMillis());
+    }
+
+    /** Variant with an explicit creation time, for restoring imported bookmarks. */
+    public static Future<?> addBookmark(long feedItemId, int positionMs, @Nullable String note, long createdAtMs) {
         return runOnDbThread(() -> {
             PodDBAdapter adapter = PodDBAdapter.getInstance();
             adapter.open();
-            adapter.insertBookmark(feedItemId, positionMs, note);
+            adapter.insertBookmark(feedItemId, positionMs, note, createdAtMs);
             adapter.close();
             EventBus.getDefault().post(new BookmarksChangedEvent(feedItemId));
         });

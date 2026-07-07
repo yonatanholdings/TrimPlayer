@@ -119,6 +119,15 @@ public class PortcastImporter {
         public boolean starred;
         public long durationMs;
         public long lastPlayedMs;
+        /** Mid-episode bookmarks from the com.trimplayer.bookmarks extension. */
+        public List<BookmarkState> bookmarks = new ArrayList<>();
+    }
+
+    /** One entry of the com.trimplayer.bookmarks episode extension. */
+    public static class BookmarkState {
+        public int positionMs;
+        public String note = "";
+        public long createdAtMs;
     }
 
     /** Queue entry; resolved against materialized DB items after the feed refresh. */
@@ -599,7 +608,31 @@ public class PortcastImporter {
         long completedMs = parseRfc3339(ep.optString("completedAt", ""));
         long lastPlayedMs = parseRfc3339(ep.optString("lastPlayedAt", ""));
         state.lastPlayedMs = completedMs > 0 ? completedMs : lastPlayedMs;
+        state.bookmarks = parseBookmarks(ep.optJSONObject("extensions"));
         return state;
+    }
+
+    static List<BookmarkState> parseBookmarks(@Nullable JSONObject extensions) {
+        List<BookmarkState> out = new ArrayList<>();
+        if (extensions == null) {
+            return out;
+        }
+        JSONArray arr = extensions.optJSONArray(PortcastExporter.EXT_EPISODE_BOOKMARKS);
+        if (arr == null) {
+            return out;
+        }
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject b = arr.optJSONObject(i);
+            if (b == null || !b.has("positionSeconds")) {
+                continue;
+            }
+            BookmarkState bookmark = new BookmarkState();
+            bookmark.positionMs = (int) Math.round(b.optDouble("positionSeconds", 0) * 1000);
+            bookmark.note = b.optString("note", "");
+            bookmark.createdAtMs = parseRfc3339(b.optString("createdAt", ""));
+            out.add(bookmark);
+        }
+        return out;
     }
 
     @Nullable
@@ -777,6 +810,17 @@ public class PortcastImporter {
             o.put("starred", s.starred);
             o.put("durationMs", s.durationMs);
             o.put("lastPlayedMs", s.lastPlayedMs);
+            if (s.bookmarks != null && !s.bookmarks.isEmpty()) {
+                JSONArray bookmarks = new JSONArray();
+                for (BookmarkState b : s.bookmarks) {
+                    JSONObject bo = new JSONObject();
+                    bo.put("positionMs", b.positionMs);
+                    bo.put("note", b.note != null ? b.note : "");
+                    bo.put("createdAtMs", b.createdAtMs);
+                    bookmarks.put(bo);
+                }
+                o.put("bookmarks", bookmarks);
+            }
             arr.put(o);
         }
         prefs(context).edit().putString(KEY_EPISODE_STATES, arr.toString()).apply();
@@ -802,6 +846,20 @@ public class PortcastImporter {
                 s.starred = o.optBoolean("starred", false);
                 s.durationMs = o.optLong("durationMs", 0);
                 s.lastPlayedMs = o.optLong("lastPlayedMs", 0);
+                JSONArray bookmarks = o.optJSONArray("bookmarks");
+                if (bookmarks != null) {
+                    for (int j = 0; j < bookmarks.length(); j++) {
+                        JSONObject bo = bookmarks.optJSONObject(j);
+                        if (bo == null) {
+                            continue;
+                        }
+                        BookmarkState b = new BookmarkState();
+                        b.positionMs = bo.optInt("positionMs", 0);
+                        b.note = bo.optString("note", "");
+                        b.createdAtMs = bo.optLong("createdAtMs", 0);
+                        s.bookmarks.add(b);
+                    }
+                }
                 out.add(s);
             }
         } catch (Exception ignored) {

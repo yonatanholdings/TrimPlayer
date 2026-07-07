@@ -829,6 +829,18 @@ public final class DBReader {
         return result;
     }
 
+    /** All bookmarks across episodes, newest first (without loading episodes). */
+    @NonNull
+    public static List<Bookmark> getAllBookmarks() {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (Cursor c = adapter.getAllBookmarksCursor()) {
+            return extractBookmarksFromCursor(c);
+        } finally {
+            adapter.close();
+        }
+    }
+
     /** A bookmark together with its (fully loaded) episode, for the global bookmarks list. */
     public static class BookmarkWithItem {
         public final Bookmark bookmark;

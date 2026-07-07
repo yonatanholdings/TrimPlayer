@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import de.danoeh.antennapod.model.feed.Bookmark;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
@@ -51,6 +53,8 @@ public class PortcastExporter {
     private static final String DEFAULT_OWNER_NAME = "TrimPlayer User";
 
     /** Reverse-DNS extension namespaces (per spec §Extensions). */
+    /** Per-episode mid-episode bookmarks; package-visible so the importer parses the same key. */
+    static final String EXT_EPISODE_BOOKMARKS = "com.trimplayer.bookmarks";
     private static final String EXT_FEED_SKIPS = "com.trimplayer.skips";
     private static final String EXT_FEED_SKIP_SILENCE = "com.trimplayer.feedSkipSilence";
     private static final String EXT_FEED_VOLUME_ADAPTION = "com.trimplayer.volumeAdaption";
@@ -71,6 +75,15 @@ public class PortcastExporter {
                 new FeedItemFilter(FeedItemFilter.IS_FAVORITE), SortOrder.DATE_NEW_OLD)) {
             favoriteIds.add(fav.getId());
         }
+        Map<Long, List<Bookmark>> bookmarksByItemId = new HashMap<>();
+        for (Bookmark bookmark : DBReader.getAllBookmarks()) {
+            List<Bookmark> forItem = bookmarksByItemId.get(bookmark.getFeedItemId());
+            if (forItem == null) {
+                forItem = new ArrayList<>();
+                bookmarksByItemId.put(bookmark.getFeedItemId(), forItem);
+            }
+            forItem.add(bookmark);
+        }
         GlobalPrefs globals = new GlobalPrefs(
                 UserPreferences.getPlaybackSpeed(),
                 UserPreferences.getFastForwardSecs(),
@@ -81,7 +94,7 @@ public class PortcastExporter {
                 ? gpodder : DEFAULT_OWNER_NAME;
 
         JSONObject root = buildDocument(feeds, allEpisodes, queue, favoriteIds,
-                ownerDisplayName, globals, generatorVersion);
+                bookmarksByItemId, ownerDisplayName, globals, generatorVersion);
 
         // org.json's compact toString is fine; consumers normalize on parse.
         // Pretty-printing inflates the file ~30% for no functional gain.
@@ -92,11 +105,24 @@ public class PortcastExporter {
                 + queue.size() + " queued");
     }
 
+    /** Convenience overload without bookmarks, kept for tests of unrelated sections. */
+    static JSONObject buildDocument(@NonNull List<Feed> feeds,
+                                    @NonNull List<FeedItem> allEpisodes,
+                                    @NonNull List<FeedItem> queue,
+                                    @NonNull Set<Long> favoriteIds,
+                                    @NonNull String ownerDisplayName,
+                                    @NonNull GlobalPrefs globals,
+                                    @NonNull String generatorVersion) throws IOException {
+        return buildDocument(feeds, allEpisodes, queue, favoriteIds, new HashMap<>(),
+                ownerDisplayName, globals, generatorVersion);
+    }
+
     /** Pure-Java entry point used by writeDocument and tests. No Android dependencies. */
     static JSONObject buildDocument(@NonNull List<Feed> feeds,
                                     @NonNull List<FeedItem> allEpisodes,
                                     @NonNull List<FeedItem> queue,
                                     @NonNull Set<Long> favoriteIds,
+                                    @NonNull Map<Long, List<Bookmark>> bookmarksByItemId,
                                     @NonNull String ownerDisplayName,
                                     @NonNull GlobalPrefs globals,
                                     @NonNull String generatorVersion) throws IOException {
@@ -116,7 +142,7 @@ public class PortcastExporter {
             root.put("generator", buildGenerator(generatorVersion));
             root.put("owner", buildOwner(ownerDisplayName));
             root.put("subscriptions", buildSubscriptions(subscribedById.values()));
-            root.put("episodes", buildEpisodes(allEpisodes, subscribedById, favoriteIds));
+            root.put("episodes", buildEpisodes(allEpisodes, subscribedById, favoriteIds, bookmarksByItemId));
             root.put("queue", buildQueue(queue));
             root.put("preferences", buildPreferences(subscribedById.values(), globals));
         } catch (JSONException e) {
@@ -198,7 +224,9 @@ public class PortcastExporter {
 
     private static JSONArray buildEpisodes(@NonNull List<FeedItem> items,
                                            @NonNull Map<Long, Feed> subscribedById,
-                                           @NonNull Set<Long> favoriteIds) throws JSONException {
+                                           @NonNull Set<Long> favoriteIds,
+                                           @NonNull Map<Long, List<Bookmark>> bookmarksByItemId)
+            throws JSONException {
         JSONArray arr = new JSONArray();
         String now = nowRfc3339();
         for (FeedItem item : items) {
@@ -255,6 +283,23 @@ public class PortcastExporter {
 
             if (favoriteIds.contains(item.getId())) {
                 e.put("starred", true);
+            }
+
+            List<Bookmark> bookmarks = bookmarksByItemId.get(item.getId());
+            if (bookmarks != null && !bookmarks.isEmpty()) {
+                JSONArray bookmarkArr = new JSONArray();
+                for (Bookmark bookmark : bookmarks) {
+                    JSONObject b = new JSONObject();
+                    b.put("positionSeconds", bookmark.getPosition() / 1000.0);
+                    putIfPresent(b, "note", bookmark.getNote());
+                    if (bookmark.getCreatedAt() > 0) {
+                        b.put("createdAt", formatRfc3339(new Date(bookmark.getCreatedAt())));
+                    }
+                    bookmarkArr.put(b);
+                }
+                JSONObject extensions = new JSONObject();
+                extensions.put(EXT_EPISODE_BOOKMARKS, bookmarkArr);
+                e.put("extensions", extensions);
             }
 
             e.put("updatedAt", now);

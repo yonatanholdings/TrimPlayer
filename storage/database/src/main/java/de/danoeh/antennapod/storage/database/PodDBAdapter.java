@@ -1735,11 +1735,15 @@ public class PodDBAdapter {
     }
 
     public long insertBookmark(long feedItemId, int positionMs, String note) {
+        return insertBookmark(feedItemId, positionMs, note, System.currentTimeMillis());
+    }
+
+    public long insertBookmark(long feedItemId, int positionMs, String note, long createdAtMs) {
         ContentValues values = new ContentValues();
         values.put(KEY_FEEDITEM, feedItemId);
         values.put(KEY_POSITION, positionMs);
         values.put(KEY_BOOKMARK_NOTE, note);
-        values.put(KEY_BOOKMARK_CREATED_AT, System.currentTimeMillis());
+        values.put(KEY_BOOKMARK_CREATED_AT, createdAtMs);
         return db.insert(TABLE_NAME_BOOKMARKS, null, values);
     }
 

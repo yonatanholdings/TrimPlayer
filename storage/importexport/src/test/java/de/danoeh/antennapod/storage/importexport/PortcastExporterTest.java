@@ -14,10 +14,13 @@ import org.robolectric.RobolectricTestRunner;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import de.danoeh.antennapod.model.feed.Bookmark;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedMedia;
@@ -215,6 +218,52 @@ public class PortcastExporterTest {
 
         JSONObject ext = overrideEntry.getJSONObject("extensions");
         assertTrue(ext.has("com.trimplayer.skips"));
+    }
+
+    @Test
+    public void bookmarksRoundTripThroughExtensionNamespace() throws Exception {
+        Feed feed = subscribedFeed(1, "https://example.com/feed.xml", "Example Show");
+        FeedItem withBookmarks = item(100, "Ep A", "guid-a", new Date(1_700_000_000_000L), feed);
+        withBookmarks.setMedia(media(1000, withBookmarks, 1800_000, 0, "audio/mp3"));
+        FeedItem without = item(101, "Ep B", "guid-b", new Date(1_700_001_000_000L), feed);
+        without.setMedia(media(1001, without, 1800_000, 0, "audio/mp3"));
+
+        Map<Long, List<Bookmark>> bookmarks = new HashMap<>();
+        bookmarks.put(100L, Arrays.asList(
+                new Bookmark(1, 100, 754_500, "great quote", 1_700_100_000_000L),
+                new Bookmark(2, 100, 60_000, "", 1_700_200_000_000L)));
+
+        JSONObject doc = PortcastExporter.buildDocument(
+                Collections.singletonList(feed), Arrays.asList(withBookmarks, without),
+                Collections.emptyList(), Collections.emptySet(), bookmarks,
+                "Yonatan", defaultGlobals(), "1.0.0");
+
+        JSONArray episodes = doc.getJSONArray("episodes");
+        JSONObject epA = findByGuid(episodes, "guid-a");
+        JSONArray emitted = epA.getJSONObject("extensions")
+                .getJSONArray(PortcastExporter.EXT_EPISODE_BOOKMARKS);
+        assertEquals(2, emitted.length());
+        assertEquals(754.5, emitted.getJSONObject(0).getDouble("positionSeconds"), 0.001);
+        assertEquals("great quote", emitted.getJSONObject(0).getString("note"));
+        assertNotNull(emitted.getJSONObject(0).getString("createdAt"));
+        assertFalse("empty note omitted", emitted.getJSONObject(1).has("note"));
+
+        JSONObject epB = findByGuid(episodes, "guid-b");
+        assertFalse("no extensions block without bookmarks", epB.has("extensions"));
+
+        // Round-trip: the importer reads back what the exporter wrote.
+        PortcastImporter.EpisodeState state = PortcastImporter.parseEpisode(epA);
+        assertNotNull(state);
+        assertEquals(2, state.bookmarks.size());
+        assertEquals(754_500, state.bookmarks.get(0).positionMs);
+        assertEquals("great quote", state.bookmarks.get(0).note);
+        assertTrue(state.bookmarks.get(0).createdAtMs > 0);
+        assertEquals(60_000, state.bookmarks.get(1).positionMs);
+        assertEquals("", state.bookmarks.get(1).note);
+
+        PortcastImporter.EpisodeState stateB = PortcastImporter.parseEpisode(epB);
+        assertNotNull(stateB);
+        assertTrue(stateB.bookmarks.isEmpty());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

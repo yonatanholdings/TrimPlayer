@@ -285,5 +285,22 @@ public class PortcastStateWorker extends Worker {
         if (state.starred) {
             DBWriter.addFavoriteItem(item);
         }
+
+        if (state.bookmarks != null && !state.bookmarks.isEmpty()) {
+            // Re-running the import must not duplicate bookmarks: skip any
+            // position the episode already has one at.
+            Set<Integer> existingPositions = new HashSet<>();
+            for (de.danoeh.antennapod.model.feed.Bookmark existing : DBReader.getBookmarks(item.getId())) {
+                existingPositions.add(existing.getPosition());
+            }
+            for (PortcastImporter.BookmarkState bookmark : state.bookmarks) {
+                if (!existingPositions.add(bookmark.positionMs)) {
+                    continue;
+                }
+                long createdAt = bookmark.createdAtMs > 0
+                        ? bookmark.createdAtMs : System.currentTimeMillis();
+                DBWriter.addBookmark(item.getId(), bookmark.positionMs, bookmark.note, createdAt);
+            }
+        }
     }
 }
