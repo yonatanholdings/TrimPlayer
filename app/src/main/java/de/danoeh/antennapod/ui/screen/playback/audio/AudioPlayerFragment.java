@@ -621,6 +621,11 @@ public class AudioPlayerFragment extends Fragment implements
         boolean isPodcastEpisode = isFeedMedia && ((FeedMedia) media).getItem() != null;
         toolbar.getMenu().findItem(R.id.trim_segments_item).setVisible(isPodcastEpisode);
 
+        // Bookmarks need a stored FeedItem id to attach to, so they share the
+        // podcast-episode gate with the segment list.
+        toolbar.getMenu().findItem(R.id.add_bookmark_item).setVisible(isPodcastEpisode);
+        toolbar.getMenu().findItem(R.id.bookmarks_item).setVisible(isPodcastEpisode);
+
         // Volume boost: an explicit per-podcast control, available whenever a
         // podcast episode is playing on a device that supports the LoudnessEnhancer.
         // Complements the volume-up-at-max key gesture (which only works while the
@@ -661,6 +666,30 @@ public class AudioPlayerFragment extends Fragment implements
                 SegmentListDialog.newInstance(feedItem.getItemIdentifier(), url,
                                 media.getDuration() / 1000f)
                         .show(getChildFragmentManager(), "SegmentListDialog");
+            }
+            return true;
+        } else if (itemId == R.id.add_bookmark_item) {
+            if (feedItem != null) {
+                int position = Math.max(0, controller.getPosition());
+                de.danoeh.antennapod.storage.database.DBWriter.addBookmark(feedItem.getId(), position, null);
+                if (getView() != null) {
+                    com.google.android.material.snackbar.Snackbar snackbar =
+                            com.google.android.material.snackbar.Snackbar.make(getView(),
+                                    getString(R.string.bookmark_added_at,
+                                            Converter.getDurationStringLong(position)),
+                                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT);
+                    // Snackbar.make climbs to the activity coordinator, which the expanded
+                    // player sheet covers at 8dp elevation — without a higher elevation the
+                    // snackbar draws behind the player and is never seen.
+                    snackbar.getView().setElevation(100);
+                    snackbar.show();
+                }
+            }
+            return true;
+        } else if (itemId == R.id.bookmarks_item) {
+            if (feedItem != null) {
+                BookmarkListDialog.newInstance(feedItem.getId())
+                        .show(getChildFragmentManager(), "BookmarkListDialog");
             }
             return true;
         } else if (itemId == R.id.volume_boost_item) {
