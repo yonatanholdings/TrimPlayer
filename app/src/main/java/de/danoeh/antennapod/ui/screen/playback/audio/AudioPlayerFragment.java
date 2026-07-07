@@ -673,9 +673,16 @@ public class AudioPlayerFragment extends Fragment implements
                 int position = Math.max(0, controller.getPosition());
                 de.danoeh.antennapod.storage.database.DBWriter.addBookmark(feedItem.getId(), position, null);
                 if (getView() != null) {
-                    com.google.android.material.snackbar.Snackbar.make(getView(),
-                            getString(R.string.bookmark_added_at, Converter.getDurationStringLong(position)),
-                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT).show();
+                    com.google.android.material.snackbar.Snackbar snackbar =
+                            com.google.android.material.snackbar.Snackbar.make(getView(),
+                                    getString(R.string.bookmark_added_at,
+                                            Converter.getDurationStringLong(position)),
+                                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT);
+                    // Snackbar.make climbs to the activity coordinator, which the expanded
+                    // player sheet covers at 8dp elevation — without a higher elevation the
+                    // snackbar draws behind the player and is never seen.
+                    snackbar.getView().setElevation(100);
+                    snackbar.show();
                 }
             }
             return true;
