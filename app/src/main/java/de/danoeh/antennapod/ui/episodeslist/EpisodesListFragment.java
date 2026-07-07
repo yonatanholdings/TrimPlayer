@@ -157,7 +157,9 @@ public abstract class EpisodesListFragment extends Fragment
         if (savedInstanceState != null) {
             displayUpArrow = savedInstanceState.getBoolean(KEY_UP_ARROW);
         }
-        ((MainActivity) getActivity()).setupToolbarToggle(toolbar, displayUpArrow);
+        if (ownsScreenToolbar()) {
+            ((MainActivity) getActivity()).setupToolbarToggle(toolbar, displayUpArrow);
+        }
 
         recyclerView = root.findViewById(R.id.recyclerView);
         recyclerView.setRecycledViewPool(((MainActivity) getActivity()).getRecycledViewPool());
@@ -436,6 +438,16 @@ public abstract class EpisodesListFragment extends Fragment
     protected abstract String getFragmentTag();
 
     protected void updateToolbar() {
+    }
+
+    /**
+     * Whether this fragment is a top-level screen that owns its toolbar. Embedded
+     * uses (e.g. a tab inside the Saved screen) return false and hide the toolbar,
+     * so the drawer toggle must not be re-bound to it — otherwise the hamburger
+     * on the host screen's visible toolbar stops working.
+     */
+    protected boolean ownsScreenToolbar() {
+        return true;
     }
 
     protected void onItemsFirstLoaded() {

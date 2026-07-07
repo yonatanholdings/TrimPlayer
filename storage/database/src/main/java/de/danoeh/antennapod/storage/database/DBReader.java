@@ -11,8 +11,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import de.danoeh.antennapod.model.feed.Bookmark;
 import de.danoeh.antennapod.model.feed.Chapter;
@@ -806,17 +808,86 @@ public final class DBReader {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();
         try (Cursor c = adapter.getBookmarksCursor(feedItemId)) {
-            int idxId = c.getColumnIndexOrThrow(PodDBAdapter.KEY_ID);
-            int idxItem = c.getColumnIndexOrThrow(PodDBAdapter.KEY_FEEDITEM);
-            int idxPosition = c.getColumnIndexOrThrow(PodDBAdapter.KEY_POSITION);
-            int idxNote = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_NOTE);
-            int idxCreated = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_CREATED_AT);
-            while (c.moveToNext()) {
-                result.add(new Bookmark(c.getLong(idxId), c.getLong(idxItem),
-                        c.getInt(idxPosition), c.getString(idxNote), c.getLong(idxCreated)));
+            result.addAll(extractBookmarksFromCursor(c));
+        } finally {
+            adapter.close();
+        }
+        return result;
+    }
+
+    private static List<Bookmark> extractBookmarksFromCursor(Cursor c) {
+        List<Bookmark> result = new ArrayList<>();
+        int idxId = c.getColumnIndexOrThrow(PodDBAdapter.KEY_ID);
+        int idxItem = c.getColumnIndexOrThrow(PodDBAdapter.KEY_FEEDITEM);
+        int idxPosition = c.getColumnIndexOrThrow(PodDBAdapter.KEY_POSITION);
+        int idxNote = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_NOTE);
+        int idxCreated = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_CREATED_AT);
+        while (c.moveToNext()) {
+            result.add(new Bookmark(c.getLong(idxId), c.getLong(idxItem),
+                    c.getInt(idxPosition), c.getString(idxNote), c.getLong(idxCreated)));
+        }
+        return result;
+    }
+
+    /** A bookmark together with its (fully loaded) episode, for the global bookmarks list. */
+    public static class BookmarkWithItem {
+        public final Bookmark bookmark;
+        public final FeedItem item;
+
+        public BookmarkWithItem(Bookmark bookmark, FeedItem item) {
+            this.bookmark = bookmark;
+            this.item = item;
+        }
+    }
+
+    /**
+     * All bookmarks across episodes, newest first, each paired with its episode.
+     * Bookmarks whose episode no longer exists are skipped.
+     */
+    @NonNull
+    public static List<BookmarkWithItem> getAllBookmarksWithItems() {
+        List<Bookmark> bookmarks;
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (Cursor c = adapter.getAllBookmarksCursor()) {
+            bookmarks = extractBookmarksFromCursor(c);
+        } finally {
+            adapter.close();
+        }
+        if (bookmarks.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<String> itemIdSet = new HashSet<>();
+        for (Bookmark bookmark : bookmarks) {
+            itemIdSet.add(String.valueOf(bookmark.getFeedItemId()));
+        }
+        List<String> itemIds = new ArrayList<>(itemIdSet);
+        Map<Long, FeedItem> itemsById = new HashMap<>();
+        adapter.open();
+        try {
+            // getFeedItemCursor rejects more than 800 IN-operator arguments
+            for (int start = 0; start < itemIds.size(); start += 800) {
+                List<String> chunk = itemIds.subList(start, Math.min(itemIds.size(), start + 800));
+                try (FeedItemCursor cursor = new FeedItemCursor(
+                        adapter.getFeedItemCursor(chunk.toArray(new String[0])))) {
+                    List<FeedItem> items = extractItemlistFromCursor(cursor);
+                    loadAdditionalFeedItemListData(items);
+                    for (FeedItem item : items) {
+                        itemsById.put(item.getId(), item);
+                    }
+                }
             }
         } finally {
             adapter.close();
+        }
+
+        List<BookmarkWithItem> result = new ArrayList<>();
+        for (Bookmark bookmark : bookmarks) {
+            FeedItem item = itemsById.get(bookmark.getFeedItemId());
+            if (item != null) {
+                result.add(new BookmarkWithItem(bookmark, item));
+            }
         }
         return result;
     }

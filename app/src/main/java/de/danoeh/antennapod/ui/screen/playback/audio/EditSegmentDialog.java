@@ -358,7 +358,10 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         View parent = getParentFragment() != null && getParentFragment().getView() != null
                 ? getParentFragment().getView() : null;
         if (parent != null) {
-            Snackbar.make(parent, msgRes, Snackbar.LENGTH_SHORT).show();
+            // TrimSnackbar, not Snackbar.make: a plain snackbar lands behind the
+            // expanded player sheet and is never seen.
+            de.danoeh.antennapod.ui.view.TrimSnackbar.showOverPlayer(parent, getString(msgRes),
+                    null, R.drawable.ic_content_cut, R.color.trim_badge_done, Snackbar.LENGTH_SHORT);
         }
         dismiss();
     }

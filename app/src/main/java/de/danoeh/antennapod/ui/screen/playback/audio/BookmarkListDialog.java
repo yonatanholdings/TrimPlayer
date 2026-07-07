@@ -1,19 +1,15 @@
 package de.danoeh.antennapod.ui.screen.playback.audio;
 
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -149,7 +145,8 @@ public class BookmarkListDialog extends BottomSheetDialogFragment {
         note.setText(bookmark.getNote().isEmpty()
                 ? getString(R.string.bookmark_no_note) : bookmark.getNote());
         row.setOnClickListener(v -> jumpTo(bookmark));
-        row.findViewById(R.id.bookmarkEditButton).setOnClickListener(v -> showNoteEditor(bookmark));
+        row.findViewById(R.id.bookmarkEditButton).setOnClickListener(v ->
+                de.danoeh.antennapod.ui.screen.saved.BookmarkNoteDialog.show(requireContext(), bookmark));
         row.findViewById(R.id.bookmarkDeleteButton).setOnClickListener(v ->
                 DBWriter.deleteBookmark(bookmark.getId(), feedItemId));
     }
@@ -166,26 +163,6 @@ public class BookmarkListDialog extends BottomSheetDialogFragment {
             return;
         }
         DBWriter.addBookmark(feedItemId, Math.max(0, controller.getPosition()), null);
-    }
-
-    private void showNoteEditor(Bookmark bookmark) {
-        EditText input = new EditText(requireContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        input.setHint(R.string.bookmark_note_hint);
-        input.setText(bookmark.getNote());
-        input.setSelection(bookmark.getNote().length());
-        FrameLayout wrapper = new FrameLayout(requireContext());
-        int padding = (int) (20 * getResources().getDisplayMetrics().density);
-        wrapper.setPadding(padding, 0, padding, 0);
-        wrapper.addView(input);
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.bookmark_edit_note)
-                .setView(wrapper)
-                .setPositiveButton(R.string.confirm_label, (dialog, which) ->
-                        DBWriter.updateBookmarkNote(bookmark.getId(), feedItemId,
-                                input.getText().toString().trim()))
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

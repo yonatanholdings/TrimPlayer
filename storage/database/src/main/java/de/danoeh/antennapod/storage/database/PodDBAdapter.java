@@ -1759,6 +1759,12 @@ public class PodDBAdapter {
                 new String[] {String.valueOf(feedItemId)}, null, null, KEY_POSITION);
     }
 
+    /** All bookmarks across episodes, newest first. */
+    public Cursor getAllBookmarksCursor() {
+        return db.query(TABLE_NAME_BOOKMARKS, null, null, null, null, null,
+                KEY_BOOKMARK_CREATED_AT + " DESC");
+    }
+
     public Cursor getSkipEventStatsCursor(long timeFrom, long timeTo) {
         String sql = "SELECT " + KEY_SKIP_TYPE + ","
                 + " SUM(" + KEY_SKIP_DURATION_MS + ") AS total_ms"

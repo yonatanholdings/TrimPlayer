@@ -10,6 +10,7 @@ import de.danoeh.antennapod.ui.screen.PlaybackHistoryFragment;
 import de.danoeh.antennapod.ui.screen.download.CompletedDownloadsFragment;
 import de.danoeh.antennapod.ui.screen.home.HomeFragment;
 import de.danoeh.antennapod.ui.screen.queue.QueueFragment;
+import de.danoeh.antennapod.ui.screen.saved.SavedFragment;
 import de.danoeh.antennapod.ui.screen.subscriptions.SubscriptionFragment;
 
 public abstract class NavigationNames {
@@ -23,6 +24,8 @@ public abstract class NavigationNames {
                 return R.drawable.ic_inbox;
             case AllEpisodesFragment.TAG:
                 return R.drawable.ic_feed;
+            case SavedFragment.TAG:
+                return R.drawable.ic_bookmark;
             case CompletedDownloadsFragment.TAG:
                 return R.drawable.ic_download;
             case PlaybackHistoryFragment.TAG:
@@ -48,6 +51,8 @@ public abstract class NavigationNames {
                 return R.string.episodes_label;
             case SubscriptionFragment.TAG:
                 return R.string.subscriptions_label;
+            case SavedFragment.TAG:
+                return R.string.saved_label;
             case CompletedDownloadsFragment.TAG:
                 return R.string.downloads_label;
             case PlaybackHistoryFragment.TAG:
@@ -73,6 +78,8 @@ public abstract class NavigationNames {
                 return R.string.episodes_label_short;
             case SubscriptionFragment.TAG:
                 return R.string.subscriptions_label_short;
+            case SavedFragment.TAG:
+                return R.string.saved_label;
             case CompletedDownloadsFragment.TAG:
                 return R.string.downloads_label_short;
             case PlaybackHistoryFragment.TAG:
@@ -94,6 +101,8 @@ public abstract class NavigationNames {
                 return R.id.bottom_navigation_inbox;
             case AllEpisodesFragment.TAG:
                 return R.id.bottom_navigation_episodes;
+            case SavedFragment.TAG:
+                return R.id.bottom_navigation_saved;
             case CompletedDownloadsFragment.TAG:
                 return R.id.bottom_navigation_downloads;
             case PlaybackHistoryFragment.TAG:
@@ -115,6 +124,8 @@ public abstract class NavigationNames {
             return InboxFragment.TAG;
         } else if (id == R.id.bottom_navigation_episodes) {
             return AllEpisodesFragment.TAG;
+        } else if (id == R.id.bottom_navigation_saved) {
+            return SavedFragment.TAG;
         } else if (id == R.id.bottom_navigation_downloads) {
             return CompletedDownloadsFragment.TAG;
         } else if (id == R.id.bottom_navigation_history) {

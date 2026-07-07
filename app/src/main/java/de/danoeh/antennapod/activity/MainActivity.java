@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -82,6 +81,7 @@ import de.danoeh.antennapod.ui.screen.playback.audio.AudioPlayerFragment;
 import de.danoeh.antennapod.ui.screen.preferences.PreferenceActivity;
 import de.danoeh.antennapod.ui.screen.queue.QueueFragment;
 import de.danoeh.antennapod.ui.screen.rating.RatingDialogManager;
+import de.danoeh.antennapod.ui.screen.saved.SavedFragment;
 import de.danoeh.antennapod.ui.screen.subscriptions.SubscriptionFragment;
 import de.danoeh.antennapod.ui.view.BottomSheetBackPressedCallback;
 import de.danoeh.antennapod.ui.view.LockableBottomSheetBehavior;
@@ -500,6 +500,9 @@ public class MainActivity extends CastEnabledActivity {
             case SubscriptionFragment.TAG:
                 fragment = new SubscriptionFragment();
                 break;
+            case SavedFragment.TAG:
+                fragment = new SavedFragment();
+                break;
             case DiscoveryFragment.TAG:
                 fragment = new DiscoveryFragment();
                 break;
@@ -848,29 +851,16 @@ public class MainActivity extends CastEnabledActivity {
     private void showTrimStatusSnackbar(String title, String body, int iconRes, int badgeTintRes) {
         Snackbar snackbar;
         if (getBottomSheet().getState() == BottomSheetBehavior.STATE_COLLAPSED) {
-            snackbar = Snackbar.make(findViewById(R.id.main_content_view), " ", Snackbar.LENGTH_LONG);
+            snackbar = de.danoeh.antennapod.ui.view.TrimSnackbar.make(findViewById(R.id.main_content_view),
+                    title, body, iconRes, badgeTintRes, Snackbar.LENGTH_LONG);
             if (findViewById(R.id.audioplayerFragment).getVisibility() == View.VISIBLE) {
                 snackbar.setAnchorView(findViewById(R.id.audioplayerFragment));
             }
         } else {
-            snackbar = Snackbar.make(findViewById(android.R.id.content), " ", Snackbar.LENGTH_LONG);
+            snackbar = de.danoeh.antennapod.ui.view.TrimSnackbar.make(findViewById(android.R.id.content),
+                    title, body, iconRes, badgeTintRes, Snackbar.LENGTH_LONG);
         }
         snackbar.setDuration(5000);
-
-        Snackbar.SnackbarLayout snackbarLayout = (Snackbar.SnackbarLayout) snackbar.getView();
-        TextView defaultText = snackbarLayout.findViewById(com.google.android.material.R.id.snackbar_text);
-        if (defaultText != null) {
-            defaultText.setVisibility(View.INVISIBLE);
-        }
-        View custom = LayoutInflater.from(this)
-                .inflate(R.layout.snackbar_trim_analyze, snackbarLayout, false);
-        ((TextView) custom.findViewById(R.id.snackTitle)).setText(title);
-        ((TextView) custom.findViewById(R.id.snackBody)).setText(body);
-        ((android.widget.ImageView) custom.findViewById(R.id.snackIcon)).setImageResource(iconRes);
-        custom.findViewById(R.id.snackBadge).setBackgroundTintList(
-                androidx.core.content.ContextCompat.getColorStateList(this, badgeTintRes));
-        snackbarLayout.addView(custom, 0);
-
         snackbar.show();
     }
 

@@ -10,9 +10,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import de.danoeh.antennapod.model.feed.Bookmark;
+import de.danoeh.antennapod.model.feed.Feed;
+import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.model.feed.FeedMedia;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -67,5 +72,28 @@ public class BookmarksDbTest {
 
         // The other episode's bookmark is untouched
         assertEquals(1, DBReader.getBookmarks(ITEM_B).size());
+    }
+
+    @Test
+    public void testGetAllBookmarksWithItems() throws Exception {
+        Feed feed = new Feed(0, null, "title", "http://example.com", "description",
+                "http://example.com/payment", "author", "en", null, "http://example.com/feed",
+                "http://example.com/image", null, "http://example.com/feed", System.currentTimeMillis());
+        feed.setItems(new ArrayList<>());
+        FeedItem item = new FeedItem(0, "Item", "ItemId", "url", new Date(), FeedItem.PLAYED, feed);
+        item.setMedia(new FeedMedia(item, "http://download.url.net/", 1234567, "audio/mpeg"));
+        feed.getItems().add(item);
+        DBWriter.setCompleteFeed(feed).get();
+
+        adapter.open();
+        adapter.insertBookmark(item.getId(), 60000, "real episode");
+        adapter.insertBookmark(item.getId() + 1000, 5000, "dangling — episode missing");
+        adapter.close();
+
+        List<DBReader.BookmarkWithItem> rows = DBReader.getAllBookmarksWithItems();
+        assertEquals(1, rows.size());
+        assertEquals("real episode", rows.get(0).bookmark.getNote());
+        assertEquals(item.getId(), rows.get(0).item.getId());
+        assertEquals("Item", rows.get(0).item.getTitle());
     }
 }

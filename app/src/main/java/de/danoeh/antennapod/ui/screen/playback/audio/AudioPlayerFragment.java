@@ -672,11 +672,12 @@ public class AudioPlayerFragment extends Fragment implements
             if (feedItem != null) {
                 int position = Math.max(0, controller.getPosition());
                 de.danoeh.antennapod.storage.database.DBWriter.addBookmark(feedItem.getId(), position, null);
-                if (getView() != null) {
-                    com.google.android.material.snackbar.Snackbar.make(getView(),
-                            getString(R.string.bookmark_added_at, Converter.getDurationStringLong(position)),
-                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT).show();
-                }
+                // Same design as the segment-skip confirmation (PlaybackService's
+                // "Skipped ad · saved 30s"): a plain toast, which also renders
+                // above the expanded player sheet without any z-order games.
+                android.widget.Toast.makeText(getContext(),
+                        getString(R.string.bookmark_added_at, Converter.getDurationStringLong(position)),
+                        android.widget.Toast.LENGTH_SHORT).show();
             }
             return true;
         } else if (itemId == R.id.bookmarks_item) {
