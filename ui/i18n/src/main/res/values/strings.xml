@@ -654,6 +654,21 @@
     <string name="pref_trim_skip_outros_title">Skip outros</string>
     <string name="pref_trim_skip_outros_sum">Auto-skip detected outro music and end-of-episode wrap-up</string>
 
+    <!-- Mid-episode bookmarks: save a playback position with an optional note,
+         list them per episode, tap to jump back. -->
+    <string name="bookmarks_label">Bookmarks</string>
+    <string name="bookmark_add_label">Add bookmark</string>
+    <!-- Toast after a one-tap bookmark. %1$s = playback position, e.g. "12:34". -->
+    <string name="bookmark_added_at">Bookmark added at %1$s</string>
+    <string name="bookmark_list_subtitle">Tap a bookmark to jump back to that moment.</string>
+    <string name="bookmark_list_empty">No bookmarks in this episode yet.</string>
+    <string name="bookmark_current_position">Bookmark current position</string>
+    <string name="bookmark_note_hint">Note (optional)</string>
+    <string name="bookmark_edit_note">Edit note</string>
+    <string name="bookmark_delete">Delete bookmark</string>
+    <!-- Fallback row title for a bookmark without a note. -->
+    <string name="bookmark_no_note">Bookmark</string>
+
     <!-- Pro paywall (Phase 1). -->
     <string name="trim_pro_title">Support TrimPlayer</string>
     <string name="trim_pro_pref_summary">TrimPlayer is free — chip in to keep it running</string>

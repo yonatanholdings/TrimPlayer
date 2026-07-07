@@ -88,6 +88,22 @@
     </item>
 
     <item
+        android:id="@+id/add_bookmark_item"
+        android:icon="@drawable/ic_bookmark_add"
+        android:title="@string/bookmark_add_label"
+        android:visible="false"
+        custom:showAsAction="never">
+    </item>
+
+    <item
+        android:id="@+id/bookmarks_item"
+        android:icon="@drawable/ic_bookmark"
+        android:title="@string/bookmarks_label"
+        android:visible="false"
+        custom:showAsAction="never">
+    </item>
+
+    <item
         android:id="@+id/volume_boost_item"
         android:title="@string/volume_boost_menu"
         android:visible="false"

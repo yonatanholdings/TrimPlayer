@@ -35,6 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
+import de.danoeh.antennapod.event.BookmarksChangedEvent;
 import de.danoeh.antennapod.event.FavoritesEvent;
 import de.danoeh.antennapod.event.FeedItemEvent;
 import de.danoeh.antennapod.event.FeedListUpdateEvent;
@@ -122,6 +123,39 @@ public class DBWriter {
             adapter.open();
             adapter.insertSkipEvent(feedItemId, skipType, durationMs, timestampMs);
             adapter.close();
+        });
+    }
+
+    /**
+     * Adds a bookmark at the given playback position of an episode.
+     */
+    public static Future<?> addBookmark(long feedItemId, int positionMs, @Nullable String note) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.insertBookmark(feedItemId, positionMs, note);
+            adapter.close();
+            EventBus.getDefault().post(new BookmarksChangedEvent(feedItemId));
+        });
+    }
+
+    public static Future<?> updateBookmarkNote(long bookmarkId, long feedItemId, @Nullable String note) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.updateBookmarkNote(bookmarkId, note);
+            adapter.close();
+            EventBus.getDefault().post(new BookmarksChangedEvent(feedItemId));
+        });
+    }
+
+    public static Future<?> deleteBookmark(long bookmarkId, long feedItemId) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.deleteBookmark(bookmarkId);
+            adapter.close();
+            EventBus.getDefault().post(new BookmarksChangedEvent(feedItemId));
         });
     }
 

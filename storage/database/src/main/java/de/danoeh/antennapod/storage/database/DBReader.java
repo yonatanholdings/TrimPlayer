@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.danoeh.antennapod.model.feed.Bookmark;
 import de.danoeh.antennapod.model.feed.Chapter;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedCounter;
@@ -791,6 +792,28 @@ public final class DBReader {
                 e.episodeUrl  = idxEpUrl >= 0 ? c.getString(idxEpUrl) : null;
                 e.rssUrl      = idxRssUrl >= 0 ? c.getString(idxRssUrl) : null;
                 result.add(e);
+            }
+        } finally {
+            adapter.close();
+        }
+        return result;
+    }
+
+    /** Bookmarks of one episode, ordered by playback position. */
+    @NonNull
+    public static List<Bookmark> getBookmarks(long feedItemId) {
+        List<Bookmark> result = new ArrayList<>();
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (Cursor c = adapter.getBookmarksCursor(feedItemId)) {
+            int idxId = c.getColumnIndexOrThrow(PodDBAdapter.KEY_ID);
+            int idxItem = c.getColumnIndexOrThrow(PodDBAdapter.KEY_FEEDITEM);
+            int idxPosition = c.getColumnIndexOrThrow(PodDBAdapter.KEY_POSITION);
+            int idxNote = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_NOTE);
+            int idxCreated = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_CREATED_AT);
+            while (c.moveToNext()) {
+                result.add(new Bookmark(c.getLong(idxId), c.getLong(idxItem),
+                        c.getInt(idxPosition), c.getString(idxNote), c.getLong(idxCreated)));
             }
         } finally {
             adapter.close();

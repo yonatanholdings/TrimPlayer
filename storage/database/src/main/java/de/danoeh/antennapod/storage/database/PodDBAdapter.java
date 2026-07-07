@@ -55,7 +55,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3110000;
+    public static final int VERSION = 3120000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -108,6 +108,9 @@ public class PodDBAdapter {
     public static final String KEY_SKIP_TYPE = "skip_type";
     public static final String KEY_SKIP_DURATION_MS = "skip_duration_ms";
     public static final String KEY_SKIP_TIMESTAMP = "skip_timestamp";
+    public static final String TABLE_NAME_BOOKMARKS = "TrimBookmarks";
+    public static final String KEY_BOOKMARK_NOTE = "note";
+    public static final String KEY_BOOKMARK_CREATED_AT = "created_at";
     public static final String KEY_USERNAME = "username";
     public static final String KEY_PASSWORD = "password";
     public static final String KEY_IS_PAGED = "is_paged";
@@ -270,6 +273,17 @@ public class PodDBAdapter {
             + KEY_SKIP_DURATION_MS + " INTEGER NOT NULL,"
             + KEY_SKIP_TIMESTAMP + " INTEGER NOT NULL)";
 
+    static final String CREATE_TABLE_BOOKMARKS = "CREATE TABLE "
+            + TABLE_NAME_BOOKMARKS + "(" + TABLE_PRIMARY_KEY
+            + KEY_FEEDITEM + " INTEGER NOT NULL,"
+            + KEY_POSITION + " INTEGER NOT NULL,"
+            + KEY_BOOKMARK_NOTE + " TEXT,"
+            + KEY_BOOKMARK_CREATED_AT + " INTEGER NOT NULL)";
+
+    static final String CREATE_INDEX_BOOKMARKS_FEEDITEM = "CREATE INDEX "
+            + TABLE_NAME_BOOKMARKS + "_" + KEY_FEEDITEM + " ON " + TABLE_NAME_BOOKMARKS + " ("
+            + KEY_FEEDITEM + ")";
+
     /**
      * All the tables in the database
      */
@@ -281,7 +295,8 @@ public class PodDBAdapter {
             TABLE_NAME_QUEUE,
             TABLE_NAME_SIMPLECHAPTERS,
             TABLE_NAME_FAVORITES,
-            TABLE_NAME_SKIP_EVENTS
+            TABLE_NAME_SKIP_EVENTS,
+            TABLE_NAME_BOOKMARKS
     };
 
     public static final String SELECT_KEY_ITEM_ID = "item_id";
@@ -981,6 +996,7 @@ public class PodDBAdapter {
             db.delete(TABLE_NAME_FEED_MEDIA, KEY_ID + " IN (" + mediaIds + ")", null);
             db.delete(TABLE_NAME_FEED_ITEMS, KEY_ID + " IN (" + itemIds + ")", null);
             db.delete(TABLE_NAME_FAVORITES, KEY_FEEDITEM + " IN (" + itemIds + ")", null);
+            db.delete(TABLE_NAME_BOOKMARKS, KEY_FEEDITEM + " IN (" + itemIds + ")", null);
             db.setTransactionSuccessful();
         } catch (SQLException e) {
             Log.e(TAG, Log.getStackTraceString(e));
@@ -1718,6 +1734,31 @@ public class PodDBAdapter {
         return db.rawQuery(sql, new String[] {String.valueOf(minId), String.valueOf(limit)});
     }
 
+    public long insertBookmark(long feedItemId, int positionMs, String note) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_FEEDITEM, feedItemId);
+        values.put(KEY_POSITION, positionMs);
+        values.put(KEY_BOOKMARK_NOTE, note);
+        values.put(KEY_BOOKMARK_CREATED_AT, System.currentTimeMillis());
+        return db.insert(TABLE_NAME_BOOKMARKS, null, values);
+    }
+
+    public void updateBookmarkNote(long bookmarkId, String note) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_BOOKMARK_NOTE, note);
+        db.update(TABLE_NAME_BOOKMARKS, values, KEY_ID + "=?", new String[] {String.valueOf(bookmarkId)});
+    }
+
+    public void deleteBookmark(long bookmarkId) {
+        db.delete(TABLE_NAME_BOOKMARKS, KEY_ID + "=?", new String[] {String.valueOf(bookmarkId)});
+    }
+
+    /** Bookmarks of one episode, ordered by playback position. */
+    public Cursor getBookmarksCursor(long feedItemId) {
+        return db.query(TABLE_NAME_BOOKMARKS, null, KEY_FEEDITEM + "=?",
+                new String[] {String.valueOf(feedItemId)}, null, null, KEY_POSITION);
+    }
+
     public Cursor getSkipEventStatsCursor(long timeFrom, long timeTo) {
         String sql = "SELECT " + KEY_SKIP_TYPE + ","
                 + " SUM(" + KEY_SKIP_DURATION_MS + ") AS total_ms"
@@ -1911,6 +1952,7 @@ public class PodDBAdapter {
             db.execSQL(CREATE_TABLE_QUEUE);
             db.execSQL(CREATE_TABLE_SIMPLECHAPTERS);
             db.execSQL(CREATE_TABLE_SKIP_EVENTS);
+            db.execSQL(CREATE_TABLE_BOOKMARKS);
             db.execSQL(CREATE_TABLE_FAVORITES);
 
             db.execSQL(CREATE_INDEX_FEEDITEMS_FEED);
@@ -1919,6 +1961,7 @@ public class PodDBAdapter {
             db.execSQL(CREATE_INDEX_FEEDMEDIA_FEEDITEM);
             db.execSQL(CREATE_INDEX_QUEUE_FEEDITEM);
             db.execSQL(CREATE_INDEX_SIMPLECHAPTERS_FEEDITEM);
+            db.execSQL(CREATE_INDEX_BOOKMARKS_FEEDITEM);
         }
 
         @Override
