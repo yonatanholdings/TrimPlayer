@@ -82,6 +82,10 @@ public class FeedItemPermutors {
                 comparator = (f1, f2) -> f2.getMedia().getLastPlayedTimeHistory()
                         .compareTo(f1.getMedia().getLastPlayedTimeHistory());
                 break;
+            case COMPLETION_DATE_OLD_NEW:
+                comparator = (f1, f2) -> f1.getMedia().getLastPlayedTimeHistory()
+                        .compareTo(f2.getMedia().getLastPlayedTimeHistory());
+                break;
             default:
                 throw new IllegalArgumentException("Permutor not implemented");
         }
