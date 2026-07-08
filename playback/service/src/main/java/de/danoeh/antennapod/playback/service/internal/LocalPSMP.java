@@ -203,6 +203,9 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
 
         } catch (IOException | IllegalStateException e) {
             e.printStackTrace();
+            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                    "playMediaObject ERROR: " + e.getClass().getSimpleName()
+                            + ": " + e.getLocalizedMessage());
             setPlayerStatus(PlayerStatus.ERROR, null);
             EventBus.getDefault().postSticky(new PlayerErrorEvent(e.getLocalizedMessage()));
         }
@@ -365,6 +368,10 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                 // to a saved position >= duration (an already-finished queued episode)
                 // fires endPlayback during PREPARING and cascade-skips the whole queue.
                 Log.d(TAG, "Seek reached end of file, skipping to next episode");
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                        "seek>=duration -> skip-to-next  seekTo=" + t
+                                + " duration=" + getDuration() + " status=" + playerStatus
+                                + " ep=" + (media != null ? media.getEpisodeTitle() : "?"));
                 endPlayback(true, true, true, true);
                 return;
             }

@@ -1752,6 +1752,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
 
         @Override
         public void onPlaybackStart(@NonNull Playable playable, int position) {
+            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this,
+                    "start ep=" + playable.getEpisodeTitle() + " pos=" + position
+                            + " dur=" + playable.getDuration());
             taskManager.startWidgetUpdater();
             if (position != Playable.INVALID_TIME) {
                 playable.setPosition(position);
@@ -2014,6 +2017,10 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         }
         FeedMedia media = (FeedMedia) playable;
         FeedItem item = media.getItem();
+        de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                "post-playback ep=" + media.getEpisodeTitle() + " ended=" + ended
+                        + " skipped=" + skipped + " playingNext=" + playingNext
+                        + " pos=" + media.getPosition() + " dur=" + media.getDuration());
         int smartMarkAsPlayedSecs = UserPreferences.getSmartMarkAsPlayedSecs();
         boolean almostEnded = media.getDuration() > 0
                 && media.getPosition() >= media.getDuration() - smartMarkAsPlayedSecs * 1000;
@@ -3207,6 +3214,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 + " but player duration is " + getDuration()
                                 + " — completing episode");
                         phantomTailHandled = true;
+                        de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                "phantom-tail -> completePlayback  pos=" + getCurrentPosition()
+                                        + " feedDur=" + ((de.danoeh.antennapod.model.feed.FeedMedia)
+                                                endPlayable).getDuration()
+                                        + " playerDur=" + getDuration());
                         mediaPlayer.completePlayback();
                         return;
                     }
@@ -3274,6 +3286,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     continue;
                                 }
                                 Log.d(TAG, "Trim Player: Auto-skipping segment " + seg.type);
+                                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                        "auto-skip " + eventType + " " + pos + "ms->" + endMs
+                                                + "ms dur=" + dur + " ep=" + fm.getEpisodeTitle());
                                 skippedSegmentIndices.add(si);
                                 int skippedMs = endMs - pos;
                                 fm.setSkippedDuration(fm.getSkippedDuration() + skippedMs);
@@ -3307,7 +3322,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     // full completion processing (marked played, position reset,
                                     // completion synced/reported). skip() would only mark it played if
                                     // smart-mark-as-played happened to span the outro.
-                                    Log.d(TAG, "Trim Player: segment reaches episode end — completing episode");
+                                    de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                        "segment-runs-to-end -> completePlayback  "
+                                                + eventType + " endMs=" + endMs + " dur=" + dur
+                                                + " ep=" + fm.getEpisodeTitle());
+                                Log.d(TAG, "Trim Player: segment reaches episode end — completing episode");
                                     showSegmentSkipToast(eventType, skippedMs);
                                     playSkipCue();
                                     mediaPlayer.completePlayback();

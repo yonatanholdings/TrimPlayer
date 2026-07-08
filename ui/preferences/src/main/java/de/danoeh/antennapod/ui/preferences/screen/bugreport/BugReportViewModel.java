@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
 
+import de.danoeh.antennapod.storage.preferences.TrimPlaybackLog;
 import de.danoeh.antennapod.system.CrashReportWriter;
 import de.danoeh.antennapod.system.utils.PackageUtils;
 import io.reactivex.rxjava3.core.Observable;
@@ -97,10 +98,18 @@ public class BugReportViewModel extends AndroidViewModel {
         private final String formattedEnvironmentInfo;
         private String formattedCrashLogTimestamp;
         private String formattedCrashLog;
+        // Recent playback-decision trail, attached to every report so behaviour bugs
+        // (no crash) still arrive with diagnostics. See TrimPlaybackLog.
+        private final String formattedPlaybackLog;
 
         private UiState(Application application) {
             this.environmentInfo = new EnvironmentInfo(application);
             this.crashLogInfo = new CrashLogInfo();
+
+            String playbackTail = TrimPlaybackLog.readTail(application);
+            this.formattedPlaybackLog = (playbackTail == null || playbackTail.isEmpty())
+                    ? null
+                    : "## Playback log (recent)\n```\n" + playbackTail + "\n```";
 
             this.formattedEnvironmentInfo = "## Environment"
                     + "\nAndroid version: " + environmentInfo.androidVersion
@@ -159,6 +168,13 @@ public class BugReportViewModel extends AndroidViewModel {
 
         public String getCrashInfoWithMarkup() {
             return this.formattedCrashLog;
+        }
+
+        /** Recent playback-decision trail (auto-skips, completion reasons, seek-to-
+         *  next, errors), or null when nothing has been recorded yet. Attached to the
+         *  report regardless of whether a crash exists. */
+        public String getPlaybackLogWithMarkup() {
+            return this.formattedPlaybackLog;
         }
 
         private void setCrashLogState(CrashLogState crashLogState) {

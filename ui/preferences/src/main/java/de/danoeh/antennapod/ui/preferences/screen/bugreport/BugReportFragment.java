@@ -266,9 +266,24 @@ public class BugReportFragment extends AnimatedFragment {
 
         String envJson = viewBinding.attachDeviceSwitch.isChecked()
                 ? uiState.getEnvironmentInfoWithMarkup() : null;
-        String crashLog = (viewBinding.crashRow.getVisibility() == View.VISIBLE
-                && viewBinding.attachCrashSwitch.isChecked())
-                ? uiState.getCrashInfoWithMarkup() : null;
+
+        // crash_log carries both the crash stacktrace (when one is on record and
+        // attached) AND the recent playback-decision trail. The trail rides along
+        // even for a no-crash behaviour bug ("player skipped episodes") so the report
+        // is triageable without a live reproduction. See TrimPlaybackLog.
+        StringBuilder diagnostics = new StringBuilder();
+        if (viewBinding.crashRow.getVisibility() == View.VISIBLE
+                && viewBinding.attachCrashSwitch.isChecked()) {
+            diagnostics.append(uiState.getCrashInfoWithMarkup());
+        }
+        String playbackLog = uiState.getPlaybackLogWithMarkup();
+        if (playbackLog != null && !playbackLog.isEmpty()) {
+            if (diagnostics.length() > 0) {
+                diagnostics.append("\n\n");
+            }
+            diagnostics.append(playbackLog);
+        }
+        String crashLog = diagnostics.length() > 0 ? diagnostics.toString() : null;
 
         Log.d(TAG, "submitForm: category=" + selectedCategory + " bodyLen=" + body.length()
                 + " envAttached=" + (envJson != null) + " crashAttached=" + (crashLog != null));
