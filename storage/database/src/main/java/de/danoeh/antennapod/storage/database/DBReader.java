@@ -822,9 +822,11 @@ public final class DBReader {
         int idxPosition = c.getColumnIndexOrThrow(PodDBAdapter.KEY_POSITION);
         int idxNote = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_NOTE);
         int idxCreated = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_CREATED_AT);
+        int idxSyncId = c.getColumnIndexOrThrow(PodDBAdapter.KEY_BOOKMARK_SYNC_ID);
         while (c.moveToNext()) {
             result.add(new Bookmark(c.getLong(idxId), c.getLong(idxItem),
-                    c.getInt(idxPosition), c.getString(idxNote), c.getLong(idxCreated)));
+                    c.getInt(idxPosition), c.getString(idxNote), c.getLong(idxCreated),
+                    c.getString(idxSyncId)));
         }
         return result;
     }

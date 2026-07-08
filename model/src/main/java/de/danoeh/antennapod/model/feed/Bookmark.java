@@ -10,13 +10,19 @@ public class Bookmark {
     private final int position;
     private final String note;
     private final long createdAt;
+    private final String syncId;
 
     public Bookmark(long id, long feedItemId, int position, String note, long createdAt) {
+        this(id, feedItemId, position, note, createdAt, null);
+    }
+
+    public Bookmark(long id, long feedItemId, int position, String note, long createdAt, String syncId) {
         this.id = id;
         this.feedItemId = feedItemId;
         this.position = position;
         this.note = note == null ? "" : note;
         this.createdAt = createdAt;
+        this.syncId = syncId;
     }
 
     public long getId() {
@@ -39,5 +45,11 @@ public class Bookmark {
 
     public long getCreatedAt() {
         return createdAt;
+    }
+
+    /** Stable cross-device identifier used by account sync; may be null on rows
+     *  read by code paths that don't need it. */
+    public String getSyncId() {
+        return syncId;
     }
 }

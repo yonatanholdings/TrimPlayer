@@ -154,6 +154,30 @@ public class DBWriter {
         });
     }
 
+    /** Insert a bookmark pulled from account sync, keeping its cross-device sync id. */
+    public static Future<?> addSyncedBookmark(long feedItemId, int positionMs, @Nullable String note,
+                                              long createdAtMs, String syncId) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.insertBookmark(feedItemId, positionMs, note, createdAtMs, syncId);
+            adapter.close();
+            EventBus.getDefault().post(new BookmarksChangedEvent(feedItemId));
+        });
+    }
+
+    /** Re-key a local bookmark to another device's sync id (duplicate convergence). */
+    public static Future<?> adoptBookmarkSyncId(long bookmarkId, long feedItemId,
+                                                String syncId, @Nullable String note) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.adoptBookmarkSyncId(bookmarkId, syncId, note);
+            adapter.close();
+            EventBus.getDefault().post(new BookmarksChangedEvent(feedItemId));
+        });
+    }
+
     public static Future<?> deleteBookmark(long bookmarkId, long feedItemId) {
         return runOnDbThread(() -> {
             PodDBAdapter adapter = PodDBAdapter.getInstance();

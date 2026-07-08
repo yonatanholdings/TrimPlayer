@@ -55,7 +55,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3120000;
+    public static final int VERSION = 3130000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -111,6 +111,7 @@ public class PodDBAdapter {
     public static final String TABLE_NAME_BOOKMARKS = "TrimBookmarks";
     public static final String KEY_BOOKMARK_NOTE = "note";
     public static final String KEY_BOOKMARK_CREATED_AT = "created_at";
+    public static final String KEY_BOOKMARK_SYNC_ID = "sync_id";
     public static final String KEY_USERNAME = "username";
     public static final String KEY_PASSWORD = "password";
     public static final String KEY_IS_PAGED = "is_paged";
@@ -278,7 +279,8 @@ public class PodDBAdapter {
             + KEY_FEEDITEM + " INTEGER NOT NULL,"
             + KEY_POSITION + " INTEGER NOT NULL,"
             + KEY_BOOKMARK_NOTE + " TEXT,"
-            + KEY_BOOKMARK_CREATED_AT + " INTEGER NOT NULL)";
+            + KEY_BOOKMARK_CREATED_AT + " INTEGER NOT NULL,"
+            + KEY_BOOKMARK_SYNC_ID + " TEXT)";
 
     static final String CREATE_INDEX_BOOKMARKS_FEEDITEM = "CREATE INDEX "
             + TABLE_NAME_BOOKMARKS + "_" + KEY_FEEDITEM + " ON " + TABLE_NAME_BOOKMARKS + " ("
@@ -1739,16 +1741,34 @@ public class PodDBAdapter {
     }
 
     public long insertBookmark(long feedItemId, int positionMs, String note, long createdAtMs) {
+        return insertBookmark(feedItemId, positionMs, note, createdAtMs,
+                java.util.UUID.randomUUID().toString());
+    }
+
+    /** Insert with an explicit sync id — used when applying a bookmark pulled
+     *  from the account so the row keeps its cross-device identity. */
+    public long insertBookmark(long feedItemId, int positionMs, String note,
+                               long createdAtMs, String syncId) {
         ContentValues values = new ContentValues();
         values.put(KEY_FEEDITEM, feedItemId);
         values.put(KEY_POSITION, positionMs);
         values.put(KEY_BOOKMARK_NOTE, note);
         values.put(KEY_BOOKMARK_CREATED_AT, createdAtMs);
+        values.put(KEY_BOOKMARK_SYNC_ID, syncId);
         return db.insert(TABLE_NAME_BOOKMARKS, null, values);
     }
 
     public void updateBookmarkNote(long bookmarkId, String note) {
         ContentValues values = new ContentValues();
+        values.put(KEY_BOOKMARK_NOTE, note);
+        db.update(TABLE_NAME_BOOKMARKS, values, KEY_ID + "=?", new String[] {String.valueOf(bookmarkId)});
+    }
+
+    /** Re-key a local bookmark to another device's sync id (and take its note) —
+     *  the duplicate-convergence path when both devices imported the same file. */
+    public void adoptBookmarkSyncId(long bookmarkId, String syncId, String note) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_BOOKMARK_SYNC_ID, syncId);
         values.put(KEY_BOOKMARK_NOTE, note);
         db.update(TABLE_NAME_BOOKMARKS, values, KEY_ID + "=?", new String[] {String.valueOf(bookmarkId)});
     }

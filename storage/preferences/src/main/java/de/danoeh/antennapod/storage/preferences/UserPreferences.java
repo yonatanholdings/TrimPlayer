@@ -1034,6 +1034,7 @@ public abstract class UserPreferences {
     // Episode download-urls that were favorited as of the last push, so the worker
     // pushes only genuine favorite toggles (mirrors PortCast episodes[].starred).
     public static final String PREF_TRIM_SYNC_SNAP_FAV = "prefTrimSyncSnapFav";
+    public static final String PREF_TRIM_SYNC_SNAP_BOOKMARKS = "prefTrimSyncSnapBookmarks";
 
     public static String getTrimSyncSubsSnapshot() {
         return prefs.getString(PREF_TRIM_SYNC_SNAP_SUBS, "");
@@ -1065,6 +1066,14 @@ public abstract class UserPreferences {
 
     public static void setTrimSyncFavSnapshot(String json) {
         prefs.edit().putString(PREF_TRIM_SYNC_SNAP_FAV, json == null ? "" : json).apply();
+    }
+
+    public static String getTrimSyncBookmarkSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_BOOKMARKS, "");
+    }
+
+    public static void setTrimSyncBookmarkSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_BOOKMARKS, json == null ? "" : json).apply();
     }
 
     public static long getTrimSyncCursor() {

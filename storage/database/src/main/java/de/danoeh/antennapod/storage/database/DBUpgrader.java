@@ -374,6 +374,15 @@ class DBUpgrader {
             db.execSQL(PodDBAdapter.CREATE_TABLE_BOOKMARKS);
             db.execSQL(PodDBAdapter.CREATE_INDEX_BOOKMARKS_FEEDITEM);
         }
+        if (oldVersion >= 3120000 && oldVersion < 3130000) {
+            // 3120000 created the table without sync_id; give existing rows a
+            // random stable id so account sync can key them.
+            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_BOOKMARKS
+                    + " ADD COLUMN " + PodDBAdapter.KEY_BOOKMARK_SYNC_ID + " TEXT");
+            db.execSQL("UPDATE " + PodDBAdapter.TABLE_NAME_BOOKMARKS
+                    + " SET " + PodDBAdapter.KEY_BOOKMARK_SYNC_ID
+                    + " = lower(hex(randomblob(16)))");
+        }
     }
 
 }

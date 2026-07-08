@@ -124,12 +124,21 @@ public class TrimSyncWorker extends Worker {
             }
         }
 
+        // Bookmarks -> BookmarkChange rows keyed by the row's stable sync_id.
+        // Journalled as sync_id -> note (position/createdAt are immutable, so a
+        // note change is the only possible edit; an id appearing/disappearing is
+        // an add/delete).
+        Map<String, String> prevBookmarks = parseSubsSnapshot(
+                UserPreferences.getTrimSyncBookmarkSnapshot());
+        List<DBReader.BookmarkWithItem> bookmarkRows = DBReader.getAllBookmarksWithItems();
+
         TrimClient.SyncRequest req = new TrimClient.SyncRequest();
         req.cursor = UserPreferences.getTrimSyncCursor();
         req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
         req.queue = diffQueue(prevQueue, queue, curQueueUrls, now);
         req.progress = buildProgress(queue, favItems, curFav, changedFav, now);
         req.prefs = diffPrefs(prevPrefs, curPrefs, now);
+        req.bookmarks = diffBookmarks(prevBookmarks, bookmarkRows, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
         if (resp.networkError) {
@@ -156,6 +165,8 @@ public class TrimSyncWorker extends Worker {
         ApplyResult progressRes = applyProgress(resp.body.progress, favIds);
         ApplyResult queueRes = applyQueue(getApplicationContext(), resp.body.queue);
         int appliedPrefs = applyPrefs(resp.body.prefs);
+        Set<String> adoptedAwayIds = new HashSet<>();
+        ApplyResult bookmarkRes = applyBookmarks(resp.body.bookmarks, adoptedAwayIds);
 
         // Cursor-advance guard. Queue/progress rows whose episode isn't in the local
         // DB yet are DEFERRED, not applied — which happens routinely right after an
@@ -167,8 +178,8 @@ public class TrimSyncWorker extends Worker {
         // once the episodes exist) and nudge a follow-up sync. Bounded by a
         // no-progress retry cap so a row for an episode that's gone from its feed
         // can't wedge sync forever.
-        int deferred = progressRes.deferred + queueRes.deferred;
-        boolean progressed = (progressRes.changed + queueRes.changed) > 0;
+        int deferred = progressRes.deferred + queueRes.deferred + bookmarkRes.deferred;
+        boolean progressed = (progressRes.changed + queueRes.changed + bookmarkRes.changed) > 0;
         long newCursor = resp.body.cursor;
         if (deferred > 0) {
             int noProgressRuns = progressed ? 0 : UserPreferences.getTrimSyncDeferRetries() + 1;
@@ -194,11 +205,27 @@ public class TrimSyncWorker extends Worker {
         UserPreferences.setTrimSyncFavSnapshot(serializeQueue(new ArrayList<>(mediaUrlSet(
                 DBReader.getEpisodes(0, FAV_LIMIT,
                         new FeedItemFilter(FeedItemFilter.IS_FAVORITE), SortOrder.DATE_NEW_OLD)))));
+        // Bookmark snapshot = the DB state, PLUS the ids this run re-keyed onto
+        // another device's id ("adopted away"). Those old ids were pushed to the
+        // server (possibly this very run) but no longer exist locally — keeping
+        // them in the snapshot makes the next diff emit their tombstones, so the
+        // server doesn't keep a duplicate row alive forever.
+        Map<String, String> bookmarkSnap = new HashMap<>();
+        for (de.danoeh.antennapod.model.feed.Bookmark b : DBReader.getAllBookmarks()) {
+            if (b.getSyncId() != null) {
+                bookmarkSnap.put(b.getSyncId(), b.getNote());
+            }
+        }
+        for (String adopted : adoptedAwayIds) {
+            bookmarkSnap.put(adopted, "");
+        }
+        UserPreferences.setTrimSyncBookmarkSnapshot(serializeSubs(bookmarkSnap));
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
-                + " prefs=" + req.prefs.size()
+                + " prefs=" + req.prefs.size() + " bookmarks=" + req.bookmarks.size()
                 + "; applied subs=" + appliedSubs + " progress=" + progressRes.changed
                 + " queue=" + queueRes.changed + " prefs=" + appliedPrefs
+                + " bookmarks=" + bookmarkRes.changed
                 + "; deferred=" + deferred + ", cursor=" + newCursor);
         return Result.success();
     }
@@ -618,6 +645,137 @@ public class TrimSyncWorker extends Worker {
 
     private static boolean equalsNullable(String a, String b) {
         return a == null ? b == null : a.equals(b);
+    }
+
+    /** Bookmarks that are new (client_ts = the bookmark's creation time) or whose
+     *  note changed (client_ts = now), plus tombstones for ids that disappeared
+     *  locally (deleted or adopted away). Rows whose episode has no enclosure url
+     *  are unsyncable and skipped entirely — they never enter the journal, so
+     *  they can't emit spurious tombstones either. */
+    private static List<TrimClient.BookmarkChange> diffBookmarks(
+            Map<String, String> prev, List<DBReader.BookmarkWithItem> rows, long now) {
+        List<TrimClient.BookmarkChange> out = new ArrayList<>();
+        Set<String> currentIds = new HashSet<>();
+        for (DBReader.BookmarkWithItem row : rows) {
+            String syncId = row.bookmark.getSyncId();
+            FeedMedia media = row.item.getMedia();
+            String url = media != null ? media.getDownloadUrl() : null;
+            if (syncId == null || url == null || url.isEmpty()) {
+                continue;
+            }
+            currentIds.add(syncId);
+            boolean isNew = !prev.containsKey(syncId);
+            if (!isNew && equalsNullable(prev.get(syncId), row.bookmark.getNote())) {
+                continue; // unchanged
+            }
+            TrimClient.BookmarkChange b = new TrimClient.BookmarkChange();
+            b.bookmark_id = syncId;
+            b.episode_url = url;
+            b.guid = row.item.getItemIdentifier();
+            b.at_ms = row.bookmark.getPosition();
+            b.note = row.bookmark.getNote();
+            b.deleted = false;
+            b.client_ts = isNew && row.bookmark.getCreatedAt() > 0
+                    ? row.bookmark.getCreatedAt() : now;
+            out.add(b);
+        }
+        for (String syncId : prev.keySet()) {
+            if (!currentIds.contains(syncId)) {
+                TrimClient.BookmarkChange b = new TrimClient.BookmarkChange();
+                b.bookmark_id = syncId;
+                b.deleted = true;
+                b.client_ts = now;
+                out.add(b);
+            }
+        }
+        return out;
+    }
+
+    /** Apply server-side bookmark changes: deletes and note edits by sync id,
+     *  inserts for unknown ids (keeping the wire id + timestamp). An unknown id
+     *  landing on an episode+position that already has a local bookmark is the
+     *  same bookmark created independently on two devices (e.g. both imported
+     *  the same PortCast file) — instead of duplicating, the row is re-keyed to
+     *  whichever id sorts lower (both devices converge on it) and the loser id
+     *  is tombstoned via {@code adoptedAwayIds} + the journal on the next run.
+     *  Episodes not present locally are deferred like queue/progress rows. */
+    private static ApplyResult applyBookmarks(List<TrimClient.BookmarkChange> changes,
+                                              Set<String> adoptedAwayIds) {
+        ApplyResult r = new ApplyResult();
+        if (changes == null || changes.isEmpty()) {
+            return r;
+        }
+        Map<String, de.danoeh.antennapod.model.feed.Bookmark> bySyncId = new HashMap<>();
+        Map<String, de.danoeh.antennapod.model.feed.Bookmark> byItemPos = new HashMap<>();
+        for (de.danoeh.antennapod.model.feed.Bookmark b : DBReader.getAllBookmarks()) {
+            if (b.getSyncId() != null) {
+                bySyncId.put(b.getSyncId(), b);
+            }
+            byItemPos.put(b.getFeedItemId() + "#" + b.getPosition(), b);
+        }
+        for (TrimClient.BookmarkChange c : changes) {
+            if (c == null || c.bookmark_id == null || c.bookmark_id.isEmpty()) {
+                continue;
+            }
+            de.danoeh.antennapod.model.feed.Bookmark local = bySyncId.get(c.bookmark_id);
+            String note = c.note == null ? "" : c.note;
+            try {
+                if (c.deleted) {
+                    if (local != null) {
+                        DBWriter.deleteBookmark(local.getId(), local.getFeedItemId()).get();
+                        bySyncId.remove(c.bookmark_id);
+                        byItemPos.remove(local.getFeedItemId() + "#" + local.getPosition());
+                        r.changed++;
+                    }
+                    continue;
+                }
+                if (local != null) {
+                    if (!note.equals(local.getNote())) {
+                        DBWriter.updateBookmarkNote(local.getId(), local.getFeedItemId(), note).get();
+                        r.changed++;
+                    }
+                    continue;
+                }
+                if ((c.guid == null || c.guid.isEmpty())
+                        && (c.episode_url == null || c.episode_url.isEmpty())) {
+                    continue; // nothing to resolve the episode by
+                }
+                FeedItem item = DBReader.getFeedItemByGuidOrEpisodeUrl(c.guid, c.episode_url);
+                if (item == null) {
+                    r.deferred++; // episode not fetched locally yet — retry after feed update
+                    continue;
+                }
+                int positionMs = (int) Math.max(0, Math.min(c.at_ms, Integer.MAX_VALUE));
+                String posKey = item.getId() + "#" + positionMs;
+                de.danoeh.antennapod.model.feed.Bookmark dup = byItemPos.get(posKey);
+                if (dup != null) {
+                    if (dup.getSyncId() == null || c.bookmark_id.compareTo(dup.getSyncId()) < 0) {
+                        DBWriter.adoptBookmarkSyncId(dup.getId(), item.getId(),
+                                c.bookmark_id, note).get();
+                        if (dup.getSyncId() != null) {
+                            adoptedAwayIds.add(dup.getSyncId());
+                            bySyncId.remove(dup.getSyncId());
+                        }
+                        bySyncId.put(c.bookmark_id, dup);
+                        r.changed++;
+                    }
+                    // else: our id sorts lower — the other device adopts ours.
+                    continue;
+                }
+                long createdAt = c.client_ts > 0 ? c.client_ts : System.currentTimeMillis();
+                DBWriter.addSyncedBookmark(item.getId(), positionMs, note,
+                        createdAt, c.bookmark_id).get();
+                de.danoeh.antennapod.model.feed.Bookmark inserted =
+                        new de.danoeh.antennapod.model.feed.Bookmark(
+                                0, item.getId(), positionMs, note, createdAt, c.bookmark_id);
+                bySyncId.put(c.bookmark_id, inserted);
+                byItemPos.put(posKey, inserted);
+                r.changed++;
+            } catch (Exception e) {
+                Log.w(TAG, "bookmark apply failed for " + c.bookmark_id + ": " + e.getMessage());
+            }
+        }
+        return r;
     }
 
     private static Map<String, String> parseSubsSnapshot(String json) {

@@ -403,12 +403,28 @@ public class TrimClient {
         public long client_ts;
     }
 
+    /** A labelled timestamp on an episode (mirrors backend BookmarkChange).
+     *  Keyed by a client-generated stable {@code bookmark_id} so edits and
+     *  removals converge across devices under last-writer-wins. */
+    public static class BookmarkChange {
+        public String bookmark_id;
+        public String episode_url;
+        public String guid;
+        public long at_ms;
+        public Long end_ms;
+        public String label;
+        public String note;
+        public boolean deleted;
+        public long client_ts;
+    }
+
     public static class SyncRequest {
         public long cursor;
         public List<SubscriptionChange> subscriptions;
         public List<ProgressChange> progress;
         public List<QueueChange> queue;
         public List<PrefChange> prefs;
+        public List<BookmarkChange> bookmarks;
     }
 
     public static class SyncResponse {
@@ -417,6 +433,7 @@ public class TrimClient {
         public List<ProgressChange> progress;
         public List<QueueChange> queue;
         public List<PrefChange> prefs;
+        public List<BookmarkChange> bookmarks;
     }
 
     /** Retrofit-free result wrapper so the app module can drive sync without a

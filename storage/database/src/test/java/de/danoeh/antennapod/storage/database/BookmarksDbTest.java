@@ -20,6 +20,8 @@ import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedMedia;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
@@ -72,6 +74,30 @@ public class BookmarksDbTest {
 
         // The other episode's bookmark is untouched
         assertEquals(1, DBReader.getBookmarks(ITEM_B).size());
+    }
+
+    @Test
+    public void testSyncIdGenerationAndAdoption() {
+        adapter.open();
+        adapter.insertBookmark(ITEM_A, 10000, "locally created");
+        adapter.insertBookmark(ITEM_A, 20000, "from sync", 1_700_000_000_000L, "wire-id-1");
+        adapter.close();
+
+        List<Bookmark> bookmarks = DBReader.getBookmarks(ITEM_A);
+        assertEquals(2, bookmarks.size());
+        // Local inserts get a generated stable sync id; synced inserts keep the wire id.
+        assertNotNull(bookmarks.get(0).getSyncId());
+        assertFalse(bookmarks.get(0).getSyncId().isEmpty());
+        assertEquals("wire-id-1", bookmarks.get(1).getSyncId());
+        assertEquals(1_700_000_000_000L, bookmarks.get(1).getCreatedAt());
+
+        // Adoption re-keys the row to another device's id and takes its note.
+        adapter.open();
+        adapter.adoptBookmarkSyncId(bookmarks.get(0).getId(), "adopted-id", "merged note");
+        adapter.close();
+        Bookmark adopted = DBReader.getBookmarks(ITEM_A).get(0);
+        assertEquals("adopted-id", adopted.getSyncId());
+        assertEquals("merged note", adopted.getNote());
     }
 
     @Test
