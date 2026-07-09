@@ -489,6 +489,21 @@ public class TrimSyncWorker extends Worker {
         return applied;
     }
 
+    /** Kick an account sync shortly after a local change (bookmark add/edit/delete,
+     *  etc.) instead of waiting for the ~2h periodic run. The short initial delay +
+     *  REPLACE on a unique name debounces bursts into a single sync and survives
+     *  process death (WorkManager persists the request); a no-op server-side when
+     *  logged out (see {@link #doWork()}). */
+    public static void requestSyncSoon(Context ctx) {
+        WorkManager.getInstance(ctx).enqueueUniqueWork(
+                "trimAccountSyncNow", ExistingWorkPolicy.REPLACE,
+                new OneTimeWorkRequest.Builder(TrimSyncWorker.class)
+                        .setInitialDelay(5, TimeUnit.SECONDS)
+                        .setConstraints(new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                        .build());
+    }
+
     /** Nudge another sync a short while out so deferred queue/progress rows — whose
      *  episodes are being fetched asynchronously after an auto-subscribe — get
      *  re-pulled and applied promptly, instead of waiting for the periodic sync. */

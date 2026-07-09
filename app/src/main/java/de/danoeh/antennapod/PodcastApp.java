@@ -42,6 +42,9 @@ public class PodcastApp extends Application {
         logFirstLaunchPlayClick();
         EventBus.getDefault().register(new TrimPrefetchSubscriber());
         EventBus.getDefault().register(new TrimQueueSubscriber(this));
+        // Immediate (debounced) account sync on bookmark changes, so they reach the
+        // other devices + web in seconds rather than on the 2h periodic cadence.
+        EventBus.getDefault().register(new TrimSyncSubscriber(this));
         de.danoeh.antennapod.net.common.TrimPrefetcher.prewarm();
         scheduleTrimEventsUpload();
         scheduleTrimSync();
