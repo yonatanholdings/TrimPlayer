@@ -59,9 +59,25 @@ public class GarminPortcastBridge {
             PortcastImporter.ImportPreview preview =
                     PortcastImporter.previewImport(context, new ByteArrayInputStream(bytes));
             PortcastImporter.executeImport(context, preview);
-            Log.i(TAG, "Applied watch PortCast doc: " + preview.nonConflictingStates.size()
-                    + " episode state(s)");
-            return preview.nonConflictingStates.size();
+            // Count everything executeImport actually queues for apply: clean
+            // states AND conflicts resolved in the watch's favor. Counting only
+            // the former made the "Get watch progress" dialog report "none
+            // received" whenever the reported episode also had local play data
+            // (the common case), even though the watch position was applied.
+            int applied = preview.nonConflictingStates.size();
+            int keptLocal = 0;
+            for (PortcastImporter.ConflictEpisode c : preview.conflicts) {
+                if (c.useIncoming) {
+                    applied++;
+                } else {
+                    keptLocal++;
+                }
+            }
+            Log.i(TAG, "Watch PortCast doc: applying " + applied + " episode state(s) ("
+                    + preview.nonConflictingStates.size() + " clean, "
+                    + (applied - preview.nonConflictingStates.size())
+                    + " conflicts won by watch, " + keptLocal + " kept local)");
+            return applied;
         } catch (Exception e) {
             Log.e(TAG, "Failed to apply PortCast doc from watch", e);
             return -1;

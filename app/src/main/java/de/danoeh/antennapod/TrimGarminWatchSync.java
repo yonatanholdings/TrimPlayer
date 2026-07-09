@@ -53,6 +53,10 @@ public final class TrimGarminWatchSync implements GarminCompanionManager.WatchMe
 
     @Override
     public void onWatchMessage(Map<String, Object> portcastDoc) {
+        Object episodes = portcastDoc.get("episodes");
+        Log.i(TAG, "Watch PortCast doc received ("
+                + ((episodes instanceof List) ? ((List<?>) episodes).size() : "no")
+                + " episode state(s))");
         GarminManifestLookup lookup = buildLookup(portcastDoc);
         int applied = new GarminPortcastBridge(context, lookup).applyFromWatchMessage(portcastDoc);
         // Tell any waiting UI (the "Get watch progress" dialog) what landed.
