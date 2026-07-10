@@ -476,8 +476,6 @@
     <!--import and export-->
   <string name="import_export_summary">Μεταφέρετε τις συνδρομές και τη λίστα αναπαραγωγής σε άλλη συσκευή</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Δείξτε τις συνδρομές σας σε έναν φίλο</string>
     <string name="opml_export_summary">Μεταφορά των συνδρομών σε άλλη εφαρμογή podcast</string>
     <string name="opml_import_summary">Εισαγωγή συνδρομών από άλλη εφαρμογή podcast</string>
     <string name="database_import_summary">Εισαγωγή βάσης δεδομένων του TrimPlayer από άλλη συσκευή</string>
@@ -488,7 +486,6 @@
     <string name="select_all_label">Επιλογή όλων</string>
     <string name="deselect_all_label">Αποεπιλογή όλων</string>
     <string name="opml_export_label">Εξαγωγή OPML</string>
-    <string name="html_export_label">Εξαγωγή HTML</string>
     <string name="database_import_label">Εισαγωγή βάσης δεδομένων</string>
     <string name="database_import_warning">Η εισαγωγή βάσης δεδομένων θα αντικαταστήσει όλες τις τρέχουσες συνδρομές και το ιστορικό αναπαραγωγής. Συνίσταται η εξαγωγή της τρέχουσας βάσης δεδομένων ως backup. Επιθυμείτε την αντικατάσταση;</string>
     <string name="please_wait">Παρακαλώ περιμένετε…</string>
@@ -498,8 +495,6 @@
     <string name="successful_import_label">Επιτυχημένη εισαγωγή</string>
     <string name="import_ok">Πατήστε ΟΚ για να επανεκκινήσετε το TrimPlayer</string>
     <string name="import_no_downgrade">Η βάση δεδομένων εξήχθη από μία νεότερη έκδοση του TrimPlayer. Η τρέχουσα εγκατεστημένη έκδοση δεν μπορεί, ακόμα, να διαχειριστεί το αρχείο.</string>
-    <string name="favorites_export_label">Εξαγωγή αγαπημένων</string>
-    <string name="favorites_export_summary">Εξήγαγε τα αγαπημένα σε ένα αρχείο</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Ρύθμιση του χρονοδιακόπτη ύπνου</string>
     <string name="disable_sleeptimer_label">Απενεργοποίηση χρονοδιακόπτη ύπνου</string>

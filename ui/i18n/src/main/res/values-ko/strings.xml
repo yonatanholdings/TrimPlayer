@@ -444,8 +444,6 @@
     <!--import and export-->
   <string name="import_export_summary">구독 목록 및 대기열을 다른 장치로 옮기기</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">구독 목록을 친구에게 보여주기</string>
     <string name="opml_export_summary">구독 목록을 다른 팟캐스트 앱으로 옮기기</string>
     <string name="opml_import_summary">다른 팟캐스트 앱에서 구독 목록 가져오기</string>
     <string name="database_import_summary">TrimPlayer 데이터베이스를 다른 장치에서 가져오기</string>
@@ -456,7 +454,6 @@
     <string name="select_all_label">모두 선택</string>
     <string name="deselect_all_label">모두 선택 해제</string>
     <string name="opml_export_label">OPML 내보내기</string>
-    <string name="html_export_label">HTML 내보내기</string>
     <string name="database_import_label">데이터베이스 가져오기</string>
     <string name="database_import_warning">데이터베이스 가져오기를 하면 모든 구독과 재생 히스토리가 가져온 내용으로 바뀝니다. 백업을 하려면 현재 데이터베이스를 내보내기 해야 합니다. 정말로 데이터베이스를 바꾸시겠습니까?</string>
     <string name="please_wait">기다리십시오…</string>
@@ -466,8 +463,6 @@
     <string name="successful_import_label">가져오기 성공</string>
     <string name="import_ok">TrimPlayer을 다시 시작하려면 확인을 누르십시오</string>
     <string name="import_no_downgrade">이 데이터베이스는 더 새로운 버전의 TrimPlayer에서 내보낸 데이터베이스입니다. 현재 설치된 버전의 TrimPlayer에서는 이 파일을 제대로 처리하지 못할 수도 있습니다.</string>
-    <string name="favorites_export_label">즐겨찾기 내보내기</string>
-    <string name="favorites_export_summary">저장한 즐겨찾기를 파일로 내보내기</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">취침 타이머 설정</string>
     <string name="disable_sleeptimer_label">취침 타이머 사용 않음</string>

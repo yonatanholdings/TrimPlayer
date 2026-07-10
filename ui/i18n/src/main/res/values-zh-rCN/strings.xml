@@ -467,8 +467,6 @@
     <!--import and export-->
   <string name="import_export_summary">将订阅和队列转移到其他设备</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">向朋友展示您的订阅</string>
     <string name="opml_export_summary">将订阅转移到其他播客应用</string>
     <string name="opml_import_summary">从其他播客应用导入订阅‌</string>
     <string name="database_import_summary">从其他设备导入 TrimPlayer 数据库‌</string>
@@ -479,7 +477,6 @@
     <string name="select_all_label">全选</string>
     <string name="deselect_all_label">取消全选</string>
     <string name="opml_export_label">OPML 导出</string>
-    <string name="html_export_label">HTML 导出</string>
     <string name="database_import_label">数据库导入</string>
     <string name="database_import_warning">导入数据库将替换当前所有订阅和播放记录。您应该将当前数据库导出为备份。是否要替换？</string>
     <string name="please_wait">请稍候…</string>
@@ -489,8 +486,6 @@
     <string name="successful_import_label">导入成功</string>
     <string name="import_ok">请按“确定”重启 TrimPlayer</string>
     <string name="import_no_downgrade">此数据库使用较新版本 TrimPlayer 导出。您当前的安装版本尚不支持处理此文件。</string>
-    <string name="favorites_export_label">收藏导出</string>
-    <string name="favorites_export_summary">将已保存的收藏导出到文件</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">设置睡眠定时器</string>
     <string name="disable_sleeptimer_label">禁用睡眠定时器</string>

@@ -450,8 +450,6 @@
     <!--import and export-->
   <string name="import_export_summary">اشتراک ها و صف را به دستگاه دیگری منتقل کنید</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">اشتراک های خود را به یک دوست نشان دهید</string>
     <string name="opml_export_summary">جابه‌جایی اشتراک‌هایتان به برنامه پادپخشی دیگر</string>
     <string name="opml_import_summary">درون‌ریزی اشتراک‌هایتان از برنامه پادپخشی دیگر</string>
     <string name="database_import_summary">پایگاه داده TrimPlayer را از دستگاه دیگری وارد کنید</string>
@@ -462,7 +460,6 @@
     <string name="select_all_label">انتخاب همه</string>
     <string name="deselect_all_label">انتخاب هیچ</string>
     <string name="opml_export_label">خارج کردن OPML</string>
-    <string name="html_export_label">خارج کردن HTML</string>
     <string name="database_import_label">وارد کردن پایگاه داده</string>
     <string name="database_import_warning">وارد کردن یک پایگاه داده باعث جایگزینی تمام اشتراک‌های کنونی و سابقه پخش شما خواهد شد. باید پایگاه داده کنونی خود را به عنوان پشتیبان خارج کنید. آیا میخواهید جایگزین کنید؟</string>
     <string name="please_wait">لطفاً شکیبا باشید…</string>
@@ -472,8 +469,6 @@
     <string name="successful_import_label">وارد کردن موفقیت آمیز</string>
     <string name="import_ok">لطفاً OK را فشار دهید تا TrimPlayer دوباره آغاز شود</string>
     <string name="import_no_downgrade">این پایگاه داده با نگارشی جدیدتر از TrimPlayer برون‌ریزی شده. نصب کنونیتان هنوز نمی‌داند که چگونه باید مدیریتش.</string>
-    <string name="favorites_export_label">خارج کردن برگزیدگان</string>
-    <string name="favorites_export_summary">محبوب‌های ذخیره شده در پرونده برون‌ریخته شدند</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">تنظیم زمان‌سنج خواب</string>
     <string name="disable_sleeptimer_label">از کار انداختن زمان‌سنج خواب</string>

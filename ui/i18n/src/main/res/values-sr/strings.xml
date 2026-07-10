@@ -356,15 +356,12 @@
     <string name="sync_status_error">Синхронизација није успела</string>
     <string name="import_export_summary">Преместите претплате и редослед на други уређај</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Покажите своје претплате пријатељу</string>
     <string name="opml_export_summary">Пренесите своје претплате у другу апликацију за подкасте</string>
     <string name="opml_import_summary">Увезите своје претплате из друге апликације за подкасте</string>
     <string name="database_import_summary">Увезите базу података TrimPlayer-а са другог уређаја</string>
     <string name="opml_add_podcast_label">Увоз листе подкаста (OPML)</string>
     <string name="opml_import_label">Увоз OPML</string>
     <string name="opml_reader_error">Дошло је до грешке при читању фајла. Уверите се да сте заиста изабрали OPML фајла и да ли је он важећи.</string>
-    <string name="html_export_label">Извоз HTML</string>
     <string name="database_import_warning">Увоз базе података ће заменити све ваше тренутне претплате и историју репродукције. Требало би да извезете своју тренутну базу података као резервну копију. Желите ли да замените?</string>
     <string name="database_import_label">Увоз базе података</string>
     <string name="please_wait">Сачекајте…</string>
@@ -374,8 +371,6 @@
     <string name="successful_import_label">Увоз успешан</string>
     <string name="import_ok">Додирните ОК, како бисте рестартовали TrimPlayer</string>
     <string name="import_no_downgrade">Ова база података је извезена са новијом верзијом TrimPlayer-а. Ваша тренутна инсталација још увек не зна како да рукује овим фајлом.</string>
-    <string name="favorites_export_label">Извоз омиљених</string>
-    <string name="favorites_export_summary">Извезите сачуване омиљене у фајл</string>
     <string name="set_sleeptimer_label">Подешавање тајмера за спавање</string>
     <string name="sleep_timer_always">Увек</string>
     <string name="extend_sleep_timer_label">+%d мин</string>

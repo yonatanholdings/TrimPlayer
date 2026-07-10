@@ -1041,8 +1041,6 @@
     <!-- import and export -->
     <string name="import_export_summary">Move subscriptions and queue to another device</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Show your subscriptions to a friend</string>
     <string name="opml_export_summary">Transfer your subscriptions to another podcast app</string>
     <string name="opml_import_summary">Import your subscriptions from another podcast app</string>
     <string name="database_import_summary">Import TrimPlayer database from another device</string>
@@ -1093,7 +1091,6 @@
     <string name="spotify_migration_oauth_blocked_body">Google, Facebook, and Apple block their sign-in inside embedded browsers like this one — that\'s why \"Continue with Google\" leads to a loop.\n\nUse your Spotify email and password instead. If you signed up with Google or Facebook, you can set a password at accounts.spotify.com in your normal browser, then come back here.</string>
     <string name="import_section_all_source">all %1$s</string>
     <string name="import_summary_source">%1$d of %2$d will use %3$s · Toggle right = use %3$s</string>
-    <string name="html_export_label">HTML export</string>
     <string name="database_import_label">Database import</string>
     <string name="database_import_warning">Importing a database will replace all of your current subscriptions and playing history. Do you want to replace?</string>
     <string name="database_merge_label">Merge database</string>
@@ -1207,8 +1204,6 @@
     <string name="podcast_addict_date_this_year">This year</string>
     <string name="podcast_addict_date_older">Older</string>
     <string name="podcast_addict_date_unknown">Unknown date</string>
-    <string name="favorites_export_label">Favorites export</string>
-    <string name="favorites_export_summary">Export saved favorites to file</string>
 
     <!-- Sleep timer -->
     <string name="set_sleeptimer_label">Set sleep timer</string>

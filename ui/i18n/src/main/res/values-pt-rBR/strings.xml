@@ -486,8 +486,6 @@
     <!--import and export-->
   <string name="import_export_summary">Mover inscrições e fila para outro dispositivo</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Mostre suas inscrições para um amigo</string>
     <string name="opml_export_summary">Transferir suas inscrições para outro app de podcast</string>
     <string name="opml_import_summary">Importar suas inscrições de outro app de podcast</string>
     <string name="database_import_summary">Importar o banco de dados TrimPlayer de outro dispositivo</string>
@@ -498,7 +496,6 @@
     <string name="select_all_label">Selecionar todos</string>
     <string name="deselect_all_label">Cancelar seleção</string>
     <string name="opml_export_label">Exportar OPML</string>
-    <string name="html_export_label">Exportar HTML</string>
     <string name="database_import_label">Importar banco de dados</string>
     <string name="database_import_warning">A importação de um banco de dados substituirá todas as suas inscrições atuais e histórico de reprodução. Você deveria exportar seu banco de dados atual como um backup. Deseja substituir?</string>
     <string name="please_wait">Aguarde…</string>
@@ -508,8 +505,6 @@
     <string name="successful_import_label">Importado com sucesso</string>
     <string name="import_ok">Pressione OK para reiniciar o TrimPlayer</string>
     <string name="import_no_downgrade">Este banco de dados foi exportado com uma versão mais recente do TrimPlayer. Sua instalação atual ainda não sabe como lidar com este arquivo.</string>
-    <string name="favorites_export_label">Exportar favoritos</string>
-    <string name="favorites_export_summary">Exportar favoritos salvos para arquivo</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Definir timer de suspensão</string>
     <string name="disable_sleeptimer_label">Cancelar timer de suspensão</string>

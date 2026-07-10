@@ -25,11 +25,6 @@ import de.danoeh.antennapod.importflow.ImportFlowController;
 import de.danoeh.antennapod.migration.SpotifyMigrationActivity;
 import de.danoeh.antennapod.onboarding.OnboardingActivity;
 import de.danoeh.antennapod.storage.database.DBReader;
-import de.danoeh.antennapod.model.feed.FeedItem;
-import de.danoeh.antennapod.model.feed.FeedItemFilter;
-import de.danoeh.antennapod.model.feed.SortOrder;
-import de.danoeh.antennapod.storage.importexport.FavoritesWriter;
-import de.danoeh.antennapod.storage.importexport.HtmlWriter;
 import de.danoeh.antennapod.BuildConfig;
 import de.danoeh.antennapod.storage.importexport.OpmlWriter;
 import de.danoeh.antennapod.storage.importexport.PortcastExporter;
@@ -50,24 +45,18 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment {
     private static final String TAG = "ImportExPrefFragment";
     public static final String ARG_IMPORT_URI = "ImportUri";
     private static final String PREF_OPML_EXPORT = "prefOpmlExport";
-    private static final String PREF_HTML_EXPORT = "prefHtmlExport";
-    private static final String PREF_FAVORITE_EXPORT = "prefFavoritesExport";
     private static final String PREF_PORTCAST_EXPORT = "prefPortcastExport";
     private static final String PREF_COMING_FROM_SPOTIFY = "prefComingFromSpotify";
     private static final String PREF_IMPORT = "prefImport";
     private static final String PREF_ONBOARDING = "prefOnboarding";
     private static final String DEFAULT_OPML_OUTPUT_NAME = "trimplayer-feeds-%s.opml";
     private static final String CONTENT_TYPE_OPML = "text/x-opml";
-    private static final String DEFAULT_HTML_OUTPUT_NAME = "trimplayer-feeds-%s.html";
-    private static final String CONTENT_TYPE_HTML = "text/html";
-    private static final String DEFAULT_FAVORITES_OUTPUT_NAME = "trimplayer-favorites-%s.html";
     private static final String DEFAULT_PORTCAST_OUTPUT_NAME = "trimplayer-feeds-%s.portcast.json";
     private static final String CONTENT_TYPE_PORTCAST = "application/json";
 
@@ -77,12 +66,6 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
     private final ActivityResultLauncher<Intent> chooseOpmlExportPathLauncher =
             registerForActivityResult(new StartActivityForResult(),
                     result -> exportToDocument(result, Export.OPML));
-    private final ActivityResultLauncher<Intent> chooseHtmlExportPathLauncher =
-            registerForActivityResult(new StartActivityForResult(),
-                    result -> exportToDocument(result, Export.HTML));
-    private final ActivityResultLauncher<Intent> chooseFavoritesExportPathLauncher =
-            registerForActivityResult(new StartActivityForResult(),
-                    result -> exportToDocument(result, Export.FAVORITES));
     private final ActivityResultLauncher<Intent> choosePortcastExportPathLauncher =
             registerForActivityResult(new StartActivityForResult(),
                     result -> exportToDocument(result, Export.PORTCAST));
@@ -149,16 +132,6 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
                     return true;
                 }
         );
-        findPreference(PREF_HTML_EXPORT).setOnPreferenceClickListener(
-                preference -> {
-                    openExportPathPicker(Export.HTML, chooseHtmlExportPathLauncher);
-                    return true;
-                });
-        findPreference(PREF_FAVORITE_EXPORT).setOnPreferenceClickListener(
-                preference -> {
-                    openExportPathPicker(Export.FAVORITES, chooseFavoritesExportPathLauncher);
-                    return true;
-                });
         findPreference(PREF_PORTCAST_EXPORT).setOnPreferenceClickListener(
                 preference -> {
                     openExportPathPicker(Export.PORTCAST, choosePortcastExportPathLauncher);
@@ -287,16 +260,8 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
     private void writeToStream(OutputStream outputStream, Export type) throws IOException {
         try (OutputStreamWriter writer = new OutputStreamWriter(outputStream, Charset.forName("UTF-8"))) {
             switch (type) {
-                case HTML:
-                    HtmlWriter.writeDocument(DBReader.getFeedList(), writer, getContext());
-                    break;
                 case OPML:
                     OpmlWriter.writeDocument(DBReader.getFeedList(), writer);
-                    break;
-                case FAVORITES:
-                    List<FeedItem> allFavorites = DBReader.getEpisodes(0, Integer.MAX_VALUE,
-                            new FeedItemFilter(FeedItemFilter.IS_FAVORITE), SortOrder.DATE_NEW_OLD);
-                    FavoritesWriter.writeDocument(allFavorites, writer, getContext());
                     break;
                 case PORTCAST:
                     PortcastExporter.writeDocument(writer, BuildConfig.VERSION_NAME);
@@ -310,8 +275,6 @@ public class ImportExportPreferencesFragment extends AnimatedPreferenceFragment 
 
     private enum Export {
         OPML(CONTENT_TYPE_OPML, DEFAULT_OPML_OUTPUT_NAME, R.string.opml_export_label, "opml"),
-        HTML(CONTENT_TYPE_HTML, DEFAULT_HTML_OUTPUT_NAME, R.string.html_export_label, "html"),
-        FAVORITES(CONTENT_TYPE_HTML, DEFAULT_FAVORITES_OUTPUT_NAME, R.string.favorites_export_label, "favorites"),
         PORTCAST(CONTENT_TYPE_PORTCAST, DEFAULT_PORTCAST_OUTPUT_NAME, R.string.portcast_export_label, "portcast");
 
         final String contentType;

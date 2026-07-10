@@ -66,11 +66,9 @@
     <string name="sync_status_success">Синхронлау уңышлы булды</string>
     <string name="sync_status_error">Синхронлау уңышсыз булды</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
     <string name="opml_import_error_no_file">Файл сайланмады!</string>
     <string name="select_all_label">Барысын да сайлау</string>
     <string name="opml_export_label">OPML экспортлау</string>
-    <string name="html_export_label">HTML экспортлау</string>
     <string name="please_wait">Көтегез…</string>
     <string name="export_error_label">Экспортлау хатасы</string>
     <string name="export_success_title">Экспортлау уңышлы булды</string>

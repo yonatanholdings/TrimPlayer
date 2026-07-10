@@ -451,8 +451,6 @@
     <!--import and export-->
   <string name="import_export_summary">Feliratkozások áthelyezése, és sorbaállítás egy másik eszközön</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Feliratkozások megjelenítése egy barát számára</string>
     <string name="opml_export_summary">A feliratkozásai átküldése egy másik podcast alkalmazásnak</string>
     <string name="opml_import_summary">Feliratkozások importálása egy másik podcast alkalmazásból</string>
     <string name="database_import_summary">TrimPlayer adatbázis importálása egy másik eszközről</string>
@@ -463,7 +461,6 @@
     <string name="select_all_label">Összes kiválasztása</string>
     <string name="deselect_all_label">Összes kiválasztásának megszüntetése</string>
     <string name="opml_export_label">OPML exportálása</string>
-    <string name="html_export_label">HTML exportálása</string>
     <string name="database_import_label">Adatbázis importálása</string>
     <string name="database_import_warning">Az adatbázis importálása lecseréli a jelenlegi feliratkozásait és lejátszási előzményeit. Célszerű biztonsági mentésként exportálni a jelenlegi adatbázist. Biztos, hogy lecseréli?</string>
     <string name="please_wait">Várjon…</string>
@@ -473,8 +470,6 @@
     <string name="successful_import_label">Importálás sikeres</string>
     <string name="import_ok">Nyomja meg az OK gombot az TrimPlayer újraindításához</string>
     <string name="import_no_downgrade">Az adatbázis az TrimPlayer egy újabb verziójából lett exportálva. A jelenlegi telepítése még nem tudja, hogyan kezelje ezt a fájlt.</string>
-    <string name="favorites_export_label">Kedvencek exportálása</string>
-    <string name="favorites_export_summary">Mentett kedvencek fájlba exportálása</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Alvási időzítő beállítása</string>
     <string name="disable_sleeptimer_label">Alvási időzítő letiltása</string>

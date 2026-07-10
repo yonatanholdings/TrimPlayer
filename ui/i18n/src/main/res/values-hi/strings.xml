@@ -450,8 +450,6 @@
     <!--import and export-->
   <string name="import_export_summary">सदस्यताएं और कतार को दूसरे उपकरण पर ले जाएँ</string>
     <string name="opml">ओपीएमएल</string>
-    <string name="html">एचटीएमएल</string>
-    <string name="html_export_summary">अपनी सदस्यताओं को दोस्त को दिखाएं</string>
     <string name="opml_export_summary">अपनी सदस्यताओं को दूसरे पॉडकास्ट ऐप में स्थानांतरित करें</string>
     <string name="opml_import_summary">अपनी सदस्यताओं को दूसरे पॉडकास्ट ऐप से आयात करें</string>
     <string name="database_import_summary">दूसरे डिवाइस से TrimPlayer डाटाबेस आयात करें</string>
@@ -461,7 +459,6 @@
     <string name="select_all_label">सब चुनें</string>
     <string name="deselect_all_label">चुने गए से सब हटाएं</string>
     <string name="opml_export_label">ओपीएमएल निर्यात</string>
-    <string name="html_export_label">एचटीएमएल निर्यात</string>
     <string name="database_import_label">डाटाबेस आयात</string>
     <string name="database_import_warning">डेटाबेस आयात करने से आपकी मौजूदा सभी सदस्यताएँ और प्लेयिंग हिस्ट्री को बदल दिया जाएगा। आपको अपनी वर्तमान डेटाबेस को बैकअप के रूप में निर्यात करना चाहिए। बदलाव जारी रखें?</string>
     <string name="please_wait">इंतज़ार करें…</string>
@@ -471,8 +468,6 @@
     <string name="successful_import_label">आयात सफल</string>
     <string name="import_ok">TrimPlayer बंद करके वापस चालू करने के लिए \'ठीक है\' दबाएं</string>
     <string name="import_no_downgrade">इस डाटाबेस को TrimPlayer के एक नए संस्करण ने निर्यात किया था। आपका संस्करण इस फाइल को संभालना नहीं जानता।</string>
-    <string name="favorites_export_label">मनपसंद का निर्यात</string>
-    <string name="favorites_export_summary">सेव किए गए मनपसंद को फाइल पे निर्यात करें</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">नींद घड़ी सेट करें</string>
     <string name="disable_sleeptimer_label">नींद घड़ी हटाएं</string>

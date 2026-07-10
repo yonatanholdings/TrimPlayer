@@ -494,8 +494,6 @@
     <!--import and export-->
   <string name="import_export_summary">Перенести подписку и очередь на другое устройство</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Показать подписки другу</string>
     <string name="opml_export_summary">Передать подписки в другое приложение</string>
     <string name="opml_import_summary">Импортировать подписки из другого приложения</string>
     <string name="database_import_summary">Импортировать базу данных TrimPlayer с другого устройства</string>
@@ -506,7 +504,6 @@
     <string name="select_all_label">Выбрать все</string>
     <string name="deselect_all_label">Снять выбор</string>
     <string name="opml_export_label">Экспорт в OPML</string>
-    <string name="html_export_label">Экспорт в HTML</string>
     <string name="database_import_label">Импорт базы данных</string>
     <string name="database_import_warning">Импорт базы данных приведет к замене всех текущих подписок и истории воспроизведения. Следует экспортировать текущую базу данных, чтобы иметь резервную копию. Хотите заменить?</string>
     <string name="please_wait">Подождите…</string>
@@ -516,8 +513,6 @@
     <string name="successful_import_label">Импорт успешен</string>
     <string name="import_ok">Нажмите OK, чтобы перезапустить TrimPlayer</string>
     <string name="import_no_downgrade">Выбранная база данных экспортирована из более поздней версии TrimPlayer. Установленная версия не сможет воспользоваться этой базой.</string>
-    <string name="favorites_export_label">Экспорт избранного</string>
-    <string name="favorites_export_summary">Экспортировать сохраненное избранное в файл</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Поставить таймер сна</string>
     <string name="disable_sleeptimer_label">Отключить таймер сна</string>

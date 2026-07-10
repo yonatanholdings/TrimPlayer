@@ -476,8 +476,6 @@
     <!--import and export-->
   <string name="import_export_summary">Przenieś subskrypcje i kolejkę na inne urządzenie</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Pokaż swoje subskrypcje znajomym</string>
     <string name="opml_export_summary">Przenieś swoje subskrypcje do innej aplikacji</string>
     <string name="opml_import_summary">Przenieś swoje subskrypcje z innej aplikacji</string>
     <string name="database_import_summary">Importuj bazę danych TrimPlayer z innego urządzenia</string>
@@ -487,7 +485,6 @@
     <string name="select_all_label">Zaznacz wszystko</string>
     <string name="deselect_all_label">Odznacz wszystko</string>
     <string name="opml_export_label">Eksport OPML</string>
-    <string name="html_export_label">Eksport HTML</string>
     <string name="database_import_label">Import bazy danych</string>
     <string name="database_import_warning">Import bazy danych nadpisze wszystkie twoje aktualne subskrypcje i historię odtworzeń. Zalecany jest eksport aktualnej bazy danych jako kopia zapasowa. Czy chcesz zamienić?</string>
     <string name="please_wait">Prosimy poczekać…</string>
@@ -497,8 +494,6 @@
     <string name="successful_import_label">Import udany</string>
     <string name="import_ok">Naciśnij OK, aby zrestartować TrimPlayer</string>
     <string name="import_no_downgrade">Baza danych została eksportowana z nowszej wersji TrimPlayer. Twoja wersja nie potrafi obsłużyć tego pliku.</string>
-    <string name="favorites_export_label">Eksport ulubionych</string>
-    <string name="favorites_export_summary">Wyeksportuj ulubione do pliku</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Ustaw czas do wyłączenia</string>
     <string name="disable_sleeptimer_label">Wyłącz wyłącznik czasowy</string>

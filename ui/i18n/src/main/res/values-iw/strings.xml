@@ -485,8 +485,6 @@
     <!--import and export-->
   <string name="import_export_summary">העברת מינויים ותור למכשיר אחר</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">הצגת המינויים שלך לחבר</string>
     <string name="opml_export_summary">העברת המינויים שלך ליישומון הסכתים אחר</string>
     <string name="opml_import_summary">ייבוא המינויים שלך מיישומון הסכתים אחר</string>
     <string name="database_import_summary">ייבוא מסד הנתונים של TrimPlayer ממכשיר אחר</string>
@@ -497,7 +495,6 @@
     <string name="select_all_label">בחירת הכול</string>
     <string name="deselect_all_label">ביטול הבחירה</string>
     <string name="opml_export_label">ייצוא OPML</string>
-    <string name="html_export_label">ייצוא HTML</string>
     <string name="database_import_label">ייבוא מסד נתונים</string>
     <string name="database_import_warning">ייבוא מסד נתונים יחליף את כל המינויים הנוכחיים שלך לרבות היסטוריית הנגינה. עליך תחילה לייצא את מסד הנתונים הנוכחי שלך כגיבוי. להמשיך בהחלפה?</string>
     <string name="please_wait">נא להמתין…</string>
@@ -507,8 +504,6 @@
     <string name="successful_import_label">הייבוא הצליח</string>
     <string name="import_ok">נא ללחוץ על אישור כדי להפעיל את TrimPlayer מחדש</string>
     <string name="import_no_downgrade">מסד נתונים זה ייוצא עם גרסה עדכנית יותר של TrimPlayer. ההתקנה הנוכחית שלך לא יודעת עדיין איך לטפל בקובץ הזה.</string>
-    <string name="favorites_export_label">ייצוא מועדפים</string>
-    <string name="favorites_export_summary">ייצור המועדפים השמורים לקובץ</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">הגדרת מתזמן שינה</string>
     <string name="disable_sleeptimer_label">השבתת מתזמן שינה</string>

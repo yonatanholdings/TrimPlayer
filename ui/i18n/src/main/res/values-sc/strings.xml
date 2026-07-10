@@ -476,8 +476,6 @@
     <!--import and export-->
   <string name="import_export_summary">Move is sutiscritziones e sa lista a un\'àteru dispositivu</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Ammustra a àtere is sutiscritziones tuas</string>
     <string name="opml_export_summary">Tràmuda is sutiscritziones a un\'àtera aplicatzione de podcast</string>
     <string name="opml_import_summary">Importa is sutiscritziones dae un\'àtera aplicatzione de podcast</string>
     <string name="database_import_summary">Importa una base de datos de TrimPlayer dae un\'àteru dispositivu</string>
@@ -488,7 +486,6 @@
     <string name="select_all_label">Seletziona totu</string>
     <string name="deselect_all_label">Deseletziona totu</string>
     <string name="opml_export_label">Esportatzione OPML</string>
-    <string name="html_export_label">Esportatzione HTML</string>
     <string name="database_import_label">Importatzione de base de datos</string>
     <string name="database_import_warning">S\'importatzione de una base de datos at a sostituire is sutiscritziones tuas atuales e sa cronologia de riprodutziones. Dias dèpere esportare sa base de datos tua atuale comente còpia de seguresa. Boles sighire cun sa sostitutzione?</string>
     <string name="please_wait">Abeta…</string>
@@ -498,8 +495,6 @@
     <string name="successful_import_label">Importatzione cumpletada</string>
     <string name="import_ok">Preme AB pro torrare a aviare TrimPlayer</string>
     <string name="import_no_downgrade">Custa base de datos est istada esportada cun una versione prus reghente de TrimPlayer. S\'installatzione tua atuale non iscit comente gestire custu archìviu.</string>
-    <string name="favorites_export_label">Esportatzione preferidos</string>
-    <string name="favorites_export_summary">Esporta is preferidos sarvados a un\'archìviu</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Cunfigura unu temporizadore</string>
     <string name="disable_sleeptimer_label">Disativa su temporizadore</string>

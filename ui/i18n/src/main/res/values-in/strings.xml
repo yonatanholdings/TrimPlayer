@@ -343,8 +343,6 @@
     <!--import and export-->
   <string name="import_export_summary">Pindahkan langganan dan antrean ke perangkat lain</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Tunjukkan langganan siniar kepada teman Anda</string>
     <string name="opml_export_summary">Transfer langganan ke aplikasi siniar lainnya</string>
     <string name="opml_import_summary">Impor langganan dari aplikasi siniar lainnya</string>
     <string name="database_import_summary">Impor pangkalan data TrimPlayer dari perangkat lain</string>
@@ -354,7 +352,6 @@
     <string name="select_all_label">Pilih semua</string>
     <string name="deselect_all_label">Batal pilih semua</string>
     <string name="opml_export_label">Ekspor OPML</string>
-    <string name="html_export_label">Ekspor HTML</string>
     <string name="database_import_label">Impor pangkalan data</string>
     <string name="database_import_warning">Mengimpor pangkalan data akan menggantikan seluruh langganan dan riwayat pemutaran Anda. Anda sebaiknya mengekspor pangkalan data yang sekarang Anda miliki sebagai cadangan. Tetap lanjutkan?</string>
     <string name="please_wait">Mohon tunggu…</string>
@@ -364,8 +361,6 @@
     <string name="successful_import_label">Impor berhasil</string>
     <string name="import_ok">Mohon tekan OK untuk mengulang kembali TrimPlayer</string>
     <string name="import_no_downgrade">Pangkalan data ini diekspor pada versi TrimPlayer yang lebih baru. Versi TrimPlayer yang Anda miliki belum dapat menangani berkas ini.</string>
-    <string name="favorites_export_label">Ekspor daftar favorit</string>
-    <string name="favorites_export_summary">Ekspor daftar favorit disimpan ke berkas</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Atur pewaktu tidur</string>
     <string name="disable_sleeptimer_label">Nonaktifkan pewaktu tidur</string>

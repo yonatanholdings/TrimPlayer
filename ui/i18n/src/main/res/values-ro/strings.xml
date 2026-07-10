@@ -475,8 +475,6 @@
     <!--import and export-->
   <string name="import_export_summary">Mută abonamentele și coada de redare către alt dispozitiv</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Arată abonamentele tale la un prieten</string>
     <string name="opml_export_summary">Transferă abonamentele tale către o alta aplicație</string>
     <string name="opml_import_summary">Importă abonamentele tale din altă aplicație de podcasturi</string>
     <string name="database_import_summary">Importă baza de date TrimPlayer din alt dispozitiv</string>
@@ -487,7 +485,6 @@
     <string name="select_all_label">Selectează toate</string>
     <string name="deselect_all_label">Deselectează toate</string>
     <string name="opml_export_label">Exportă OPML</string>
-    <string name="html_export_label">export HTML</string>
     <string name="database_import_label">import bază de date</string>
     <string name="database_import_warning">Importarea unei baze de date va înlocui abonamentele tale și istoricul fișierelor redate. Ar trebui să exporți baza de date curentă ca un fișier de rezervă. Dorești să înlocuiești?</string>
     <string name="please_wait">Vă rugăm așteptați…</string>
@@ -497,8 +494,6 @@
     <string name="successful_import_label">Importul a reușit</string>
     <string name="import_ok">Vă rugăm să apăsa|ți OK pentru a reporni TrimPlayer</string>
     <string name="import_no_downgrade">Această bază de date a fost exportată cu o versiune mai nouă de TrimPlayer, Versiunea curentă a aplicației tale nu poate să folosească acest fișier.</string>
-    <string name="favorites_export_label">Exportă favorite</string>
-    <string name="favorites_export_summary">Exportă favoritele salvate într-un fișier</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Setează cronometru somn</string>
     <string name="disable_sleeptimer_label">Oprește cronometru somn</string>

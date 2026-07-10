@@ -485,8 +485,6 @@
     <!--import and export-->
   <string name="import_export_summary">Mover las suscripciones y la cola a otro dispositivo</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Mostrar tus suscripciones a un amigo</string>
     <string name="opml_export_summary">Transferir tus suscripciones a otra aplicación de podcast</string>
     <string name="opml_import_summary">Importar tus suscripciones desde otra aplicación de podcast</string>
     <string name="database_import_summary">Importar la base de datos de TrimPlayer desde otro dispositivo</string>
@@ -497,7 +495,6 @@
     <string name="select_all_label">Seleccionar todo</string>
     <string name="deselect_all_label">Deseleccionar todo</string>
     <string name="opml_export_label">Exportar a OPML</string>
-    <string name="html_export_label">Exportar a HTML</string>
     <string name="database_import_label">Importar base de datos</string>
     <string name="database_import_warning">La importación de una base de datos reemplazará todas las suscripciones actuales y el historial de reproducción. Debes exportar la base de datos actual como una copia de seguridad. ¿Quieres reemplazarla?</string>
     <string name="please_wait">Por favor espera…</string>
@@ -507,8 +504,6 @@
     <string name="successful_import_label">Importación exitosa</string>
     <string name="import_ok">Pulse OK para reiniciar TrimPlayer</string>
     <string name="import_no_downgrade">Esta base de datos fue exportada con una versión más moderna de TrimPlayer. La versión instalada no puede manejarla.</string>
-    <string name="favorites_export_label">Exportar favoritos</string>
-    <string name="favorites_export_summary">Se exportaron los favoritos al archivo</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Establecer un temporizador</string>
     <string name="disable_sleeptimer_label">Desactivar el temporizador</string>
