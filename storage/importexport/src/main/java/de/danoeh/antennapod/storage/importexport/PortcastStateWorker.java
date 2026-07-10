@@ -271,14 +271,20 @@ public class PortcastStateWorker extends Worker {
             if (state.durationMs > 0 && media.getDuration() == 0) {
                 media.setDuration((int) state.durationMs);
             }
-            if (media.getLastPlayedTimeHistory() == null) {
-                long playbackDate = state.lastPlayedMs > 0
-                        ? state.lastPlayedMs : System.currentTimeMillis();
-                media.setLastPlayedTimeHistory(new Date(playbackDate));
-                if (state.lastPlayedMs > 0) {
-                    media.setLastPlayedTimeStatistics(state.lastPlayedMs);
-                }
-            }
+            // Stamp the last-played timestamps (never moving them back) even when
+            // the episode already has local history. Account sync keys progress
+            // LWW on them: left stale, the applied position is pushed with an old
+            // client_ts (the account rejects it — the watch's progress never
+            // reaches other devices) and any newer server row lawfully rewinds
+            // this position. Same root cause as the shared-position seed wipe.
+            long playbackDate = state.lastPlayedMs > 0
+                    ? state.lastPlayedMs : System.currentTimeMillis();
+            Date history = media.getLastPlayedTimeHistory();
+            long stamp = Math.max(playbackDate, Math.max(
+                    media.getLastPlayedTimeStatistics(),
+                    history != null ? history.getTime() : 0));
+            media.setLastPlayedTimeHistory(new Date(stamp));
+            media.setLastPlayedTimeStatistics(stamp);
             DBWriter.setFeedMediaPlaybackInformation(media);
         }
 

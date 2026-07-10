@@ -401,30 +401,37 @@ public class TrimSyncWorker extends Worker {
             }
             FeedMedia media = item.getMedia();
             // LWW: skip if local progress is at least as recent as the server's.
-            if (p.client_ts <= media.getLastPlayedTimeStatistics()) {
+            if (p.client_ts <= lastLocalPlaybackTs(media)) {
                 continue;
             }
-            if (p.position_ms != null) {
-                long pos = Math.max(0, Math.min(p.position_ms, Integer.MAX_VALUE));
-                media.setPosition((int) pos);
-            }
-            // Restore the "played-at" timestamps from the server's client_ts (which
-            // the push side stamps from the media's last-played time). Without this a
-            // synced play carries only the read flag + position, with no timestamp —
-            // so it never appears in Playback History (filtered on
-            // playback_completion_date > 0) or in listening statistics. The LWW guard
-            // above means p.client_ts is strictly newer, so we never move them back.
-            // Only stamp when the row represents actual playback (played, or a real
-            // position) — a starred-only/position-0 row must not fabricate history.
-            boolean hasPlayback = p.played || (p.position_ms != null && p.position_ms > 0);
-            if (p.client_ts > 0 && hasPlayback) {
-                media.setLastPlayedTimeStatistics(p.client_ts);
-                media.setLastPlayedTimeHistory(new java.util.Date(p.client_ts));
-            }
-            DBWriter.setFeedMedia(media);
-            if (p.played != item.isPlayed()) {
-                DBWriter.markItemPlayed(p.played ? FeedItem.PLAYED : FeedItem.UNPLAYED,
-                        false, item.getId());
+            // Rows that carry no playback evidence (not played, position 0/absent)
+            // are star-toggle snapshots: the push side stamps a favorite change
+            // with a fresh client_ts even when position/played didn't move, and a
+            // device that never played the episode snapshots position 0. Applying
+            // that position would reset real progress on this device to the
+            // beginning (and un-mark played episodes), so such rows reconcile ONLY
+            // the starred flag below.
+            if (representsPlayback(p)) {
+                if (p.position_ms != null) {
+                    long pos = Math.max(0, Math.min(p.position_ms, Integer.MAX_VALUE));
+                    media.setPosition((int) pos);
+                }
+                // Restore the "played-at" timestamps from the server's client_ts
+                // (which the push side stamps from the media's last-played time).
+                // Without this a synced play carries only the read flag + position,
+                // with no timestamp — so it never appears in Playback History
+                // (filtered on playback_completion_date > 0) or in listening
+                // statistics. The LWW guard above means p.client_ts is strictly
+                // newer, so we never move them back.
+                if (p.client_ts > 0) {
+                    media.setLastPlayedTimeStatistics(p.client_ts);
+                    media.setLastPlayedTimeHistory(new java.util.Date(p.client_ts));
+                }
+                DBWriter.setFeedMedia(media);
+                if (p.played != item.isPlayed()) {
+                    DBWriter.markItemPlayed(p.played ? FeedItem.PLAYED : FeedItem.UNPLAYED,
+                            false, item.getId());
+                }
             }
             // Reconcile the local Favorite tag with the server's starred flag (null =
             // an older client that doesn't send it — leave the local favorite as-is).
@@ -445,6 +452,28 @@ public class TrimSyncWorker extends Worker {
             r.changed++;
         }
         return r;
+    }
+
+    /** Whether a server progress row carries actual playback evidence (a played
+     *  flag or a real position), as opposed to a star-toggle snapshot from a
+     *  device that never played the episode. Only playback rows may write
+     *  position/played/timestamps locally. Package-visible for unit tests. */
+    static boolean representsPlayback(TrimClient.ProgressChange p) {
+        return p.played || (p.position_ms != null && p.position_ms > 0);
+    }
+
+    /** The freshest local playback timestamp — the LWW key for progress rows,
+     *  on both the push (client_ts) and apply (guard) sides. Uses the history
+     *  date as well as the statistics one because import paths (watch flush,
+     *  PortCast file import) stamp history but deliberately leave statistics
+     *  alone for chart attribution; taking the max keeps a just-applied import
+     *  position from being pushed with a stale client_ts (which the server
+     *  would reject) or clobbered by an older server row with a newer ts.
+     *  Package-visible for unit tests. */
+    static long lastLocalPlaybackTs(FeedMedia media) {
+        java.util.Date history = media.getLastPlayedTimeHistory();
+        return Math.max(media.getLastPlayedTimeStatistics(),
+                history != null ? history.getTime() : 0);
     }
 
     /** Apply server-side per-feed preferences (playback speed) to the local DB.
@@ -917,7 +946,7 @@ public class TrimSyncWorker extends Worker {
             p.duration_ms = (long) media.getDuration();
             p.played = item.isPlayed();
             p.starred = curFav.contains(url);
-            long lastPlayed = media.getLastPlayedTimeStatistics();
+            long lastPlayed = lastLocalPlaybackTs(media);
             // A favorite toggle must win LWW even if position/played are unchanged.
             p.client_ts = favChanged ? now : (lastPlayed > 0 ? lastPlayed : now);
             out.add(p);
