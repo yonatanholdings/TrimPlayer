@@ -485,13 +485,11 @@
     <string name="sync_status_error">Falha na sincronização</string>
     <!--import and export-->
   <string name="import_export_summary">Mover inscrições e fila para outro dispositivo</string>
-    <string name="database">Banco de dados</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Mostre suas inscrições para um amigo</string>
     <string name="opml_export_summary">Transferir suas inscrições para outro app de podcast</string>
     <string name="opml_import_summary">Importar suas inscrições de outro app de podcast</string>
-    <string name="database_export_summary">Transferir as inscrições, os episódios ouvidos e a fila para o TrimPlayer em outro dispositivo</string>
     <string name="database_import_summary">Importar o banco de dados TrimPlayer de outro dispositivo</string>
     <string name="opml_import_label">Importar OPML</string>
     <string name="opml_add_podcast_label">Importar lista de podcasts (OPML)</string>
@@ -501,10 +499,6 @@
     <string name="deselect_all_label">Cancelar seleção</string>
     <string name="opml_export_label">Exportar OPML</string>
     <string name="html_export_label">Exportar HTML</string>
-    <string name="database_export_label">Exportar banco de dados</string>
-    <string name="automatic_database_export_label">Exportar automaticamente</string>
-    <string name="automatic_database_export_summary">Criar um backup do banco de dados do TrimPlayer a cada 3 dias. Mantém apenas os 5 backups mais recentes.</string>
-    <string name="automatic_database_export_error">Ocorreu um erro durante o backup automático de banco de dados</string>
     <string name="database_import_label">Importar banco de dados</string>
     <string name="database_import_warning">A importação de um banco de dados substituirá todas as suas inscrições atuais e histórico de reprodução. Você deveria exportar seu banco de dados atual como um backup. Deseja substituir?</string>
     <string name="please_wait">Aguarde…</string>

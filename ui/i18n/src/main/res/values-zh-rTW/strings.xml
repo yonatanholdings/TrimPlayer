@@ -466,13 +466,11 @@
     <string name="sync_status_error">同步失敗</string>
     <!--import and export-->
   <string name="import_export_summary">將訂閱及待播清單移到另一台設備</string>
-    <string name="database">資料庫</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">顯示您的訂閱給朋友</string>
     <string name="opml_export_summary">將您的訂閱清單移到另一個 Podcast 軟體</string>
     <string name="opml_import_summary">從其他 Podcast 軟體匯入訂閱清單</string>
-    <string name="database_export_summary">將訂閱、聆聽紀錄、待播清單等資訊傳送到其他設備上的 TrimPlayer</string>
     <string name="database_import_summary">自其他設備匯入 TrimPlayer 資料庫</string>
     <string name="opml_import_label">OPML 匯入</string>
     <string name="opml_add_podcast_label">自 OPML 匯入 Podcast 清單</string>
@@ -482,10 +480,6 @@
     <string name="deselect_all_label">取消選取</string>
     <string name="opml_export_label">匯出 OPML</string>
     <string name="html_export_label">匯出 HTML</string>
-    <string name="database_export_label">資料庫匯出</string>
-    <string name="automatic_database_export_label">自動匯出資料庫</string>
-    <string name="automatic_database_export_summary">每 3 天建立一份 TrimPlayer 資料庫備份。只保留最近的 5 個備份。</string>
-    <string name="automatic_database_export_error">自動資料庫備份時發生錯誤</string>
     <string name="database_import_label">資料庫匯入</string>
     <string name="database_import_warning">匯入的資料將取代您目前的訂閱清單與播放紀錄，您最好先匯出當前的資料庫以便備份。要取代目前的資料嗎？</string>
     <string name="please_wait">請稍候…</string>

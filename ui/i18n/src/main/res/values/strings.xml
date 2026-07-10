@@ -1040,13 +1040,11 @@
 
     <!-- import and export -->
     <string name="import_export_summary">Move subscriptions and queue to another device</string>
-    <string name="database">Database</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Show your subscriptions to a friend</string>
     <string name="opml_export_summary">Transfer your subscriptions to another podcast app</string>
     <string name="opml_import_summary">Import your subscriptions from another podcast app</string>
-    <string name="database_export_summary">Transfer subscriptions, listened episodes and queue to TrimPlayer on another device</string>
     <string name="database_import_summary">Import TrimPlayer database from another device</string>
     <string name="opml_import_label">OPML import</string>
     <string name="opml_add_podcast_label">Import podcast list (OPML)</string>
@@ -1096,12 +1094,8 @@
     <string name="import_section_all_source">all %1$s</string>
     <string name="import_summary_source">%1$d of %2$d will use %3$s · Toggle right = use %3$s</string>
     <string name="html_export_label">HTML export</string>
-    <string name="database_export_label">Database export</string>
-    <string name="automatic_database_export_label">Automatic database export</string>
-    <string name="automatic_database_export_summary">Create a backup of the TrimPlayer database every 3 days. Only keep the 5 most recent backups.</string>
-    <string name="automatic_database_export_error">Error during automatic database backup</string>
     <string name="database_import_label">Database import</string>
-    <string name="database_import_warning">Importing a database will replace all of your current subscriptions and playing history. You should export your current database as a backup. Do you want to replace?</string>
+    <string name="database_import_warning">Importing a database will replace all of your current subscriptions and playing history. Do you want to replace?</string>
     <string name="database_merge_label">Merge database</string>
     <string name="database_apply_choice_title">Apply database backup</string>
     <string name="database_apply_choice_message">You already have subscriptions in TrimPlayer. How do you want to apply this backup?\n\n• Merge keeps your current library and adds the backup\'s shows, history, queue and favorites on top. Only episodes the feeds still publish can be restored.\n\n• Full restore replaces everything currently in TrimPlayer with the backup — including episodes the feeds no longer publish. Your current library is wiped.</string>

@@ -484,13 +484,11 @@
     <string name="sync_status_error">Synchronizácia zlyhala</string>
     <!--import and export-->
   <string name="import_export_summary">Presun odberov a poradia na iné zariadenia</string>
-    <string name="database">Databáza</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Ukážte svoje odbery priateľom</string>
     <string name="opml_export_summary">Prenesie vaše odbery do inej podcastovej aplikácie</string>
     <string name="opml_import_summary">Importujte vaše odbery z inej podcastovej aplikácie</string>
-    <string name="database_export_summary">Preneste odbery, počúvané epizódy a poradie do aplikácie TrimPlayer v inom zariadení</string>
     <string name="database_import_summary">Importuje databázu TrimPlayer z iného zariadenia</string>
     <string name="opml_import_label">Import OPML</string>
     <string name="opml_add_podcast_label">Importovať zoznam podcastov (OPML)</string>
@@ -500,10 +498,6 @@
     <string name="deselect_all_label">Zrušiť označenie</string>
     <string name="opml_export_label">Exportovať ako OPML</string>
     <string name="html_export_label">Exportovať ako HTML</string>
-    <string name="database_export_label">Export databázy</string>
-    <string name="automatic_database_export_label">Automatický export databázy</string>
-    <string name="automatic_database_export_summary">Raz za 3 dni sa vytvorí záloha databázy TrimPlayer. Ponechá sa iba 5 najnovších záloh.</string>
-    <string name="automatic_database_export_error">Chyba pri automatickom zálohovaní databázy</string>
     <string name="database_import_label">Import databázy</string>
     <string name="database_import_warning">Import databázy prepíše všetky vaše aktuálne odbery a históriu prehrávania. Aktuálnu databázu by ste mali exportovať ako zálohu. Chcete ju prepísať?</string>
     <string name="please_wait">Prosím čakajte…</string>

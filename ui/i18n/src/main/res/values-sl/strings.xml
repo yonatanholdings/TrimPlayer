@@ -453,13 +453,11 @@
     <string name="sync_status_error">Sinhronizacija ni uspela</string>
     <!--import and export-->
   <string name="import_export_summary">Premaknite naročnine in čakalno vrsto na drugo napravo</string>
-    <string name="database">Podatkovna zbirka</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Pokažite svoje naročnine prijatelju</string>
     <string name="opml_export_summary">Prenesite svoje naročnine v drugo aplikacijo za poddaje</string>
     <string name="opml_import_summary">Uvozite svoje naročnine iz druge aplikacije za poddaje</string>
-    <string name="database_export_summary">Prenesite naročnine, poslušane epizode in čakalno vrsto na TrimPlayer, na drugo napravo</string>
     <string name="database_import_summary">Uvozite bazo podatkov TrimPlayer iz druge naprave</string>
     <string name="opml_import_label">Uvozi OPML</string>
     <string name="opml_add_podcast_label">Uvozite seznam poddaj (OPML)</string>
@@ -468,7 +466,6 @@
     <string name="deselect_all_label">Počisti vse</string>
     <string name="opml_export_label">Izvozi OPML</string>
     <string name="html_export_label">Izvoz HTML</string>
-    <string name="database_export_label">Izvoz podatkovne baze</string>
     <string name="database_import_label">Uvoz podatkovne baze</string>
     <string name="database_import_warning">Uvoz podatkovne baze bo nadomestil vse vaše trenutne naročnine in zgodovino predvajanja. Priporočamo, da svojo trenutno zbirko podatkov izvozite kot varnostno kopijo. Ali želite vseeno zamenjati?</string>
     <string name="please_wait">Prosimo počakajte…</string>

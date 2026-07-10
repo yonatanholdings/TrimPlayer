@@ -484,13 +484,11 @@
     <string name="sync_status_error">הסנכרון נכשל</string>
     <!--import and export-->
   <string name="import_export_summary">העברת מינויים ותור למכשיר אחר</string>
-    <string name="database">מסד נתונים</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">הצגת המינויים שלך לחבר</string>
     <string name="opml_export_summary">העברת המינויים שלך ליישומון הסכתים אחר</string>
     <string name="opml_import_summary">ייבוא המינויים שלך מיישומון הסכתים אחר</string>
-    <string name="database_export_summary">העברת מינויים, פרקים להם האזנת ותור נגינה ל־TrimPlayer במכשיר אחר</string>
     <string name="database_import_summary">ייבוא מסד הנתונים של TrimPlayer ממכשיר אחר</string>
     <string name="opml_import_label">ייבוא OPML</string>
     <string name="opml_add_podcast_label">לייבא רשימת הסכתים (OPML)</string>
@@ -500,10 +498,6 @@
     <string name="deselect_all_label">ביטול הבחירה</string>
     <string name="opml_export_label">ייצוא OPML</string>
     <string name="html_export_label">ייצוא HTML</string>
-    <string name="database_export_label">ייצוא מסד הנתונים</string>
-    <string name="automatic_database_export_label">ייצוא אוטומטי של מסד הנתונים</string>
-    <string name="automatic_database_export_summary">יצירת גיבוי של מסד הנתונים של TrimPlayer כל שלושה ימים. לשמור רק את חמשת הגיבויים העדכניים ביותר.</string>
-    <string name="automatic_database_export_error">שגיאה במהלך גיבוי אוטומטי של מסד נתונים</string>
     <string name="database_import_label">ייבוא מסד נתונים</string>
     <string name="database_import_warning">ייבוא מסד נתונים יחליף את כל המינויים הנוכחיים שלך לרבות היסטוריית הנגינה. עליך תחילה לייצא את מסד הנתונים הנוכחי שלך כגיבוי. להמשיך בהחלפה?</string>
     <string name="please_wait">נא להמתין…</string>

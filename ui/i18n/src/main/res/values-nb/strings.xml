@@ -449,13 +449,11 @@
     <string name="sync_status_error">Synkronisering feilet</string>
     <!--import and export-->
   <string name="import_export_summary">Overfør abonnementer og kø til en annen enhet</string>
-    <string name="database">Database</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Vis abonnementene dine til en venn</string>
     <string name="opml_export_summary">Overfør abonnementene dine til en annen podkast-app</string>
     <string name="opml_import_summary">Importer abonnementene dine fra en annen podkast-app</string>
-    <string name="database_export_summary">Overfør abonnementer, avspilte episoder og kø til TrimPlayer på en annen enhet</string>
     <string name="database_import_summary">Importer TrimPlayer-database fra en annen enhet</string>
     <string name="opml_import_label">Importer OPML</string>
     <string name="opml_add_podcast_label">Importer podkastliste (OPML)</string>
@@ -465,10 +463,6 @@
     <string name="deselect_all_label">Velg bort alle</string>
     <string name="opml_export_label">Eksporter OPML</string>
     <string name="html_export_label">Eksporter HTML</string>
-    <string name="database_export_label">Eksporter database</string>
-    <string name="automatic_database_export_label">Automatisk eksport av database</string>
-    <string name="automatic_database_export_summary">Opprett en sikkerhetskopi av TrimPlayers database hver 3. dag. Behold kun de 5 siste sikkerhetskopiene.</string>
-    <string name="automatic_database_export_error">Feil under automatisk sikkerhetskopiering</string>
     <string name="database_import_label">Importer database</string>
     <string name="database_import_warning">Importering av en database erstatter alle nåværende abonnementer og avspillingshistorikk. Det er anbefalt å eksportere den gjeldende databasen din som sikkerhetskopi først. Vil du erstatte?</string>
     <string name="please_wait">Vent litt …</string>

@@ -449,13 +449,11 @@
     <string name="sync_status_error">همگا‌م‌سازی ناموفقیت آمیز</string>
     <!--import and export-->
   <string name="import_export_summary">اشتراک ها و صف را به دستگاه دیگری منتقل کنید</string>
-    <string name="database">پایگاه داده</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">اشتراک های خود را به یک دوست نشان دهید</string>
     <string name="opml_export_summary">جابه‌جایی اشتراک‌هایتان به برنامه پادپخشی دیگر</string>
     <string name="opml_import_summary">درون‌ریزی اشتراک‌هایتان از برنامه پادپخشی دیگر</string>
-    <string name="database_export_summary">جابه‌جایی اشتراک‌ها، قسمت‌های شنیده شده و صف را به TrimPlayer در یک دستگاه دیگر ببرید</string>
     <string name="database_import_summary">پایگاه داده TrimPlayer را از دستگاه دیگری وارد کنید</string>
     <string name="opml_import_label">وارد کردن OPML</string>
     <string name="opml_add_podcast_label">درون‌ریزی فهرست پادپخس (OPML)</string>
@@ -465,10 +463,6 @@
     <string name="deselect_all_label">انتخاب هیچ</string>
     <string name="opml_export_label">خارج کردن OPML</string>
     <string name="html_export_label">خارج کردن HTML</string>
-    <string name="database_export_label">خارج کردن پایگاه داده</string>
-    <string name="automatic_database_export_label">برون‌ریزی پایگاه دادهٔ خودکار</string>
-    <string name="automatic_database_export_summary">ساخت پشتیبانی از TrimPlayer هر ۳ روز یک بار. تنها نگه داشتن ۵ پشتیبان اخیر.</string>
-    <string name="automatic_database_export_error">خطا هنگام پشتیبان گیری خودکار پایگاه داده</string>
     <string name="database_import_label">وارد کردن پایگاه داده</string>
     <string name="database_import_warning">وارد کردن یک پایگاه داده باعث جایگزینی تمام اشتراک‌های کنونی و سابقه پخش شما خواهد شد. باید پایگاه داده کنونی خود را به عنوان پشتیبان خارج کنید. آیا میخواهید جایگزین کنید؟</string>
     <string name="please_wait">لطفاً شکیبا باشید…</string>

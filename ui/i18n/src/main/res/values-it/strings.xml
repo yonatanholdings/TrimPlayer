@@ -484,13 +484,11 @@
     <string name="sync_status_error">Sincronizzazione fallita</string>
     <!--import and export-->
   <string name="import_export_summary">Sposta le iscrizioni e la coda su un altro dispositivo</string>
-    <string name="database">Database</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Mostra le tue iscrizioni ad un amico</string>
     <string name="opml_export_summary">Sposta le tue iscrizioni in un\'altra app per i podcast</string>
     <string name="opml_import_summary">Importa le tue iscrizioni da un\'altra app per i podcast</string>
-    <string name="database_export_summary">Sposta le iscrizioni, gli episodi ascoltati e la coda su TrimPlayer di un altro dispositivo</string>
     <string name="database_import_summary">Importa il database di TrimPlayer da un altro dispositivo</string>
     <string name="opml_import_label">Importa da OPML</string>
     <string name="opml_add_podcast_label">Importa lista podcast (OPML)</string>
@@ -500,10 +498,6 @@
     <string name="deselect_all_label">Deseleziona tutti</string>
     <string name="opml_export_label">Esporta in OPML</string>
     <string name="html_export_label">Esporta in HTML</string>
-    <string name="database_export_label">Esporta database</string>
-    <string name="automatic_database_export_label">Esportazione automatica database</string>
-    <string name="automatic_database_export_summary">Crea un backup del database di TrimPlayer ogni 3 giorni. Vengono conservati solo gli ultimi 5 backup.</string>
-    <string name="automatic_database_export_error">Errore durante il backup automatico del database</string>
     <string name="database_import_label">Importa database</string>
     <string name="database_import_warning">L\'importazione di un database sostituirà tutte le iscrizioni attuali e la cronologia di riproduzione. Dovresti eseguire un backup del tuo database attuale. Vuoi proseguire?</string>
     <string name="please_wait">Attendi…</string>

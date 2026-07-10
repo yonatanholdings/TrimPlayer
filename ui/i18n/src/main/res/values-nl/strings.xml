@@ -449,13 +449,11 @@
     <string name="sync_status_error">Synchronisatie mislukt</string>
     <!--import and export-->
   <string name="import_export_summary">Abonnementen en wachtrij naar een ander toestel verplaatsen</string>
-    <string name="database">Database</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Abonnementen delen met een ander</string>
     <string name="opml_export_summary">Abonnementen overzetten naar een andere podcast-app</string>
     <string name="opml_import_summary">Abonnementen importeren uit andere podcast-app</string>
-    <string name="database_export_summary">Abonnementen, beluisterde afleveringen en wachtrij overzetten naar TrimPlayer op een ander toestel</string>
     <string name="database_import_summary">TrimPlayer database van een ander toestel importeren</string>
     <string name="opml_import_label">OPML importeren</string>
     <string name="opml_add_podcast_label">Podcastlijst (opml) importeren</string>
@@ -465,10 +463,6 @@
     <string name="deselect_all_label">Alles de-selecteren</string>
     <string name="opml_export_label">OPML exporteren</string>
     <string name="html_export_label">HTML exporteren</string>
-    <string name="database_export_label">Database exporteren</string>
-    <string name="automatic_database_export_label">Databank automatisch exporteren</string>
-    <string name="automatic_database_export_summary">Maak elke 3 dagen automatisch een reservekopie van de TrimPlayer-databank. Let op: alleen de recentste 5 worden bewaard.</string>
-    <string name="automatic_database_export_error">De databank kan niet worden geëxporteerd</string>
     <string name="database_import_label">Database importeren</string>
     <string name="database_import_warning">Bij het importeren van een database worden alle huidige abonnementen en de afspeelgeschiedenis vervangen. Exporteer ter back-up de huidige database. Doorgaan?</string>
     <string name="please_wait">Even geduld…</string>

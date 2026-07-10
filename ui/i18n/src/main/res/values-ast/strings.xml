@@ -204,18 +204,15 @@
     <string name="sync_status_success">La sincronización fízose correutamente</string>
     <!--import and export-->
   <string name="import_export_summary">Movi les soscripciones y la cola a otru preséu</string>
-    <string name="database">Base de datos</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Enseña les soscripciones a los collacios</string>
     <string name="opml_export_summary">Tresfier les soscripciones a otra aplicación de podcasts</string>
     <string name="opml_import_summary">Importa les soscripciones d\'otra aplicación de podcasts</string>
-    <string name="database_export_summary">Tresfier les soscripciones, los episodios sentíos y la cola al TrimPlayer d\'otru preséu</string>
     <string name="database_import_summary">Importa la base de datos del TrimPlayer d\'otru preséu</string>
     <string name="opml_add_podcast_label">Importar una llista de podcasts (OPML)</string>
     <string name="select_all_label">Esbillar too</string>
     <string name="deselect_all_label">Deseleicionar too</string>
-    <string name="database_export_label">Esportar la base de datos</string>
     <string name="database_import_label">Importar una base de datos</string>
     <string name="database_import_warning">La importación d\'una base de datos troca toles soscripciones actuales y l\'historial de reproducciones. Habríes esportar la base de datos actual como copia de seguranza. ¿Quies trocar?</string>
     <string name="please_wait">Espera…</string>

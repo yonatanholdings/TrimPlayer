@@ -493,13 +493,11 @@
     <string name="sync_status_error">Синхронизация не удалась</string>
     <!--import and export-->
   <string name="import_export_summary">Перенести подписку и очередь на другое устройство</string>
-    <string name="database">База данных</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Показать подписки другу</string>
     <string name="opml_export_summary">Передать подписки в другое приложение</string>
     <string name="opml_import_summary">Импортировать подписки из другого приложения</string>
-    <string name="database_export_summary">Передать подписки, список прослушанных и очередь в TrimPlayer на другом устройстве</string>
     <string name="database_import_summary">Импортировать базу данных TrimPlayer с другого устройства</string>
     <string name="opml_import_label">Импорт OPML</string>
     <string name="opml_add_podcast_label">Импортировать список подкастов (OPML)</string>
@@ -509,10 +507,6 @@
     <string name="deselect_all_label">Снять выбор</string>
     <string name="opml_export_label">Экспорт в OPML</string>
     <string name="html_export_label">Экспорт в HTML</string>
-    <string name="database_export_label">Экспорт базы данных</string>
-    <string name="automatic_database_export_label">Автоматический экспорт базы данных</string>
-    <string name="automatic_database_export_summary">Создавать резервную копию базы данных TrimPlayer каждые 3 дня. Хранить только 5 последних резервных копий.</string>
-    <string name="automatic_database_export_error">Ошибка при автоматическом экспорте БД</string>
     <string name="database_import_label">Импорт базы данных</string>
     <string name="database_import_warning">Импорт базы данных приведет к замене всех текущих подписок и истории воспроизведения. Следует экспортировать текущую базу данных, чтобы иметь резервную копию. Хотите заменить?</string>
     <string name="please_wait">Подождите…</string>

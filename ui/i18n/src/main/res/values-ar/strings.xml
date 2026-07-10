@@ -511,13 +511,11 @@
     <string name="sync_status_error">فشلت المزامنة</string>
     <!--import and export-->
   <string name="import_export_summary">انقل الاشتراكات والطابور إلى جهاز آخر</string>
-    <string name="database">قاعدة البيانات</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">عرض اشتراكاتك لصديق</string>
     <string name="opml_export_summary">نقل اشتراكاتك لبرنامج مسموعيَّات آخر</string>
     <string name="opml_import_summary">استيراد اشتراكاتك من برنامج مسموعيَّات آخر</string>
-    <string name="database_export_summary">انقل الاشتراكات والحلقات المسموعة والطابور لأنْتِنَابُد على جهاز آخر</string>
     <string name="database_import_summary">استورد قاعدة بيانات TrimPlayer من جهاز آخر</string>
     <string name="opml_import_label">استيراد ملف بصيغة OPML</string>
     <string name="opml_add_podcast_label">استورد قائمة المسموعيَّات (OPML)</string>
@@ -527,10 +525,6 @@
     <string name="deselect_all_label">ألغ اختيار الكل</string>
     <string name="opml_export_label">تصدير بصيغة OPML</string>
     <string name="html_export_label">تصدير بصيغة HTML</string>
-    <string name="database_export_label">تصدير قاعدة البيانات</string>
-    <string name="automatic_database_export_label">التصدير التلقائي</string>
-    <string name="automatic_database_export_summary">أنشئ نسخة احتياطية كل 3 أيام. مع الاحتفاظ بآخر 5 نسخ.</string>
-    <string name="automatic_database_export_error">خطأ أثناء التصدير التلقائي</string>
     <string name="database_import_label">استيراد قاعدة البيانات</string>
     <string name="database_import_warning">استيراد قاعدة بيانات سيمسح كل اشتراكاتك الحالية وسجل الاستماع. الأفضل أن تصدر قاعدة البيانات الحالية لأرشيف. هل تريد تبديل البيانات؟</string>
     <string name="please_wait">يرجى الانتظار…</string>

@@ -449,13 +449,11 @@
     <string name="sync_status_error">Sinkronizazioak huts egin du</string>
     <!--import and export-->
   <string name="import_export_summary">Kopiatu harpidetza eta irakurketa zerrenda beste gailu batean</string>
-    <string name="database">Datu-basea</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Erakutsi harpidetzak lagun bati</string>
     <string name="opml_export_summary">Eraman zure harpidetzak podcast-en beste aplikazio batera</string>
     <string name="opml_import_summary">Ekarri zure harpidetzak podcast-en beste aplikazio batetik</string>
-    <string name="database_export_summary">Bidali beste gailu bateko TrimPlayer-era harpidetzak, entzundako saioak eta ilara</string>
     <string name="database_import_summary">Ekarri TrimPlayeren datu-basea beste gailu batetik</string>
     <string name="opml_import_label">OPML inportazioa</string>
     <string name="opml_add_podcast_label">Inportatu podcasten zerrenda (OPML)</string>
@@ -465,10 +463,6 @@
     <string name="deselect_all_label">Desautatu dena</string>
     <string name="opml_export_label">OPML esportazioa</string>
     <string name="html_export_label">HTML esportazioa</string>
-    <string name="database_export_label">Datu-basearen esportazioa</string>
-    <string name="automatic_database_export_label">Datu-basearen esportazio automatikoa</string>
-    <string name="automatic_database_export_summary">Sortu TrimPlayer datu-basearen babeskopia bat 3 egunetik behin. Gorde soilik azken 5 babeskopiak.</string>
-    <string name="automatic_database_export_error">Errorea datu-basearen babeskopia automatikoa egitean</string>
     <string name="database_import_label">Datu-basearen inportazioa</string>
     <string name="database_import_warning">Datu-base bat inportatzeak egungo harpidetza guztiak eta erreprodukzio-historia ordezkatuko ditu. Egungo datu-basea esportatu behar duzu segurtasun-kopia gisa. Ordezkatu nahi duzu?</string>
     <string name="please_wait">Itxaron mesedez…</string>

@@ -456,13 +456,11 @@
     <string name="sync_status_error">Synchronizace selhala</string>
     <!--import and export-->
   <string name="import_export_summary">Přesunout odběry a frontu do jiného zařízení</string>
-    <string name="database">Databáze</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Ukažte své odběry přátelům</string>
     <string name="opml_export_summary">Přenést odběry do jiné podcastové aplikace</string>
     <string name="opml_import_summary">Importovat vaše odběry z jiné podcastové aplikace</string>
-    <string name="database_export_summary">Přenést odběry, poslechnuté epizody a frontu do aplikace TrimPlayer na jiném zařízení</string>
     <string name="database_import_summary">Importovat TrimPlayer databázi z jiného zařízení</string>
     <string name="opml_import_label">OPML import</string>
     <string name="opml_add_podcast_label">Importovat podcasty (OPML)</string>
@@ -472,10 +470,6 @@
     <string name="deselect_all_label">Zrušit výběr</string>
     <string name="opml_export_label">OPML export</string>
     <string name="html_export_label">HTML export</string>
-    <string name="database_export_label">Export databáze</string>
-    <string name="automatic_database_export_label">Automatický export databáze</string>
-    <string name="automatic_database_export_summary">Vytvářet zálohu TrimPlayer databáze každé 3 dny. Ponechává pouze 5 nejnovějších záloh.</string>
-    <string name="automatic_database_export_error">Chyba při automatické záloze databáze</string>
     <string name="database_import_label">Import databáze</string>
     <string name="database_import_warning">Importem databáze nahradíte všechny své odběry a historii poslechu. Doporučujeme nejdříve exportovat současnou databázi pro případnou obnovu. Opravdu chcete databázi nahradit?</string>
     <string name="please_wait">Čekejte prosím…</string>

@@ -474,13 +474,11 @@
     <string name="sync_status_error">Sincronització fallida</string>
     <!--import and export-->
   <string name="import_export_summary">Mou les subscripcions i la cua a un altre dispositiu</string>
-    <string name="database">Base de dades</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Mostra les teues subscripcions a un amic</string>
     <string name="opml_export_summary">Transferiu les vostres subscripcions cap a una altra aplicació de pòdcast</string>
     <string name="opml_import_summary">Importa les teues subscripcions des d\'un altra aplicació de pòdcast</string>
-    <string name="database_export_summary">Transferiu subscripcions, episodis escoltats i cua cap a l\'TrimPlayer d\'un altre dispositiu</string>
     <string name="database_import_summary">Importa base de dades d\'TrimPlayer des d\'un altre dispositiu</string>
     <string name="opml_import_label">Importació d\'OPML</string>
     <string name="opml_add_podcast_label">Importa llista de podcasts (OPML)</string>
@@ -490,10 +488,6 @@
     <string name="deselect_all_label">Deselecciona-ho tot</string>
     <string name="opml_export_label">Exportació OPML</string>
     <string name="html_export_label">Exporta HTML</string>
-    <string name="database_export_label">Exporta base de dades</string>
-    <string name="automatic_database_export_label">Exportació automàtica de la base de dades</string>
-    <string name="automatic_database_export_summary">Crea una còpia de seguretat de la base de dades d\'TrimPlayer cada 3 dies. Només es desen les 5 còpies més recents.</string>
-    <string name="automatic_database_export_error">Hi ha hagut un error durant l\'exportació de la base de dades</string>
     <string name="database_import_label">Importa base de dades</string>
     <string name="database_import_warning">Importar una base de dades reemplaçarà totes les vostres subscripcions i històric de reproducció. Hauríeu d\'exportar la vostra base de dades com a còpia de seguretat. Voleu reemplaçar?</string>
     <string name="please_wait">Espereu…</string>
