@@ -205,8 +205,6 @@
     <!--import and export-->
   <string name="import_export_summary">Movi les soscripciones y la cola a otru preséu</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Enseña les soscripciones a los collacios</string>
     <string name="opml_export_summary">Tresfier les soscripciones a otra aplicación de podcasts</string>
     <string name="opml_import_summary">Importa les soscripciones d\'otra aplicación de podcasts</string>
     <string name="database_import_summary">Importa la base de datos del TrimPlayer d\'otru preséu</string>
@@ -220,8 +218,6 @@
     <string name="successful_import_label">La importación fízose correutamente</string>
     <string name="import_ok">Primi «D\'acuerdu» pa reaniciar TrimPlayer</string>
     <string name="import_no_downgrade">Esta base de datos esportóse con una versión nueva d\'TrimPlayer. La instalación actual entá nun sabe cómo remanar esti ficheru.</string>
-    <string name="favorites_export_label">Esportación de los favoritos</string>
-    <string name="favorites_export_summary">Esporta los favoritos a un ficheru</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Afitar el temporizador</string>
     <string name="extend_sleep_timer_label">+%d min</string>

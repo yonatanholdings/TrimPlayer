@@ -485,8 +485,6 @@
     <!--import and export-->
   <string name="import_export_summary">Sposta le iscrizioni e la coda su un altro dispositivo</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Mostra le tue iscrizioni ad un amico</string>
     <string name="opml_export_summary">Sposta le tue iscrizioni in un\'altra app per i podcast</string>
     <string name="opml_import_summary">Importa le tue iscrizioni da un\'altra app per i podcast</string>
     <string name="database_import_summary">Importa il database di TrimPlayer da un altro dispositivo</string>
@@ -497,7 +495,6 @@
     <string name="select_all_label">Seleziona tutti</string>
     <string name="deselect_all_label">Deseleziona tutti</string>
     <string name="opml_export_label">Esporta in OPML</string>
-    <string name="html_export_label">Esporta in HTML</string>
     <string name="database_import_label">Importa database</string>
     <string name="database_import_warning">L\'importazione di un database sostituirà tutte le iscrizioni attuali e la cronologia di riproduzione. Dovresti eseguire un backup del tuo database attuale. Vuoi proseguire?</string>
     <string name="please_wait">Attendi…</string>
@@ -507,8 +504,6 @@
     <string name="successful_import_label">Importazione eseguita</string>
     <string name="import_ok">Premi OK per riavviare TrimPlayer</string>
     <string name="import_no_downgrade">Questo database è stato esportato da una versione più recente di TrimPlayer. La tua applicazione attuale non sa ancora come gestire questo file.</string>
-    <string name="favorites_export_label">Esporta preferiti</string>
-    <string name="favorites_export_summary">Esporta preferiti su file</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Imposta timer</string>
     <string name="disable_sleeptimer_label">Disabilita il timer di spegnimento</string>

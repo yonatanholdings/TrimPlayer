@@ -452,8 +452,6 @@
     <!--import and export-->
   <string name="import_export_summary">Dilec\'hiañ ar c\'houmanantoù ha lakaat e lost ur benveg all</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Diskouez ho koumanantoù d\'ur v⋅mignon⋅ez</string>
     <string name="opml_export_summary">Treuzkas ho koumanantoù d\'un arload podskignad all</string>
     <string name="opml_import_summary">Enporzhiañ ho koumanantoù adalek un arload podskignad all</string>
     <string name="database_import_summary">Enporzhiañ stlennvon TrimPlayer adalek ur benveg all</string>
@@ -464,7 +462,6 @@
     <string name="select_all_label">Diuzañ an holl</string>
     <string name="deselect_all_label">Na zibab netra</string>
     <string name="opml_export_label">Ezporzhiañ en ur restr OPML</string>
-    <string name="html_export_label">Ezporzh HTML</string>
     <string name="database_import_label">Enporzhiañ ar stlennvon</string>
     <string name="database_import_warning">Enporzhiañ ur stlennvon a amsavo ho holl goumanantoù ha roll istor lenn. Erbediñ a reomp ezporzhiañ ho stlennvon en a-raok. Fellout a ra deoc\'h enporzhiañ?</string>
     <string name="please_wait">Gortozit un tamm…</string>
@@ -474,8 +471,6 @@
     <string name="successful_import_label">Enporzhiet gant berzh</string>
     <string name="import_ok">Pouezit war OK evit adloc\'hañ TrimPlayer</string>
     <string name="import_no_downgrade">Enporzhiet eo bet ar stlennvon gant un handelv nevesoc\'h eus AntennPod. Ho staliadur bremanel na oar ket c\'hoazh penaos merañ ar restr-mañ.</string>
-    <string name="favorites_export_label">Ezporzhiañ ar sinedoù</string>
-    <string name="favorites_export_summary">Ezporzhiañ ar sinedoù en ur restr</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Lakaat ar munuter</string>
     <string name="disable_sleeptimer_label">Tennañ ar munuter</string>

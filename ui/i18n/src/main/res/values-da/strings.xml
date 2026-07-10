@@ -476,8 +476,6 @@
     <!--import and export-->
   <string name="import_export_summary">Flyt abonnementer og kø til en anden enhed</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Vis abonnementer</string>
     <string name="opml_export_summary">Flyt abonnementer til en anden podcast-app</string>
     <string name="opml_import_summary">Importér dine abonnementer fra et andet podcast-program</string>
     <string name="database_import_summary">Importér TrimPlayer-database fra en anden enhed</string>
@@ -488,7 +486,6 @@
     <string name="select_all_label">Vælg alle</string>
     <string name="deselect_all_label">Fravælg alle</string>
     <string name="opml_export_label">OPML-eksport</string>
-    <string name="html_export_label">HTML-eksport</string>
     <string name="database_import_label">Importér database</string>
     <string name="database_import_warning">Import af database vil overskrive alle dine nuværende abonnementer og din afspilningshistorik. Du bør eksportere din nuværende database som en sikkerhedskopi først. Vil du overskrive?</string>
     <string name="please_wait">Vent…</string>
@@ -498,8 +495,6 @@
     <string name="successful_import_label">Importeret</string>
     <string name="import_ok">Tryk venligst OK for at genstarte TrimPlayer</string>
     <string name="import_no_downgrade">Databasen blev eksporteret fra en nyere version af TrimPlayer. Din nuværende installation ved endnu ikke hvordan den skal håndtere denne fil.</string>
-    <string name="favorites_export_label">Eksport af favoritter</string>
-    <string name="favorites_export_summary">Eksportér gemte favoritter til fil</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Indstil søvntimer</string>
     <string name="disable_sleeptimer_label">Slå søvntimer fra</string>

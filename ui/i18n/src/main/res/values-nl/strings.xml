@@ -450,8 +450,6 @@
     <!--import and export-->
   <string name="import_export_summary">Abonnementen en wachtrij naar een ander toestel verplaatsen</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Abonnementen delen met een ander</string>
     <string name="opml_export_summary">Abonnementen overzetten naar een andere podcast-app</string>
     <string name="opml_import_summary">Abonnementen importeren uit andere podcast-app</string>
     <string name="database_import_summary">TrimPlayer database van een ander toestel importeren</string>
@@ -462,7 +460,6 @@
     <string name="select_all_label">Alles selecteren</string>
     <string name="deselect_all_label">Alles de-selecteren</string>
     <string name="opml_export_label">OPML exporteren</string>
-    <string name="html_export_label">HTML exporteren</string>
     <string name="database_import_label">Database importeren</string>
     <string name="database_import_warning">Bij het importeren van een database worden alle huidige abonnementen en de afspeelgeschiedenis vervangen. Exporteer ter back-up de huidige database. Doorgaan?</string>
     <string name="please_wait">Even geduld…</string>
@@ -472,8 +469,6 @@
     <string name="successful_import_label">Importeren voltooid</string>
     <string name="import_ok">Druk op \'OK\' om TrimPlayer opnieuw te starten</string>
     <string name="import_no_downgrade">Deze database is geëxporteerd door een nieuwere versie van TrimPlayer. De huidige versie weet nog niet hoe daar mee om te gaan.</string>
-    <string name="favorites_export_label">Favorieten exporteren</string>
-    <string name="favorites_export_summary">Exporteer opgeslagen favorieten naar een bestand</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Slaaptimer instellen</string>
     <string name="disable_sleeptimer_label">Slaaptimer uitschakelen</string>

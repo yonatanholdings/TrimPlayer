@@ -450,8 +450,6 @@
     <!--import and export-->
   <string name="import_export_summary">Tellimuste ja ootejärjekorra liigutamine teise seadmesse</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Näita oma tellimusi sõbrale</string>
     <string name="opml_export_summary">Tellimuste liigutamine teise taskuhäälingu äppi</string>
     <string name="opml_import_summary">Tellimuste importimine teisest taskuhäälingu äpist</string>
     <string name="database_import_summary">TrimPlayeri andmebaasi import teisest seadmest</string>
@@ -462,7 +460,6 @@
     <string name="select_all_label">Vali kõik</string>
     <string name="deselect_all_label">Ära vali midagi</string>
     <string name="opml_export_label">OPML eksport</string>
-    <string name="html_export_label">HTML eksport</string>
     <string name="database_import_label">Andmebaasi import</string>
     <string name="database_import_warning">Andmebaasi importimine asendab kõik sinu praegused tellimused ja kuulamiste ajaloo. Peaksid oma praeguse andmebaasi varundamise eesmärgil enne eksportima. Kas soovid andmed asendada?</string>
     <string name="please_wait">Palun oota…</string>
@@ -472,8 +469,6 @@
     <string name="successful_import_label">Importimine oli edukas</string>
     <string name="import_ok">Vajuta OK, et TrimPlayer taaskäivitada</string>
     <string name="import_no_downgrade">See andmebaas on eksporditud TrimPlayeri uuemast versioonist. Sinu praegune äpp ei oska seda faili käsitseda.</string>
-    <string name="favorites_export_label">Lemmikute eksport</string>
-    <string name="favorites_export_summary">Ekspordi salvestatud lemmikud faili</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Määra unetaimer</string>
     <string name="disable_sleeptimer_label">Keela unetaimer</string>

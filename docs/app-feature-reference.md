@@ -304,8 +304,9 @@ TrimPlayer listeners plus a tenure-fair "you vs community" comparison.
   **[TP] Stub skip segments** (load from `assets/stub_segments.json`) and **View received
   segments**.
 - **Downloads** (incl. **Automation** → auto-download, auto-deletion).
-- **Import/Export** (database import only, OPML, PortCast — see onboarding paths; database
-  export was removed: account sync + PortCast export cover it).
+- **Import/Export** (database import only, OPML, PortCast — see onboarding paths; database,
+  HTML and favorites exports were removed: account sync + PortCast export cover it, and OPML
+  remains for moving subscriptions to another app).
 - **Statistics** → Statistics screen.
 - **[TP] TrimPlayer Pro** (`prefTrimPro`) → Pro screen. **Server-driven visibility**: hidden
   unless the backend's `pro_ui_visible` flag is set; summary reflects active entitlement.

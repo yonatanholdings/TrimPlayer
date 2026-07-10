@@ -450,8 +450,6 @@
     <!--import and export-->
   <string name="import_export_summary">Kopiatu harpidetza eta irakurketa zerrenda beste gailu batean</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Erakutsi harpidetzak lagun bati</string>
     <string name="opml_export_summary">Eraman zure harpidetzak podcast-en beste aplikazio batera</string>
     <string name="opml_import_summary">Ekarri zure harpidetzak podcast-en beste aplikazio batetik</string>
     <string name="database_import_summary">Ekarri TrimPlayeren datu-basea beste gailu batetik</string>
@@ -462,7 +460,6 @@
     <string name="select_all_label">Hautatu dena</string>
     <string name="deselect_all_label">Desautatu dena</string>
     <string name="opml_export_label">OPML esportazioa</string>
-    <string name="html_export_label">HTML esportazioa</string>
     <string name="database_import_label">Datu-basearen inportazioa</string>
     <string name="database_import_warning">Datu-base bat inportatzeak egungo harpidetza guztiak eta erreprodukzio-historia ordezkatuko ditu. Egungo datu-basea esportatu behar duzu segurtasun-kopia gisa. Ordezkatu nahi duzu?</string>
     <string name="please_wait">Itxaron mesedez…</string>
@@ -472,8 +469,6 @@
     <string name="successful_import_label">Inportazio arrakastatsua</string>
     <string name="import_ok">Sakatu Ados TrimPlayer berrabiarazteko</string>
     <string name="import_no_downgrade">Datu-base hau TrimPlayer-en bertsio berriago batekin esportatu zen. Uneko instalazioak ez daki fitxategi hori nola inportatu.</string>
-    <string name="favorites_export_label">Gogokoen esportazioa</string>
-    <string name="favorites_export_summary">Esportatu gordetako gogokoak fitxategian</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Ezarri tenporizadore bat</string>
     <string name="disable_sleeptimer_label">Desgaitu tenporizadorea</string>

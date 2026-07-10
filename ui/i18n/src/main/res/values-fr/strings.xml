@@ -486,8 +486,6 @@
     <!--import and export-->
   <string name="import_export_summary">Copier les abonnements et la liste de lecture sur un autre appareil</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Montrer vos abonnements à un ami</string>
     <string name="opml_export_summary">Transférer vos abonnements à une autre application de podcasts</string>
     <string name="opml_import_summary">Importer les abonnements d\'une autre application de podcasts</string>
     <string name="database_import_summary">Importer une base de données TrimPlayer d\'un autre appareil</string>
@@ -498,7 +496,6 @@
     <string name="select_all_label">Tout choisir</string>
     <string name="deselect_all_label">Ne rien choisir</string>
     <string name="opml_export_label">Exporter un fichier OPML</string>
-    <string name="html_export_label">Exporter un fichier HTML</string>
     <string name="database_import_label">Importer la base de données</string>
     <string name="database_import_warning">Importer une base de données remplacera tout vos abonnements et votre historique de lecture. Il est conseillé d\'exporter votre base de données actuelle pour avoir une sauvegarde. Confirmez-vous l\'import ?</string>
     <string name="please_wait">Merci de patienter…</string>
@@ -508,8 +505,6 @@
     <string name="successful_import_label">Import réussi</string>
     <string name="import_ok">Appuyer sur OK pour redémarrer TrimPlayer</string>
     <string name="import_no_downgrade">La base de données a été exportée avec une version plus récente d\'TrimPlayer. L\'application actuelle ne sait pas comment l\'importer.</string>
-    <string name="favorites_export_label">Exporter les favoris</string>
-    <string name="favorites_export_summary">Exporter les favoris dans un fichier</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Activer le minuteur</string>
     <string name="disable_sleeptimer_label">Désactiver le minuteur</string>

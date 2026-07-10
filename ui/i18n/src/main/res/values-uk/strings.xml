@@ -494,8 +494,6 @@
     <!--import and export-->
   <string name="import_export_summary">Переміщення підписок і черги на інший пристрій</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Показати свої підписки другу</string>
     <string name="opml_export_summary">Перенесіть свої підписки на інший додаток для подкастів</string>
     <string name="opml_import_summary">Імпортуйте свої підписки з іншого додатка для подкастів</string>
     <string name="database_import_summary">Імпортуйте базу даних TrimPlayer з іншого пристрою</string>
@@ -506,7 +504,6 @@
     <string name="select_all_label">Обрати все</string>
     <string name="deselect_all_label">Скинути виділення</string>
     <string name="opml_export_label">OPML експорт</string>
-    <string name="html_export_label">Експорт до HTML</string>
     <string name="database_import_label">Імпортувати базу даних</string>
     <string name="database_import_warning">Імпорт бази даних замінить усі ваші поточні підписки та історію відтворення. Ви повинні експортувати свою поточну базу даних як резервну копію. Бажаєте замінити?</string>
     <string name="please_wait">Будь ласка, зачекайте…</string>
@@ -516,8 +513,6 @@
     <string name="successful_import_label">Імпорт - успішний</string>
     <string name="import_ok">Будь ласка, натисніть OK, щоб перезапустити TrimPlayer</string>
     <string name="import_no_downgrade">Ця база даних була експортована з новішою версією TrimPlayer. Ваша поточна установка ще не знає, як обробляти цей файл.</string>
-    <string name="favorites_export_label">Експорт улюбленого</string>
-    <string name="favorites_export_summary">Експортувати збережені улюблені файли</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Встановіть таймер сну</string>
     <string name="disable_sleeptimer_label">Вимкнути таймер сну</string>

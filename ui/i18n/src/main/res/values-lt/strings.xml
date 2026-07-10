@@ -283,8 +283,6 @@
     <!--import and export-->
   <string name="import_export_summary">Perkelti prenumeratas ir eilę į kitą įrenginį</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Parodyti prenumeratas draugui</string>
     <string name="opml_export_summary">Perkelti prenumeratas į kitą tinklalaidžių programėlę</string>
     <string name="opml_import_summary">Importuoti prenumeratas iš kitos tinklalaidžių programėlės</string>
     <string name="database_import_summary">Importuoti „TrimPlayer“ duomenų bazę iš kito įrenginio</string>
@@ -294,7 +292,6 @@
     <string name="select_all_label">Pažymėti visus</string>
     <string name="deselect_all_label">Nepažymėti nieko</string>
     <string name="opml_export_label">OPML eksportas</string>
-    <string name="html_export_label">HTML eksportas</string>
     <string name="database_import_label">Duomenų bazės importas</string>
     <string name="database_import_warning">Importuojant duomenų bazę bus pakeistos visos dabartinės jūsų prenumeratos ir atkūrimo istorija. Rekomenduojame eksportuoti dabartinę duomenų bazę kaip atsarginę kopiją. Ar norite pakeisti?</string>
     <string name="please_wait">Prašome luktelėti…</string>
@@ -304,8 +301,6 @@
     <string name="successful_import_label">Sėkmingai importuota</string>
     <string name="import_ok">Spauskite „OK“, kad paleisti „TrimPlayer“ iš naujo</string>
     <string name="import_no_downgrade">Ši duomenų bazė buvo eksportuota naudojant naujesnę „TrimPlayer“ versija. Dabartinė įdiegtis nežino, kaip apdorotį šį failą.</string>
-    <string name="favorites_export_label">Mėgstamųjų eksportas</string>
-    <string name="favorites_export_summary">Mėgstamieji išsaugoti faile</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Nustatyti miego laikmatį</string>
     <string name="disable_sleeptimer_label">Išjungti miego laikmatį</string>

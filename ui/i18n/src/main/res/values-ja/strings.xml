@@ -443,8 +443,6 @@
     <!--import and export-->
   <string name="import_export_summary">購読とキューを別のデバイスに移動する</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">あなたの購読を友だちに見せる</string>
     <string name="opml_export_summary">購読を別のポッドキャストアプリに転送する</string>
     <string name="opml_import_summary">別のポッドキャストアプリから購読をインポートする</string>
     <string name="database_import_summary">TrimPlayerデータベースを別のデバイスからインポートする</string>
@@ -455,7 +453,6 @@
     <string name="select_all_label">すべてを選択</string>
     <string name="deselect_all_label">選択解除</string>
     <string name="opml_export_label">OPML エクスポート</string>
-    <string name="html_export_label">HTML エクスポート</string>
     <string name="database_import_label">データベースのインポート</string>
     <string name="database_import_warning">データベースをインポートすると、現在の購読と再生履歴がすべて置き換えられます。現在のデータベースをバックアップとしてエクスポートする必要があります。それでも置き換えしますか？</string>
     <string name="please_wait">しばらくお待ちください…</string>
@@ -465,8 +462,6 @@
     <string name="successful_import_label">インポートしました</string>
     <string name="import_ok">OKを押してTrimPlayerを再起動してください</string>
     <string name="import_no_downgrade">このデータベースは、TrimPlayerの新しいバージョンでエクスポートされました。 現在インストールされたアプリでは、このファイルの処理方法がまだわかりません。</string>
-    <string name="favorites_export_label">お気に入り エクスポート</string>
-    <string name="favorites_export_summary">保存したお気に入りをファイルにエクスポートする</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">スリープタイマーをセット</string>
     <string name="disable_sleeptimer_label">スリープタイマーを無効にする</string>

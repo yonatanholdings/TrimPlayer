@@ -457,8 +457,6 @@
     <!--import and export-->
   <string name="import_export_summary">Přesunout odběry a frontu do jiného zařízení</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Ukažte své odběry přátelům</string>
     <string name="opml_export_summary">Přenést odběry do jiné podcastové aplikace</string>
     <string name="opml_import_summary">Importovat vaše odběry z jiné podcastové aplikace</string>
     <string name="database_import_summary">Importovat TrimPlayer databázi z jiného zařízení</string>
@@ -469,7 +467,6 @@
     <string name="select_all_label">Označit vše</string>
     <string name="deselect_all_label">Zrušit výběr</string>
     <string name="opml_export_label">OPML export</string>
-    <string name="html_export_label">HTML export</string>
     <string name="database_import_label">Import databáze</string>
     <string name="database_import_warning">Importem databáze nahradíte všechny své odběry a historii poslechu. Doporučujeme nejdříve exportovat současnou databázi pro případnou obnovu. Opravdu chcete databázi nahradit?</string>
     <string name="please_wait">Čekejte prosím…</string>
@@ -479,8 +476,6 @@
     <string name="successful_import_label">Import úspěšný</string>
     <string name="import_ok">Ťuknutím na OK restartujte AntenaPod</string>
     <string name="import_no_downgrade">Tato databáze byla exportována z novější verze aplikace TrimPlayer. Vaše instalovaná verze není schopná ji zpracovat.</string>
-    <string name="favorites_export_label">Export oblíbených</string>
-    <string name="favorites_export_summary">Exportovat oblíbené do souboru</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Nastavit časovač vypnutí</string>
     <string name="disable_sleeptimer_label">Deaktivovat časovač vypnutí</string>

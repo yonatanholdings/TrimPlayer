@@ -485,8 +485,6 @@
     <!--import and export-->
   <string name="import_export_summary">Presun odberov a poradia na iné zariadenia</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Ukážte svoje odbery priateľom</string>
     <string name="opml_export_summary">Prenesie vaše odbery do inej podcastovej aplikácie</string>
     <string name="opml_import_summary">Importujte vaše odbery z inej podcastovej aplikácie</string>
     <string name="database_import_summary">Importuje databázu TrimPlayer z iného zariadenia</string>
@@ -497,7 +495,6 @@
     <string name="select_all_label">Označiť všetko</string>
     <string name="deselect_all_label">Zrušiť označenie</string>
     <string name="opml_export_label">Exportovať ako OPML</string>
-    <string name="html_export_label">Exportovať ako HTML</string>
     <string name="database_import_label">Import databázy</string>
     <string name="database_import_warning">Import databázy prepíše všetky vaše aktuálne odbery a históriu prehrávania. Aktuálnu databázu by ste mali exportovať ako zálohu. Chcete ju prepísať?</string>
     <string name="please_wait">Prosím čakajte…</string>
@@ -507,8 +504,6 @@
     <string name="successful_import_label">Import úspešný</string>
     <string name="import_ok">Reštartujte TrimPlayer stlačením tlačidla OK</string>
     <string name="import_no_downgrade">Táto databáza bola exportovaná s novšou verziou programu TrimPlayer. Vaša aktuálna inštalácia zatiaľ nevie, ako s týmto súborom zaobchádzať.</string>
-    <string name="favorites_export_label">Export obľúbených položiek</string>
-    <string name="favorites_export_summary">Exportovať obľúbené položky do súboru</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Nastaviť časovač vypnutia</string>
     <string name="disable_sleeptimer_label">Zakázať časovač vypnutia</string>

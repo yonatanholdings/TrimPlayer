@@ -476,8 +476,6 @@
     <!--import and export-->
   <string name="import_export_summary">Abonelikleri ve kuyruğu başka bir cihaza taşıma</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Aboneliklerinizi bir arkadaşınıza gösterin</string>
     <string name="opml_export_summary">Aboneliklerinizi başka bir podcast uygulamasına aktarma</string>
     <string name="opml_import_summary">Aboneliklerinizi başka bir podcast uygulamasından içe aktarın</string>
     <string name="database_import_summary">TrimPlayer veritabanını başka bir cihazdan içe aktarma</string>
@@ -488,7 +486,6 @@
     <string name="select_all_label">Hepsini seç</string>
     <string name="deselect_all_label">Tüm seçimleri geri al</string>
     <string name="opml_export_label">OPML dışa aktar</string>
-    <string name="html_export_label">HTML Dışa aktarma</string>
     <string name="database_import_label">Veri tabanını içe aktarma</string>
     <string name="database_import_warning">Bir veritabanını içe aktarmak, mevcut tüm aboneliklerinizi ve çalma geçmişinizi değiştirecektir. Mevcut veritabanınızı yedek olarak dışa aktarmalısınız. Yerini değiştirmek istiyor musunuz?</string>
     <string name="please_wait">Lütfen bekleyin…</string>
@@ -498,8 +495,6 @@
     <string name="successful_import_label">İçe aktarma başarılı</string>
     <string name="import_ok">TrimPlayer\'u yeniden başlatmak için lütfen OK tuşuna basın</string>
     <string name="import_no_downgrade">Bu veritabanı TrimPlayer\'un daha yeni bir sürümü ile dışa aktarıldı. Mevcut kurulumunuz henüz bu dosyayı nasıl işleyeceğini bilmiyor.</string>
-    <string name="favorites_export_label">Favorileri dışa aktarma</string>
-    <string name="favorites_export_summary">Kayıtlı favorileri dosyaya aktarma</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Zamanlayıcıyı ayarla</string>
     <string name="disable_sleeptimer_label">Zamanlayıcıyı devre dışı bırak</string>

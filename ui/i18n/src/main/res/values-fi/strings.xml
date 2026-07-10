@@ -425,8 +425,6 @@
     <!--import and export-->
   <string name="import_export_summary">Siirrä tilaukset ja jono toiselle laitteelle</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Näytä tilauksesi ystävälle</string>
     <string name="opml_export_summary">Siirrä tilauksesi toiseen podcast-sovellukseen</string>
     <string name="opml_import_summary">Tuo tilauksesi toisesta podcast-sovelluksesta</string>
     <string name="database_import_summary">Tuo TrimPlayer-tietokanta toiselta laitteelta</string>
@@ -436,7 +434,6 @@
     <string name="select_all_label">Valitse kaikki</string>
     <string name="deselect_all_label">Poista valinta kaikista</string>
     <string name="opml_export_label">OPML vienti</string>
-    <string name="html_export_label">HTML vienti</string>
     <string name="database_import_label">Tietokannan tuonti</string>
     <string name="database_import_warning">Tietokannan tuonti korvaa kaikki nykyiset tilauksesi ja toistohistoriasi. Vie nykyinen tietokanta halutessasi varmuuskopioksi ennen jatkamista. Haluatko korvata?</string>
     <string name="please_wait">Odota…</string>
@@ -446,8 +443,6 @@
     <string name="successful_import_label">Tuonti onnistui</string>
     <string name="import_ok">Valitse OK käynnistääksesi TrimPlayerin uudelleen</string>
     <string name="import_no_downgrade">Tämä tietokanta on viety TrimPlayerin uudemmalla versiolla. Tämänhetkinen versiosi ei vielä osaa käsitellä sitä.</string>
-    <string name="favorites_export_label">Suosikkien vienti</string>
-    <string name="favorites_export_summary">Vie tallennetut suosikit tiedostoon</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Aseta uniajastin</string>
     <string name="disable_sleeptimer_label">Lopeta uniajastin</string>

@@ -475,8 +475,6 @@
     <!--import and export-->
   <string name="import_export_summary">Mou les subscripcions i la cua a un altre dispositiu</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Mostra les teues subscripcions a un amic</string>
     <string name="opml_export_summary">Transferiu les vostres subscripcions cap a una altra aplicació de pòdcast</string>
     <string name="opml_import_summary">Importa les teues subscripcions des d\'un altra aplicació de pòdcast</string>
     <string name="database_import_summary">Importa base de dades d\'TrimPlayer des d\'un altre dispositiu</string>
@@ -487,7 +485,6 @@
     <string name="select_all_label">Selecciona-ho tot</string>
     <string name="deselect_all_label">Deselecciona-ho tot</string>
     <string name="opml_export_label">Exportació OPML</string>
-    <string name="html_export_label">Exporta HTML</string>
     <string name="database_import_label">Importa base de dades</string>
     <string name="database_import_warning">Importar una base de dades reemplaçarà totes les vostres subscripcions i històric de reproducció. Hauríeu d\'exportar la vostra base de dades com a còpia de seguretat. Voleu reemplaçar?</string>
     <string name="please_wait">Espereu…</string>
@@ -497,8 +494,6 @@
     <string name="successful_import_label">Importació correcta</string>
     <string name="import_ok">Premeu D\'acord per reiniciar TrimPlayer</string>
     <string name="import_no_downgrade">Aquesta base de dades va ser exportada amb una versió més nova d\'TrimPlayer. La versió que tens ara mateixa no sap com processar-la.</string>
-    <string name="favorites_export_label">Exportar preferits</string>
-    <string name="favorites_export_summary">Exporta els preferits desats en un fitxer</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Defineix un temporitzador</string>
     <string name="disable_sleeptimer_label">Desactiva el temporitzador</string>

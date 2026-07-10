@@ -476,8 +476,6 @@
     <!--import and export-->
   <string name="import_export_summary">Abonnements und Warteschlange auf ein anderes Gerät übertragen</string>
     <string name="opml">OPML</string>
-    <string name="html">HTML</string>
-    <string name="html_export_summary">Deine Abonnements mit Freunden teilen</string>
     <string name="opml_export_summary">Deine Abonnements auf eine andere Podcast-App übertragen</string>
     <string name="opml_import_summary">Deine Abonnements aus einer anderen Podcast-App importieren</string>
     <string name="database_import_summary">TrimPlayer-Datenbank von einem anderen Gerät importieren</string>
@@ -488,7 +486,6 @@
     <string name="select_all_label">Alle auswählen</string>
     <string name="deselect_all_label">Auswahl zurücksetzen</string>
     <string name="opml_export_label">OPML exportieren</string>
-    <string name="html_export_label">HTML exportieren</string>
     <string name="database_import_label">Datenbank importieren</string>
     <string name="database_import_warning">Das Importieren einer Datenbank ersetzt alle Abonnements und abgespielte Episoden. Ein Datenbank-Export als Sicherungskopie wird empfohlen. Möchtest du die Datenbank wirklich ersetzen?</string>
     <string name="please_wait">Bitte warten…</string>
@@ -498,8 +495,6 @@
     <string name="successful_import_label">Import erfolgreich</string>
     <string name="import_ok">Bitte OK drücken, um TrimPlayer neu zu starten</string>
     <string name="import_no_downgrade">Diese Datenbank wurde mit einer neueren Version von TrimPlayer exportiert. Deine im Moment installierte Version kann die Datei leider nicht bearbeiten.</string>
-    <string name="favorites_export_label">Favoriten exportieren</string>
-    <string name="favorites_export_summary">Favoriten in einer Datei speichern</string>
     <!--Sleep timer-->
   <string name="set_sleeptimer_label">Timer einstellen</string>
     <string name="disable_sleeptimer_label">Schlummerfunktion deaktivieren</string>
