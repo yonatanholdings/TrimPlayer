@@ -475,13 +475,11 @@
     <string name="sync_status_error">Ο συγχρονισμός απέτυχε</string>
     <!--import and export-->
   <string name="import_export_summary">Μεταφέρετε τις συνδρομές και τη λίστα αναπαραγωγής σε άλλη συσκευή</string>
-    <string name="database">Βάση Δεδομένων</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Δείξτε τις συνδρομές σας σε έναν φίλο</string>
     <string name="opml_export_summary">Μεταφορά των συνδρομών σε άλλη εφαρμογή podcast</string>
     <string name="opml_import_summary">Εισαγωγή συνδρομών από άλλη εφαρμογή podcast</string>
-    <string name="database_export_summary">Μεταφορά συνδρομών, αναπαραχθέντων επεισοδίων και ουράς στο TrimPlayer άλλης συσκευής</string>
     <string name="database_import_summary">Εισαγωγή βάσης δεδομένων του TrimPlayer από άλλη συσκευή</string>
     <string name="opml_import_label">Εισαγωγή OPML</string>
     <string name="opml_add_podcast_label">Εισαγωγή λίστας podcast (OPML)</string>
@@ -491,10 +489,6 @@
     <string name="deselect_all_label">Αποεπιλογή όλων</string>
     <string name="opml_export_label">Εξαγωγή OPML</string>
     <string name="html_export_label">Εξαγωγή HTML</string>
-    <string name="database_export_label">Εξαγωγή βάσης δεδομένων</string>
-    <string name="automatic_database_export_label">Αυτόματη εξαγωγή βάσης δεδομένων</string>
-    <string name="automatic_database_export_summary">Δημιουργήστε αντίγραφο ασφαλείας της βάσης δεδομένων του TrimPlayer κάθε 3 ημέρες. Κρατήστε μόνο τα 5 πιο πρόσφατα αντίγραφα ασφαλείας.</string>
-    <string name="automatic_database_export_error">Σφάλμα κατά την αυτόματη δημιουργία αντιγράφου ασφαλείας της βάσης δεδομένων</string>
     <string name="database_import_label">Εισαγωγή βάσης δεδομένων</string>
     <string name="database_import_warning">Η εισαγωγή βάσης δεδομένων θα αντικαταστήσει όλες τις τρέχουσες συνδρομές και το ιστορικό αναπαραγωγής. Συνίσταται η εξαγωγή της τρέχουσας βάσης δεδομένων ως backup. Επιθυμείτε την αντικατάσταση;</string>
     <string name="please_wait">Παρακαλώ περιμένετε…</string>

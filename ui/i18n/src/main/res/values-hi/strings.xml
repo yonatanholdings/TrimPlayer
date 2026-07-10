@@ -449,13 +449,11 @@
     <string name="sync_status_error">सिंक असफल</string>
     <!--import and export-->
   <string name="import_export_summary">सदस्यताएं और कतार को दूसरे उपकरण पर ले जाएँ</string>
-    <string name="database">डाटाबेस</string>
     <string name="opml">ओपीएमएल</string>
     <string name="html">एचटीएमएल</string>
     <string name="html_export_summary">अपनी सदस्यताओं को दोस्त को दिखाएं</string>
     <string name="opml_export_summary">अपनी सदस्यताओं को दूसरे पॉडकास्ट ऐप में स्थानांतरित करें</string>
     <string name="opml_import_summary">अपनी सदस्यताओं को दूसरे पॉडकास्ट ऐप से आयात करें</string>
-    <string name="database_export_summary">सदस्यताओं, सुने गए एपिसोड और कतार को दूसरे उपकरण पर एंटेनापॉड में स्थानांतरित करें</string>
     <string name="database_import_summary">दूसरे डिवाइस से TrimPlayer डाटाबेस आयात करें</string>
     <string name="opml_import_label">ओपीएमएल आयात</string>
     <string name="opml_add_podcast_label">पॉडकास्ट लिस्ट (ओपीएमएल) आयात करें</string>
@@ -464,7 +462,6 @@
     <string name="deselect_all_label">चुने गए से सब हटाएं</string>
     <string name="opml_export_label">ओपीएमएल निर्यात</string>
     <string name="html_export_label">एचटीएमएल निर्यात</string>
-    <string name="database_export_label">डाटाबेस निर्यात</string>
     <string name="database_import_label">डाटाबेस आयात</string>
     <string name="database_import_warning">डेटाबेस आयात करने से आपकी मौजूदा सभी सदस्यताएँ और प्लेयिंग हिस्ट्री को बदल दिया जाएगा। आपको अपनी वर्तमान डेटाबेस को बैकअप के रूप में निर्यात करना चाहिए। बदलाव जारी रखें?</string>
     <string name="please_wait">इंतज़ार करें…</string>

@@ -475,13 +475,11 @@
     <string name="sync_status_error">Synkronisering misslyckades</string>
     <!--import and export-->
   <string name="import_export_summary">Flytta prenumerationer och kö till annan enhet</string>
-    <string name="database">Databas</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Visa dina prenumerationer för en vän</string>
     <string name="opml_export_summary">Överför dina prenumerationer till en annan podcastapp</string>
     <string name="opml_import_summary">Importera dina prenumerationer från en annan podcastapp</string>
-    <string name="database_export_summary">Överför prenumerationer, spelade avsnitt och kön till TrimPlayer på en annan enhet</string>
     <string name="database_import_summary">Importera TrimPlayers databas från en annan enhet</string>
     <string name="opml_import_label">OPML-import</string>
     <string name="opml_add_podcast_label">Importera podcastlista (OPML)</string>
@@ -491,10 +489,6 @@
     <string name="deselect_all_label">Avmarkera alla</string>
     <string name="opml_export_label">OPML-export</string>
     <string name="html_export_label">HTML-export</string>
-    <string name="database_export_label">Databasexport</string>
-    <string name="automatic_database_export_label">Automatisk databasexport</string>
-    <string name="automatic_database_export_summary">Skapa en backup av TrimPlayers databas var 3:e dag. Behåll bara de 5 senaste backuperna.</string>
-    <string name="automatic_database_export_error">Fel under automatisk databasbackup</string>
     <string name="database_import_label">Databasimport</string>
     <string name="database_import_warning">Importering av en databas kommer att ersätta alla dina befintliga prenumerationer och spelhistoriken. Du bör exportera din nuvarande databas som en backup. Vill du ersätta den?</string>
     <string name="please_wait">Var god vänta…</string>

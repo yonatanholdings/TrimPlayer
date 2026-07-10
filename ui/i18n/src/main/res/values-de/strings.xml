@@ -475,13 +475,11 @@
     <string name="sync_status_error">Synchronisation fehlgeschlagen</string>
     <!--import and export-->
   <string name="import_export_summary">Abonnements und Warteschlange auf ein anderes Gerät übertragen</string>
-    <string name="database">Datenbank</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Deine Abonnements mit Freunden teilen</string>
     <string name="opml_export_summary">Deine Abonnements auf eine andere Podcast-App übertragen</string>
     <string name="opml_import_summary">Deine Abonnements aus einer anderen Podcast-App importieren</string>
-    <string name="database_export_summary">Deine Abonnements, angehörten Episoden und die Warteschlange zu TrimPlayer auf einem anderen Gerät übertragen</string>
     <string name="database_import_summary">TrimPlayer-Datenbank von einem anderen Gerät importieren</string>
     <string name="opml_import_label">OPML importieren</string>
     <string name="opml_add_podcast_label">Podcast-Liste importieren (OPML)</string>
@@ -491,10 +489,6 @@
     <string name="deselect_all_label">Auswahl zurücksetzen</string>
     <string name="opml_export_label">OPML exportieren</string>
     <string name="html_export_label">HTML exportieren</string>
-    <string name="database_export_label">Datenbank exportieren</string>
-    <string name="automatic_database_export_label">Automatischer Datenbank-Export</string>
-    <string name="automatic_database_export_summary">Erstellt alle 3 Tage eine Sicherungskopie der TrimPlayer-Datenbank. Es werden nur die 5 aktuellsten Sicherungen aufbewahrt.</string>
-    <string name="automatic_database_export_error">Fehler bei der automatischen Datenbanksicherung</string>
     <string name="database_import_label">Datenbank importieren</string>
     <string name="database_import_warning">Das Importieren einer Datenbank ersetzt alle Abonnements und abgespielte Episoden. Ein Datenbank-Export als Sicherungskopie wird empfohlen. Möchtest du die Datenbank wirklich ersetzen?</string>
     <string name="please_wait">Bitte warten…</string>

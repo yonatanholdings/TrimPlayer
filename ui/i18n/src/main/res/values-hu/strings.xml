@@ -450,13 +450,11 @@
     <string name="sync_status_error">Szinkronizálás sikertelen</string>
     <!--import and export-->
   <string name="import_export_summary">Feliratkozások áthelyezése, és sorbaállítás egy másik eszközön</string>
-    <string name="database">Adatbázis</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Feliratkozások megjelenítése egy barát számára</string>
     <string name="opml_export_summary">A feliratkozásai átküldése egy másik podcast alkalmazásnak</string>
     <string name="opml_import_summary">Feliratkozások importálása egy másik podcast alkalmazásból</string>
-    <string name="database_export_summary">Feliratkozások, meghallgatott epizódok és a lejátszási sor átküldése egy másik eszközök lévő TrimPlayernak</string>
     <string name="database_import_summary">TrimPlayer adatbázis importálása egy másik eszközről</string>
     <string name="opml_import_label">OPML importálása</string>
     <string name="opml_add_podcast_label">Postcastlista (OPML) importálása</string>
@@ -466,10 +464,6 @@
     <string name="deselect_all_label">Összes kiválasztásának megszüntetése</string>
     <string name="opml_export_label">OPML exportálása</string>
     <string name="html_export_label">HTML exportálása</string>
-    <string name="database_export_label">Adatbázis exportálása</string>
-    <string name="automatic_database_export_label">Automatikus adatbázis-exportálás</string>
-    <string name="automatic_database_export_summary">Készítsen biztonsági mentést az TrimPlayer adatbázisáról 3 naponta. Csak az 5 legfrissebbet tartsa meg.</string>
-    <string name="automatic_database_export_error">Hiba az adatbázis automatikus biztonsági mentése során</string>
     <string name="database_import_label">Adatbázis importálása</string>
     <string name="database_import_warning">Az adatbázis importálása lecseréli a jelenlegi feliratkozásait és lejátszási előzményeit. Célszerű biztonsági mentésként exportálni a jelenlegi adatbázist. Biztos, hogy lecseréli?</string>
     <string name="please_wait">Várjon…</string>

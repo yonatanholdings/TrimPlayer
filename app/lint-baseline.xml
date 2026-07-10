@@ -499,17 +499,6 @@
     <issue
         id="ObsoleteSdkInt"
         message="Unnecessary; `SDK_INT` is always >= 23"
-        errorLine1="                        | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/de/danoeh/antennapod/storage/importexport/AutomaticDatabaseExportWorker.java"
-            line="117"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 23"
         errorLine1="        if (Build.VERSION.SDK_INT >= 23) {"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location

@@ -475,13 +475,11 @@
     <string name="sync_status_error">Synchronizacja nie powiodła się</string>
     <!--import and export-->
   <string name="import_export_summary">Przenieś subskrypcje i kolejkę na inne urządzenie</string>
-    <string name="database">Baza danych</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Pokaż swoje subskrypcje znajomym</string>
     <string name="opml_export_summary">Przenieś swoje subskrypcje do innej aplikacji</string>
     <string name="opml_import_summary">Przenieś swoje subskrypcje z innej aplikacji</string>
-    <string name="database_export_summary">Przenieś subskrypcje, listę odsłuchanych odcinków i kolejkę do TrimPlayer na innym urządzeniu</string>
     <string name="database_import_summary">Importuj bazę danych TrimPlayer z innego urządzenia</string>
     <string name="opml_import_label">Import pliku OMPL</string>
     <string name="opml_add_podcast_label">Importuj listę podcastów (OPML)</string>
@@ -490,9 +488,6 @@
     <string name="deselect_all_label">Odznacz wszystko</string>
     <string name="opml_export_label">Eksport OPML</string>
     <string name="html_export_label">Eksport HTML</string>
-    <string name="database_export_label">Eksport bazy danych</string>
-    <string name="automatic_database_export_label">Automatyczne eksportowanie bazy danych</string>
-    <string name="automatic_database_export_summary">Stwórz kopię zapasową bazy danych TrimPlayer co 3 dni. Zachowaj tylko 5 najnowszych kopii.</string>
     <string name="database_import_label">Import bazy danych</string>
     <string name="database_import_warning">Import bazy danych nadpisze wszystkie twoje aktualne subskrypcje i historię odtworzeń. Zalecany jest eksport aktualnej bazy danych jako kopia zapasowa. Czy chcesz zamienić?</string>
     <string name="please_wait">Prosimy poczekać…</string>
@@ -738,7 +733,6 @@
     <string name="pref_full_notification_buttons_sum">Zmień przyciski na odtwarzaczu w powiadomieniu</string>
     <string name="sync_status_wait_for_downloads">Czekanie na odświeżenie subskrypcji…</string>
     <string name="opml_reader_error">Wystąpił błąd podczas czytania pliku. Upewnij się, że naprawdę wybrałeś plik OPML i jest on prawidłowy.</string>
-    <string name="automatic_database_export_error">Błąd podczas automatycznej kopii zapasowej bazy danych</string>
     <plurals name="time_days_quantified">
         <item quantity="one">%d dzień</item>
         <item quantity="few">%d dni</item>

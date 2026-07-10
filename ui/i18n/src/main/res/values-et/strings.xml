@@ -449,13 +449,11 @@
     <string name="sync_status_error">Sünkroonimine nurjus</string>
     <!--import and export-->
   <string name="import_export_summary">Tellimuste ja ootejärjekorra liigutamine teise seadmesse</string>
-    <string name="database">Andmebaas</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Näita oma tellimusi sõbrale</string>
     <string name="opml_export_summary">Tellimuste liigutamine teise taskuhäälingu äppi</string>
     <string name="opml_import_summary">Tellimuste importimine teisest taskuhäälingu äpist</string>
-    <string name="database_export_summary">Tellimuste, kuulatud saadete ja ootejärjekorra liigutamine TrimPlayeri mõnes teises seadmes</string>
     <string name="database_import_summary">TrimPlayeri andmebaasi import teisest seadmest</string>
     <string name="opml_import_label">OPML import</string>
     <string name="opml_add_podcast_label">Impordi taskuhäälingute nimekiri (OPML)</string>
@@ -465,10 +463,6 @@
     <string name="deselect_all_label">Ära vali midagi</string>
     <string name="opml_export_label">OPML eksport</string>
     <string name="html_export_label">HTML eksport</string>
-    <string name="database_export_label">Andmebaasi eksport</string>
-    <string name="automatic_database_export_label">Automaatne andmebaasi eksport</string>
-    <string name="automatic_database_export_summary">Varunda TrimPlayeri andmebaas iga 3 päeva järel. Hoia 5 viimast varukoopiat.</string>
-    <string name="automatic_database_export_error">Viga andmebaasi automaatsel varundamisel</string>
     <string name="database_import_label">Andmebaasi import</string>
     <string name="database_import_warning">Andmebaasi importimine asendab kõik sinu praegused tellimused ja kuulamiste ajaloo. Peaksid oma praeguse andmebaasi varundamise eesmärgil enne eksportima. Kas soovid andmed asendada?</string>
     <string name="please_wait">Palun oota…</string>

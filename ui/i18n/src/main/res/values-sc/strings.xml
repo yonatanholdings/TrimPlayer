@@ -475,13 +475,11 @@
     <string name="sync_status_error">Errore in sa sincronizatzione</string>
     <!--import and export-->
   <string name="import_export_summary">Move is sutiscritziones e sa lista a un\'àteru dispositivu</string>
-    <string name="database">Base de datos</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Ammustra a àtere is sutiscritziones tuas</string>
     <string name="opml_export_summary">Tràmuda is sutiscritziones a un\'àtera aplicatzione de podcast</string>
     <string name="opml_import_summary">Importa is sutiscritziones dae un\'àtera aplicatzione de podcast</string>
-    <string name="database_export_summary">Trasferimentu de sutiscritziones, de is episòdios ascurtados e de sa lista de TrimPlayer a un\'àteru dispositivu</string>
     <string name="database_import_summary">Importa una base de datos de TrimPlayer dae un\'àteru dispositivu</string>
     <string name="opml_import_label">Importatzione OPML</string>
     <string name="opml_add_podcast_label">Importa una lista de podcasts (OPML)</string>
@@ -491,10 +489,6 @@
     <string name="deselect_all_label">Deseletziona totu</string>
     <string name="opml_export_label">Esportatzione OPML</string>
     <string name="html_export_label">Esportatzione HTML</string>
-    <string name="database_export_label">Esportatzione de base de datos</string>
-    <string name="automatic_database_export_label">Esportatzione de sa base de datos in automàticu</string>
-    <string name="automatic_database_export_summary">Crea una còpia de seguresa de sa base de datos de TrimPlayer onni 3 dies. Cunserva isceti is ùrtimas 5 còpias prus reghentes.</string>
-    <string name="automatic_database_export_error">Errore in sa còpia de seguresa automàtica de sa base de datos</string>
     <string name="database_import_label">Importatzione de base de datos</string>
     <string name="database_import_warning">S\'importatzione de una base de datos at a sostituire is sutiscritziones tuas atuales e sa cronologia de riprodutziones. Dias dèpere esportare sa base de datos tua atuale comente còpia de seguresa. Boles sighire cun sa sostitutzione?</string>
     <string name="please_wait">Abeta…</string>

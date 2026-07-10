@@ -475,13 +475,11 @@
     <string name="sync_status_error">Fallou a sincronización</string>
     <!--import and export-->
   <string name="import_export_summary">Mover subscricións e cola a outro dispositivo</string>
-    <string name="database">Base de datos</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Mostrar as túas subscricións a un amigo</string>
     <string name="opml_export_summary">Mover as túas subscricións a outra app de podcast</string>
     <string name="opml_import_summary">Importar as túas subscricións dende outra app de podcast</string>
-    <string name="database_export_summary">Mover as subscricións, episodios escoitados e cola a TrimPlayer en outro dispositivo</string>
     <string name="database_import_summary">Importar a base de datos TrimPlayer dende outro dispositivo</string>
     <string name="opml_import_label">Importar OPML</string>
     <string name="opml_add_podcast_label">Importar lista de podcast (OPML)</string>
@@ -491,10 +489,6 @@
     <string name="deselect_all_label">Deseleccionar todo</string>
     <string name="opml_export_label">Exportar OPML</string>
     <string name="html_export_label">Exportar HTML</string>
-    <string name="database_export_label">Exportar base de datos</string>
-    <string name="automatic_database_export_label">Exportación automática da base de datos</string>
-    <string name="automatic_database_export_summary">Crear unha copia de apoio da base de datos de TrimPlayer cada 3 días. Manter só as últimas 5 copias.</string>
-    <string name="automatic_database_export_error">Erro ao realizar a copia de apoio automática</string>
     <string name="database_import_label">Importar base de datos</string>
     <string name="database_import_warning">Ao importar a base de datos substituirás todas as subscricións actuais e historial de reprodución. Deberías exportar a base de datos actual como copia de apoio. Desexas substituíla?</string>
     <string name="please_wait">Agarda…</string>

@@ -342,13 +342,11 @@
     <string name="sync_status_error">Penyinkronan gagal</string>
     <!--import and export-->
   <string name="import_export_summary">Pindahkan langganan dan antrean ke perangkat lain</string>
-    <string name="database">Database</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Tunjukkan langganan siniar kepada teman Anda</string>
     <string name="opml_export_summary">Transfer langganan ke aplikasi siniar lainnya</string>
     <string name="opml_import_summary">Impor langganan dari aplikasi siniar lainnya</string>
-    <string name="database_export_summary">Transfer langganan, episode terputar, dan antrean ke TrimPlayer di perangkat lain</string>
     <string name="database_import_summary">Impor pangkalan data TrimPlayer dari perangkat lain</string>
     <string name="opml_import_label">Impor OPML</string>
     <string name="opml_add_podcast_label">Impor daftar podcast (OPML)</string>
@@ -357,7 +355,6 @@
     <string name="deselect_all_label">Batal pilih semua</string>
     <string name="opml_export_label">Ekspor OPML</string>
     <string name="html_export_label">Ekspor HTML</string>
-    <string name="database_export_label">Ekspor pangkalan data</string>
     <string name="database_import_label">Impor pangkalan data</string>
     <string name="database_import_warning">Mengimpor pangkalan data akan menggantikan seluruh langganan dan riwayat pemutaran Anda. Anda sebaiknya mengekspor pangkalan data yang sekarang Anda miliki sebagai cadangan. Tetap lanjutkan?</string>
     <string name="please_wait">Mohon tunggu…</string>
@@ -674,7 +671,6 @@
     <string name="pref_expandNotify_title">Notifikasi prioritas atas</string>
     <string name="pref_show_subscription_title">Tampilkan judul</string>
     <string name="sync_status_wait_for_downloads">Menunggu penyegaran langganan…</string>
-    <string name="automatic_database_export_label">Ekspor pangkalan data secara otomatis</string>
     <plurals name="time_seconds_quantified">
         <item quantity="other">%d detik</item>
     </plurals>
@@ -772,8 +768,6 @@
     <string name="pref_automatic_download_queue_description">Unduh episode terantre secara otomatis</string>
     <string name="documentation_support">Dokumentasi &amp; dukungan</string>
     <string name="pref_new_episodes_action_sum">Tindakan yang dilakukan pada episode-episode baru</string>
-    <string name="automatic_database_export_summary">Buat cadangan pangkalan data TrimPlayer setiap tiga hari sekali. Pilihan ini hanya menyimpan lima pencadangan terakhir.</string>
-    <string name="automatic_database_export_error">Terdapat galat ketika mencadangkan pangkalan data secara otomatis</string>
     <string name="is_inbox_label">Di dalam kotak masuk</string>
     <string name="is_played">Terputar</string>
     <string name="feed_folders_include_root">Tampilkan siniar ini pada daftar utama</string>

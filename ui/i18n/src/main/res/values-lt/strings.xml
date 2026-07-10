@@ -282,13 +282,11 @@
     <string name="sync_status_error">Sinchronizavimas nepavyko</string>
     <!--import and export-->
   <string name="import_export_summary">Perkelti prenumeratas ir eilę į kitą įrenginį</string>
-    <string name="database">Duomenų bazė</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Parodyti prenumeratas draugui</string>
     <string name="opml_export_summary">Perkelti prenumeratas į kitą tinklalaidžių programėlę</string>
     <string name="opml_import_summary">Importuoti prenumeratas iš kitos tinklalaidžių programėlės</string>
-    <string name="database_export_summary">Perkelti prenumeratas, perklausytus epizodus ir eilę į „TrimPlayer“ kitame įrenginyje</string>
     <string name="database_import_summary">Importuoti „TrimPlayer“ duomenų bazę iš kito įrenginio</string>
     <string name="opml_import_label">OPML importas</string>
     <string name="opml_add_podcast_label">Importuoti tinklalaidžių sąrašą (OPML)</string>
@@ -297,7 +295,6 @@
     <string name="deselect_all_label">Nepažymėti nieko</string>
     <string name="opml_export_label">OPML eksportas</string>
     <string name="html_export_label">HTML eksportas</string>
-    <string name="database_export_label">Duomenų bazės eksportas</string>
     <string name="database_import_label">Duomenų bazės importas</string>
     <string name="database_import_warning">Importuojant duomenų bazę bus pakeistos visos dabartinės jūsų prenumeratos ir atkūrimo istorija. Rekomenduojame eksportuoti dabartinę duomenų bazę kaip atsarginę kopiją. Ar norite pakeisti?</string>
     <string name="please_wait">Prašome luktelėti…</string>
@@ -495,9 +492,6 @@
     <string name="home_welcome_text">Dar nesate užsiprenumeravę jokių podcast\'ų. Atidarykite šoninį meniu ir pridėkite podkastą.</string>
     <string name="download_error_error_unknown">Nežinoma klaida</string>
     <string name="download_error_unsupported_type">Nepalaikomas pašaro tipas</string>
-    <string name="automatic_database_export_summary">Kas 3 dienas sukurkite atsarginę „TrimPlayer“ duomenų bazės kopiją. Saugokite tik 5 naujausias atsargines kopijas.</string>
-    <string name="automatic_database_export_error">Automatinio duomenų bazės atsarginės kopijos kūrimo klaida</string>
-    <string name="automatic_database_export_label">Automatinis duomenų bazės eksportavimas</string>
     <string name="no_all_episodes_head_label">Nėra epizodų</string>
     <string name="home_continue_empty_text">Epizodus galite įtraukti juos atsisiųsdami arba ilgai paspausdami ir pasirinkdami „Įtraukti į eilę“.</string>
     <string name="drawer_preferences">Šoninės panelės nustatymai</string>

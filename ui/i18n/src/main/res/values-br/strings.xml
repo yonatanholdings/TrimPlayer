@@ -451,13 +451,11 @@
     <string name="sync_status_error">C\'hwitadenn en ur c\'houbredañ</string>
     <!--import and export-->
   <string name="import_export_summary">Dilec\'hiañ ar c\'houmanantoù ha lakaat e lost ur benveg all</string>
-    <string name="database">Stlennvon</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Diskouez ho koumanantoù d\'ur v⋅mignon⋅ez</string>
     <string name="opml_export_summary">Treuzkas ho koumanantoù d\'un arload podskignad all</string>
     <string name="opml_import_summary">Enporzhiañ ho koumanantoù adalek un arload podskignad all</string>
-    <string name="database_export_summary">Treuzkas ar c\'houmanantoù, ar rannoù lennet hag el lost da TrimPlayer war ur benveg all</string>
     <string name="database_import_summary">Enporzhiañ stlennvon TrimPlayer adalek ur benveg all</string>
     <string name="opml_import_label">Enporzhiañ ur restr OPML</string>
     <string name="opml_add_podcast_label">Enporzhiañ ul listenn podskignadoù (OPML)</string>
@@ -467,7 +465,6 @@
     <string name="deselect_all_label">Na zibab netra</string>
     <string name="opml_export_label">Ezporzhiañ en ur restr OPML</string>
     <string name="html_export_label">Ezporzh HTML</string>
-    <string name="database_export_label">Ezporzhiañ ar stlennvon</string>
     <string name="database_import_label">Enporzhiañ ar stlennvon</string>
     <string name="database_import_warning">Enporzhiañ ur stlennvon a amsavo ho holl goumanantoù ha roll istor lenn. Erbediñ a reomp ezporzhiañ ho stlennvon en a-raok. Fellout a ra deoc\'h enporzhiañ?</string>
     <string name="please_wait">Gortozit un tamm…</string>

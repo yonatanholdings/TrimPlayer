@@ -485,13 +485,11 @@
     <string name="sync_status_error">Échec de la synchronisation</string>
     <!--import and export-->
   <string name="import_export_summary">Copier les abonnements et la liste de lecture sur un autre appareil</string>
-    <string name="database">Base de données</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Montrer vos abonnements à un ami</string>
     <string name="opml_export_summary">Transférer vos abonnements à une autre application de podcasts</string>
     <string name="opml_import_summary">Importer les abonnements d\'une autre application de podcasts</string>
-    <string name="database_export_summary">Transférer les abonnements, les épisodes écoutés et la liste de lecture sur un autre appareil</string>
     <string name="database_import_summary">Importer une base de données TrimPlayer d\'un autre appareil</string>
     <string name="opml_import_label">Importer un fichier OPML</string>
     <string name="opml_add_podcast_label">Importer une liste de podcasts (fichier OPML)</string>
@@ -501,10 +499,6 @@
     <string name="deselect_all_label">Ne rien choisir</string>
     <string name="opml_export_label">Exporter un fichier OPML</string>
     <string name="html_export_label">Exporter un fichier HTML</string>
-    <string name="database_export_label">Exporter la base de données</string>
-    <string name="automatic_database_export_label">Export automatique de la base de données</string>
-    <string name="automatic_database_export_summary">Créer une sauvegarde de la base de données tous les 3 jours. Uniquement les 5 dernières sauvegardes seront conservées.</string>
-    <string name="automatic_database_export_error">Erreur lors de la sauvegarde automatique de la base de données</string>
     <string name="database_import_label">Importer la base de données</string>
     <string name="database_import_warning">Importer une base de données remplacera tout vos abonnements et votre historique de lecture. Il est conseillé d\'exporter votre base de données actuelle pour avoir une sauvegarde. Confirmez-vous l\'import ?</string>
     <string name="please_wait">Merci de patienter…</string>

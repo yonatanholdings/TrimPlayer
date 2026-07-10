@@ -474,13 +474,11 @@
     <string name="sync_status_error">Sincronizarea a eșuat</string>
     <!--import and export-->
   <string name="import_export_summary">Mută abonamentele și coada de redare către alt dispozitiv</string>
-    <string name="database">Bază de date</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Arată abonamentele tale la un prieten</string>
     <string name="opml_export_summary">Transferă abonamentele tale către o alta aplicație</string>
     <string name="opml_import_summary">Importă abonamentele tale din altă aplicație de podcasturi</string>
-    <string name="database_export_summary">Transferă abonamentele, episoadele redate și coada de redare către TrimPlayer de pe alt dispozitiv</string>
     <string name="database_import_summary">Importă baza de date TrimPlayer din alt dispozitiv</string>
     <string name="opml_import_label">Importul fișierelor OPML</string>
     <string name="opml_add_podcast_label">Importă lista de podcasturi (OPML)</string>
@@ -490,10 +488,6 @@
     <string name="deselect_all_label">Deselectează toate</string>
     <string name="opml_export_label">Exportă OPML</string>
     <string name="html_export_label">export HTML</string>
-    <string name="database_export_label">export bază de date</string>
-    <string name="automatic_database_export_label">Export automat al bazei de date</string>
-    <string name="automatic_database_export_summary">Creează o copie de rezervă a bazei de date TrimPlayer la fiecare 3 zile. Salvează numai ultimele 5 copii.</string>
-    <string name="automatic_database_export_error">A apărut o eroare în timpul creării bazei de date</string>
     <string name="database_import_label">import bază de date</string>
     <string name="database_import_warning">Importarea unei baze de date va înlocui abonamentele tale și istoricul fișierelor redate. Ar trebui să exporți baza de date curentă ca un fișier de rezervă. Dorești să înlocuiești?</string>
     <string name="please_wait">Vă rugăm așteptați…</string>

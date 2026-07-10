@@ -442,13 +442,11 @@
     <string name="sync_status_error">同期に失敗しました</string>
     <!--import and export-->
   <string name="import_export_summary">購読とキューを別のデバイスに移動する</string>
-    <string name="database">データベース</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">あなたの購読を友だちに見せる</string>
     <string name="opml_export_summary">購読を別のポッドキャストアプリに転送する</string>
     <string name="opml_import_summary">別のポッドキャストアプリから購読をインポートする</string>
-    <string name="database_export_summary">購読、再生したエピソード、キューを別のデバイスのTrimPlayerに転送する</string>
     <string name="database_import_summary">TrimPlayerデータベースを別のデバイスからインポートする</string>
     <string name="opml_import_label">OPML インポート</string>
     <string name="opml_add_podcast_label">ポッドキャストリストのインポート (OPML)</string>
@@ -458,10 +456,6 @@
     <string name="deselect_all_label">選択解除</string>
     <string name="opml_export_label">OPML エクスポート</string>
     <string name="html_export_label">HTML エクスポート</string>
-    <string name="database_export_label">データベースのエクスポート</string>
-    <string name="automatic_database_export_label">自動データベースエクスポート</string>
-    <string name="automatic_database_export_summary">TrimPlayer データベースのバックアップを 3 日毎に行います。最新 5 つのバックアップが保持されます。</string>
-    <string name="automatic_database_export_error">自動データベースバックアップ中のエラー</string>
     <string name="database_import_label">データベースのインポート</string>
     <string name="database_import_warning">データベースをインポートすると、現在の購読と再生履歴がすべて置き換えられます。現在のデータベースをバックアップとしてエクスポートする必要があります。それでも置き換えしますか？</string>
     <string name="please_wait">しばらくお待ちください…</string>

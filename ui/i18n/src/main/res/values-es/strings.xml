@@ -484,13 +484,11 @@
     <string name="sync_status_error">Error en la sincronización</string>
     <!--import and export-->
   <string name="import_export_summary">Mover las suscripciones y la cola a otro dispositivo</string>
-    <string name="database">Base de datos</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Mostrar tus suscripciones a un amigo</string>
     <string name="opml_export_summary">Transferir tus suscripciones a otra aplicación de podcast</string>
     <string name="opml_import_summary">Importar tus suscripciones desde otra aplicación de podcast</string>
-    <string name="database_export_summary">Transferir suscripciones, episodios escuchados y la cola a TrimPlayer en otro dispositivo</string>
     <string name="database_import_summary">Importar la base de datos de TrimPlayer desde otro dispositivo</string>
     <string name="opml_import_label">Importación OPML</string>
     <string name="opml_add_podcast_label">Importar lista de podcast (OPML)</string>
@@ -500,10 +498,6 @@
     <string name="deselect_all_label">Deseleccionar todo</string>
     <string name="opml_export_label">Exportar a OPML</string>
     <string name="html_export_label">Exportar a HTML</string>
-    <string name="database_export_label">Exportar base de datos</string>
-    <string name="automatic_database_export_label">Exportación automática de la base de datos</string>
-    <string name="automatic_database_export_summary">Crear un backup de la base de datos de TrimPlayer cada 3 días. Solo mantener los 5 más recientes.</string>
-    <string name="automatic_database_export_error">Error al realizar el backup automático de la base de datos</string>
     <string name="database_import_label">Importar base de datos</string>
     <string name="database_import_warning">La importación de una base de datos reemplazará todas las suscripciones actuales y el historial de reproducción. Debes exportar la base de datos actual como una copia de seguridad. ¿Quieres reemplazarla?</string>
     <string name="please_wait">Por favor espera…</string>

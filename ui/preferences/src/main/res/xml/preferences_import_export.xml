@@ -16,19 +16,6 @@
                 android:summary="@string/onboarding_settings_entry_summary"/>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/database">
-        <Preference
-                android:key="prefDatabaseExport"
-                search:keywords="@string/import_export_search_keywords"
-                android:title="@string/database_export_label"
-                android:summary="@string/database_export_summary"/>
-        <SwitchPreferenceCompat
-                android:key="prefAutomaticDatabaseExport"
-                android:title="@string/automatic_database_export_label"
-                android:summary="@string/automatic_database_export_summary"
-                android:defaultValue="false" />
-    </PreferenceCategory>
-
     <PreferenceCategory android:title="@string/opml">
         <Preference
                 android:key="prefOpmlExport"

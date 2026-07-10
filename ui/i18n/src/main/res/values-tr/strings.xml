@@ -475,13 +475,11 @@
     <string name="sync_status_error">Senkronizasyon başarısız oldu</string>
     <!--import and export-->
   <string name="import_export_summary">Abonelikleri ve kuyruğu başka bir cihaza taşıma</string>
-    <string name="database">Veri tabanı</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Aboneliklerinizi bir arkadaşınıza gösterin</string>
     <string name="opml_export_summary">Aboneliklerinizi başka bir podcast uygulamasına aktarma</string>
     <string name="opml_import_summary">Aboneliklerinizi başka bir podcast uygulamasından içe aktarın</string>
-    <string name="database_export_summary">Abonelikleri, dinlenen bölümleri ve kuyruğu başka bir cihazdaki TrimPlayer\'a aktarın</string>
     <string name="database_import_summary">TrimPlayer veritabanını başka bir cihazdan içe aktarma</string>
     <string name="opml_import_label">OPML içe aktar</string>
     <string name="opml_add_podcast_label">Podcast listesini içe aktar (OPML)</string>
@@ -491,10 +489,6 @@
     <string name="deselect_all_label">Tüm seçimleri geri al</string>
     <string name="opml_export_label">OPML dışa aktar</string>
     <string name="html_export_label">HTML Dışa aktarma</string>
-    <string name="database_export_label">Veri tabanını dışarı aktarma</string>
-    <string name="automatic_database_export_label">Otomatik veritabanı dışa aktarımı</string>
-    <string name="automatic_database_export_summary">Her 3 günde bir TrimPlayer veritabanının yedeğini oluşturun. Sadece en son 5 yedeği saklayın.</string>
-    <string name="automatic_database_export_error">Otomatşk veritabanı yedeklemesi sırasında hata</string>
     <string name="database_import_label">Veri tabanını içe aktarma</string>
     <string name="database_import_warning">Bir veritabanını içe aktarmak, mevcut tüm aboneliklerinizi ve çalma geçmişinizi değiştirecektir. Mevcut veritabanınızı yedek olarak dışa aktarmalısınız. Yerini değiştirmek istiyor musunuz?</string>
     <string name="please_wait">Lütfen bekleyin…</string>

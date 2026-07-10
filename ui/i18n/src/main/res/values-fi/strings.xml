@@ -424,13 +424,11 @@
     <string name="sync_status_error">Synkronointi epäonnistui</string>
     <!--import and export-->
   <string name="import_export_summary">Siirrä tilaukset ja jono toiselle laitteelle</string>
-    <string name="database">Tietokanta</string>
     <string name="opml">OPML</string>
     <string name="html">HTML</string>
     <string name="html_export_summary">Näytä tilauksesi ystävälle</string>
     <string name="opml_export_summary">Siirrä tilauksesi toiseen podcast-sovellukseen</string>
     <string name="opml_import_summary">Tuo tilauksesi toisesta podcast-sovelluksesta</string>
-    <string name="database_export_summary">Siirrä tilaukset, kuunnellut jaksot ja jono toisella laitteella olevaan TrimPlayeriin</string>
     <string name="database_import_summary">Tuo TrimPlayer-tietokanta toiselta laitteelta</string>
     <string name="opml_import_label">OPML-tuonti</string>
     <string name="opml_add_podcast_label">Tuo podcastien lista (OPML)</string>
@@ -439,7 +437,6 @@
     <string name="deselect_all_label">Poista valinta kaikista</string>
     <string name="opml_export_label">OPML vienti</string>
     <string name="html_export_label">HTML vienti</string>
-    <string name="database_export_label">Tietokannan vienti</string>
     <string name="database_import_label">Tietokannan tuonti</string>
     <string name="database_import_warning">Tietokannan tuonti korvaa kaikki nykyiset tilauksesi ja toistohistoriasi. Vie nykyinen tietokanta halutessasi varmuuskopioksi ennen jatkamista. Haluatko korvata?</string>
     <string name="please_wait">Odota…</string>
@@ -637,8 +634,6 @@
     <string name="add_shortcut">Lisää pikakuvake</string>
     <string name="episode_information">Jakson tiedot</string>
     <string name="sync_status_wait_for_downloads">Odotetaan tilausten virkistystä…</string>
-    <string name="automatic_database_export_label">Automaattinen tietokannan vienti</string>
-    <string name="automatic_database_export_error">Virhe automaattisen tietokannan varmuuskopioinnin aikana</string>
     <string name="choose_data_directory_message">Valitse tietokansiosi perusta. TrimPlayer luo asianmukaiset alihakemistot.</string>
     <string name="rating_contribute_button">Tutustu tapoihin osallistua</string>
     <string name="statistics_expected_next_episode_unknown">Tuntematon</string>
@@ -650,7 +645,6 @@
     <string name="shuffle_suggestions">Sekoitusehdotukset</string>
     <string name="search_online">Etsi verkossa</string>
     <string name="pref_new_episodes_action_sum">Ryhdyttävät toimet uusien jaksojen suhteen</string>
-    <string name="automatic_database_export_summary">Luo TrimPlayer-tietokannasta varmuuskopio kolmen päivän välein. Säilytä vain viisi viimeisintä varmuuskopiota.</string>
     <string name="search_podcastindex_label">Etsi Podcast-hakemisto</string>
     <string name="statistics_expected_next_episode_any_day">Nyt minä päivänä tahansa</string>
     <string name="pref_rewind">Kelaa ohittamisaikaa taaksepäin</string>

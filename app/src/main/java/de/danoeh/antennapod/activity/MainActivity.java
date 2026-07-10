@@ -55,7 +55,6 @@ import de.danoeh.antennapod.playback.cast.CastEnabledActivity;
 import de.danoeh.antennapod.playback.service.PlaybackServiceInterface;
 import de.danoeh.antennapod.portcast.PortcastImportProgress;
 import de.danoeh.antennapod.storage.databasemaintenanceservice.DatabaseMaintenanceWorker;
-import de.danoeh.antennapod.storage.importexport.AutomaticDatabaseExportWorker;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.TransitionEffect;
@@ -219,7 +218,6 @@ public class MainActivity extends CastEnabledActivity {
 
         FeedUpdateManager.getInstance().restartUpdateAlarm(this, false);
         SynchronizationQueue.getInstance().syncIfNotSyncedRecently();
-        AutomaticDatabaseExportWorker.enqueueIfNeeded(this, false);
         DatabaseMaintenanceWorker.enqueueIfNeeded(this);
 
         WorkManager.getInstance(this)
