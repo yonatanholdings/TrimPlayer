@@ -1419,6 +1419,18 @@ public class PodDBAdapter {
         return db.rawQuery(query, null);
     }
 
+    /** Total content actually listened to (sum of played_duration, in ms) across
+     *  all media. Durable — survives file deletion and is reset in lock-step with
+     *  the skip events by {@link #resetAllMediaPlayedDuration()} /
+     *  {@link #resetSkipEvents()} — so it can be combined with the "speed" skip
+     *  bucket to derive the user's real average playback speed. */
+    public long getTotalPlayedDuration() {
+        try (Cursor c = db.rawQuery("SELECT SUM(" + KEY_PLAYED_DURATION + ") FROM "
+                + TABLE_NAME_FEED_MEDIA + " WHERE " + KEY_PLAYED_DURATION + " > 0", null)) {
+            return c.moveToFirst() ? c.getLong(0) : 0;
+        }
+    }
+
     public final Cursor getFeedStatisticsCursor(boolean includeMarkedAsPlayed, long timeFilterFrom,
                                                 long timeFilterTo, long sixMonthsAgo) {
         final String lastPlayedTimeStatistics = TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS;

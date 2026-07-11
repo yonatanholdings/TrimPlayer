@@ -60,9 +60,13 @@ public class TrimEventsUploadWorker extends Worker {
             if (batch.isEmpty()) {
                 return Result.success();
             }
+            // The user's REAL average listening speed (content-weighted), so the
+            // backend can keep a genuine community average. 0 = not enough history
+            // yet -> omitted below rather than uploading a fabricated number.
+            float avgSpeed = DBReader.getAveragePlaybackSpeed();
             String body;
             try {
-                body = buildPayload(clientId, batch);
+                body = buildPayload(clientId, batch, avgSpeed);
             } catch (JSONException e) {
                 Log.e(TAG, "Failed to build JSON payload", e);
                 return Result.failure();
@@ -90,8 +94,8 @@ public class TrimEventsUploadWorker extends Worker {
         return Result.success();
     }
 
-    private static String buildPayload(String clientId, List<DBReader.SkipEventToUpload> batch)
-            throws JSONException {
+    private static String buildPayload(String clientId, List<DBReader.SkipEventToUpload> batch,
+                                       float avgSpeed) throws JSONException {
         JSONArray events = new JSONArray();
         for (DBReader.SkipEventToUpload e : batch) {
             JSONObject obj = new JSONObject();
@@ -107,12 +111,13 @@ public class TrimEventsUploadWorker extends Worker {
         JSONObject root = new JSONObject();
         root.put("client_id", clientId);
         root.put("events", events);
-        // Community Impact: the user's typical playback speed, so the backend can
-        // keep a community average for the "you vs community" speed comparison.
-        // v1 proxy = the configured default speed (cheap, no playback hook). The
-        // backend only reads this once its ClientEventsRequest model adds the
-        // optional field; extra keys are otherwise ignored.
-        root.put("avg_playback_speed", UserPreferences.getPlaybackSpeed());
+        // Community Impact: the user's REAL average listening speed, so the backend
+        // can keep a genuine community average for the "you vs community" speed
+        // comparison. Omitted when there isn't enough listening history yet (0), so
+        // the community mean is never diluted by a fabricated value.
+        if (avgSpeed > 0f) {
+            root.put("avg_playback_speed", avgSpeed);
+        }
         return root.toString();
     }
 }

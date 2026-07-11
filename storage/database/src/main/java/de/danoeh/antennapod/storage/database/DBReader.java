@@ -1030,6 +1030,54 @@ public final class DBReader {
     }
 
     /**
+     * The user's real, content-weighted average playback speed, derived from the
+     * same durable data the time-saved statistics use: total content actually
+     * played divided by the wall-clock time it took (content minus the time saved
+     * by speeding up). Speed-saved time is recorded as {@code sessionContent *
+     * (1 - 1/speed)} per session, so {@code content - speedSaved} is exactly the
+     * real seconds spent listening. A user who always listens at 1× yields 1.00;
+     * someone who mostly listens at 2× approaches 2.00.
+     *
+     * <p>This replaces the old proxy of {@code UserPreferences.getPlaybackSpeed()}
+     * (the configured <em>default</em> speed control), which never reflected what
+     * the user actually listened at.
+     *
+     * @return the average speed (&ge; 1.0), or 0 when there isn't enough listening
+     *         history yet to report a real value (so callers can show "—" rather
+     *         than a fabricated number).
+     */
+    public static float getAveragePlaybackSpeed() {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try {
+            long content = adapter.getTotalPlayedDuration();
+            if (content <= 0) {
+                return 0f;  // nothing listened yet -> unknown
+            }
+            long speedSaved = 0;
+            try (Cursor c = adapter.getSkipEventStatsCursor(0, System.currentTimeMillis())) {
+                int idxType = c.getColumnIndexOrThrow(PodDBAdapter.KEY_SKIP_TYPE);
+                int idxTotal = c.getColumnIndexOrThrow("total_ms");
+                while (c.moveToNext()) {
+                    if ("speed".equals(c.getString(idxType))) {
+                        speedSaved = c.getLong(idxTotal);
+                    }
+                }
+            }
+            long wallClock = content - speedSaved;
+            if (wallClock <= 0) {
+                return 0f;  // corrupt/desynced data -> report unknown, not a lie
+            }
+            float speed = (float) content / (float) wallClock;
+            // Guard against implausible values from any content/skip-bucket desync
+            // (real playback speed never exceeds a few ×).
+            return speed > 10f ? 0f : speed;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /**
      * Searches the DB for statistics.
      *
      * @return The list of statistics objects

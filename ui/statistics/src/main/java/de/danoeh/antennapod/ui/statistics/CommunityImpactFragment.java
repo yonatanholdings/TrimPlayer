@@ -89,6 +89,9 @@ public class CommunityImpactFragment extends Fragment {
     @Nullable private CommunityImpact community;
     /** Local per-window skip breakdowns, keyed by chip label (incl. "All"). */
     @Nullable private Map<String, DBReader.SkipBreakdown> localByWindow;
+    /** The user's real average listening speed; 0 until the DB read returns (or
+     *  when there isn't enough history yet). */
+    private float localAvgSpeed;
     private String selectedWindow = DEFAULT_WINDOW;
     @Nullable private Disposable loadDisposable;
     @Nullable private Disposable shareDisposable;
@@ -172,12 +175,16 @@ public class CommunityImpactFragment extends Fragment {
     private void loadData() {
         loadDisposable = Single.fromCallable(() -> {
             Map<String, DBReader.SkipBreakdown> local = computeLocalWindows();
+            // The user's real average listening speed — read off the main thread
+            // alongside the skip breakdowns (both hit SQLite).
+            float speed = DBReader.getAveragePlaybackSpeed();
             CommunityImpact fresh = CommunityImpactClient.fetchSync();  // null on failure
-            return new Loaded(local, fresh);
+            return new Loaded(local, speed, fresh);
         }).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(loaded -> {
                     localByWindow = loaded.local;
+                    localAvgSpeed = loaded.avgSpeed;
                     if (loaded.community != null) {
                         community = loaded.community;
                     }
@@ -395,7 +402,9 @@ public class CommunityImpactFragment extends Fragment {
         // Typical playback speed sits OUTSIDE the bar grammar: it's an intensive
         // ×-ratio (not a duration), lifetime, and ignores the window — so a bar
         // would be a category error. Render it as its own small two-number block.
-        double youSpeed = UserPreferences.getPlaybackSpeed();
+        // The "you" figure is the user's REAL average listening speed (0 = not
+        // enough history yet -> shown as "—"), not the configured default speed.
+        double youSpeed = localAvgSpeed;
         double communitySpeed = (community != null && community.avgPlaybackSpeed != null)
                 ? community.avgPlaybackSpeed : -1;
         addSpeedRow(ctx, youSpeed, communitySpeed);
@@ -624,7 +633,8 @@ public class CommunityImpactFragment extends Fragment {
         values.setTextSize(13);
         values.setTextColor(ink);
         values.setPadding(0, dp(ctx, 6), 0, 0);
-        String youStr = String.format(Locale.getDefault(), "%.2f×", youSpeed);
+        String youStr = youSpeed > 0
+                ? String.format(Locale.getDefault(), "%.2f×", youSpeed) : "—";
         String natStr = communitySpeed >= 0
                 ? String.format(Locale.getDefault(), "%.2f×", communitySpeed) : "—";
         String line = getString(R.string.community_impact_speed_values, youStr, natStr);
@@ -1130,10 +1140,13 @@ public class CommunityImpactFragment extends Fragment {
 
     private static final class Loaded {
         final Map<String, DBReader.SkipBreakdown> local;
+        final float avgSpeed;
         @Nullable final CommunityImpact community;
 
-        Loaded(Map<String, DBReader.SkipBreakdown> local, @Nullable CommunityImpact community) {
+        Loaded(Map<String, DBReader.SkipBreakdown> local, float avgSpeed,
+               @Nullable CommunityImpact community) {
             this.local = local;
+            this.avgSpeed = avgSpeed;
             this.community = community;
         }
     }
