@@ -1538,6 +1538,21 @@ public final class DBReader {
         }
     }
 
+    /** Up to {@code limit} episodes played strictly before {@code beforeMs} (most
+     *  recent first) — the account-sync history backfill's paging query. */
+    public static List<FeedItem> getEpisodesPlayedBefore(long beforeMs, int limit) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (FeedItemCursor cursor = new FeedItemCursor(
+                adapter.getFeedItemsPlayedBeforeCursor(beforeMs, limit))) {
+            List<FeedItem> items = extractItemlistFromCursor(cursor);
+            loadFeedDataOfFeedItemList(items);
+            return items;
+        } finally {
+            adapter.close();
+        }
+    }
+
     public static long getTimeBetweenReleaseAndPlayback(long timeFilterFrom, long timeFilterTo) {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();

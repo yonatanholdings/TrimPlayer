@@ -61,6 +61,11 @@ public class TrimSyncWorker extends Worker {
     // Window for "recently active" episodes whose progress we push. Bounds the
     // payload so we don't ship the entire history every run.
     private static final long PROGRESS_WINDOW_MS = 60L * 24 * 60 * 60 * 1000; // 60 days
+    // One-time history backfill (see UserPreferences.PREF_TRIM_SYNC_BACKFILL_*): how
+    // many pre-window played episodes to page up to the account per sync. Kept well
+    // under the backend's per-entity cap (MAX_ITEMS_PER_ENTITY=2000) so the chunk plus
+    // the normal window/queue/favorite rows never gets silently truncated server-side.
+    private static final int BACKFILL_CHUNK = 500;
     // Upper bound on favorites we reconcile per sync (favorites are normally few).
     private static final int FAV_LIMIT = 1000;
     // How many consecutive no-progress runs we tolerate while queue/progress rows
@@ -132,11 +137,27 @@ public class TrimSyncWorker extends Worker {
                 UserPreferences.getTrimSyncBookmarkSnapshot());
         List<DBReader.BookmarkWithItem> bookmarkRows = DBReader.getAllBookmarksWithItems();
 
+        // Recently-active playback (the normal bounded window) plus, until the
+        // one-time history backfill completes, the next chunk of older listening so
+        // the account eventually mirrors the phone's full play history rather than
+        // just the last 60 days (otherwise the web player / a new device show
+        // near-empty statistics despite years of listening).
+        List<FeedItem> playedRecently = DBReader.getEpisodesPlayedInPeriod(now - PROGRESS_WINDOW_MS, now);
+        boolean backfillDone = UserPreferences.isTrimSyncBackfillDone();
+        List<FeedItem> backfillItems = Collections.emptyList();
+        if (!backfillDone) {
+            long ceil = UserPreferences.getTrimSyncBackfillCeil();
+            if (ceil <= 0) {
+                ceil = now - PROGRESS_WINDOW_MS; // start just below the normal window
+            }
+            backfillItems = DBReader.getEpisodesPlayedBefore(ceil, BACKFILL_CHUNK);
+        }
+
         TrimClient.SyncRequest req = new TrimClient.SyncRequest();
         req.cursor = UserPreferences.getTrimSyncCursor();
         req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
         req.queue = diffQueue(prevQueue, queue, curQueueUrls, now);
-        req.progress = buildProgress(queue, favItems, curFav, changedFav, now);
+        req.progress = buildProgress(queue, playedRecently, backfillItems, favItems, curFav, changedFav, now);
         req.prefs = diffPrefs(prevPrefs, curPrefs, now);
         req.bookmarks = diffBookmarks(prevBookmarks, bookmarkRows, now);
 
@@ -220,6 +241,19 @@ public class TrimSyncWorker extends Worker {
             bookmarkSnap.put(adopted, "");
         }
         UserPreferences.setTrimSyncBookmarkSnapshot(serializeSubs(bookmarkSnap));
+
+        // Advance the one-time history backfill now that this run's push succeeded.
+        // A short chunk means we've reached the bottom of the history — done; otherwise
+        // lower the ceiling to the oldest row just pushed and nudge a follow-up so the
+        // remaining history pages up promptly instead of drip-feeding on the periodic run.
+        if (!backfillDone) {
+            if (backfillComplete(backfillItems.size(), BACKFILL_CHUNK)) {
+                UserPreferences.setTrimSyncBackfillDone(true);
+            } else {
+                UserPreferences.setTrimSyncBackfillCeil(oldestLastPlayed(backfillItems));
+                scheduleFollowupSync(getApplicationContext());
+            }
+        }
         Log.d(TAG, "sync ok: pushed subs=" + req.subscriptions.size()
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
                 + " prefs=" + req.prefs.size() + " bookmarks=" + req.bookmarks.size()
@@ -906,20 +940,49 @@ public class TrimSyncWorker extends Worker {
         return o.toString();
     }
 
-    /** Progress for queued + recently-played + favorited episodes, deduped by URL.
-     *  Each row is stamped with the media's real last-played time so it resolves
+    /** Whether the history backfill has reached the bottom of the play history: a
+     *  short (under-a-full-chunk) page means no older rows remain to send. */
+    static boolean backfillComplete(int fetched, int chunkLimit) {
+        return fetched < chunkLimit;
+    }
+
+    /** Oldest {@code last_played_time} (statistics column) among the given media — the
+     *  next backfill run's exclusive ceiling. Must read the same column the paging
+     *  query ({@code getFeedItemsPlayedBeforeCursor}) filters/orders on, so the ceiling
+     *  always drops strictly below the chunk and paging can't re-fetch the same rows.
+     *  Falls back to {@code 0} for an empty list (history exhausted). */
+    private static long oldestLastPlayed(List<FeedItem> items) {
+        long oldest = Long.MAX_VALUE;
+        for (FeedItem item : items) {
+            FeedMedia media = item.getMedia();
+            if (media == null) {
+                continue;
+            }
+            long ts = media.getLastPlayedTimeStatistics();
+            if (ts > 0 && ts < oldest) {
+                oldest = ts;
+            }
+        }
+        return oldest == Long.MAX_VALUE ? 0 : oldest;
+    }
+
+    /** Progress for queued + recently-played + backfilled + favorited episodes, deduped
+     *  by URL. Each row is stamped with the media's real last-played time so it resolves
      *  correctly against web playback under last-writer-wins — except a favorite that
      *  was just toggled ({@code changedFav}), which is stamped {@code now} so the star
      *  change wins even though its position/played didn't move. {@code starred} rides
-     *  every row so the account mirrors the phone's Favorites. */
-    private static List<TrimClient.ProgressChange> buildProgress(
-            List<FeedItem> queue, List<FeedItem> favItems, Set<String> curFav,
-            Set<String> changedFav, long now) {
+     *  every row so the account mirrors the phone's Favorites. {@code backfillItems} are
+     *  the pre-window history chunk being paged up to the account (empty once the
+     *  one-time backfill has completed). */
+    static List<TrimClient.ProgressChange> buildProgress(
+            List<FeedItem> queue, List<FeedItem> playedRecently, List<FeedItem> backfillItems,
+            List<FeedItem> favItems, Set<String> curFav, Set<String> changedFav, long now) {
         List<TrimClient.ProgressChange> out = new ArrayList<>();
         Set<String> seen = new HashSet<>();
 
         List<FeedItem> candidates = new ArrayList<>(queue);
-        candidates.addAll(DBReader.getEpisodesPlayedInPeriod(now - PROGRESS_WINDOW_MS, now));
+        candidates.addAll(playedRecently);
+        candidates.addAll(backfillItems);
         candidates.addAll(favItems);
 
         for (FeedItem item : candidates) {

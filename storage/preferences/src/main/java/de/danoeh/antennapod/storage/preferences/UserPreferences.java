@@ -977,6 +977,15 @@ public abstract class UserPreferences {
     // because queue/progress rows referenced episodes not yet fetched locally. Caps
     // the hold so a permanently-absent episode can't wedge sync forever.
     public static final String PREF_TRIM_SYNC_DEFER_RETRIES = "prefTrimSyncDeferRetries";
+    // One-time history backfill: the phone normally pushes only the last 60 days of
+    // playback (PROGRESS_WINDOW_MS), so a user's older listening never reaches the
+    // account — leaving the web player + a freshly-signed-in device with statistics
+    // that look empty despite years of history. These two prefs page that pre-window
+    // history up to the account in bounded chunks: BACKFILL_CEIL is the exclusive
+    // upper time bound of the region still to push (paged newest→oldest); BACKFILL_DONE
+    // flips once the whole history has been sent, after which only the window syncs.
+    public static final String PREF_TRIM_SYNC_BACKFILL_DONE = "prefTrimSyncBackfillDone";
+    public static final String PREF_TRIM_SYNC_BACKFILL_CEIL = "prefTrimSyncBackfillCeil";
 
     public static String getTrimAccountToken() {
         return prefs.getString(PREF_TRIM_ACCOUNT_TOKEN, "");
@@ -1007,6 +1016,8 @@ public abstract class UserPreferences {
                 .remove(PREF_TRIM_ACCOUNT_EMAIL)
                 .remove(PREF_TRIM_SYNC_CURSOR)
                 .remove(PREF_TRIM_SYNC_DEFER_RETRIES)
+                .remove(PREF_TRIM_SYNC_BACKFILL_DONE)
+                .remove(PREF_TRIM_SYNC_BACKFILL_CEIL)
                 .remove(PREF_TRIM_SYNC_SNAP_SUBS)
                 .remove(PREF_TRIM_SYNC_SNAP_QUEUE)
                 .remove(PREF_TRIM_SYNC_SNAP_PREFS)
@@ -1080,6 +1091,26 @@ public abstract class UserPreferences {
 
     public static void setTrimSyncDeferRetries(int n) {
         prefs.edit().putInt(PREF_TRIM_SYNC_DEFER_RETRIES, n).apply();
+    }
+
+    /** Whether the one-time pre-window listening-history backfill has finished
+     *  pushing the phone's full play history to the account. */
+    public static boolean isTrimSyncBackfillDone() {
+        return prefs.getBoolean(PREF_TRIM_SYNC_BACKFILL_DONE, false);
+    }
+
+    public static void setTrimSyncBackfillDone(boolean done) {
+        prefs.edit().putBoolean(PREF_TRIM_SYNC_BACKFILL_DONE, done).apply();
+    }
+
+    /** Exclusive upper time bound (epoch ms) of the history region still to backfill;
+     *  0 means "not started" (the worker seeds it to the bottom of the 60-day window). */
+    public static long getTrimSyncBackfillCeil() {
+        return prefs.getLong(PREF_TRIM_SYNC_BACKFILL_CEIL, 0L);
+    }
+
+    public static void setTrimSyncBackfillCeil(long ceilMs) {
+        prefs.edit().putLong(PREF_TRIM_SYNC_BACKFILL_CEIL, ceilMs).apply();
     }
 
     // Per-type auto-skip toggles. Each defaults to true (preserves existing behaviour

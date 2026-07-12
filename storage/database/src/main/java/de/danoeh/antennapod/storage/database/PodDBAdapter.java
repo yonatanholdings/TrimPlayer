@@ -1930,6 +1930,20 @@ public class PodDBAdapter {
         return db.rawQuery(query, null);
     }
 
+    /** Up to {@code limit} feed items played strictly before {@code beforeMs}, most
+     *  recent first. Used by the account-sync history backfill to page the phone's
+     *  pre-window listening up to the account in bounded chunks (the 60-day push
+     *  window otherwise leaves years of history off the account). */
+    public Cursor getFeedItemsPlayedBeforeCursor(long beforeMs, int limit) {
+        final String query = SELECT_FEED_ITEMS_AND_MEDIA
+                + " WHERE " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " > 0"
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " < " + beforeMs
+                + " AND " + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + " > 0"
+                + " ORDER BY " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " DESC"
+                + " LIMIT " + limit;
+        return db.rawQuery(query, null);
+    }
+
     /** Daily listening ms for a single feed over the given period. */
     public Cursor getFeedDailyListeningCursor(long feedId, long fromMs, long toMs) {
         String net = "MAX(MIN(" + TABLE_NAME_FEED_MEDIA + "." + KEY_PLAYED_DURATION + ", CASE WHEN "
