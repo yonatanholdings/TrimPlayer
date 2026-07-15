@@ -383,6 +383,12 @@ class DBUpgrader {
                     + " SET " + PodDBAdapter.KEY_BOOKMARK_SYNC_ID
                     + " = lower(hex(randomblob(16)))");
         }
+        if (oldVersion < 3140000) {
+            // Named playlists (TrimPlayer): multiple queue-like ordered episode lists.
+            db.execSQL(PodDBAdapter.CREATE_TABLE_PLAYLISTS);
+            db.execSQL(PodDBAdapter.CREATE_TABLE_PLAYLIST_ITEMS);
+            db.execSQL(PodDBAdapter.CREATE_INDEX_PLAYLIST_ITEMS_PLAYLIST);
+        }
     }
 
 }

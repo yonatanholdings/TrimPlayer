@@ -9,6 +9,7 @@ import de.danoeh.antennapod.ui.screen.InboxFragment;
 import de.danoeh.antennapod.ui.screen.PlaybackHistoryFragment;
 import de.danoeh.antennapod.ui.screen.download.CompletedDownloadsFragment;
 import de.danoeh.antennapod.ui.screen.home.HomeFragment;
+import de.danoeh.antennapod.ui.screen.playlist.PlaylistsFragment;
 import de.danoeh.antennapod.ui.screen.queue.QueueFragment;
 import de.danoeh.antennapod.ui.screen.saved.SavedFragment;
 import de.danoeh.antennapod.ui.screen.subscriptions.SubscriptionFragment;
@@ -19,6 +20,8 @@ public abstract class NavigationNames {
             case HomeFragment.TAG:
                 return R.drawable.ic_home;
             case QueueFragment.TAG:
+                return R.drawable.ic_playlist_play;
+            case PlaylistsFragment.TAG:
                 return R.drawable.ic_playlist_play;
             case InboxFragment.TAG:
                 return R.drawable.ic_inbox;
@@ -45,6 +48,8 @@ public abstract class NavigationNames {
                 return R.string.home_label;
             case QueueFragment.TAG:
                 return R.string.queue_label;
+            case PlaylistsFragment.TAG:
+                return R.string.playlists_label;
             case InboxFragment.TAG:
                 return R.string.inbox_label;
             case AllEpisodesFragment.TAG:
@@ -72,6 +77,8 @@ public abstract class NavigationNames {
                 return R.string.home_label_short;
             case QueueFragment.TAG:
                 return R.string.queue_label_short;
+            case PlaylistsFragment.TAG:
+                return R.string.playlists_label;
             case InboxFragment.TAG:
                 return R.string.inbox_label_short;
             case AllEpisodesFragment.TAG:

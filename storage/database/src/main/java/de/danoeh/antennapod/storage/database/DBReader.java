@@ -25,6 +25,7 @@ import de.danoeh.antennapod.model.feed.FeedItemFilter;
 import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.model.feed.FeedOrder;
 import de.danoeh.antennapod.model.feed.FeedPreferences;
+import de.danoeh.antennapod.model.feed.Playlist;
 import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.model.feed.SubscriptionsFilter;
 import de.danoeh.antennapod.model.download.DownloadResult;
@@ -460,6 +461,79 @@ public final class DBReader {
             return null;
         } catch (Exception e) {
             return null;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    // ── Named playlists (TrimPlayer) ──────────────────────────────────────────
+
+    /**
+     * Loads all playlists with their current episode counts, ordered by name.
+     */
+    @NonNull
+    public static List<Playlist> getPlaylists() {
+        Log.d(TAG, "getPlaylists() called");
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        List<Playlist> playlists = new ArrayList<>();
+        try (Cursor cursor = adapter.getPlaylistsCursor()) {
+            while (cursor.moveToNext()) {
+                playlists.add(new Playlist(cursor.getLong(0), cursor.getString(1), cursor.getInt(2)));
+            }
+            return playlists;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /**
+     * Loads the episodes of a playlist, in playlist order.
+     */
+    @NonNull
+    public static List<FeedItem> getPlaylistItems(long playlistId) {
+        Log.d(TAG, "getPlaylistItems() called with: playlistId = [" + playlistId + "]");
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (FeedItemCursor cursor = new FeedItemCursor(adapter.getPlaylistItemsCursor(playlistId))) {
+            List<FeedItem> items = extractItemlistFromCursor(cursor);
+            loadAdditionalFeedItemListData(items);
+            return items;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /**
+     * Returns the next episode after {@code item} in the given playlist, or null when
+     * {@code item} is the last episode or is not part of the playlist.
+     */
+    @Nullable
+    public static FeedItem getNextInPlaylist(long playlistId, FeedItem item) {
+        Log.d(TAG, "getNextInPlaylist() called with: playlistId = [" + playlistId
+                + "], itemId = [" + item.getId() + "]");
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (FeedItemCursor cursor = new FeedItemCursor(adapter.getNextInPlaylist(playlistId, item))) {
+            List<FeedItem> list = extractItemlistFromCursor(cursor);
+            if (!list.isEmpty()) {
+                FeedItem nextItem = list.get(0);
+                loadAdditionalFeedItemListData(list);
+                return nextItem;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    public static boolean isItemInPlaylist(long playlistId, long itemId) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try {
+            return adapter.isItemInPlaylist(playlistId, itemId);
         } finally {
             adapter.close();
         }

@@ -55,7 +55,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3130000;
+    public static final int VERSION = 3140000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -140,6 +140,7 @@ public class PodDBAdapter {
     public static final String KEY_STATE = "state";
     public static final String KEY_PODCASTINDEX_TRANSCRIPT_URL = "podcastindex_transcript_url";
     public static final String KEY_PODCASTINDEX_TRANSCRIPT_TYPE = "podcastindex_transcript_type";
+    public static final String KEY_PLAYLIST_ID = "playlist_id";
 
     // Table names
     public static final String TABLE_NAME_FEEDS = "Feeds";
@@ -150,6 +151,8 @@ public class PodDBAdapter {
     public static final String TABLE_NAME_QUEUE = "Queue";
     public static final String TABLE_NAME_SIMPLECHAPTERS = "SimpleChapters";
     public static final String TABLE_NAME_FAVORITES = "Favorites";
+    public static final String TABLE_NAME_PLAYLISTS = "Playlists";
+    public static final String TABLE_NAME_PLAYLIST_ITEMS = "PlaylistItems";
 
     // SQL Statements for creating new tables
     private static final String TABLE_PRIMARY_KEY = KEY_ID
@@ -267,6 +270,22 @@ public class PodDBAdapter {
             + TABLE_NAME_FAVORITES + "(" + KEY_ID + " INTEGER PRIMARY KEY,"
             + KEY_FEEDITEM + " INTEGER," + KEY_FEED + " INTEGER)";
 
+    // Named playlists (TrimPlayer). A playlist is an ordered list of episodes that acts like an
+    // additional queue; PlaylistItems.position defines the play order within a playlist.
+    static final String CREATE_TABLE_PLAYLISTS = "CREATE TABLE "
+            + TABLE_NAME_PLAYLISTS + "(" + TABLE_PRIMARY_KEY + KEY_TITLE + " TEXT)";
+
+    static final String CREATE_TABLE_PLAYLIST_ITEMS = "CREATE TABLE "
+            + TABLE_NAME_PLAYLIST_ITEMS + "(" + TABLE_PRIMARY_KEY
+            + KEY_PLAYLIST_ID + " INTEGER,"
+            + KEY_FEEDITEM + " INTEGER,"
+            + KEY_FEED + " INTEGER,"
+            + KEY_POSITION + " INTEGER)";
+
+    static final String CREATE_INDEX_PLAYLIST_ITEMS_PLAYLIST = "CREATE INDEX "
+            + TABLE_NAME_PLAYLIST_ITEMS + "_" + KEY_PLAYLIST_ID + " ON " + TABLE_NAME_PLAYLIST_ITEMS + " ("
+            + KEY_PLAYLIST_ID + ")";
+
     static final String CREATE_TABLE_SKIP_EVENTS = "CREATE TABLE "
             + TABLE_NAME_SKIP_EVENTS + "(" + TABLE_PRIMARY_KEY
             + KEY_FEEDITEM + " INTEGER NOT NULL,"
@@ -298,7 +317,9 @@ public class PodDBAdapter {
             TABLE_NAME_SIMPLECHAPTERS,
             TABLE_NAME_FAVORITES,
             TABLE_NAME_SKIP_EVENTS,
-            TABLE_NAME_BOOKMARKS
+            TABLE_NAME_BOOKMARKS,
+            TABLE_NAME_PLAYLISTS,
+            TABLE_NAME_PLAYLIST_ITEMS
     };
 
     public static final String SELECT_KEY_ITEM_ID = "item_id";
@@ -1176,6 +1197,119 @@ public class PodDBAdapter {
         return db.rawQuery(query, null);
     }
 
+    // ── Named playlists (TrimPlayer) ──────────────────────────────────────────
+    // Playlists behave like additional named queues. PlaylistItems.position defines
+    // the play order within a playlist; getNextInPlaylist drives auto-advance so the
+    // next episode in the same playlist is played when the current one finishes.
+
+    public long createPlaylist(String name) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_TITLE, name);
+        return db.insert(TABLE_NAME_PLAYLISTS, null, values);
+    }
+
+    public void renamePlaylist(long playlistId, String name) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_TITLE, name);
+        db.update(TABLE_NAME_PLAYLISTS, values, KEY_ID + "=?", new String[]{String.valueOf(playlistId)});
+    }
+
+    public void removePlaylist(long playlistId) {
+        try {
+            db.beginTransactionNonExclusive();
+            db.delete(TABLE_NAME_PLAYLIST_ITEMS, KEY_PLAYLIST_ID + "=?", new String[]{String.valueOf(playlistId)});
+            db.delete(TABLE_NAME_PLAYLISTS, KEY_ID + "=?", new String[]{String.valueOf(playlistId)});
+            db.setTransactionSuccessful();
+        } catch (SQLException e) {
+            Log.e(TAG, Log.getStackTraceString(e));
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    /**
+     * Returns id, name and current episode count for every playlist, ordered by name.
+     */
+    public Cursor getPlaylistsCursor() {
+        final String query = "SELECT " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ", "
+                + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + ", "
+                + "(SELECT COUNT(*) FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID
+                + " = " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ") AS count"
+                + " FROM " + TABLE_NAME_PLAYLISTS
+                + " ORDER BY " + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + " COLLATE NOCASE ASC";
+        return db.rawQuery(query, null);
+    }
+
+    /**
+     * Returns the FeedItems in a playlist, ordered by their playlist position.
+     */
+    public Cursor getPlaylistItemsCursor(long playlistId) {
+        final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
+                + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
+                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID + " = " + playlistId
+                + " ORDER BY " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION;
+        return db.rawQuery(query, null);
+    }
+
+    /**
+     * Returns the next FeedItem after {@code item} within the given playlist, or an empty
+     * cursor when {@code item} is the last one (or not part of the playlist).
+     */
+    public Cursor getNextInPlaylist(long playlistId, final FeedItem item) {
+        final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
+                + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
+                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID + " = " + playlistId
+                + " AND " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION + " > "
+                + "(SELECT " + KEY_POSITION + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " WHERE " + KEY_PLAYLIST_ID + " = " + playlistId
+                + " AND " + KEY_FEEDITEM + " = " + item.getId() + " LIMIT 1)"
+                + " ORDER BY " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION
+                + " LIMIT 1";
+        return db.rawQuery(query, null);
+    }
+
+    public boolean isItemInPlaylist(long playlistId, long itemId) {
+        final String query = "SELECT " + KEY_ID + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " WHERE " + KEY_PLAYLIST_ID + " = " + playlistId
+                + " AND " + KEY_FEEDITEM + " = " + itemId + " LIMIT 1";
+        try (Cursor c = db.rawQuery(query, null)) {
+            return c.getCount() > 0;
+        }
+    }
+
+    /**
+     * Replaces the entire contents of a playlist with the given ordered list of items.
+     * Positions are reassigned to match list order.
+     */
+    public void setPlaylistItems(long playlistId, List<FeedItem> items) {
+        ContentValues values = new ContentValues();
+        try {
+            db.beginTransactionNonExclusive();
+            db.delete(TABLE_NAME_PLAYLIST_ITEMS, KEY_PLAYLIST_ID + "=?", new String[]{String.valueOf(playlistId)});
+            for (int i = 0; i < items.size(); i++) {
+                FeedItem item = items.get(i);
+                values.clear();
+                values.put(KEY_PLAYLIST_ID, playlistId);
+                values.put(KEY_FEEDITEM, item.getId());
+                values.put(KEY_FEED, item.getFeed().getId());
+                values.put(KEY_POSITION, i);
+                db.insert(TABLE_NAME_PLAYLIST_ITEMS, null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (SQLException e) {
+            Log.e(TAG, Log.getStackTraceString(e));
+        } finally {
+            db.endTransaction();
+        }
+    }
+
     // ── Backup-DB readers ─────────────────────────────────────────────────────
     // These run the standard projections against an *arbitrary* database handle
     // (e.g. a read-only AntennaPod/TrimPlayer .db backup being merged in) so the
@@ -2010,6 +2144,8 @@ public class PodDBAdapter {
             db.execSQL(CREATE_TABLE_SKIP_EVENTS);
             db.execSQL(CREATE_TABLE_BOOKMARKS);
             db.execSQL(CREATE_TABLE_FAVORITES);
+            db.execSQL(CREATE_TABLE_PLAYLISTS);
+            db.execSQL(CREATE_TABLE_PLAYLIST_ITEMS);
 
             db.execSQL(CREATE_INDEX_FEEDITEMS_FEED);
             db.execSQL(CREATE_INDEX_FEEDITEMS_PUBDATE);
@@ -2018,6 +2154,7 @@ public class PodDBAdapter {
             db.execSQL(CREATE_INDEX_QUEUE_FEEDITEM);
             db.execSQL(CREATE_INDEX_SIMPLECHAPTERS_FEEDITEM);
             db.execSQL(CREATE_INDEX_BOOKMARKS_FEEDITEM);
+            db.execSQL(CREATE_INDEX_PLAYLIST_ITEMS_PLAYLIST);
         }
 
         @Override

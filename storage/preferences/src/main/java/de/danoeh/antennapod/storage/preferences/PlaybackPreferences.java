@@ -65,9 +65,21 @@ public abstract class PlaybackPreferences {
             = "de.danoeh.antennapod.preferences.temporarySkipSilence";
 
     /**
+     * Id of the playlist (see {@code Playlist}) that is the current playback context, or
+     * {@link #NO_ACTIVE_PLAYLIST} when playback is not following a named playlist. When set, the
+     * playback service advances to the next episode in this playlist when the current one finishes.
+     */
+    private static final String PREF_ACTIVE_PLAYLIST_ID = "de.danoeh.antennapod.preferences.activePlaylistId";
+
+    /**
      * Value of PREF_CURRENTLY_PLAYING_MEDIA if no media is playing.
      */
     public static final long NO_MEDIA_PLAYING = -1;
+
+    /**
+     * Value of {@link #PREF_ACTIVE_PLAYLIST_ID} when playback is not following a named playlist.
+     */
+    public static final long NO_ACTIVE_PLAYLIST = 0;
 
     /**
      * Value of PREF_CURRENT_PLAYER_STATUS if media player status is playing.
@@ -111,6 +123,14 @@ public abstract class PlaybackPreferences {
 
     public static void setCurrentPlayerStatus(int playerStatus) {
         prefs.edit().putInt(PREF_CURRENT_PLAYER_STATUS, playerStatus).apply();
+    }
+
+    public static long getActivePlaylistId() {
+        return prefs.getLong(PREF_ACTIVE_PLAYLIST_ID, NO_ACTIVE_PLAYLIST);
+    }
+
+    public static void setActivePlaylistId(long playlistId) {
+        prefs.edit().putLong(PREF_ACTIVE_PLAYLIST_ID, playlistId).apply();
     }
 
     public static float getCurrentlyPlayingTemporaryPlaybackSpeed() {

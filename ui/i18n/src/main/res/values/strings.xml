@@ -1563,4 +1563,21 @@
     <string name="echo_time_saved_unit_minutes">minutes</string>
     <string name="echo_time_saved_subtitle_none">Not much yet</string>
     <string name="echo_time_saved_comment_none">As you listen, TrimPlayer auto-skips intros, outros, ads, and silence. The time you reclaim will show up here.</string>
+
+    <!-- Playlists (named, queue-like episode collections) -->
+    <string name="playlists_label">Playlists</string>
+    <string name="add_to_playlist_label">Add to playlist</string>
+    <string name="remove_from_playlist_label">Remove from playlist</string>
+    <string name="add_playlist_label">New playlist</string>
+    <string name="rename_playlist_label">Rename playlist</string>
+    <string name="remove_playlist_label">Delete playlist</string>
+    <string name="clear_playlist_label">Clear playlist</string>
+    <string name="playlist_name_hint">Playlist name</string>
+    <string name="playlist_options_label">Playlist options</string>
+    <string name="added_to_playlist_label">Added to \"%1$s\"</string>
+    <string name="no_playlists_head_label">No playlists</string>
+    <string name="no_playlists_label">Create a playlist to group episodes and play them one after another.</string>
+    <string name="playlist_empty_label">This playlist is empty</string>
+    <string name="remove_playlist_confirmation_msg">Delete the playlist \"%1$s\"? The episodes themselves are not deleted.</string>
+    <string name="clear_playlist_confirmation_msg">Remove all episodes from \"%1$s\"?</string>
 </resources>

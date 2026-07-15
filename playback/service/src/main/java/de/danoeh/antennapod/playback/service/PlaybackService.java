@@ -1904,7 +1904,21 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             PlaybackPreferences.writeNoMediaPlaying();
             return null;
         }
-        FeedItem nextItem = DBReader.getNextInQueue(item);
+        FeedItem nextItem = null;
+        // If playback is following a named playlist, continue with the next episode in the SAME
+        // playlist. Once the current episode is no longer part of that playlist (the user played
+        // something else), drop the playlist context and fall back to the global queue.
+        final long activePlaylistId = PlaybackPreferences.getActivePlaylistId();
+        if (activePlaylistId != PlaybackPreferences.NO_ACTIVE_PLAYLIST) {
+            if (DBReader.isItemInPlaylist(activePlaylistId, item.getId())) {
+                nextItem = DBReader.getNextInPlaylist(activePlaylistId, item);
+            } else {
+                PlaybackPreferences.setActivePlaylistId(PlaybackPreferences.NO_ACTIVE_PLAYLIST);
+            }
+        }
+        if (nextItem == null || nextItem.getMedia() == null) {
+            nextItem = DBReader.getNextInQueue(item);
+        }
         if (nextItem == null || nextItem.getMedia() == null) {
             nextItem = DBReader.getNextInFeed(item);
         }

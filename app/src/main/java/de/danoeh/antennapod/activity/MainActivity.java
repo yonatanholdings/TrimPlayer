@@ -78,6 +78,7 @@ import de.danoeh.antennapod.ui.screen.feed.FeedItemlistFragment;
 import de.danoeh.antennapod.ui.screen.home.HomeFragment;
 import de.danoeh.antennapod.ui.screen.playback.audio.AudioPlayerFragment;
 import de.danoeh.antennapod.ui.screen.preferences.PreferenceActivity;
+import de.danoeh.antennapod.ui.screen.playlist.PlaylistsFragment;
 import de.danoeh.antennapod.ui.screen.queue.QueueFragment;
 import de.danoeh.antennapod.ui.screen.rating.RatingDialogManager;
 import de.danoeh.antennapod.ui.screen.saved.SavedFragment;
@@ -479,6 +480,9 @@ public class MainActivity extends CastEnabledActivity {
                 break;
             case QueueFragment.TAG:
                 fragment = new QueueFragment();
+                break;
+            case PlaylistsFragment.TAG:
+                fragment = new PlaylistsFragment();
                 break;
             case InboxFragment.TAG:
                 fragment = new InboxFragment();

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/play_playlist_item"
+        android:icon="@drawable/ic_play_24dp"
+        android:title="@string/play_label"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/rename_playlist_item"
+        android:title="@string/rename_playlist_label"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/clear_playlist_item"
+        android:title="@string/clear_playlist_label"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/remove_playlist_item"
+        android:title="@string/remove_playlist_label"
+        app:showAsAction="never" />
+</menu>

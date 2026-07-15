@@ -41,6 +41,7 @@ import de.danoeh.antennapod.event.FeedItemEvent;
 import de.danoeh.antennapod.event.FeedListUpdateEvent;
 import de.danoeh.antennapod.event.NewEpisodesPrefetchEvent;
 import de.danoeh.antennapod.event.playback.PlaybackHistoryEvent;
+import de.danoeh.antennapod.event.PlaylistEvent;
 import de.danoeh.antennapod.event.QueueEvent;
 import de.danoeh.antennapod.event.UnreadItemsUpdateEvent;
 import de.danoeh.antennapod.event.FeedEvent;
@@ -556,6 +557,102 @@ public class DBWriter {
 
             EventBus.getDefault().post(QueueEvent.cleared());
         });
+    }
+
+    // ── Named playlists (TrimPlayer) ──────────────────────────────────────────
+
+    /**
+     * Creates a new, empty playlist with the given name and returns its id.
+     */
+    public static Future<Long> createPlaylist(final String name) {
+        return dbExec.submit(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            long id = adapter.createPlaylist(name);
+            adapter.close();
+            EventBus.getDefault().post(PlaylistEvent.listChanged());
+            return id;
+        });
+    }
+
+    public static Future<?> renamePlaylist(final long playlistId, final String name) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.renamePlaylist(playlistId, name);
+            adapter.close();
+            EventBus.getDefault().post(PlaylistEvent.listChanged());
+        });
+    }
+
+    public static Future<?> removePlaylist(final long playlistId) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.removePlaylist(playlistId);
+            adapter.close();
+            EventBus.getDefault().post(PlaylistEvent.listChanged());
+        });
+    }
+
+    /**
+     * Appends the given items to a playlist (ignoring items already present), preserving order.
+     */
+    public static Future<?> addPlaylistItems(final long playlistId, final FeedItem... items) {
+        return runOnDbThread(() -> {
+            final List<FeedItem> playlist = DBReader.getPlaylistItems(playlistId);
+            boolean changed = false;
+            for (FeedItem item : items) {
+                if (playlistIndexOfItem(playlist, item.getId()) < 0) {
+                    playlist.add(item);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                PodDBAdapter adapter = PodDBAdapter.getInstance();
+                adapter.open();
+                adapter.setPlaylistItems(playlistId, playlist);
+                adapter.close();
+                EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+            }
+        });
+    }
+
+    public static Future<?> removePlaylistItem(final long playlistId, final long itemId) {
+        return runOnDbThread(() -> {
+            final List<FeedItem> playlist = DBReader.getPlaylistItems(playlistId);
+            int index = playlistIndexOfItem(playlist, itemId);
+            if (index >= 0) {
+                playlist.remove(index);
+                PodDBAdapter adapter = PodDBAdapter.getInstance();
+                adapter.open();
+                adapter.setPlaylistItems(playlistId, playlist);
+                adapter.close();
+                EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+            }
+        });
+    }
+
+    /**
+     * Replaces the contents/order of a playlist with the given ordered list (used after drag-reorder).
+     */
+    public static Future<?> setPlaylistItems(final long playlistId, final List<FeedItem> items) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.setPlaylistItems(playlistId, items);
+            adapter.close();
+            EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+        });
+    }
+
+    private static int playlistIndexOfItem(List<FeedItem> items, long itemId) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getId() == itemId) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

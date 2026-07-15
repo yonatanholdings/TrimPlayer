@@ -26,6 +26,7 @@ import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.preferences.SynchronizationSettings;
 import de.danoeh.antennapod.ui.common.IntentUtils;
 import de.danoeh.antennapod.playback.service.PlaybackStatus;
+import de.danoeh.antennapod.ui.screen.playlist.AddToPlaylistDialog;
 import de.danoeh.antennapod.ui.share.ShareUtils;
 import de.danoeh.antennapod.ui.share.ShareDialog;
 import de.danoeh.antennapod.model.feed.FeedItem;
@@ -107,6 +108,10 @@ public class FeedItemMenuHandler {
         setItemVisibility(menu, R.id.skip_episode_item, canSkip);
         setItemVisibility(menu, R.id.remove_from_queue_item, canRemoveFromQueue);
         setItemVisibility(menu, R.id.add_to_queue_item, canAddToQueue);
+        // "Add to playlist" needs media to play; "Remove from playlist" is only shown by the
+        // Playlist screen, which re-enables it after this prepare pass.
+        setItemVisibility(menu, R.id.add_to_playlist_item, canAddToQueue);
+        setItemVisibility(menu, R.id.remove_from_playlist_item, false);
         setItemVisibility(menu, R.id.visit_website_item, canVisitWebsite);
         setItemVisibility(menu, R.id.share_item, canShare);
         setItemVisibility(menu, R.id.remove_inbox_item, canRemoveFromInbox);
@@ -221,6 +226,8 @@ public class FeedItemMenuHandler {
             DBWriter.addQueueItem(context, selectedItem);
         } else if (menuItemId == R.id.remove_from_queue_item) {
             DBWriter.removeQueueItem(context, true, selectedItem);
+        } else if (menuItemId == R.id.add_to_playlist_item) {
+            AddToPlaylistDialog.show(fragment.requireContext(), selectedItem);
         } else if (menuItemId == R.id.add_to_favorites_item) {
             DBWriter.addFavoriteItem(selectedItem);
         } else if (menuItemId == R.id.remove_from_favorites_item) {

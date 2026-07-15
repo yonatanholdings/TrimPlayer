@@ -1144,7 +1144,7 @@ public class CommunityImpactFragment extends Fragment {
         @Nullable final CommunityImpact community;
 
         Loaded(Map<String, DBReader.SkipBreakdown> local, float avgSpeed,
-               @Nullable CommunityImpact community) {
+                @Nullable CommunityImpact community) {
             this.local = local;
             this.avgSpeed = avgSpeed;
             this.community = community;
