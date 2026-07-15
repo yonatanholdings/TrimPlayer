@@ -176,14 +176,23 @@ public final class TrimAccountDialogs {
         Handler main = new Handler(Looper.getMainLooper());
         Runnable timeout = () -> message.setText(
                 R.string.trim_account_pull_watch_progress_timeout);
+        // The watch answers with a BURST of documents (one per buffered progress
+        // state, then an empty forced reply). Accumulate across events and never
+        // let a trailing empty/failed doc downgrade an already-shown positive
+        // count — it made the dialog end on "none received" right after real
+        // progress was applied.
+        final int[] totalApplied = {0};
         Object subscriber = new Object() {
             @Subscribe(threadMode = ThreadMode.MAIN)
             public void onEventMainThread(GarminWatchProgressEvent event) {
                 main.removeCallbacks(timeout);
                 if (event.appliedCount > 0) {
+                    totalApplied[0] += event.appliedCount;
                     message.setText(context.getResources().getQuantityString(
                             R.plurals.trim_account_pull_watch_progress_received,
-                            event.appliedCount, event.appliedCount));
+                            totalApplied[0], totalApplied[0]));
+                } else if (totalApplied[0] > 0) {
+                    return; // keep the positive result on screen
                 } else if (event.appliedCount == 0) {
                     message.setText(R.string.trim_account_pull_watch_progress_none);
                 } else {

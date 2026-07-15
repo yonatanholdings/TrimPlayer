@@ -295,4 +295,52 @@ public class PortcastImporterTest {
         assertEquals(0, PortcastImporter.parseRfc3339(""));
         assertEquals(0, PortcastImporter.parseRfc3339("not a date"));
     }
+
+    // ── staging merge (executeImport burst behavior) ─────────────────────────
+
+    private static PortcastImporter.EpisodeState state(String guid, int positionMs) {
+        PortcastImporter.EpisodeState s = new PortcastImporter.EpisodeState();
+        s.guid = guid;
+        s.status = "in_progress";
+        s.positionMs = positionMs;
+        return s;
+    }
+
+    private static PortcastImporter.ImportPreview previewOf(
+            PortcastImporter.EpisodeState... states) {
+        PortcastImporter.ImportPreview p = new PortcastImporter.ImportPreview();
+        for (PortcastImporter.EpisodeState s : states) {
+            p.nonConflictingStates.add(s);
+        }
+        return p;
+    }
+
+    /** The Garmin watch transmits progress as a burst of documents ending in an
+     *  empty forced reply, each staged by its own executeImport before the
+     *  worker chain consumes any of them. Staging must merge — a wholesale
+     *  replace meant the empty final doc erased every state of the burst. */
+    @Test
+    public void stagingMergesBurstsInsteadOfReplacing() throws Exception {
+        android.content.Context ctx = org.robolectric.RuntimeEnvironment.getApplication();
+        PortcastImporter.clearEpisodeStates(ctx);
+        PortcastImporter.clearPendingFeeds(ctx);
+
+        PortcastImporter.stageForWorkers(ctx, previewOf(state("guid-a", 1000)));
+        PortcastImporter.stageForWorkers(ctx, previewOf(state("guid-b", 2000)));
+        // Same key again with a newer position — incoming must replace staged.
+        PortcastImporter.stageForWorkers(ctx, previewOf(state("guid-a", 3000)));
+        // The empty forced reply that used to wipe the whole staging.
+        PortcastImporter.stageForWorkers(ctx, previewOf());
+
+        java.util.List<PortcastImporter.EpisodeState> staged =
+                PortcastImporter.loadEpisodeStates(ctx);
+        assertEquals(2, staged.size());
+        assertEquals("guid-a", staged.get(0).guid);
+        assertEquals(3000, staged.get(0).positionMs);
+        assertEquals("guid-b", staged.get(1).guid);
+        assertEquals(2000, staged.get(1).positionMs);
+
+        PortcastImporter.clearEpisodeStates(ctx);
+        PortcastImporter.clearPendingFeeds(ctx);
+    }
 }

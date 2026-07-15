@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -349,19 +350,71 @@ public class PortcastImporter {
         return preview;
     }
 
-    /** Stash the preview and enqueue the subscribe worker. Must be called off the main thread. */
-    public static void executeImport(Context context, ImportPreview preview) throws Exception {
+    /** Stash the preview and enqueue the subscribe worker. Must be called off the main thread.
+     *
+     *  <p>MERGES into any staging the worker chain hasn't consumed yet instead of
+     *  replacing it. The Garmin watch transmits several PortCast docs back to
+     *  back (buffered progress plus an empty forced reply), each arriving as its
+     *  own import while the unique-work chain of the previous one is still
+     *  queued (REPLACE policy) — a wholesale save meant only the LAST doc's
+     *  states survived, so a burst ending in the empty reply silently dropped
+     *  every state (and the watch had already pruned them as delivered). Same
+     *  key colliding keeps the incoming state (it is the newer report); the
+     *  queue is a full snapshot, so an incoming non-empty queue replaces the
+     *  staged one but an empty one never erases it; staged global prefs are
+     *  kept when the incoming doc carries none. synchronized because SDK
+     *  messages can land on concurrent binder threads (load-merge-save race). */
+    public static synchronized void executeImport(Context context, ImportPreview preview)
+            throws Exception {
+        stageForWorkers(context, preview);
+        PortcastSubscribeWorker.enqueue(context);
+    }
+
+    /** The staging half of {@link #executeImport} (split out so tests can
+     *  exercise the merge without a WorkManager). */
+    static void stageForWorkers(Context context, ImportPreview preview) throws Exception {
         List<EpisodeState> states = new ArrayList<>(preview.nonConflictingStates);
         for (ConflictEpisode c : preview.conflicts) {
             if (c.useIncoming) {
                 states.add(c.incomingState);
             }
         }
-        savePendingFeeds(context, preview.feeds);
-        saveEpisodeStates(context, states);
-        saveQueue(context, preview.queue);
-        saveGlobalPrefs(context, preview.globalPrefs);
-        PortcastSubscribeWorker.enqueue(context);
+        savePendingFeeds(context, mergeByKey(loadPendingFeeds(context), preview.feeds,
+                pf -> pf.feedUrl));
+        saveEpisodeStates(context, mergeByKey(loadEpisodeStates(context), states,
+                PortcastImporter::stateKey));
+        if (!preview.queue.isEmpty()) {
+            saveQueue(context, preview.queue);
+        }
+        if (preview.globalPrefs != null) {
+            saveGlobalPrefs(context, preview.globalPrefs);
+        }
+    }
+
+    /** Existing entries first, incoming entries after — an incoming entry with
+     *  the same key replaces the staged one (it is the newer information). */
+    private static <T> List<T> mergeByKey(List<T> existing, List<T> incoming,
+            java.util.function.Function<T, String> key) {
+        Map<String, T> merged = new LinkedHashMap<>();
+        for (T e : existing) {
+            merged.put(key.apply(e), e);
+        }
+        for (T e : incoming) {
+            merged.put(key.apply(e), e);
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    /** Identity of a staged state, matching resolveItemForState's precedence:
+     *  guid, else enclosure URL, else feed+title. */
+    private static String stateKey(EpisodeState s) {
+        if (s.guid != null && !s.guid.isEmpty()) {
+            return "g:" + s.guid;
+        }
+        if (s.enclosureUrl != null && !s.enclosureUrl.isEmpty()) {
+            return "u:" + s.enclosureUrl;
+        }
+        return "t:" + s.feedUrl + "|" + s.title;
     }
 
     // ── Parsing ──────────────────────────────────────────────────────────────
