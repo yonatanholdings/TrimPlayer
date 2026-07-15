@@ -268,6 +268,12 @@ public class PortcastStateWorker extends Worker {
                 && item.getMedia() != null) {
             FeedMedia media = item.getMedia();
             media.setPosition(state.positionMs);
+            // If this episode is loaded (paused) in the player, tell the
+            // service to adopt the position — its stale in-memory copy would
+            // otherwise overwrite this write on the next pause/stop save.
+            org.greenrobot.eventbus.EventBus.getDefault().post(
+                    new de.danoeh.antennapod.event.playback.EpisodePositionSyncedEvent(
+                            media.getId(), state.positionMs));
             if (state.durationMs > 0 && media.getDuration() == 0) {
                 media.setDuration((int) state.durationMs);
             }

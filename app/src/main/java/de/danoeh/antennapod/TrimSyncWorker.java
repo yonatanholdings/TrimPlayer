@@ -449,6 +449,12 @@ public class TrimSyncWorker extends Worker {
                 if (p.position_ms != null) {
                     long pos = Math.max(0, Math.min(p.position_ms, Integer.MAX_VALUE));
                     media.setPosition((int) pos);
+                    // If this episode is loaded (paused) in the player, the
+                    // service must adopt the synced position or its stale
+                    // in-memory copy overwrites it on the next save.
+                    org.greenrobot.eventbus.EventBus.getDefault().post(
+                            new de.danoeh.antennapod.event.playback.EpisodePositionSyncedEvent(
+                                    media.getId(), (int) pos));
                 }
                 // Restore the "played-at" timestamps from the server's client_ts
                 // (which the push side stamps from the media's last-played time).

@@ -1863,6 +1863,35 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         Log.d(TAG, "Trim Player: reloaded " + currentSegments.size() + " segments after local edit");
     }
 
+    /** An external sync (watch PortCast doc, account progress pull) wrote a new
+     *  saved position for an episode. If that episode is loaded here and not
+     *  actively playing, adopt it — otherwise this paused session's stale
+     *  in-memory position silently overwrites the synced one on its next save
+     *  (pause/stop/shutdown), undoing the sync. A session that is actually
+     *  PLAYING is left alone: live local playback outranks a synced point. */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void episodePositionSynced(de.danoeh.antennapod.event.playback.EpisodePositionSyncedEvent event) {
+        Playable playable = getPlayable();
+        if (!(playable instanceof FeedMedia) || ((FeedMedia) playable).getId() != event.mediaId) {
+            return;
+        }
+        PlayerStatus status = mediaPlayer.getPlayerStatus();
+        if (status == PlayerStatus.PLAYING || status == PlayerStatus.SEEKING) {
+            return;
+        }
+        // Update the in-memory copy for any later save, and move the prepared
+        // player itself when there is one (seek during PAUSED is safe; in
+        // earlier states the position is picked up from the playable on start).
+        playable.setPosition(event.positionMs);
+        if (status == PlayerStatus.PAUSED || status == PlayerStatus.PREPARED) {
+            nextSeekIsInternal = true;
+            seekTo(event.positionMs);
+        }
+        Log.d(TAG, "Adopted externally synced position " + event.positionMs
+                + " ms for loaded media " + event.mediaId);
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     @SuppressWarnings("unused")
     public void sleepTimerUpdate(SleepTimerUpdatedEvent event) {

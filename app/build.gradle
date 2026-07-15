@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId "com.trimplayer"
-        versionName "1.0.7-beta9"
+        versionName "1.0.7-beta10"
         versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
