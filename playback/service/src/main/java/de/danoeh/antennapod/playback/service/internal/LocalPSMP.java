@@ -232,6 +232,16 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                                 == FeedPreferences.SkipSilence.AGGRESSIVE);
                 setVolume(1.0f, 1.0f);
 
+                // Diagnostic trail for the "returned to the beginning" reports: this branch is
+                // the ONLY resume-time position restore. If a paused stream was reinit'd and the
+                // Playable lost its saved position (media.getPosition() <= 0), we fall through
+                // WITHOUT restoring and ExoPlayer resumes at the top — the intro then auto-skips
+                // again. Logging the decision + the restorable position pins which case fired.
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                        "resume status=" + playerStatus + " mediaPos="
+                                + (media != null ? media.getPosition() : -1)
+                                + " willRestore="
+                                + (playerStatus == PlayerStatus.PREPARED && media.getPosition() > 0));
                 if (playerStatus == PlayerStatus.PREPARED && media.getPosition() > 0) {
                     int newPosition = RewindAfterPauseUtils.calculatePositionWithRewind(
                             media.getPosition(), media.getLastPlayedTimeStatistics());
@@ -727,6 +737,13 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     // Resume ExoPlayer. ExoPlayer's state callback will have
                     // already moved playerStatus to PAUSED on the loss; sync it
                     // back here so listeners see the PLAYING transition.
+                    // Diagnostic: this focus-regain resume bypasses resume()'s position
+                    // restore (it calls start() directly). A named suspect for the mid-episode
+                    // "returned to the beginning" reports — log the position ExoPlayer is at.
+                    de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                            "focus-gain-resume mediaPos="
+                                    + (media != null ? media.getPosition() : -1)
+                                    + " playerPos=" + getPosition());
                     mediaPlayer.start();
                     if (playerStatus == PlayerStatus.PAUSED) {
                         setPlayerStatus(PlayerStatus.PLAYING, media);

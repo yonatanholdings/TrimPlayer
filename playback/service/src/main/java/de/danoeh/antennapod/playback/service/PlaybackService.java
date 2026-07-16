@@ -1263,6 +1263,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 int skippedMs = skipIntro * 1000 - playable.getPosition();
                 de.danoeh.antennapod.storage.database.DBWriter.recordSkipEvent(
                         feedMedia.getItem().getId(), "intro", skippedMs);
+                // Diagnostic trail: skipIntro runs on every reload/resume that arrives with an
+                // unknown position (onPlaybackStart INVALID_TIME). Logging the actual seek lets a
+                // bug report show whether a mid-episode reload re-ran the manual skip-intro from a
+                // dropped (~0) position — the "intro skipped and returned to the beginning" symptom.
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                        "skip-intro-preset fromPos=" + playable.getPosition()
+                                + "ms->" + (skipIntro * 1000) + "ms ep=" + playable.getEpisodeTitle());
                 mediaPlayer.seekTo(skipIntro * 1000);
                 String skipIntroMesg = context.getString(R.string.pref_feed_skip_intro_toast,
                         skipIntro);
@@ -1752,8 +1759,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
 
         @Override
         public void onPlaybackStart(@NonNull Playable playable, int position) {
+            // storedPos = the position the Playable itself still remembers. When a mid-episode
+            // reload logs pos=-1 (INVALID_TIME → the skipIntro branch below), this field tells
+            // us whether the listener's real position survived (restorable) or was dropped to
+            // ~0 (→ the episode replays from the top and the intro is auto-skipped again, which
+            // reads to the user as "the intro skipped and returned to the beginning"). Without
+            // it a pos=-1 line is ambiguous; see docs/investigation-reported-issues-2026-07.md.
             de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this,
                     "start ep=" + playable.getEpisodeTitle() + " pos=" + position
+                            + " storedPos=" + playable.getPosition()
                             + " dur=" + playable.getDuration());
             taskManager.startWidgetUpdater();
             if (position != Playable.INVALID_TIME) {
