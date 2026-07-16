@@ -722,6 +722,15 @@
     <string name="trim_account_watch_episodes_select_none">None</string>
     <!-- %1$d selected, %2$d total, %3$d estimated MB, %4$s estimated listening time -->
     <string name="trim_account_watch_episodes_summary">%1$d of %2$d selected · ~%3$d MB · %4$s</string>
+    <!-- Named queues (multiple queues per account, e.g. Running / Driving) -->
+    <string name="trim_switch_queue_label">Switch queue</string>
+    <string name="trim_queue_default_name">Queue</string>
+    <string name="trim_queue_new_option">New queue…</string>
+    <string name="trim_queue_new_title">New queue</string>
+    <string name="trim_queue_new_hint">Name (e.g. Running, Driving)</string>
+    <string name="trim_queue_create">Create</string>
+    <!-- %1$s = queue name -->
+    <string name="trim_queue_switching">Switching to “%1$s” — syncing…</string>
     <!-- %1$s = link date, e.g. 2026-07-03 -->
     <string name="trim_account_watch_linked">Watch linked (%1$s) — unlink</string>
     <string name="trim_account_unlink_watch_title">Unlink this watch?</string>

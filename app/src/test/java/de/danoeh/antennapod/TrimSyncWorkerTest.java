@@ -83,6 +83,72 @@ public class TrimSyncWorkerTest {
         assertTrue(TrimSyncWorker.backfillComplete(0, 500));
     }
 
+    // --- named queues -------------------------------------------------------
+
+    @Test
+    public void queueNameNormalization() {
+        assertEquals("default", TrimSyncWorker.normQueueName(null));
+        assertEquals("default", TrimSyncWorker.normQueueName("  "));
+        assertEquals("Running", TrimSyncWorker.normQueueName(" Running "));
+        // Over-long names are capped to the server's 64-char limit.
+        StringBuilder longName = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            longName.append('x');
+        }
+        assertEquals(64, TrimSyncWorker.normQueueName(longName.toString()).length());
+    }
+
+    @Test
+    public void diffQueueStampsActiveQueueOnAddsAndTombstones() {
+        FeedItem item = playedItem("https://example.com/a.mp3", 1_000L);
+        List<TrimClient.QueueChange> out = TrimSyncWorker.diffQueue(
+                Collections.singletonList("https://example.com/gone.mp3"), // prev snapshot
+                Collections.singletonList(item),                            // current queue
+                Collections.singletonList("https://example.com/a.mp3"),
+                "Running", 5_000L);
+        assertEquals(2, out.size());
+        for (TrimClient.QueueChange q : out) {
+            assertEquals("Running", q.queue_name);
+        }
+        assertFalse(out.get(0).deleted); // the add
+        assertTrue(out.get(1).deleted);  // the tombstone for the vanished url
+    }
+
+    @Test
+    public void queueMarkerDiffEmitsCreatesAndDeletes() {
+        HashSet<String> prev = new HashSet<>(Collections.singletonList("Driving"));
+        HashSet<String> cur = new HashSet<>(Collections.singletonList("Running"));
+        List<TrimClient.PrefChange> out = TrimSyncWorker.diffQueueNameMarkers(prev, cur, 7_000L);
+        assertEquals(2, out.size());
+        TrimClient.PrefChange created = out.get(0).deleted ? out.get(1) : out.get(0);
+        TrimClient.PrefChange removed = out.get(0).deleted ? out.get(0) : out.get(1);
+        assertEquals("__queue__:Running", created.rss_url);
+        assertEquals(Float.valueOf(1f), created.playback_rate);
+        assertEquals("__queue__:Driving", removed.rss_url);
+        assertTrue(removed.deleted);
+    }
+
+    @Test
+    public void queueMarkersReconcileKnownNamesAndDetectActiveDeletion() {
+        TrimClient.PrefChange create = new TrimClient.PrefChange();
+        create.rss_url = "__queue__:Running";
+        create.playback_rate = 1f;
+        TrimClient.PrefChange feedPref = new TrimClient.PrefChange(); // must be ignored
+        feedPref.rss_url = "https://example.com/feed.xml";
+        feedPref.playback_rate = 1.5f;
+        TrimClient.PrefChange remove = new TrimClient.PrefChange();
+        remove.rss_url = "__queue__:Driving";
+        remove.deleted = true;
+
+        HashSet<String> names = new HashSet<>();
+        boolean activeDeleted = TrimSyncWorker.applyQueueMarkers(
+                java.util.Arrays.asList(create, feedPref, remove), names, "Driving");
+        assertTrue(activeDeleted); // the queue this device mirrors was deleted on the web
+        assertTrue(names.contains("Running"));
+        assertFalse(names.contains("Driving"));
+        assertFalse(names.contains("https://example.com/feed.xml"));
+    }
+
     @Test
     public void lwwKeyUsesFreshestOfStatisticsAndHistory() {
         FeedMedia media = new FeedMedia(null, "https://example.com/ep.mp3", 0, "audio/mpeg");

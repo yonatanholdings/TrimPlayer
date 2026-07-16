@@ -390,6 +390,10 @@ public class TrimClient {
         public Integer position;
         public boolean deleted;
         public long client_ts;
+        /** Named queue this row belongs to ("Running", "Driving", …). Null/empty
+         *  means the default queue — the only one that exists for accounts that
+         *  never created extra queues. */
+        public String queue_name;
     }
 
     /** Per-podcast preferences, keyed by feed URL. Currently just playback speed;
@@ -425,6 +429,11 @@ public class TrimClient {
         public List<QueueChange> queue;
         public List<PrefChange> prefs;
         public List<BookmarkChange> bookmarks;
+        /** Opt-in: this client understands multiple named queues, so the server
+         *  may include non-default queue rows in the delta (the worker filters
+         *  to the active queue locally). Without it the server sends only the
+         *  default queue. */
+        public boolean named_queues;
     }
 
     public static class SyncResponse {

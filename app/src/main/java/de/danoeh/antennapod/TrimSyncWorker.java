@@ -73,6 +73,12 @@ public class TrimSyncWorker extends Worker {
     // the cursor and let sync advance — so a row for an episode that's genuinely
     // gone from its feed can't wedge sync forever.
     private static final int MAX_DEFER_NOPROGRESS_RUNS = 5;
+    // Named queues: the local DB queue mirrors ONE named account queue at a time
+    // (UserPreferences.getTrimActiveQueue()). Queue existence syncs as reserved
+    // pref rows `__queue__:<name>` (mirrors the web player's convention).
+    static final String DEFAULT_QUEUE = UserPreferences.TRIM_DEFAULT_QUEUE;
+    static final String QUEUE_MARKER_PREFIX = "__queue__:";
+    private static final int MAX_QUEUE_NAME_LEN = 64;
 
     /** Outcome of applying one entity's server delta: how many local rows we
      *  actually changed, and how many we had to DEFER because the referenced
@@ -95,6 +101,15 @@ public class TrimSyncWorker extends Worker {
         }
         String bearer = "Bearer " + UserPreferences.getTrimAccountToken();
         long now = System.currentTimeMillis();
+        // The named queue the local DB queue mirrors; every queue push row is
+        // stamped with it and only its rows are applied from the pull.
+        String activeQueue = normQueueName(UserPreferences.getTrimActiveQueue());
+        // Custom queue names known to this device (for the switcher UI), journalled
+        // so locally-created queues push a __queue__ marker exactly once.
+        Set<String> queueNames = new HashSet<>(parseQueueSnapshot(
+                UserPreferences.getTrimQueueNames()));
+        Set<String> prevQueueNames = new HashSet<>(parseQueueSnapshot(
+                UserPreferences.getTrimSyncQueueNamesSnapshot()));
 
         // Change-journal: diff current local state against the snapshot of what we
         // last pushed, so we only send genuine local changes (adds / title edits /
@@ -155,10 +170,14 @@ public class TrimSyncWorker extends Worker {
 
         TrimClient.SyncRequest req = new TrimClient.SyncRequest();
         req.cursor = UserPreferences.getTrimSyncCursor();
+        req.named_queues = true; // pull rows for every named queue; filtered in applyQueue
         req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
-        req.queue = diffQueue(prevQueue, queue, curQueueUrls, now);
+        req.queue = diffQueue(prevQueue, queue, curQueueUrls, activeQueue, now);
         req.progress = buildProgress(queue, playedRecently, backfillItems, favItems, curFav, changedFav, now);
         req.prefs = diffPrefs(prevPrefs, curPrefs, now);
+        // Locally-created (or -forgotten) queues ride the prefs entity as
+        // __queue__:<name> existence markers, exactly like the web player's.
+        req.prefs.addAll(diffQueueNameMarkers(prevQueueNames, queueNames, now));
         req.bookmarks = diffBookmarks(prevBookmarks, bookmarkRows, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
@@ -184,7 +203,12 @@ public class TrimSyncWorker extends Worker {
             favIds.add(f.getId());
         }
         ApplyResult progressRes = applyProgress(resp.body.progress, favIds);
-        ApplyResult queueRes = applyQueue(getApplicationContext(), resp.body.queue);
+        ApplyResult queueRes = applyQueue(getApplicationContext(), resp.body.queue,
+                activeQueue, queueNames);
+        // Queue-existence markers are applied here (mutating queueNames); real
+        // per-feed prefs go through applyPrefs. A deleted marker for the ACTIVE
+        // queue (removed on the web) forces this device back to the default queue.
+        boolean activeQueueDeleted = applyQueueMarkers(resp.body.prefs, queueNames, activeQueue);
         int appliedPrefs = applyPrefs(resp.body.prefs);
         Set<String> adoptedAwayIds = new HashSet<>();
         ApplyResult bookmarkRes = applyBookmarks(resp.body.bookmarks, adoptedAwayIds);
@@ -241,6 +265,24 @@ public class TrimSyncWorker extends Worker {
             bookmarkSnap.put(adopted, "");
         }
         UserPreferences.setTrimSyncBookmarkSnapshot(serializeSubs(bookmarkSnap));
+        // Persist the (post-apply) queue-name set and journal it, so names learned
+        // from the account aren't re-pushed and local creates push exactly once.
+        List<String> namesList = new ArrayList<>(queueNames);
+        Collections.sort(namesList);
+        UserPreferences.setTrimQueueNames(serializeQueue(namesList));
+        UserPreferences.setTrimSyncQueueNamesSnapshot(serializeQueue(namesList));
+
+        // Execute a staged queue switch now that this run flushed the OLD queue's
+        // outstanding local changes. Also forced when the web deleted the queue
+        // this device was mirroring.
+        String pending = normQueueName(UserPreferences.getTrimPendingQueueSwitch().isEmpty()
+                ? (activeQueueDeleted ? DEFAULT_QUEUE : activeQueue)
+                : UserPreferences.getTrimPendingQueueSwitch());
+        if (!pending.equals(activeQueue)) {
+            performQueueSwitch(getApplicationContext(), pending);
+        } else {
+            UserPreferences.setTrimPendingQueueSwitch("");
+        }
 
         // Advance the one-time history backfill now that this run's push succeeded.
         // A short chunk means we've reached the bottom of the history — done; otherwise
@@ -341,11 +383,36 @@ public class TrimSyncWorker extends Worker {
      *  already-queued items. Reorders are applied in ascending target-position
      *  order against a live mirror of the queue, so each move lands the item at
      *  its final index even when several rows move at once. Episodes not present
-     *  locally are skipped (queue auto-subscribe deferred). */
+     *  locally are skipped (queue auto-subscribe deferred).
+     *
+     *  <p>Named queues: only rows belonging to {@code activeQueue} touch the local
+     *  DB queue (it mirrors exactly one named queue). Other queues' rows are
+     *  consumed without deferral — a queue switch resets the cursor to 0 and
+     *  re-pulls them — but their names feed {@code knownNames} so the switcher UI
+     *  learns about queues created on other devices even before their marker
+     *  pref arrives. */
     private static ApplyResult applyQueue(android.content.Context ctx,
-                                  List<TrimClient.QueueChange> queue) {
+                                  List<TrimClient.QueueChange> queue,
+                                  String activeQueue, Set<String> knownNames) {
         ApplyResult r = new ApplyResult();
         if (queue == null || queue.isEmpty()) {
+            return r;
+        }
+        List<TrimClient.QueueChange> mine = new ArrayList<>();
+        for (TrimClient.QueueChange q : queue) {
+            if (q == null || q.episode_url == null) {
+                continue;
+            }
+            String name = normQueueName(q.queue_name);
+            if (!DEFAULT_QUEUE.equals(name) && !q.deleted) {
+                knownNames.add(name);
+            }
+            if (name.equals(activeQueue)) {
+                mine.add(q);
+            }
+        }
+        queue = mine;
+        if (queue.isEmpty()) {
             return r;
         }
         // Ordered mirror of the queue — updated alongside every DB mutation so
@@ -573,6 +640,139 @@ public class TrimSyncWorker extends Worker {
                         .build());
     }
 
+    // --- named queues -----------------------------------------------------
+
+    /** Normalize a queue name: null/blank collapses to the default queue, and
+     *  runaway names are capped like the server does. Package-visible for tests. */
+    static String normQueueName(String name) {
+        if (name == null) {
+            return DEFAULT_QUEUE;
+        }
+        String n = name.trim();
+        if (n.length() > MAX_QUEUE_NAME_LEN) {
+            n = n.substring(0, MAX_QUEUE_NAME_LEN);
+        }
+        return n.isEmpty() ? DEFAULT_QUEUE : n;
+    }
+
+    /** Stage a switch of the local queue to another named account queue. The
+     *  actual swap happens at the end of the next successful sync run (so the
+     *  old queue's outstanding local edits are flushed first). */
+    public static void switchQueue(Context ctx, String name) {
+        UserPreferences.setTrimPendingQueueSwitch(normQueueName(name));
+        requestSyncSoon(ctx);
+    }
+
+    /** Create a named queue locally (its __queue__ existence marker is pushed on
+     *  the next sync) and switch to it. Returns the normalized name. */
+    public static String createQueue(Context ctx, String name) {
+        String n = normQueueName(name);
+        if (!DEFAULT_QUEUE.equals(n)) {
+            Set<String> names = new HashSet<>(parseQueueSnapshot(
+                    UserPreferences.getTrimQueueNames()));
+            if (names.add(n)) {
+                List<String> sorted = new ArrayList<>(names);
+                Collections.sort(sorted);
+                UserPreferences.setTrimQueueNames(serializeQueue(sorted));
+            }
+        }
+        switchQueue(ctx, n);
+        return n;
+    }
+
+    /** Queue names for the switcher UI: the default queue first, then the custom
+     *  names known to this device, sorted. */
+    public static List<String> knownQueueNames() {
+        Set<String> names = new HashSet<>(parseQueueSnapshot(
+                UserPreferences.getTrimQueueNames()));
+        names.remove(DEFAULT_QUEUE);
+        List<String> sorted = new ArrayList<>(names);
+        Collections.sort(sorted);
+        sorted.add(0, DEFAULT_QUEUE);
+        return sorted;
+    }
+
+    /** Swap the local DB queue over to {@code target}. Prefs are written before
+     *  the queue is cleared on purpose: if we crash in between, the worst case is
+     *  the next run re-pushing the old items as adds into the NEW queue (benign,
+     *  user-visible, fixable) — clearing first could instead diff the emptied
+     *  queue against the old snapshot and tombstone the OLD queue's rows on the
+     *  server (data loss). Cursor resets to 0 so the next run re-pulls the full
+     *  account state and fills the local queue with the target queue's items. */
+    private static void performQueueSwitch(Context ctx, String target) {
+        Log.i(TAG, "switching local queue to '" + target + "'");
+        UserPreferences.setTrimSyncQueueSnapshot("[]");
+        UserPreferences.setTrimActiveQueue(target);
+        UserPreferences.setTrimPendingQueueSwitch("");
+        UserPreferences.setTrimSyncCursor(0);
+        UserPreferences.setTrimSyncDeferRetries(0);
+        try {
+            DBWriter.clearQueue().get();
+        } catch (Exception e) {
+            Log.w(TAG, "queue clear during switch failed: " + e.getMessage());
+        }
+        scheduleFollowupSync(ctx);
+    }
+
+    /** Emit {@code __queue__:&lt;name&gt;} marker rows for locally created
+     *  (deleted=false) or forgotten (deleted=true) queue names. Package-visible
+     *  for unit tests. */
+    static List<TrimClient.PrefChange> diffQueueNameMarkers(
+            Set<String> prev, Set<String> cur, long ts) {
+        List<TrimClient.PrefChange> out = new ArrayList<>();
+        for (String name : cur) {
+            if (!prev.contains(name)) {
+                TrimClient.PrefChange pc = new TrimClient.PrefChange();
+                pc.rss_url = QUEUE_MARKER_PREFIX + name;
+                pc.playback_rate = 1f;
+                pc.deleted = false;
+                pc.client_ts = ts;
+                out.add(pc);
+            }
+        }
+        for (String name : prev) {
+            if (!cur.contains(name)) {
+                TrimClient.PrefChange pc = new TrimClient.PrefChange();
+                pc.rss_url = QUEUE_MARKER_PREFIX + name;
+                pc.playback_rate = null;
+                pc.deleted = true;
+                pc.client_ts = ts;
+                out.add(pc);
+            }
+        }
+        return out;
+    }
+
+    /** Consume __queue__ existence markers from the prefs delta, reconciling the
+     *  device's known-names set. Returns true when the ACTIVE queue's marker was
+     *  tombstoned (queue deleted on the web) — the caller then falls back to the
+     *  default queue. Package-visible for unit tests. */
+    static boolean applyQueueMarkers(List<TrimClient.PrefChange> prefs,
+                                     Set<String> knownNames, String activeQueue) {
+        boolean activeDeleted = false;
+        if (prefs == null) {
+            return false;
+        }
+        for (TrimClient.PrefChange p : prefs) {
+            if (p == null || p.rss_url == null || !p.rss_url.startsWith(QUEUE_MARKER_PREFIX)) {
+                continue;
+            }
+            String name = normQueueName(p.rss_url.substring(QUEUE_MARKER_PREFIX.length()));
+            if (DEFAULT_QUEUE.equals(name)) {
+                continue; // the default queue always exists; markers can't touch it
+            }
+            if (p.deleted || p.playback_rate == null || p.playback_rate < 0.5f) {
+                knownNames.remove(name);
+                if (name.equals(activeQueue)) {
+                    activeDeleted = true;
+                }
+            } else {
+                knownNames.add(name);
+            }
+        }
+        return activeDeleted;
+    }
+
     /** Nudge another sync a short while out so deferred queue/progress rows — whose
      *  episodes are being fetched asynchronously after an auto-subscribe — get
      *  re-pulled and applied promptly, instead of waiting for the periodic sync. */
@@ -657,9 +857,13 @@ public class TrimSyncWorker extends Worker {
     }
 
     /** Queue items that are new or moved to a different position (deleted=false),
-     *  plus removals (deleted=true). Unchanged-position items are omitted. */
-    private static List<TrimClient.QueueChange> diffQueue(
-            List<String> prev, List<FeedItem> curItems, List<String> curUrls, long ts) {
+     *  plus removals (deleted=true). Unchanged-position items are omitted. Every
+     *  row is stamped with the active queue's name, so local edits always land in
+     *  the named account queue this device is mirroring. Package-visible for
+     *  unit tests. */
+    static List<TrimClient.QueueChange> diffQueue(
+            List<String> prev, List<FeedItem> curItems, List<String> curUrls,
+            String activeQueue, long ts) {
         List<TrimClient.QueueChange> out = new ArrayList<>();
         Map<String, Integer> prevIdx = new HashMap<>();
         for (int i = 0; i < prev.size(); i++) {
@@ -682,6 +886,7 @@ public class TrimSyncWorker extends Worker {
                 q.position = i;
                 q.deleted = false;
                 q.client_ts = ts;
+                q.queue_name = activeQueue;
                 out.add(q);
             }
         }
@@ -691,6 +896,7 @@ public class TrimSyncWorker extends Worker {
                 q.episode_url = url;
                 q.deleted = true;
                 q.client_ts = ts;
+                q.queue_name = activeQueue;
                 out.add(q);
             }
         }
