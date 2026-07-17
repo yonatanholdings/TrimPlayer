@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import de.danoeh.antennapod.event.BookmarksChangedEvent;
 import de.danoeh.antennapod.event.FavoritesEvent;
 import de.danoeh.antennapod.event.FeedListUpdateEvent;
+import de.danoeh.antennapod.event.PlaylistEvent;
 import de.danoeh.antennapod.event.QueueEvent;
 
 import org.greenrobot.eventbus.Subscribe;
@@ -50,6 +51,13 @@ public class TrimSyncSubscriber {
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onQueueChanged(@NonNull QueueEvent ev) {
+        TrimSyncWorker.requestSyncSoon(context);
+    }
+
+    // Playlist created/renamed/deleted or its episodes changed — playlists sync
+    // 1:1 with the account's named queues.
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void onPlaylistChanged(@NonNull PlaylistEvent ev) {
         TrimSyncWorker.requestSyncSoon(context);
     }
 

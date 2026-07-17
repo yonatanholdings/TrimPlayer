@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.List;
 
 import de.danoeh.antennapod.R;
-import de.danoeh.antennapod.TrimSyncWorker;
 import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
 import de.danoeh.antennapod.ui.common.ConfirmationDialog;
@@ -273,78 +272,6 @@ public class QueueFragment extends Fragment implements MaterialToolbar.OnMenuIte
         boolean keepSorted = UserPreferences.isQueueKeepSorted();
         toolbar.getMenu().findItem(R.id.queue_lock).setChecked(UserPreferences.isQueueLocked());
         toolbar.getMenu().findItem(R.id.queue_lock).setVisible(!keepSorted);
-        // Named queues need an account (they live in account sync). The subtitle
-        // shows which named queue the local queue is mirroring, if not the default.
-        boolean loggedIn = UserPreferences.isTrimAccountLoggedIn();
-        toolbar.getMenu().findItem(R.id.queue_switch).setVisible(loggedIn);
-        // Show the staged switch target immediately (the worker performs the
-        // actual swap moments later) so the UI reflects the user's choice.
-        String pending = UserPreferences.getTrimPendingQueueSwitch();
-        String active = pending.isEmpty() ? UserPreferences.getTrimActiveQueue() : pending;
-        toolbar.setSubtitle(loggedIn && !UserPreferences.TRIM_DEFAULT_QUEUE.equals(active)
-                ? active : null);
-    }
-
-    /** Single-choice dialog of the account's named queues plus "New queue…".
-     *  Picking one stages the switch; the sync worker performs it (flushing the
-     *  old queue's pending edits first) and fills the queue from the account. */
-    private void showSwitchQueueDialog() {
-        List<String> names = TrimSyncWorker.knownQueueNames();
-        String active = UserPreferences.getTrimActiveQueue();
-        String[] labels = new String[names.size() + 1];
-        int checked = 0;
-        for (int i = 0; i < names.size(); i++) {
-            String name = names.get(i);
-            labels[i] = UserPreferences.TRIM_DEFAULT_QUEUE.equals(name)
-                    ? getString(R.string.trim_queue_default_name) : name;
-            if (name.equals(active)) {
-                checked = i;
-            }
-        }
-        labels[names.size()] = getString(R.string.trim_queue_new_option);
-        new MaterialAlertDialogBuilder(getContext())
-                .setTitle(R.string.trim_switch_queue_label)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    dialog.dismiss();
-                    if (which == names.size()) {
-                        showNewQueueDialog();
-                    } else if (!names.get(which).equals(active)) {
-                        switchToQueue(names.get(which));
-                    }
-                })
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
-    }
-
-    private void showNewQueueDialog() {
-        final android.widget.EditText input = new android.widget.EditText(getContext());
-        input.setHint(R.string.trim_queue_new_hint);
-        input.setSingleLine(true);
-        new MaterialAlertDialogBuilder(getContext())
-                .setTitle(R.string.trim_queue_new_title)
-                .setView(input)
-                .setPositiveButton(R.string.trim_queue_create, (dialog, which) -> {
-                    String name = input.getText().toString().trim();
-                    if (!name.isEmpty()) {
-                        // createQueue stages the switch itself; just announce it.
-                        announceQueueSwitch(TrimSyncWorker.createQueue(requireContext(), name));
-                    }
-                })
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
-    }
-
-    private void switchToQueue(String name) {
-        TrimSyncWorker.switchQueue(requireContext(), name);
-        announceQueueSwitch(name);
-    }
-
-    private void announceQueueSwitch(String name) {
-        refreshToolbarState();
-        EventBus.getDefault().post(new MessageEvent(getString(
-                R.string.trim_queue_switching,
-                UserPreferences.TRIM_DEFAULT_QUEUE.equals(name)
-                        ? getString(R.string.trim_queue_default_name) : name)));
     }
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
@@ -365,9 +292,6 @@ public class QueueFragment extends Fragment implements MaterialToolbar.OnMenuIte
             return true;
         } else if (itemId == R.id.queue_sort) {
             new QueueSortDialog().show(getChildFragmentManager().beginTransaction(), "SortDialog");
-            return true;
-        } else if (itemId == R.id.queue_switch) {
-            showSwitchQueueDialog();
             return true;
         } else if (itemId == R.id.refresh_item) {
             FeedUpdateManager.getInstance().runOnceOrAsk(requireContext());

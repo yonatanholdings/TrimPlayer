@@ -986,18 +986,12 @@ public abstract class UserPreferences {
     // flips once the whole history has been sent, after which only the window syncs.
     public static final String PREF_TRIM_SYNC_BACKFILL_DONE = "prefTrimSyncBackfillDone";
     public static final String PREF_TRIM_SYNC_BACKFILL_CEIL = "prefTrimSyncBackfillCeil";
-    // Named queues: the local DB queue mirrors ONE named account queue at a time
-    // (the "active" queue — e.g. "Running" vs "Driving"). Which one is a
-    // device-local choice. Custom queue names known to this device are kept as a
-    // JSON array (learned from the account's __queue__:<name> pref markers and
-    // from queue rows seen in deltas); the snapshot journals the names last
-    // pushed so local creates emit marker rows. A pending switch is staged here
-    // and executed by the sync worker at the end of a successful run.
-    public static final String PREF_TRIM_ACTIVE_QUEUE = "prefTrimActiveQueue";
-    public static final String PREF_TRIM_QUEUE_NAMES = "prefTrimQueueNames";
-    public static final String PREF_TRIM_SYNC_SNAP_QUEUE_NAMES = "prefTrimSyncSnapQueueNames";
-    public static final String PREF_TRIM_PENDING_QUEUE_SWITCH = "prefTrimPendingQueueSwitch";
-    public static final String TRIM_DEFAULT_QUEUE = "default";
+    // Named queues: local playlists sync 1:1 with the account's named queues
+    // (queue_name = playlist name); the DB queue syncs with the account's
+    // "default" queue. This snapshot journals every playlist's name + ordered
+    // episode urls as last pushed (JSON object name -> array), so the worker
+    // diffs only genuine local playlist edits.
+    public static final String PREF_TRIM_SYNC_SNAP_PLAYLISTS = "prefTrimSyncSnapPlaylists";
 
     public static String getTrimAccountToken() {
         return prefs.getString(PREF_TRIM_ACCOUNT_TOKEN, "");
@@ -1035,49 +1029,17 @@ public abstract class UserPreferences {
                 .remove(PREF_TRIM_SYNC_SNAP_PREFS)
                 .remove(PREF_TRIM_SYNC_SNAP_FAV)
                 .remove(PREF_TRIM_SYNC_SNAP_BOOKMARKS)
-                .remove(PREF_TRIM_ACTIVE_QUEUE)
-                .remove(PREF_TRIM_QUEUE_NAMES)
-                .remove(PREF_TRIM_SYNC_SNAP_QUEUE_NAMES)
-                .remove(PREF_TRIM_PENDING_QUEUE_SWITCH)
+                .remove(PREF_TRIM_SYNC_SNAP_PLAYLISTS)
                 .apply();
     }
 
-    /** The named account queue the local DB queue currently mirrors. */
-    public static String getTrimActiveQueue() {
-        String name = prefs.getString(PREF_TRIM_ACTIVE_QUEUE, TRIM_DEFAULT_QUEUE);
-        return name == null || name.trim().isEmpty() ? TRIM_DEFAULT_QUEUE : name;
+    /** Journal of every playlist's name + ordered urls as last pushed (JSON object). */
+    public static String getTrimSyncPlaylistsSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_PLAYLISTS, "");
     }
 
-    public static void setTrimActiveQueue(String name) {
-        prefs.edit().putString(PREF_TRIM_ACTIVE_QUEUE,
-                name == null || name.trim().isEmpty() ? TRIM_DEFAULT_QUEUE : name.trim()).apply();
-    }
-
-    /** Custom queue names known to this device (JSON array; excludes "default"). */
-    public static String getTrimQueueNames() {
-        return prefs.getString(PREF_TRIM_QUEUE_NAMES, "");
-    }
-
-    public static void setTrimQueueNames(String json) {
-        prefs.edit().putString(PREF_TRIM_QUEUE_NAMES, json == null ? "" : json).apply();
-    }
-
-    /** Journal of the queue names last pushed as __queue__ markers (JSON array). */
-    public static String getTrimSyncQueueNamesSnapshot() {
-        return prefs.getString(PREF_TRIM_SYNC_SNAP_QUEUE_NAMES, "");
-    }
-
-    public static void setTrimSyncQueueNamesSnapshot(String json) {
-        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_QUEUE_NAMES, json == null ? "" : json).apply();
-    }
-
-    /** Queue switch staged by the UI; consumed by the sync worker ("" = none). */
-    public static String getTrimPendingQueueSwitch() {
-        return prefs.getString(PREF_TRIM_PENDING_QUEUE_SWITCH, "");
-    }
-
-    public static void setTrimPendingQueueSwitch(String name) {
-        prefs.edit().putString(PREF_TRIM_PENDING_QUEUE_SWITCH, name == null ? "" : name).apply();
+    public static void setTrimSyncPlaylistsSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_PLAYLISTS, json == null ? "" : json).apply();
     }
 
     // Change-journal snapshots: the subscription set + queue as last successfully

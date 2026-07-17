@@ -129,24 +129,37 @@ public class TrimSyncWorkerTest {
     }
 
     @Test
-    public void queueMarkersReconcileKnownNamesAndDetectActiveDeletion() {
-        TrimClient.PrefChange create = new TrimClient.PrefChange();
-        create.rss_url = "__queue__:Running";
-        create.playback_rate = 1f;
-        TrimClient.PrefChange feedPref = new TrimClient.PrefChange(); // must be ignored
-        feedPref.rss_url = "https://example.com/feed.xml";
-        feedPref.playback_rate = 1.5f;
-        TrimClient.PrefChange remove = new TrimClient.PrefChange();
-        remove.rss_url = "__queue__:Driving";
-        remove.deleted = true;
+    public void playlistDiffEmitsAddsMovesAndTombstones() {
+        java.util.Map<String, List<String>> prev = new java.util.HashMap<>();
+        prev.put("Running", java.util.Arrays.asList("u1", "u2", "u3"));
+        java.util.Map<String, List<String>> cur = new java.util.HashMap<>();
+        // u2 removed, u4 appended, u3 therefore moves from index 2 to 1.
+        cur.put("Running", java.util.Arrays.asList("u1", "u3", "u4"));
+        List<TrimClient.QueueChange> out = TrimSyncWorker.diffPlaylists(prev, cur, 1_000L);
 
-        HashSet<String> names = new HashSet<>();
-        boolean activeDeleted = TrimSyncWorker.applyQueueMarkers(
-                java.util.Arrays.asList(create, feedPref, remove), names, "Driving");
-        assertTrue(activeDeleted); // the queue this device mirrors was deleted on the web
-        assertTrue(names.contains("Running"));
-        assertFalse(names.contains("Driving"));
-        assertFalse(names.contains("https://example.com/feed.xml"));
+        java.util.Map<String, TrimClient.QueueChange> byUrl = new java.util.HashMap<>();
+        for (TrimClient.QueueChange q : out) {
+            assertEquals("Running", q.queue_name);
+            byUrl.put(q.episode_url, q);
+        }
+        assertEquals(3, out.size()); // u3 move, u4 add, u2 tombstone; u1 unchanged
+        assertFalse(byUrl.containsKey("u1"));
+        assertEquals(Integer.valueOf(1), byUrl.get("u3").position);
+        assertEquals(Integer.valueOf(2), byUrl.get("u4").position);
+        assertTrue(byUrl.get("u2").deleted);
+    }
+
+    @Test
+    public void deletedPlaylistTombstonesAllItsItems() {
+        java.util.Map<String, List<String>> prev = new java.util.HashMap<>();
+        prev.put("Driving", java.util.Arrays.asList("u1", "u2"));
+        List<TrimClient.QueueChange> out = TrimSyncWorker.diffPlaylists(
+                prev, new java.util.HashMap<>(), 1_000L);
+        assertEquals(2, out.size());
+        for (TrimClient.QueueChange q : out) {
+            assertEquals("Driving", q.queue_name);
+            assertTrue(q.deleted);
+        }
     }
 
     @Test
