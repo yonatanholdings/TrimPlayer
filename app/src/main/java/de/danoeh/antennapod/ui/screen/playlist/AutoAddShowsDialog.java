@@ -15,6 +15,9 @@ import java.util.Set;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.model.feed.Feed;
+import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.model.feed.FeedItemFilter;
+import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
 
@@ -78,17 +81,65 @@ public final class AutoAddShowsDialog {
                 })
                 .setPositiveButton(R.string.confirm_label, (dialog, which) -> {
                     long now = System.currentTimeMillis();
+                    List<Feed> newlyWatched = new ArrayList<>();
                     for (Feed feed : syncable) {
                         boolean want = selected.contains(feed.getId());
                         boolean have = ruleFeedIds.contains(feed.getId());
                         if (want && !have) {
                             DBWriter.addPlaylistAutoFeed(playlistId, feed.getId(), now);
+                            newlyWatched.add(feed);
                         } else if (!want && have) {
                             DBWriter.removePlaylistAutoFeed(playlistId, feed.getId());
                         }
                     }
+                    if (!newlyWatched.isEmpty()) {
+                        offerUnplayedBackfill(context, playlistId, newlyWatched);
+                    }
                 })
                 .setNegativeButton(R.string.cancel_label, null)
                 .show();
+    }
+
+    /** After new shows were checked: offer to also pull their EXISTING unplayed
+     *  episodes into the playlist now (one-shot; the rule itself only catches
+     *  episodes published from now on). The added items sync like any manual
+     *  add, so other devices and the web receive them as playlist items. */
+    private static void offerUnplayedBackfill(Context context, long playlistId,
+                                              List<Feed> newlyWatched) {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.trim_auto_add_backfill_title)
+                .setMessage(context.getResources().getQuantityString(
+                        R.plurals.trim_auto_add_backfill_message,
+                        newlyWatched.size(), newlyWatched.size()))
+                .setPositiveButton(R.string.trim_auto_add_backfill_yes, (d, w) ->
+                        backfillUnplayed(playlistId, newlyWatched))
+                .setNegativeButton(R.string.trim_auto_add_backfill_no, null)
+                .show();
+    }
+
+    private static void backfillUnplayed(long playlistId, List<Feed> feeds) {
+        Observable.fromCallable(() -> doBackfillUnplayed(playlistId, feeds))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(count -> Log.d(TAG, "backfilled " + count + " unplayed episode(s)"),
+                        error -> Log.e(TAG, Log.getStackTraceString(error)));
+    }
+
+    private static int doBackfillUnplayed(long playlistId, List<Feed> feeds) throws Exception {
+        List<FeedItem> toAdd = new ArrayList<>();
+        for (Feed feed : feeds) {
+            // Oldest first so the backlog lands in listening order.
+            for (FeedItem item : DBReader.getFeedItemList(feed,
+                    new FeedItemFilter(FeedItemFilter.UNPLAYED),
+                    SortOrder.DATE_OLD_NEW, 0, Integer.MAX_VALUE)) {
+                if (item.getMedia() != null) {
+                    toAdd.add(item);
+                }
+            }
+        }
+        if (!toAdd.isEmpty()) {
+            DBWriter.addPlaylistItems(playlistId, toAdd.toArray(new FeedItem[0])).get();
+        }
+        return toAdd.size();
     }
 }

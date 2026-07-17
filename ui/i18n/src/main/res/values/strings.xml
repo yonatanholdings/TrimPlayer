@@ -1576,6 +1576,13 @@
     <string name="playlist_suggestion_bedtime">Bedtime</string>
     <string name="trim_auto_add_label">Auto-add new episodes</string>
     <string name="trim_auto_add_no_subscriptions">Subscribe to some shows first — checked shows will drop their new episodes into this playlist automatically.</string>
+    <string name="trim_auto_add_backfill_title">Include older episodes?</string>
+    <plurals name="trim_auto_add_backfill_message">
+        <item quantity="one">Also add the existing unplayed episodes of the show you just checked? New episodes are added automatically either way.</item>
+        <item quantity="other">Also add the existing unplayed episodes of the %d shows you just checked? New episodes are added automatically either way.</item>
+    </plurals>
+    <string name="trim_auto_add_backfill_yes">Add unplayed</string>
+    <string name="trim_auto_add_backfill_no">Only new ones</string>
     <string name="add_to_playlist_label">Add to playlist</string>
     <string name="remove_from_playlist_label">Remove from playlist</string>
     <string name="add_playlist_label">New playlist</string>
