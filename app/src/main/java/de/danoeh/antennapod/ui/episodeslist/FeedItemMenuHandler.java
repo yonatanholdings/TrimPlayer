@@ -63,6 +63,7 @@ public class FeedItemMenuHandler {
         boolean canSkip = false;
         boolean canRemoveFromQueue = false;
         boolean canAddToQueue = false;
+        boolean canAddToPlaylist = false;
         boolean canVisitWebsite = false;
         boolean canShare = false;
         boolean canRemoveFromInbox = false;
@@ -83,6 +84,7 @@ public class FeedItemMenuHandler {
             canSkip |= hasMedia && PlaybackStatus.isPlaying(item.getMedia());
             canRemoveFromQueue |= item.isTagged(FeedItem.TAG_QUEUE);
             canAddToQueue |= hasMedia && !item.isTagged(FeedItem.TAG_QUEUE);
+            canAddToPlaylist |= hasMedia;
             canVisitWebsite |= !item.getFeed().isLocalFeed() && ShareUtils.hasLinkToShare(item);
             canShare |= !item.getFeed().isLocalFeed();
             canRemoveFromInbox |= item.isNew();
@@ -108,9 +110,11 @@ public class FeedItemMenuHandler {
         setItemVisibility(menu, R.id.skip_episode_item, canSkip);
         setItemVisibility(menu, R.id.remove_from_queue_item, canRemoveFromQueue);
         setItemVisibility(menu, R.id.add_to_queue_item, canAddToQueue);
-        // "Add to playlist" needs media to play; "Remove from playlist" is only shown by the
-        // Playlist screen, which re-enables it after this prepare pass.
-        setItemVisibility(menu, R.id.add_to_playlist_item, canAddToQueue);
+        // "Add to playlist" needs media to play — but unlike the queue toggle it stays
+        // available for episodes already queued (playlist membership is orthogonal).
+        // "Remove from playlist" is only shown by the Playlist screen, which re-enables
+        // it after this prepare pass.
+        setItemVisibility(menu, R.id.add_to_playlist_item, canAddToPlaylist);
         setItemVisibility(menu, R.id.remove_from_playlist_item, false);
         setItemVisibility(menu, R.id.visit_website_item, canVisitWebsite);
         setItemVisibility(menu, R.id.share_item, canShare);

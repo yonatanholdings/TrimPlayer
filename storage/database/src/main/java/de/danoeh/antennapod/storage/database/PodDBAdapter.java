@@ -1228,16 +1228,57 @@ public class PodDBAdapter {
     }
 
     /**
-     * Returns id, name and current episode count for every playlist, ordered by name.
+     * Returns id, name, current episode count and total duration (ms, 0 for episodes
+     * without media) for every playlist, ordered by name.
      */
     public Cursor getPlaylistsCursor() {
         final String query = "SELECT " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ", "
                 + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + ", "
                 + "(SELECT COUNT(*) FROM " + TABLE_NAME_PLAYLIST_ITEMS
                 + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID
-                + " = " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ") AS count"
+                + " = " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ") AS count, "
+                + "(SELECT COALESCE(SUM(" + TABLE_NAME_FEED_MEDIA + "." + KEY_DURATION + "), 0)"
+                + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " INNER JOIN " + TABLE_NAME_FEED_MEDIA
+                + " ON " + TABLE_NAME_FEED_MEDIA + "." + KEY_FEEDITEM
+                + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID
+                + " = " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ") AS total_duration"
                 + " FROM " + TABLE_NAME_PLAYLISTS
                 + " ORDER BY " + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + " COLLATE NOCASE ASC";
+        return db.rawQuery(query, null);
+    }
+
+    /**
+     * Returns up to {@code limit} distinct cover-art urls for a playlist's episodes
+     * (episode image, falling back to its show's image), in playlist order — the
+     * playlist card's cover collage.
+     */
+    public Cursor getPlaylistCoverUrlsCursor(long playlistId, int limit) {
+        final String cover = "COALESCE(NULLIF(" + TABLE_NAME_FEED_ITEMS + "." + KEY_IMAGE_URL + ", ''), "
+                + TABLE_NAME_FEEDS + "." + KEY_IMAGE_URL + ")";
+        final String query = "SELECT " + cover + " AS cover"
+                + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
+                + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_ID
+                + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
+                + " LEFT JOIN " + TABLE_NAME_FEEDS
+                + " ON " + TABLE_NAME_FEEDS + "." + KEY_ID + " = " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID + " = " + playlistId
+                + " AND " + cover + " IS NOT NULL"
+                + " GROUP BY cover"
+                + " ORDER BY MIN(" + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION + ")"
+                + " LIMIT " + limit;
+        return db.rawQuery(query, null);
+    }
+
+    /**
+     * Returns the ids of every playlist containing the given episode (for the
+     * add-to-playlist sheet's checkmarks).
+     */
+    public Cursor getPlaylistIdsForItemCursor(long itemId) {
+        final String query = "SELECT " + KEY_PLAYLIST_ID + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " WHERE " + KEY_FEEDITEM + " = " + itemId;
         return db.rawQuery(query, null);
     }
 

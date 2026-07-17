@@ -14,15 +14,24 @@ public class Playlist {
     private String name;
     /** Number of episodes in the playlist. Transient — populated when loaded for display. */
     private final int episodeCount;
+    /** Sum of the episodes' durations in ms. Transient — populated when loaded for display. */
+    private final long totalDurationMs;
+    /** Up to 4 episode/show cover urls for the card collage. Transient; never null. */
+    private java.util.List<String> coverUrls = java.util.Collections.emptyList();
 
     public Playlist(long id, String name) {
-        this(id, name, 0);
+        this(id, name, 0, 0);
     }
 
     public Playlist(long id, String name, int episodeCount) {
+        this(id, name, episodeCount, 0);
+    }
+
+    public Playlist(long id, String name, int episodeCount, long totalDurationMs) {
         this.id = id;
         this.name = name;
         this.episodeCount = episodeCount;
+        this.totalDurationMs = totalDurationMs;
     }
 
     public long getId() {
@@ -43,5 +52,17 @@ public class Playlist {
 
     public int getEpisodeCount() {
         return episodeCount;
+    }
+
+    public long getTotalDurationMs() {
+        return totalDurationMs;
+    }
+
+    public java.util.List<String> getCoverUrls() {
+        return coverUrls;
+    }
+
+    public void setCoverUrls(java.util.List<String> coverUrls) {
+        this.coverUrls = coverUrls == null ? java.util.Collections.emptyList() : coverUrls;
     }
 }

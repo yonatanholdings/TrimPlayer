@@ -2,14 +2,24 @@ package de.danoeh.antennapod.ui.screen.playlist;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.EditText;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.util.Pair;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.checkbox.MaterialCheckBox;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.event.MessageEvent;
@@ -25,7 +35,10 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.greenrobot.eventbus.EventBus;
 
 /**
- * Lets the user add an episode to one of their named playlists, or create a new playlist on the fly.
+ * Bottom sheet that manages an episode's playlist membership in one place: every
+ * playlist is a row with a checkmark (tap to add/remove — several playlists at
+ * once is fine), and "New playlist" creates one (with suggestion chips) and files
+ * the episode into it immediately.
  */
 public class AddToPlaylistDialog {
     private static final String TAG = "AddToPlaylistDialog";
@@ -34,61 +47,33 @@ public class AddToPlaylistDialog {
     }
 
     public static void show(@NonNull Context context, @NonNull FeedItem item) {
-        Observable.fromCallable(DBReader::getPlaylists)
+        Observable.fromCallable(() ->
+                        new Pair<>(DBReader.getPlaylists(), DBReader.getPlaylistIdsForItem(item.getId())))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(playlists -> showChooser(context, item, playlists),
+                .subscribe(data -> showSheet(context, item, data.first, data.second),
                         error -> Log.e(TAG, Log.getStackTraceString(error)));
     }
 
-    private static void showChooser(Context context, FeedItem item, List<Playlist> playlists) {
-        final List<CharSequence> labels = new ArrayList<>();
-        labels.add(context.getString(R.string.add_playlist_label));
-        for (Playlist playlist : playlists) {
-            labels.add(playlist.getName());
-        }
-        new MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.add_to_playlist_label)
-                .setItems(labels.toArray(new CharSequence[0]), (dialog, which) -> {
-                    if (which == 0) {
-                        showCreateAndAdd(context, item);
-                    } else {
-                        Playlist playlist = playlists.get(which - 1);
-                        DBWriter.addPlaylistItems(playlist.getId(), item);
-                        EventBus.getDefault().post(new MessageEvent(
-                                context.getString(R.string.added_to_playlist_label, playlist.getName())));
-                    }
-                })
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
-    }
+    private static void showSheet(Context context, FeedItem item,
+                                  List<Playlist> playlists, Set<Long> memberIds) {
+        BottomSheetDialog dialog = new BottomSheetDialog(context);
+        View content = LayoutInflater.from(context).inflate(R.layout.add_to_playlist_sheet, null);
+        dialog.setContentView(content);
 
-    private static void showCreateAndAdd(Context context, FeedItem item) {
-        final EditText input = new EditText(context);
-        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        input.setHint(R.string.playlist_name_hint);
-        new MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.add_playlist_label)
-                .setView(wrapInput(context, input))
-                .setPositiveButton(R.string.confirm_label, (dialog, which) -> {
-                    String name = input.getText().toString().trim();
-                    if (name.isEmpty()) {
-                        return;
-                    }
-                    createPlaylistAndAdd(context, name, item);
-                })
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
-    }
+        TextView subtitle = content.findViewById(R.id.sheet_subtitle);
+        subtitle.setText(item.getTitle());
 
-    /** Wraps an input view in a padded container so it sits nicely inside the dialog body. */
-    private static android.view.View wrapInput(Context context, EditText input) {
-        int padding = (int) (16 * context.getResources().getDisplayMetrics().density);
-        android.widget.FrameLayout container = new android.widget.FrameLayout(context);
-        container.setPadding(padding, padding / 2, padding, 0);
-        container.addView(input);
-        return container;
+        RecyclerView list = content.findViewById(R.id.playlist_list);
+        list.setLayoutManager(new LinearLayoutManager(context));
+        list.setAdapter(new RowAdapter(context, item, playlists, memberIds));
+
+        content.findViewById(R.id.create_row).setOnClickListener(v -> {
+            dialog.dismiss();
+            PlaylistNameDialog.show(context, R.string.add_playlist_label, null,
+                    name -> createPlaylistAndAdd(context, name, item));
+        });
+        dialog.show();
     }
 
     private static void createPlaylistAndAdd(Context context, String name, FeedItem item) {
@@ -100,5 +85,85 @@ public class AddToPlaylistDialog {
                     EventBus.getDefault().post(new MessageEvent(
                             context.getString(R.string.added_to_playlist_label, name)));
                 }, error -> Log.e(TAG, Log.getStackTraceString(error)));
+    }
+
+    private static class RowAdapter extends RecyclerView.Adapter<RowAdapter.RowHolder> {
+        private final Context context;
+        private final FeedItem item;
+        private final List<Playlist> playlists;
+        private final Set<Long> memberIds;
+        // Per-playlist count offset from toggles made inside this sheet, so the
+        // row's "N episodes" stays truthful without re-querying the DB.
+        private final List<Integer> countDelta;
+
+        RowAdapter(Context context, FeedItem item, List<Playlist> playlists, Set<Long> memberIds) {
+            this.context = context;
+            this.item = item;
+            this.playlists = playlists;
+            this.memberIds = new HashSet<>(memberIds);
+            this.countDelta = new ArrayList<>();
+            for (int i = 0; i < playlists.size(); i++) {
+                countDelta.add(0);
+            }
+        }
+
+        @NonNull
+        @Override
+        public RowHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new RowHolder(LayoutInflater.from(context)
+                    .inflate(R.layout.add_to_playlist_row, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RowHolder holder, int position) {
+            Playlist playlist = playlists.get(position);
+            boolean isMember = memberIds.contains(playlist.getId());
+            int count = playlist.getEpisodeCount() + countDelta.get(position);
+            holder.name.setText(playlist.getName());
+            holder.count.setText(context.getResources().getQuantityString(
+                    R.plurals.num_episodes, count, count));
+            holder.check.setChecked(isMember);
+            holder.icon.setImageResource(R.drawable.ic_playlist_music);
+            holder.itemView.setOnClickListener(v -> toggle(holder, position));
+        }
+
+        private void toggle(RowHolder holder, int position) {
+            Playlist playlist = playlists.get(position);
+            boolean nowMember = !memberIds.contains(playlist.getId());
+            if (nowMember) {
+                memberIds.add(playlist.getId());
+                countDelta.set(position, countDelta.get(position) + 1);
+                DBWriter.addPlaylistItems(playlist.getId(), item);
+                EventBus.getDefault().post(new MessageEvent(
+                        context.getString(R.string.added_to_playlist_label, playlist.getName())));
+            } else {
+                memberIds.remove(playlist.getId());
+                countDelta.set(position, countDelta.get(position) - 1);
+                DBWriter.removePlaylistItem(playlist.getId(), item.getId());
+                EventBus.getDefault().post(new MessageEvent(
+                        context.getString(R.string.removed_from_playlist_label, playlist.getName())));
+            }
+            notifyItemChanged(position);
+        }
+
+        @Override
+        public int getItemCount() {
+            return playlists.size();
+        }
+
+        static class RowHolder extends RecyclerView.ViewHolder {
+            final ImageView icon;
+            final TextView name;
+            final TextView count;
+            final MaterialCheckBox check;
+
+            RowHolder(@NonNull View itemView) {
+                super(itemView);
+                icon = itemView.findViewById(R.id.row_icon);
+                name = itemView.findViewById(R.id.row_name);
+                count = itemView.findViewById(R.id.row_count);
+                check = itemView.findViewById(R.id.row_check);
+            }
+        }
     }
 }

@@ -1566,6 +1566,14 @@
 
     <!-- Playlists (named, queue-like episode collections) -->
     <string name="playlists_label">Playlists</string>
+    <!-- %1$s = playlist name -->
+    <string name="removed_from_playlist_label">Removed from “%1$s”</string>
+    <string name="playlist_empty_meta_label">Empty — add episodes</string>
+    <string name="playlist_suggestion_running">Running</string>
+    <string name="playlist_suggestion_driving">Driving</string>
+    <string name="playlist_suggestion_workout">Workout</string>
+    <string name="playlist_suggestion_commute">Commute</string>
+    <string name="playlist_suggestion_bedtime">Bedtime</string>
     <string name="add_to_playlist_label">Add to playlist</string>
     <string name="remove_from_playlist_label">Remove from playlist</string>
     <string name="add_playlist_label">New playlist</string>

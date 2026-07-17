@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- One playlist row inside the add-to-playlist sheet; the whole row toggles. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="60dp"
     android:background="?attr/selectableItemBackground"
     android:gravity="center_vertical"
-    android:minHeight="64dp"
     android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp">
+    android:paddingHorizontal="20dp">
 
     <ImageView
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:id="@+id/row_icon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:layout_marginEnd="16dp"
-        android:contentDescription="@string/playlists_label"
-        android:src="@drawable/ic_playlist_play"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_playlist_music"
         app:tint="?android:attr/textColorSecondary" />
 
     <LinearLayout
@@ -25,33 +26,28 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/playlist_name"
+            android:id="@+id/row_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            tools:text="Morning commute"
-            xmlns:tools="http://schemas.android.com/tools" />
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            tools:text="Running" />
 
         <TextView
-            android:id="@+id/playlist_count"
+            android:id="@+id/row_count"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?android:attr/textColorSecondary"
-            tools:text="4 episodes"
-            xmlns:tools="http://schemas.android.com/tools" />
+            tools:text="8 episodes" />
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/playlist_overflow"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/playlist_options_label"
-        android:padding="12dp"
-        android:src="@drawable/dots_vertical"
-        app:tint="?android:attr/textColorSecondary" />
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/row_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:focusable="false" />
 
 </LinearLayout>

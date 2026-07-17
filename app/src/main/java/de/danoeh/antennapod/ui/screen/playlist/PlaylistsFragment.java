@@ -4,18 +4,16 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
@@ -58,7 +56,7 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
         ((MainActivity) requireActivity()).setupToolbarToggle(toolbar, displayUpArrow);
 
         RecyclerView recyclerView = root.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
         adapter = new PlaylistListAdapter(getContext(), this);
         recyclerView.setAdapter(adapter);
 
@@ -67,7 +65,7 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
 
         emptyView = new EmptyViewHandler(getContext());
         emptyView.attachToRecyclerView(recyclerView);
-        emptyView.setIcon(R.drawable.ic_playlist_play);
+        emptyView.setIcon(R.drawable.ic_playlist_music);
         emptyView.setTitle(R.string.no_playlists_head_label);
         emptyView.setMessage(R.string.no_playlists_label);
         emptyView.updateAdapter(adapter);
@@ -102,7 +100,7 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
         if (disposable != null) {
             disposable.dispose();
         }
-        disposable = Observable.fromCallable(DBReader::getPlaylists)
+        disposable = Observable.fromCallable(DBReader::getPlaylistsWithCovers)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(playlists -> {
@@ -115,6 +113,11 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
     public void onPlaylistClicked(Playlist playlist) {
         ((MainActivity) requireActivity()).loadChildFragment(
                 PlaylistFragment.newInstance(playlist.getId(), playlist.getName()));
+    }
+
+    @Override
+    public void onPlaylistPlayClicked(Playlist playlist) {
+        PlaylistPlayer.play(requireContext(), playlist.getId());
     }
 
     @Override
@@ -142,33 +145,13 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
     }
 
     private void showCreateDialog() {
-        final EditText input = newNameInput(null);
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.add_playlist_label)
-                .setView(wrapInput(input))
-                .setPositiveButton(R.string.confirm_label, (dialog, which) -> {
-                    String name = input.getText().toString().trim();
-                    if (!name.isEmpty()) {
-                        DBWriter.createPlaylist(name);
-                    }
-                })
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
+        PlaylistNameDialog.show(requireContext(), R.string.add_playlist_label, null,
+                DBWriter::createPlaylist);
     }
 
     private void showRenameDialog(Playlist playlist) {
-        final EditText input = newNameInput(playlist.getName());
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.rename_playlist_label)
-                .setView(wrapInput(input))
-                .setPositiveButton(R.string.confirm_label, (dialog, which) -> {
-                    String name = input.getText().toString().trim();
-                    if (!name.isEmpty()) {
-                        DBWriter.renamePlaylist(playlist.getId(), name);
-                    }
-                })
-                .setNegativeButton(R.string.cancel_label, null)
-                .show();
+        PlaylistNameDialog.show(requireContext(), R.string.rename_playlist_label,
+                playlist.getName(), name -> DBWriter.renamePlaylist(playlist.getId(), name));
     }
 
     private void showDeleteDialog(Playlist playlist) {
@@ -179,25 +162,5 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
                 DBWriter.removePlaylist(playlist.getId());
             }
         }.createNewDialog().show();
-    }
-
-    private EditText newNameInput(String prefill) {
-        EditText input = new EditText(requireContext());
-        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        input.setHint(R.string.playlist_name_hint);
-        if (prefill != null) {
-            input.setText(prefill);
-            input.setSelection(prefill.length());
-        }
-        return input;
-    }
-
-    private View wrapInput(EditText input) {
-        int padding = (int) (16 * getResources().getDisplayMetrics().density);
-        android.widget.FrameLayout container = new android.widget.FrameLayout(requireContext());
-        container.setPadding(padding, padding / 2, padding, 0);
-        container.addView(input);
-        return container;
     }
 }

@@ -469,7 +469,8 @@ public final class DBReader {
     // ── Named playlists (TrimPlayer) ──────────────────────────────────────────
 
     /**
-     * Loads all playlists with their current episode counts, ordered by name.
+     * Loads all playlists with their current episode counts and total durations,
+     * ordered by name.
      */
     @NonNull
     public static List<Playlist> getPlaylists() {
@@ -479,9 +480,57 @@ public final class DBReader {
         List<Playlist> playlists = new ArrayList<>();
         try (Cursor cursor = adapter.getPlaylistsCursor()) {
             while (cursor.moveToNext()) {
-                playlists.add(new Playlist(cursor.getLong(0), cursor.getString(1), cursor.getInt(2)));
+                playlists.add(new Playlist(cursor.getLong(0), cursor.getString(1),
+                        cursor.getInt(2), cursor.getLong(3)));
             }
             return playlists;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /**
+     * Like {@link #getPlaylists()}, but each playlist also carries up to 4 cover-art
+     * urls for its card collage. One extra tiny query per playlist — fine for the
+     * handful of playlists a user has.
+     */
+    @NonNull
+    public static List<Playlist> getPlaylistsWithCovers() {
+        List<Playlist> playlists = getPlaylists();
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try {
+            for (Playlist playlist : playlists) {
+                List<String> covers = new ArrayList<>();
+                try (Cursor cursor = adapter.getPlaylistCoverUrlsCursor(playlist.getId(), 4)) {
+                    while (cursor.moveToNext()) {
+                        if (cursor.getString(0) != null) {
+                            covers.add(cursor.getString(0));
+                        }
+                    }
+                }
+                playlist.setCoverUrls(covers);
+            }
+            return playlists;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /**
+     * Ids of every playlist containing the given episode (drives the checkmarks in
+     * the add-to-playlist sheet).
+     */
+    @NonNull
+    public static java.util.Set<Long> getPlaylistIdsForItem(long itemId) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        java.util.Set<Long> ids = new java.util.HashSet<>();
+        try (Cursor cursor = adapter.getPlaylistIdsForItemCursor(itemId)) {
+            while (cursor.moveToNext()) {
+                ids.add(cursor.getLong(0));
+            }
+            return ids;
         } finally {
             adapter.close();
         }

@@ -8,6 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -27,6 +29,8 @@ import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.ui.MenuItemUtils;
 import de.danoeh.antennapod.ui.common.ConfirmationDialog;
+import de.danoeh.antennapod.ui.common.Converter;
+import de.danoeh.antennapod.ui.swipeactions.SwipeActions;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemViewHolder;
 import de.danoeh.antennapod.ui.episodeslist.EpisodesListFragment;
@@ -73,12 +77,36 @@ public class PlaylistFragment extends EpisodesListFragment {
         final View root = super.onCreateView(inflater, container, savedInstanceState);
         toolbar.inflateMenu(R.menu.playlist);
         toolbar.setTitle(playlistName);
-        emptyView.setIcon(R.drawable.ic_playlist_play);
+        emptyView.setIcon(R.drawable.ic_playlist_music);
         emptyView.setTitle(R.string.no_playlists_head_label);
         emptyView.setMessage(R.string.playlist_empty_label);
         // A playlist is not tied to a feed refresh.
         swipeRefreshLayout.setEnabled(false);
+        // Replace the base swipe helper with a drag-enabled one so the play order
+        // can be rearranged with the row's drag handle (like the queue).
+        swipeActions.detach();
+        swipeActions = new PlaylistSwipeActions();
+        swipeActions.setFilter(getFilter());
+        swipeActions.attachTo(recyclerView);
         return root;
+    }
+
+    @Override
+    protected void updateToolbar() {
+        super.updateToolbar();
+        // "8 episodes · 6h 40m" under the playlist name.
+        long totalMs = 0;
+        for (FeedItem item : episodes) {
+            if (item.getMedia() != null) {
+                totalMs += item.getMedia().getDuration();
+            }
+        }
+        String subtitle = getResources().getQuantityString(
+                R.plurals.num_episodes, episodes.size(), episodes.size());
+        if (totalMs > 0) {
+            subtitle += " · " + Converter.getDurationStringLocalized(requireContext(), totalMs);
+        }
+        toolbar.setSubtitle(subtitle);
     }
 
     @Override
@@ -178,8 +206,22 @@ public class PlaylistFragment extends EpisodesListFragment {
             }
 
             @Override
+            @android.annotation.SuppressLint("ClickableViewAccessibility")
             protected void afterBindViewHolder(EpisodeItemViewHolder holder, int pos) {
                 super.afterBindViewHolder(holder, pos);
+                // Drag handle rearranges the play order (mirrors the queue).
+                if (inActionMode()) {
+                    holder.dragHandle.setVisibility(View.GONE);
+                    holder.dragHandle.setOnTouchListener(null);
+                } else {
+                    holder.dragHandle.setVisibility(View.VISIBLE);
+                    holder.dragHandle.setOnTouchListener((v, event) -> {
+                        if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) {
+                            swipeActions.startDrag(holder);
+                        }
+                        return false;
+                    });
+                }
                 final FeedItem item = getItem(pos);
                 if (item == null || item.getMedia() == null) {
                     return;
@@ -243,5 +285,51 @@ public class PlaylistFragment extends EpisodesListFragment {
                 getParentFragmentManager().popBackStack();
             }
         }.createNewDialog().show();
+    }
+
+    /** Drag-to-reorder for the play order (same pattern as the queue): moves are
+     *  mirrored in memory while dragging, then persisted once on drop. */
+    private class PlaylistSwipeActions extends SwipeActions {
+        private int dragFrom = -1;
+        private int dragTo = -1;
+
+        PlaylistSwipeActions() {
+            super(ItemTouchHelper.UP | ItemTouchHelper.DOWN, PlaylistFragment.this, TAG);
+        }
+
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView,
+                              @NonNull RecyclerView.ViewHolder viewHolder,
+                              @NonNull RecyclerView.ViewHolder target) {
+            int from = viewHolder.getBindingAdapterPosition();
+            int to = target.getBindingAdapterPosition();
+            if (from < 0 || to < 0 || from >= episodes.size() || to >= episodes.size()) {
+                return false;
+            }
+            if (dragFrom == -1) {
+                dragFrom = from;
+            }
+            dragTo = to;
+            episodes.add(to, episodes.remove(from));
+            listAdapter.notifyItemMoved(from, to);
+            return true;
+        }
+
+        @Override
+        public boolean isLongPressDragEnabled() {
+            return false;
+        }
+
+        @Override
+        public void clearView(@NonNull RecyclerView recyclerView,
+                              @NonNull RecyclerView.ViewHolder viewHolder) {
+            super.clearView(recyclerView, viewHolder);
+            if (dragFrom != -1 && dragTo != -1 && dragFrom != dragTo) {
+                // Persist the new order; the resulting PlaylistEvent reloads us
+                // (and the sync worker pushes it to the account).
+                DBWriter.setPlaylistItems(playlistId, new java.util.ArrayList<>(episodes));
+            }
+            dragFrom = dragTo = -1;
+        }
     }
 }

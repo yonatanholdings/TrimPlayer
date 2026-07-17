@@ -22,7 +22,7 @@ public abstract class NavigationNames {
             case QueueFragment.TAG:
                 return R.drawable.ic_playlist_play;
             case PlaylistsFragment.TAG:
-                return R.drawable.ic_playlist_play;
+                return R.drawable.ic_playlist_music;
             case InboxFragment.TAG:
                 return R.drawable.ic_inbox;
             case AllEpisodesFragment.TAG:
@@ -104,6 +104,8 @@ public abstract class NavigationNames {
         switch (tag) {
             case QueueFragment.TAG:
                 return R.id.bottom_navigation_queue;
+            case PlaylistsFragment.TAG:
+                return R.id.bottom_navigation_playlists;
             case InboxFragment.TAG:
                 return R.id.bottom_navigation_inbox;
             case AllEpisodesFragment.TAG:
@@ -127,6 +129,8 @@ public abstract class NavigationNames {
     public static String getBottomNavigationFragmentTag(int id) {
         if (id == R.id.bottom_navigation_queue) {
             return QueueFragment.TAG;
+        } else if (id == R.id.bottom_navigation_playlists) {
+            return PlaylistsFragment.TAG;
         } else if (id == R.id.bottom_navigation_inbox) {
             return InboxFragment.TAG;
         } else if (id == R.id.bottom_navigation_episodes) {
