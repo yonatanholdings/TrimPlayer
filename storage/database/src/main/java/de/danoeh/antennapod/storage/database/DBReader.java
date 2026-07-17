@@ -578,6 +578,60 @@ public final class DBReader {
         }
     }
 
+    /** Feed ids whose new episodes auto-add to the given playlist. */
+    @NonNull
+    public static java.util.Set<Long> getPlaylistAutoFeedIds(long playlistId) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        java.util.Set<Long> ids = new java.util.HashSet<>();
+        try (Cursor cursor = adapter.getPlaylistAutoFeedsCursor(playlistId)) {
+            while (cursor.moveToNext()) {
+                ids.add(cursor.getLong(0));
+            }
+            return ids;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /** Auto-add rules watching a feed: playlist_id -> rule creation time (cutoff). */
+    @NonNull
+    public static Map<Long, Long> getAutoRulesForFeed(long feedId) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        Map<Long, Long> rules = new HashMap<>();
+        try (Cursor cursor = adapter.getAutoRulesForFeedCursor(feedId)) {
+            while (cursor.moveToNext()) {
+                rules.put(cursor.getLong(0), cursor.getLong(1));
+            }
+            return rules;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /** Every auto-add rule as playlist_id -> (feed id -> rule created_at). */
+    @NonNull
+    public static Map<Long, Map<Long, Long>> getAllPlaylistAutoFeeds() {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        Map<Long, Map<Long, Long>> out = new HashMap<>();
+        try (Cursor cursor = adapter.getAllPlaylistAutoFeedsCursor()) {
+            while (cursor.moveToNext()) {
+                long playlistId = cursor.getLong(0);
+                Map<Long, Long> feeds = out.get(playlistId);
+                if (feeds == null) {
+                    feeds = new HashMap<>();
+                    out.put(playlistId, feeds);
+                }
+                feeds.put(cursor.getLong(1), cursor.getLong(2));
+            }
+            return out;
+        } finally {
+            adapter.close();
+        }
+    }
+
     public static boolean isItemInPlaylist(long playlistId, long itemId) {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();

@@ -124,17 +124,21 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
     public void onPlaylistOverflowClicked(Playlist playlist, View anchor) {
         PopupMenu popup = new PopupMenu(requireContext(), anchor);
         popup.getMenu().add(0, 0, 0, R.string.play_label);
-        popup.getMenu().add(0, 1, 1, R.string.rename_playlist_label);
-        popup.getMenu().add(0, 2, 2, R.string.remove_playlist_label);
+        popup.getMenu().add(0, 1, 1, R.string.trim_auto_add_label);
+        popup.getMenu().add(0, 2, 2, R.string.rename_playlist_label);
+        popup.getMenu().add(0, 3, 3, R.string.remove_playlist_label);
         popup.setOnMenuItemClickListener(menuItem -> {
             switch (menuItem.getItemId()) {
                 case 0:
                     PlaylistPlayer.play(requireContext(), playlist.getId());
                     return true;
                 case 1:
-                    showRenameDialog(playlist);
+                    AutoAddShowsDialog.show(requireContext(), playlist.getId());
                     return true;
                 case 2:
+                    showRenameDialog(playlist);
+                    return true;
+                case 3:
                     showDeleteDialog(playlist);
                     return true;
                 default:

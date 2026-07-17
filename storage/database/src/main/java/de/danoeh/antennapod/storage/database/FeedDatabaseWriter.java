@@ -60,6 +60,7 @@ public abstract class FeedDatabaseWriter {
         Feed resultFeed;
         List<FeedItem> unlistedItems = new ArrayList<>();
         List<FeedItem> itemsToAddToQueue = new ArrayList<>();
+        List<FeedItem> genuinelyNewItems = new ArrayList<>();
         List<NewEpisodesPrefetchEvent.Item> trimPrefetchItems = new ArrayList<>();
 
         PodDBAdapter adapter = PodDBAdapter.getInstance();
@@ -160,6 +161,7 @@ public abstract class FeedDatabaseWriter {
                             || priorMostRecentDate.before(item.getPubDate())
                             || priorMostRecentDate.equals(item.getPubDate());
                     if (savedFeed.getState() == Feed.STATE_SUBSCRIBED && shouldPerformNewEpisodesAction) {
+                        genuinelyNewItems.add(item);
                         if (!savedFeed.isLocalFeed() && item.getMedia() != null) {
                             String mediaUrl = item.getMedia().getDownloadUrl();
                             String rssUrl = savedFeed.getDownloadUrl();
@@ -232,6 +234,14 @@ public abstract class FeedDatabaseWriter {
         // We need to add to queue after items are saved to database
         DBWriter.addQueueItem(context, itemsToAddToQueue.toArray(new FeedItem[0]));
 
+        // Playlist auto-add rules: append this refresh's genuinely-new episodes to
+        // every playlist watching this show. Rule creation time is the cutoff, so
+        // a rule never pulls in episodes published before it existed. Runs after
+        // the items are saved (they need DB ids to enter a playlist).
+        if (savedFeed != null && !genuinelyNewItems.isEmpty()) {
+            applyPlaylistAutoRules(savedFeed.getId(), genuinelyNewItems);
+        }
+
         adapter.close();
 
         if (savedFeed != null) {
@@ -245,6 +255,35 @@ public abstract class FeedDatabaseWriter {
         }
 
         return resultFeed;
+    }
+
+    /** Append new episodes (published after each rule's cutoff) to the playlists
+     *  auto-fed by this show. Oldest first, so a multi-episode drop lands in
+     *  listening order. */
+    private static void applyPlaylistAutoRules(long feedId, List<FeedItem> newItems) {
+        java.util.Map<Long, Long> rules = DBReader.getAutoRulesForFeed(feedId);
+        if (rules.isEmpty()) {
+            return;
+        }
+        List<FeedItem> ordered = new ArrayList<>(newItems);
+        Collections.sort(ordered, (a, b) -> {
+            long ta = a.getPubDate() == null ? 0 : a.getPubDate().getTime();
+            long tb = b.getPubDate() == null ? 0 : b.getPubDate().getTime();
+            return Long.compare(ta, tb);
+        });
+        for (java.util.Map.Entry<Long, Long> rule : rules.entrySet()) {
+            List<FeedItem> eligible = new ArrayList<>();
+            for (FeedItem item : ordered) {
+                // No pubDate = can't prove it predates the rule; treat as new.
+                if (item.getPubDate() == null || item.getPubDate().getTime() >= rule.getValue()) {
+                    eligible.add(item);
+                }
+            }
+            if (!eligible.isEmpty()) {
+                Log.d(TAG, "auto-adding " + eligible.size() + " episode(s) to playlist " + rule.getKey());
+                DBWriter.addPlaylistItems(rule.getKey(), eligible.toArray(new FeedItem[0]));
+            }
+        }
     }
 
     private static String duplicateEpisodeDetails(FeedItem item) {

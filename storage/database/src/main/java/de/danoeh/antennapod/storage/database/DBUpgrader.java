@@ -389,6 +389,10 @@ class DBUpgrader {
             db.execSQL(PodDBAdapter.CREATE_TABLE_PLAYLIST_ITEMS);
             db.execSQL(PodDBAdapter.CREATE_INDEX_PLAYLIST_ITEMS_PLAYLIST);
         }
+        if (oldVersion < 3150000) {
+            // Playlist auto-add rules: new episodes of a show land in a playlist.
+            db.execSQL(PodDBAdapter.CREATE_TABLE_PLAYLIST_FEEDS);
+        }
     }
 
 }

@@ -55,7 +55,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3140000;
+    public static final int VERSION = 3150000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -141,6 +141,7 @@ public class PodDBAdapter {
     public static final String KEY_PODCASTINDEX_TRANSCRIPT_URL = "podcastindex_transcript_url";
     public static final String KEY_PODCASTINDEX_TRANSCRIPT_TYPE = "podcastindex_transcript_type";
     public static final String KEY_PLAYLIST_ID = "playlist_id";
+    public static final String KEY_PLAYLIST_RULE_CREATED_AT = "created_at";
 
     // Table names
     public static final String TABLE_NAME_FEEDS = "Feeds";
@@ -153,6 +154,7 @@ public class PodDBAdapter {
     public static final String TABLE_NAME_FAVORITES = "Favorites";
     public static final String TABLE_NAME_PLAYLISTS = "Playlists";
     public static final String TABLE_NAME_PLAYLIST_ITEMS = "PlaylistItems";
+    public static final String TABLE_NAME_PLAYLIST_FEEDS = "PlaylistFeeds";
 
     // SQL Statements for creating new tables
     private static final String TABLE_PRIMARY_KEY = KEY_ID
@@ -286,6 +288,16 @@ public class PodDBAdapter {
             + TABLE_NAME_PLAYLIST_ITEMS + "_" + KEY_PLAYLIST_ID + " ON " + TABLE_NAME_PLAYLIST_ITEMS + " ("
             + KEY_PLAYLIST_ID + ")";
 
+    // Auto-add rules: new episodes of `feed` get appended to `playlist_id` on
+    // refresh. created_at is the cutoff — only episodes published after the rule
+    // was made are auto-added, so a rule never floods a playlist with backlog.
+    static final String CREATE_TABLE_PLAYLIST_FEEDS = "CREATE TABLE "
+            + TABLE_NAME_PLAYLIST_FEEDS + "(" + TABLE_PRIMARY_KEY
+            + KEY_PLAYLIST_ID + " INTEGER NOT NULL,"
+            + KEY_FEED + " INTEGER NOT NULL,"
+            + KEY_PLAYLIST_RULE_CREATED_AT + " INTEGER NOT NULL,"
+            + "UNIQUE(" + KEY_PLAYLIST_ID + "," + KEY_FEED + "))";
+
     static final String CREATE_TABLE_SKIP_EVENTS = "CREATE TABLE "
             + TABLE_NAME_SKIP_EVENTS + "(" + TABLE_PRIMARY_KEY
             + KEY_FEEDITEM + " INTEGER NOT NULL,"
@@ -319,7 +331,8 @@ public class PodDBAdapter {
             TABLE_NAME_SKIP_EVENTS,
             TABLE_NAME_BOOKMARKS,
             TABLE_NAME_PLAYLISTS,
-            TABLE_NAME_PLAYLIST_ITEMS
+            TABLE_NAME_PLAYLIST_ITEMS,
+            TABLE_NAME_PLAYLIST_FEEDS
     };
 
     public static final String SELECT_KEY_ITEM_ID = "item_id";
@@ -1218,6 +1231,7 @@ public class PodDBAdapter {
         try {
             db.beginTransactionNonExclusive();
             db.delete(TABLE_NAME_PLAYLIST_ITEMS, KEY_PLAYLIST_ID + "=?", new String[]{String.valueOf(playlistId)});
+            db.delete(TABLE_NAME_PLAYLIST_FEEDS, KEY_PLAYLIST_ID + "=?", new String[]{String.valueOf(playlistId)});
             db.delete(TABLE_NAME_PLAYLISTS, KEY_ID + "=?", new String[]{String.valueOf(playlistId)});
             db.setTransactionSuccessful();
         } catch (SQLException e) {
@@ -1225,6 +1239,40 @@ public class PodDBAdapter {
         } finally {
             db.endTransaction();
         }
+    }
+
+    /** Insert an auto-add rule; keeps the original created_at (cutoff) if it already exists. */
+    public void addPlaylistAutoFeed(long playlistId, long feedId, long createdAt) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_PLAYLIST_ID, playlistId);
+        values.put(KEY_FEED, feedId);
+        values.put(KEY_PLAYLIST_RULE_CREATED_AT, createdAt);
+        db.insertWithOnConflict(TABLE_NAME_PLAYLIST_FEEDS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
+    }
+
+    public void removePlaylistAutoFeed(long playlistId, long feedId) {
+        db.delete(TABLE_NAME_PLAYLIST_FEEDS, KEY_PLAYLIST_ID + "=? AND " + KEY_FEED + "=?",
+                new String[]{String.valueOf(playlistId), String.valueOf(feedId)});
+    }
+
+    /** Feed ids auto-feeding the given playlist. */
+    public Cursor getPlaylistAutoFeedsCursor(long playlistId) {
+        return db.rawQuery("SELECT " + KEY_FEED + " FROM " + TABLE_NAME_PLAYLIST_FEEDS
+                + " WHERE " + KEY_PLAYLIST_ID + " = " + playlistId, null);
+    }
+
+    /** (playlist_id, created_at) of every rule watching the given feed. */
+    public Cursor getAutoRulesForFeedCursor(long feedId) {
+        return db.rawQuery("SELECT " + KEY_PLAYLIST_ID + ", " + KEY_PLAYLIST_RULE_CREATED_AT
+                + " FROM " + TABLE_NAME_PLAYLIST_FEEDS
+                + " WHERE " + KEY_FEED + " = " + feedId, null);
+    }
+
+    /** Every rule as (playlist_id, feed, created_at) — for the sync journal. */
+    public Cursor getAllPlaylistAutoFeedsCursor() {
+        return db.rawQuery("SELECT " + KEY_PLAYLIST_ID + ", " + KEY_FEED + ", "
+                + KEY_PLAYLIST_RULE_CREATED_AT
+                + " FROM " + TABLE_NAME_PLAYLIST_FEEDS, null);
     }
 
     /**

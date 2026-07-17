@@ -992,6 +992,8 @@ public abstract class UserPreferences {
     // episode urls as last pushed (JSON object name -> array), so the worker
     // diffs only genuine local playlist edits.
     public static final String PREF_TRIM_SYNC_SNAP_PLAYLISTS = "prefTrimSyncSnapPlaylists";
+    // Auto-add rules (playlist name + feed url composites) as last pushed.
+    public static final String PREF_TRIM_SYNC_SNAP_RULES = "prefTrimSyncSnapRules";
 
     public static String getTrimAccountToken() {
         return prefs.getString(PREF_TRIM_ACCOUNT_TOKEN, "");
@@ -1030,7 +1032,17 @@ public abstract class UserPreferences {
                 .remove(PREF_TRIM_SYNC_SNAP_FAV)
                 .remove(PREF_TRIM_SYNC_SNAP_BOOKMARKS)
                 .remove(PREF_TRIM_SYNC_SNAP_PLAYLISTS)
+                .remove(PREF_TRIM_SYNC_SNAP_RULES)
                 .apply();
+    }
+
+    /** Journal of auto-add rule composites ("name\nfeedUrl") as last pushed (JSON array). */
+    public static String getTrimSyncRulesSnapshot() {
+        return prefs.getString(PREF_TRIM_SYNC_SNAP_RULES, "");
+    }
+
+    public static void setTrimSyncRulesSnapshot(String json) {
+        prefs.edit().putString(PREF_TRIM_SYNC_SNAP_RULES, json == null ? "" : json).apply();
     }
 
     /** Journal of every playlist's name + ordered urls as last pushed (JSON object). */

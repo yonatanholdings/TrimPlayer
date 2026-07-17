@@ -7,6 +7,10 @@
         android:title="@string/play_label"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/auto_add_shows_item"
+        android:title="@string/trim_auto_add_label"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/rename_playlist_item"
         android:title="@string/rename_playlist_label"
         app:showAsAction="never" />

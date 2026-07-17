@@ -115,6 +115,9 @@ public class PlaylistFragment extends EpisodesListFragment {
         if (id == R.id.play_playlist_item) {
             PlaylistPlayer.play(requireContext(), playlistId);
             return true;
+        } else if (id == R.id.auto_add_shows_item) {
+            AutoAddShowsDialog.show(requireContext(), playlistId);
+            return true;
         } else if (id == R.id.rename_playlist_item) {
             showRenameDialog();
             return true;

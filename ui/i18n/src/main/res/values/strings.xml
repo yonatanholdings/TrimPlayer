@@ -1574,6 +1574,8 @@
     <string name="playlist_suggestion_workout">Workout</string>
     <string name="playlist_suggestion_commute">Commute</string>
     <string name="playlist_suggestion_bedtime">Bedtime</string>
+    <string name="trim_auto_add_label">Auto-add new episodes</string>
+    <string name="trim_auto_add_no_subscriptions">Subscribe to some shows first — checked shows will drop their new episodes into this playlist automatically.</string>
     <string name="add_to_playlist_label">Add to playlist</string>
     <string name="remove_from_playlist_label">Remove from playlist</string>
     <string name="add_playlist_label">New playlist</string>

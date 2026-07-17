@@ -115,6 +115,23 @@ public class TrimSyncWorkerTest {
     }
 
     @Test
+    public void ruleMarkerDiffCarriesCutoffOnCreatesAndNowOnDeletes() {
+        java.util.Map<String, Long> cur = new java.util.HashMap<>();
+        cur.put("Running\nhttps://example.com/feed.xml", 1_111L); // created earlier
+        HashSet<String> prev = new HashSet<>(
+                Collections.singletonList("Driving\nhttps://example.com/other.xml"));
+        List<TrimClient.PrefChange> out = TrimSyncWorker.diffRuleMarkers(prev, cur, 9_999L);
+        assertEquals(2, out.size());
+        TrimClient.PrefChange created = out.get(0).deleted ? out.get(1) : out.get(0);
+        TrimClient.PrefChange removed = out.get(0).deleted ? out.get(0) : out.get(1);
+        assertEquals("__queue_rule__:Running\nhttps://example.com/feed.xml", created.rss_url);
+        assertEquals(1_111L, created.client_ts); // the rule's cutoff, not "now"
+        assertEquals(Float.valueOf(1f), created.playback_rate);
+        assertTrue(removed.deleted);
+        assertEquals(9_999L, removed.client_ts);
+    }
+
+    @Test
     public void queueMarkerDiffEmitsCreatesAndDeletes() {
         HashSet<String> prev = new HashSet<>(Collections.singletonList("Driving"));
         HashSet<String> cur = new HashSet<>(Collections.singletonList("Running"));

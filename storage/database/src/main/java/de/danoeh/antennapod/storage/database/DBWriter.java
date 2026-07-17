@@ -633,6 +633,31 @@ public class DBWriter {
         });
     }
 
+    /** Add an auto-add rule: new episodes of the feed land in the playlist.
+     *  {@code createdAt} is the cutoff (episodes published before it never auto-add);
+     *  pass the rule's original creation time when applying a synced rule so every
+     *  device agrees on the cutoff. */
+    public static Future<?> addPlaylistAutoFeed(final long playlistId, final long feedId,
+                                                final long createdAt) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.addPlaylistAutoFeed(playlistId, feedId, createdAt);
+            adapter.close();
+            EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+        });
+    }
+
+    public static Future<?> removePlaylistAutoFeed(final long playlistId, final long feedId) {
+        return runOnDbThread(() -> {
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.removePlaylistAutoFeed(playlistId, feedId);
+            adapter.close();
+            EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+        });
+    }
+
     /**
      * Replaces the contents/order of a playlist with the given ordered list (used after drag-reorder).
      */

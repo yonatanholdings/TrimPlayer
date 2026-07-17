@@ -96,8 +96,9 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
         holder.collageGrid.setVisibility(covers.size() >= 2 ? View.VISIBLE : View.GONE);
         if (empty) {
             String name = playlist.getName() == null ? "" : playlist.getName().trim();
-            int color = TILE_COLORS[Math.abs(name.toLowerCase(Locale.ROOT).hashCode())
-                    % TILE_COLORS.length];
+            // floorMod: hashCode() can be Integer.MIN_VALUE, where Math.abs stays negative.
+            int color = TILE_COLORS[Math.floorMod(
+                    name.toLowerCase(Locale.ROOT).hashCode(), TILE_COLORS.length)];
             holder.placeholderBg.setBackgroundColor(color);
             holder.placeholderInitial.setText(name.isEmpty()
                     ? "♪" : name.substring(0, 1).toUpperCase(Locale.ROOT));

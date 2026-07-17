@@ -86,6 +86,13 @@ public class TrimSyncWorker extends Worker {
     // playlist still reaches the other devices.
     static final String DEFAULT_QUEUE = "default";
     static final String QUEUE_MARKER_PREFIX = "__queue__:";
+    // Auto-add rules ("new episodes of show X land in playlist Y") sync as
+    // reserved pref rows keyed `__queue_rule__:<playlistName>\n<rssUrl>` — the
+    // "\n" can't appear in either part (names are single-line, urls never contain
+    // it). The row's client_ts doubles as the rule's cutoff: only episodes
+    // published after it are auto-added, on every device.
+    static final String RULE_MARKER_PREFIX = "__queue_rule__:";
+    static final String RULE_SEP = "\n";
     private static final int MAX_QUEUE_NAME_LEN = 64;
 
     /** Outcome of applying one entity's server delta: how many local rows we
@@ -115,6 +122,9 @@ public class TrimSyncWorker extends Worker {
         Map<String, List<String>> prevPlaylists = parsePlaylistsSnapshot(
                 UserPreferences.getTrimSyncPlaylistsSnapshot());
         Map<String, List<String>> curPlaylists = currentPlaylists();
+        Set<String> prevRules = new HashSet<>(parseQueueSnapshot(
+                UserPreferences.getTrimSyncRulesSnapshot()));
+        Map<String, Long> curRules = currentRules();
 
         // Change-journal: diff current local state against the snapshot of what we
         // last pushed, so we only send genuine local changes (adds / title edits /
@@ -185,6 +195,7 @@ public class TrimSyncWorker extends Worker {
         req.progress = buildProgress(queue, playedRecently, backfillItems, favItems, curFav, changedFav, now);
         req.prefs = diffPrefs(prevPrefs, curPrefs, now);
         req.prefs.addAll(diffQueueNameMarkers(prevPlaylists.keySet(), curPlaylists.keySet(), now));
+        req.prefs.addAll(diffRuleMarkers(prevRules, curRules, now));
         req.bookmarks = diffBookmarks(prevBookmarks, bookmarkRows, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
@@ -234,6 +245,8 @@ public class TrimSyncWorker extends Worker {
         }
         ApplyResult queueRes = applyQueue(getApplicationContext(), defaultRows);
         ApplyResult playlistRes = applyPlaylists(playlistRows, resp.body.prefs);
+        // Rules AFTER playlists (their playlist may have been created just above).
+        int appliedRules = applyRuleMarkers(resp.body.prefs);
         int appliedPrefs = applyPrefs(resp.body.prefs);
         Set<String> adoptedAwayIds = new HashSet<>();
         ApplyResult bookmarkRes = applyBookmarks(resp.body.bookmarks, adoptedAwayIds);
@@ -292,9 +305,12 @@ public class TrimSyncWorker extends Worker {
             bookmarkSnap.put(adopted, "");
         }
         UserPreferences.setTrimSyncBookmarkSnapshot(serializeSubs(bookmarkSnap));
-        // Snapshot the reconciled playlists so the next diff only sees genuine
-        // local edits (server-applied changes aren't echoed back).
+        // Snapshot the reconciled playlists + rules so the next diff only sees
+        // genuine local edits (server-applied changes aren't echoed back).
         UserPreferences.setTrimSyncPlaylistsSnapshot(serializePlaylists(currentPlaylists()));
+        List<String> ruleKeys = new ArrayList<>(currentRules().keySet());
+        Collections.sort(ruleKeys);
+        UserPreferences.setTrimSyncRulesSnapshot(serializeQueue(ruleKeys));
 
         // Advance the one-time history backfill now that this run's push succeeded.
         // A short chunk means we've reached the bottom of the history — done; otherwise
@@ -313,7 +329,8 @@ public class TrimSyncWorker extends Worker {
                 + " prefs=" + req.prefs.size() + " bookmarks=" + req.bookmarks.size()
                 + "; applied subs=" + appliedSubs + " progress=" + progressRes.changed
                 + " queue=" + queueRes.changed + " playlists=" + playlistRes.changed
-                + " prefs=" + appliedPrefs + " bookmarks=" + bookmarkRes.changed
+                + " rules=" + appliedRules + " prefs=" + appliedPrefs
+                + " bookmarks=" + bookmarkRes.changed
                 + "; deferred=" + deferred + ", cursor=" + newCursor);
         return Result.success();
     }
@@ -881,6 +898,140 @@ public class TrimSyncWorker extends Worker {
         } catch (Exception e) {
             Log.w(TAG, "playlist apply failed for id " + playlistId + ": " + e.getMessage());
         }
+    }
+
+    /** Every local auto-add rule as composite key "playlistName\nfeedUrl" ->
+     *  rule created_at (the cutoff). Rules whose playlist or feed can't be
+     *  resolved (deleted underneath) are skipped. */
+    private static Map<String, Long> currentRules() {
+        Map<Long, Map<Long, Long>> all = DBReader.getAllPlaylistAutoFeeds();
+        Map<String, Long> out = new HashMap<>();
+        if (all.isEmpty()) {
+            return out;
+        }
+        Map<Long, String> playlistNames = new HashMap<>();
+        for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
+            playlistNames.put(pl.getId(), normQueueName(pl.getName()));
+        }
+        Map<Long, String> feedUrls = new HashMap<>();
+        for (Feed f : DBReader.getFeedList()) {
+            if (f.getDownloadUrl() != null && !f.getDownloadUrl().isEmpty()) {
+                feedUrls.put(f.getId(), f.getDownloadUrl());
+            }
+        }
+        for (Map.Entry<Long, Map<Long, Long>> byPlaylist : all.entrySet()) {
+            String name = playlistNames.get(byPlaylist.getKey());
+            if (name == null || DEFAULT_QUEUE.equals(name)) {
+                continue;
+            }
+            for (Map.Entry<Long, Long> rule : byPlaylist.getValue().entrySet()) {
+                String url = feedUrls.get(rule.getKey());
+                if (url != null) {
+                    out.put(name + RULE_SEP + url, rule.getValue());
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Emit {@code __queue_rule__} marker rows for locally created rules
+     *  (client_ts = the rule's cutoff) and tombstones for removed ones.
+     *  Package-visible for unit tests. */
+    static List<TrimClient.PrefChange> diffRuleMarkers(
+            Set<String> prev, Map<String, Long> cur, long now) {
+        List<TrimClient.PrefChange> out = new ArrayList<>();
+        for (Map.Entry<String, Long> rule : cur.entrySet()) {
+            if (!prev.contains(rule.getKey())) {
+                TrimClient.PrefChange pc = new TrimClient.PrefChange();
+                pc.rss_url = RULE_MARKER_PREFIX + rule.getKey();
+                pc.playback_rate = 1f;
+                pc.deleted = false;
+                pc.client_ts = rule.getValue(); // cutoff rides the timestamp
+                out.add(pc);
+            }
+        }
+        for (String key : prev) {
+            if (!cur.containsKey(key)) {
+                TrimClient.PrefChange pc = new TrimClient.PrefChange();
+                pc.rss_url = RULE_MARKER_PREFIX + key;
+                pc.playback_rate = null;
+                pc.deleted = true;
+                pc.client_ts = now;
+                out.add(pc);
+            }
+        }
+        return out;
+    }
+
+    /** Apply {@code __queue_rule__} markers from the prefs delta: create local
+     *  rules (playlist looked up by name — created if missing — and feed by
+     *  download url; skipped when the feed isn't local, e.g. its auto-subscribe
+     *  failed) and remove tombstoned ones. Returns rows applied. */
+    private static int applyRuleMarkers(List<TrimClient.PrefChange> prefs) {
+        if (prefs == null || prefs.isEmpty()) {
+            return 0;
+        }
+        int applied = 0;
+        Map<String, Long> playlistIdByName = null;
+        Map<String, Feed> feedByUrl = null;
+        for (TrimClient.PrefChange p : prefs) {
+            if (p == null || p.rss_url == null || !p.rss_url.startsWith(RULE_MARKER_PREFIX)) {
+                continue;
+            }
+            String composite = p.rss_url.substring(RULE_MARKER_PREFIX.length());
+            int sep = composite.indexOf(RULE_SEP);
+            if (sep <= 0 || sep == composite.length() - 1) {
+                continue; // malformed key
+            }
+            String name = normQueueName(composite.substring(0, sep));
+            String url = composite.substring(sep + 1);
+            if (DEFAULT_QUEUE.equals(name)) {
+                continue;
+            }
+            if (playlistIdByName == null) {
+                playlistIdByName = new HashMap<>();
+                for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
+                    String n = normQueueName(pl.getName());
+                    if (!playlistIdByName.containsKey(n)) {
+                        playlistIdByName.put(n, pl.getId());
+                    }
+                }
+                feedByUrl = new HashMap<>();
+                for (Feed f : DBReader.getFeedList()) {
+                    if (f.getDownloadUrl() != null) {
+                        feedByUrl.put(f.getDownloadUrl(), f);
+                    }
+                }
+            }
+            Feed feed = feedByUrl.get(url);
+            boolean delete = p.deleted || p.playback_rate == null || p.playback_rate < 0.5f;
+            try {
+                if (delete) {
+                    Long playlistId = playlistIdByName.get(name);
+                    if (playlistId != null && feed != null) {
+                        DBWriter.removePlaylistAutoFeed(playlistId, feed.getId()).get();
+                        applied++;
+                    }
+                    continue;
+                }
+                if (feed == null) {
+                    Log.w(TAG, "rule apply skipped, feed not local: " + url);
+                    continue;
+                }
+                Long playlistId = playlistIdByName.get(name);
+                if (playlistId == null) {
+                    playlistId = DBWriter.createPlaylist(name).get();
+                    playlistIdByName.put(name, playlistId);
+                }
+                // client_ts carries the rule's cutoff so every device agrees.
+                DBWriter.addPlaylistAutoFeed(playlistId, feed.getId(),
+                        p.client_ts > 0 ? p.client_ts : System.currentTimeMillis()).get();
+                applied++;
+            } catch (Exception e) {
+                Log.w(TAG, "rule apply failed for " + p.rss_url + ": " + e.getMessage());
+            }
+        }
+        return applied;
     }
 
     /** Emit {@code __queue__:&lt;name&gt;} marker rows for locally created
