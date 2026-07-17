@@ -123,10 +123,10 @@ public class TrimSyncWorkerTest {
         List<TrimClient.PrefChange> out = TrimSyncWorker.diffRuleMarkers(prev, cur, 9_999L);
         assertEquals(2, out.size());
         TrimClient.PrefChange created = out.get(0).deleted ? out.get(1) : out.get(0);
-        TrimClient.PrefChange removed = out.get(0).deleted ? out.get(0) : out.get(1);
         assertEquals("__queue_rule__:Running\nhttps://example.com/feed.xml", created.rss_url);
         assertEquals(1_111L, created.client_ts); // the rule's cutoff, not "now"
         assertEquals(Float.valueOf(1f), created.playback_rate);
+        TrimClient.PrefChange removed = out.get(0).deleted ? out.get(0) : out.get(1);
         assertTrue(removed.deleted);
         assertEquals(9_999L, removed.client_ts);
     }

@@ -63,6 +63,7 @@ public class PortcastStateWorker extends Worker {
         Context ctx = getApplicationContext();
         List<PortcastImporter.EpisodeState> states = PortcastImporter.loadEpisodeStates(ctx);
         List<PortcastImporter.QueueEntry> queue = PortcastImporter.loadQueue(ctx);
+        List<PortcastImporter.PortPlaylist> playlists = PortcastImporter.loadPlaylists(ctx);
         PortcastImporter.GlobalPrefs globals = PortcastImporter.loadGlobalPrefs(ctx);
 
         // Global prefs are independent of feed materialization, so apply on the
@@ -72,12 +73,13 @@ public class PortcastStateWorker extends Worker {
             PortcastImporter.clearGlobalPrefs(ctx);
         }
 
-        if (states.isEmpty() && queue.isEmpty()) {
+        if (states.isEmpty() && queue.isEmpty() && playlists.isEmpty()) {
             return Result.success();
         }
 
         Log.d(TAG, "Attempt " + (getRunAttemptCount() + 1) + "/" + MAX_ATTEMPTS
-                + " (" + states.size() + " states, " + queue.size() + " queue pending)");
+                + " (" + states.size() + " states, " + queue.size() + " queue, "
+                + playlists.size() + " playlists pending)");
 
         // One-pass index of every FeedItem in the DB: by guid, by enclosure
         // URL, and — for Spotify-sourced states that carry only a title — by
@@ -108,6 +110,8 @@ public class PortcastStateWorker extends Worker {
 
         // Apply queue first so users see something happening before per-episode states.
         List<PortcastImporter.QueueEntry> remainingQueue = applyQueue(queue, itemByGuid, itemByUrl);
+        List<PortcastImporter.PortPlaylist> remainingPlaylists =
+                applyPlaylists(playlists, itemByGuid, itemByUrl);
 
         List<PortcastImporter.EpisodeState> remaining = new ArrayList<>();
         int applied = 0;
@@ -122,26 +126,104 @@ public class PortcastStateWorker extends Worker {
         }
         Log.d(TAG, "Applied " + applied + " states, " + remaining.size() + " still pending");
 
-        boolean allDone = remaining.isEmpty() && remainingQueue.isEmpty();
+        boolean allDone = remaining.isEmpty() && remainingQueue.isEmpty()
+                && remainingPlaylists.isEmpty();
         if (allDone) {
             PortcastImporter.clearEpisodeStates(ctx);
             PortcastImporter.clearQueue(ctx);
+            PortcastImporter.clearPlaylists(ctx);
             return Result.success();
         }
         if (getRunAttemptCount() >= MAX_ATTEMPTS - 1) {
             Log.d(TAG, "Max attempts reached, giving up on " + remaining.size()
-                    + " states, " + remainingQueue.size() + " queue");
+                    + " states, " + remainingQueue.size() + " queue, "
+                    + remainingPlaylists.size() + " playlists");
             PortcastImporter.clearEpisodeStates(ctx);
             PortcastImporter.clearQueue(ctx);
+            PortcastImporter.clearPlaylists(ctx);
             return Result.success();
         }
         try {
             PortcastImporter.saveEpisodeStates(ctx, remaining);
             PortcastImporter.saveQueue(ctx, remainingQueue);
+            PortcastImporter.savePlaylists(ctx, remainingPlaylists);
         } catch (Exception e) {
             Log.e(TAG, "Failed to persist remaining state", e);
         }
         return Result.retry();
+    }
+
+    /** Create/find each imported playlist by name, append the entries that
+     *  resolved (in file order; addPlaylistItems dedups), and install its
+     *  auto-add rules for feeds that exist locally (original cutoffs kept —
+     *  addPlaylistAutoFeed ignores a re-insert, so retries can't move them).
+     *  Returns the playlists that still have unresolved entries or rules, to
+     *  retry after the next feed refresh. */
+    private List<PortcastImporter.PortPlaylist> applyPlaylists(
+            List<PortcastImporter.PortPlaylist> playlists,
+            Map<String, FeedItem> itemByGuid,
+            Map<String, FeedItem> itemByUrl) {
+        if (playlists.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<String, Long> playlistIdByName = new HashMap<>();
+        for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
+            playlistIdByName.putIfAbsent(pl.getName(), pl.getId());
+        }
+        Map<String, Feed> feedByUrl = new HashMap<>();
+        for (Feed f : DBReader.getFeedList()) {
+            if (f.getDownloadUrl() != null) {
+                feedByUrl.put(f.getDownloadUrl(), f);
+            }
+        }
+
+        List<PortcastImporter.PortPlaylist> stillPending = new ArrayList<>();
+        for (PortcastImporter.PortPlaylist pl : playlists) {
+            try {
+                Long playlistId = playlistIdByName.get(pl.name);
+                if (playlistId == null) {
+                    playlistId = DBWriter.createPlaylist(pl.name).get();
+                    playlistIdByName.put(pl.name, playlistId);
+                }
+
+                List<FeedItem> resolved = new ArrayList<>();
+                PortcastImporter.PortPlaylist pending = new PortcastImporter.PortPlaylist();
+                pending.name = pl.name;
+                for (PortcastImporter.QueueEntry entry : pl.entries) {
+                    FeedItem item = resolveEntry(entry, itemByGuid, itemByUrl);
+                    if (item != null) {
+                        resolved.add(item);
+                    } else {
+                        pending.entries.add(entry);
+                    }
+                }
+                if (!resolved.isEmpty()) {
+                    DBWriter.addPlaylistItems(playlistId, resolved.toArray(new FeedItem[0])).get();
+                }
+
+                for (Map.Entry<String, Long> rule : pl.autoAddSinceByFeedUrl.entrySet()) {
+                    Feed feed = feedByUrl.get(rule.getKey());
+                    if (feed == null) {
+                        pending.autoAddSinceByFeedUrl.put(rule.getKey(), rule.getValue());
+                        continue;
+                    }
+                    long since = rule.getValue() > 0
+                            ? rule.getValue() : System.currentTimeMillis();
+                    DBWriter.addPlaylistAutoFeed(playlistId, feed.getId(), since).get();
+                }
+
+                if (!pending.entries.isEmpty() || !pending.autoAddSinceByFeedUrl.isEmpty()) {
+                    stillPending.add(pending);
+                }
+                Log.d(TAG, "Playlist '" + pl.name + "': applied " + resolved.size()
+                        + " items, " + pending.entries.size() + " entries + "
+                        + pending.autoAddSinceByFeedUrl.size() + " rules pending");
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to apply playlist '" + pl.name + "'", e);
+                stillPending.add(pl); // retry wholesale next attempt
+            }
+        }
+        return stillPending;
     }
 
     private void applyGlobalPrefs(PortcastImporter.GlobalPrefs gp) {

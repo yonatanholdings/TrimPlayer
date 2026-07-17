@@ -55,6 +55,8 @@ public class PortcastExporter {
     /** Reverse-DNS extension namespaces (per spec §Extensions). */
     /** Per-episode mid-episode bookmarks; package-visible so the importer parses the same key. */
     static final String EXT_EPISODE_BOOKMARKS = "com.trimplayer.bookmarks";
+    /** Named playlists incl. auto-add rules; shared with the importer and the web player. */
+    static final String EXT_PLAYLISTS = "com.trimplayer.playlists";
     private static final String EXT_FEED_SKIPS = "com.trimplayer.skips";
     private static final String EXT_FEED_SKIP_SILENCE = "com.trimplayer.feedSkipSilence";
     private static final String EXT_FEED_VOLUME_ADAPTION = "com.trimplayer.volumeAdaption";
@@ -93,8 +95,32 @@ public class PortcastExporter {
         String ownerDisplayName = (gpodder != null && !gpodder.isEmpty())
                 ? gpodder : DEFAULT_OWNER_NAME;
 
+        // Named playlists + their auto-add rules (feedId -> cutoff resolved to url).
+        Map<Long, String> feedUrlById = new HashMap<>();
+        for (Feed f : feeds) {
+            if (!isBlank(f.getDownloadUrl())) {
+                feedUrlById.put(f.getId(), f.getDownloadUrl());
+            }
+        }
+        Map<Long, Map<Long, Long>> rulesByPlaylist = DBReader.getAllPlaylistAutoFeeds();
+        List<PlaylistExport> playlists = new ArrayList<>();
+        for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
+            PlaylistExport export = new PlaylistExport(pl.getName(),
+                    DBReader.getPlaylistItems(pl.getId()));
+            Map<Long, Long> rules = rulesByPlaylist.get(pl.getId());
+            if (rules != null) {
+                for (Map.Entry<Long, Long> rule : rules.entrySet()) {
+                    String url = feedUrlById.get(rule.getKey());
+                    if (url != null) {
+                        export.autoAddSinceByFeedUrl.put(url, rule.getValue());
+                    }
+                }
+            }
+            playlists.add(export);
+        }
+
         JSONObject root = buildDocument(feeds, allEpisodes, queue, favoriteIds,
-                bookmarksByItemId, ownerDisplayName, globals, generatorVersion);
+                bookmarksByItemId, playlists, ownerDisplayName, globals, generatorVersion);
 
         // org.json's compact toString is fine; consumers normalize on parse.
         // Pretty-printing inflates the file ~30% for no functional gain.
@@ -114,7 +140,20 @@ public class PortcastExporter {
                                     @NonNull GlobalPrefs globals,
                                     @NonNull String generatorVersion) throws IOException {
         return buildDocument(feeds, allEpisodes, queue, favoriteIds, new HashMap<>(),
-                ownerDisplayName, globals, generatorVersion);
+                new ArrayList<>(), ownerDisplayName, globals, generatorVersion);
+    }
+
+    /** Overload without playlists, kept for existing bookmark tests. */
+    static JSONObject buildDocument(@NonNull List<Feed> feeds,
+                                    @NonNull List<FeedItem> allEpisodes,
+                                    @NonNull List<FeedItem> queue,
+                                    @NonNull Set<Long> favoriteIds,
+                                    @NonNull Map<Long, List<Bookmark>> bookmarksByItemId,
+                                    @NonNull String ownerDisplayName,
+                                    @NonNull GlobalPrefs globals,
+                                    @NonNull String generatorVersion) throws IOException {
+        return buildDocument(feeds, allEpisodes, queue, favoriteIds, bookmarksByItemId,
+                new ArrayList<>(), ownerDisplayName, globals, generatorVersion);
     }
 
     /** Pure-Java entry point used by writeDocument and tests. No Android dependencies. */
@@ -123,6 +162,7 @@ public class PortcastExporter {
                                     @NonNull List<FeedItem> queue,
                                     @NonNull Set<Long> favoriteIds,
                                     @NonNull Map<Long, List<Bookmark>> bookmarksByItemId,
+                                    @NonNull List<PlaylistExport> playlists,
                                     @NonNull String ownerDisplayName,
                                     @NonNull GlobalPrefs globals,
                                     @NonNull String generatorVersion) throws IOException {
@@ -145,10 +185,28 @@ public class PortcastExporter {
             root.put("episodes", buildEpisodes(allEpisodes, subscribedById, favoriteIds, bookmarksByItemId));
             root.put("queue", buildQueue(queue));
             root.put("preferences", buildPreferences(subscribedById.values(), globals));
+            JSONArray playlistsArr = buildPlaylists(playlists);
+            if (playlistsArr.length() > 0) {
+                JSONObject extensions = new JSONObject();
+                extensions.put(EXT_PLAYLISTS, playlistsArr);
+                root.put("extensions", extensions);
+            }
         } catch (JSONException e) {
             throw new IOException("Failed to build PortCast document", e);
         }
         return root;
+    }
+
+    /** Plain-data playlist for export: name, ordered items, rules (feedUrl -> cutoff ms). */
+    static final class PlaylistExport {
+        final String name;
+        final List<FeedItem> items;
+        final Map<String, Long> autoAddSinceByFeedUrl = new HashMap<>();
+
+        PlaylistExport(String name, List<FeedItem> items) {
+            this.name = name;
+            this.items = items;
+        }
     }
 
     /** Plain-data wrapper so tests can pass globals without static UserPreferences state. */
@@ -327,6 +385,52 @@ public class PortcastExporter {
             q.put("episodeRef", ref);
             q.put("source", "manual");
             arr.put(q);
+        }
+        return arr;
+    }
+
+    /** §10 extension array: one object per playlist with ordered episode refs
+     *  and auto-add rules ({@code since} = the rule's cutoff, RFC 3339). */
+    private static JSONArray buildPlaylists(@NonNull List<PlaylistExport> playlists)
+            throws JSONException {
+        JSONArray arr = new JSONArray();
+        for (PlaylistExport pl : playlists) {
+            if (isBlank(pl.name)) {
+                continue;
+            }
+            JSONObject o = new JSONObject();
+            o.put("name", pl.name);
+            JSONArray episodes = new JSONArray();
+            int position = 1;
+            for (FeedItem item : pl.items) {
+                String guid = item.getItemIdentifier();
+                FeedMedia media = item.getMedia();
+                String enclosureUrl = media != null ? media.getDownloadUrl() : null;
+                if (isBlank(guid) && isBlank(enclosureUrl)) {
+                    continue;
+                }
+                JSONObject e = new JSONObject();
+                e.put("position", position++);
+                JSONObject ref = new JSONObject();
+                putIfPresent(ref, "guid", guid);
+                putIfPresent(ref, "enclosureUrl", enclosureUrl);
+                e.put("episodeRef", ref);
+                episodes.put(e);
+            }
+            o.put("episodes", episodes);
+            JSONArray rules = new JSONArray();
+            for (Map.Entry<String, Long> rule : pl.autoAddSinceByFeedUrl.entrySet()) {
+                JSONObject r = new JSONObject();
+                r.put("feedUrl", rule.getKey());
+                if (rule.getValue() > 0) {
+                    r.put("since", formatRfc3339(new Date(rule.getValue())));
+                }
+                rules.put(r);
+            }
+            if (rules.length() > 0) {
+                o.put("autoAddFeeds", rules);
+            }
+            arr.put(o);
         }
         return arr;
     }

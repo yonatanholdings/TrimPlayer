@@ -58,6 +58,7 @@ public class PortcastImporter {
     static final String KEY_PENDING_FEEDS = "import_pending_feeds";
     static final String KEY_EPISODE_STATES = "import_episode_states";
     static final String KEY_QUEUE = "import_queue";
+    static final String KEY_PLAYLISTS = "import_playlists";
     static final String KEY_GLOBAL_PREFS = "import_global_prefs";
 
     /** A subscription from the PortCast file. */
@@ -137,6 +138,14 @@ public class PortcastImporter {
         public String enclosureUrl;
     }
 
+    /** A named playlist from the com.trimplayer.playlists extension: ordered
+     *  episode refs plus auto-add rules (feedUrl -> cutoff epoch ms). */
+    public static class PortPlaylist {
+        public String name = "";
+        public List<QueueEntry> entries = new ArrayList<>();
+        public Map<String, Long> autoAddSinceByFeedUrl = new LinkedHashMap<>();
+    }
+
     /** Global playback prefs to apply. */
     public static class GlobalPrefs {
         public float playbackRate;          // 0 = absent
@@ -166,6 +175,7 @@ public class PortcastImporter {
         public List<EpisodeState> nonConflictingStates = new ArrayList<>();
         public List<ConflictEpisode> conflicts = new ArrayList<>();
         public List<QueueEntry> queue = new ArrayList<>();
+        public List<PortPlaylist> playlists = new ArrayList<>();
         public GlobalPrefs globalPrefs;
         /** Subscriptions that the importer couldn't map to a feed URL —
          *  i.e. Spotify-sourced rows whose {@code spotify:show:&lt;id&gt;}
@@ -329,6 +339,24 @@ public class PortcastImporter {
             }
         }
 
+        // Named playlists (+ auto-add rules) from the com.trimplayer.playlists
+        // extension (spec §10). Entries reuse the queue-entry resolution flow.
+        JSONObject rootExtensions = root.optJSONObject("extensions");
+        JSONArray playlists = rootExtensions != null
+                ? rootExtensions.optJSONArray(PortcastExporter.EXT_PLAYLISTS) : null;
+        if (playlists != null) {
+            for (int i = 0; i < playlists.length(); i++) {
+                JSONObject pl = playlists.optJSONObject(i);
+                if (pl == null) {
+                    continue;
+                }
+                PortPlaylist parsed = parsePlaylist(pl);
+                if (parsed != null) {
+                    preview.playlists.add(parsed);
+                }
+            }
+        }
+
         JSONObject prefs = root.optJSONObject("preferences");
         if (prefs != null) {
             JSONObject global = prefs.optJSONObject("global");
@@ -386,9 +414,59 @@ public class PortcastImporter {
         if (!preview.queue.isEmpty()) {
             saveQueue(context, preview.queue);
         }
+        if (!preview.playlists.isEmpty()) {
+            savePlaylists(context, mergeByKey(loadPlaylists(context), preview.playlists,
+                    pl -> pl.name));
+        }
         if (preview.globalPrefs != null) {
             saveGlobalPrefs(context, preview.globalPrefs);
         }
+    }
+
+    /** Parse one playlist object of the extension; null when unusable (no name). */
+    @Nullable
+    static PortPlaylist parsePlaylist(@NonNull JSONObject pl) {
+        String name = pl.optString("name", "").trim();
+        if (name.isEmpty()) {
+            return null;
+        }
+        PortPlaylist out = new PortPlaylist();
+        out.name = name;
+        JSONArray episodes = pl.optJSONArray("episodes");
+        if (episodes != null) {
+            List<JSONObject> sorted = new ArrayList<>(episodes.length());
+            for (int i = 0; i < episodes.length(); i++) {
+                JSONObject e = episodes.optJSONObject(i);
+                if (e != null) {
+                    sorted.add(e);
+                }
+            }
+            Collections.sort(sorted, (a, b) -> Integer.compare(
+                    a.optInt("position", Integer.MAX_VALUE),
+                    b.optInt("position", Integer.MAX_VALUE)));
+            for (JSONObject e : sorted) {
+                QueueEntry entry = parseQueueEntry(e);
+                if (entry != null) {
+                    out.entries.add(entry);
+                }
+            }
+        }
+        JSONArray rules = pl.optJSONArray("autoAddFeeds");
+        if (rules != null) {
+            for (int i = 0; i < rules.length(); i++) {
+                JSONObject r = rules.optJSONObject(i);
+                String feedUrl = r != null ? r.optString("feedUrl", "") : "";
+                if (feedUrl.isEmpty()) {
+                    continue;
+                }
+                long since = parseRfc3339(r.optString("since", ""));
+                // No/unparseable cutoff → "now": importing a rule must never
+                // trigger a backlog flood.
+                out.autoAddSinceByFeedUrl.put(feedUrl,
+                        since > 0 ? since : System.currentTimeMillis());
+            }
+        }
+        return out;
     }
 
     /** Existing entries first, incoming entries after — an incoming entry with
@@ -959,6 +1037,74 @@ public class PortcastImporter {
 
     public static void clearQueue(Context context) {
         prefs(context).edit().remove(KEY_QUEUE).apply();
+    }
+
+    static void savePlaylists(Context context, List<PortPlaylist> playlists) throws Exception {
+        JSONArray arr = new JSONArray();
+        for (PortPlaylist pl : playlists) {
+            JSONObject o = new JSONObject();
+            o.put("name", pl.name);
+            JSONArray entries = new JSONArray();
+            for (QueueEntry q : pl.entries) {
+                JSONObject e = new JSONObject();
+                e.put("guid", q.guid != null ? q.guid : "");
+                e.put("enclosureUrl", q.enclosureUrl != null ? q.enclosureUrl : "");
+                entries.put(e);
+            }
+            o.put("entries", entries);
+            JSONObject rules = new JSONObject();
+            for (Map.Entry<String, Long> r : pl.autoAddSinceByFeedUrl.entrySet()) {
+                rules.put(r.getKey(), (long) r.getValue());
+            }
+            o.put("rules", rules);
+            arr.put(o);
+        }
+        prefs(context).edit().putString(KEY_PLAYLISTS, arr.toString()).apply();
+    }
+
+    public static List<PortPlaylist> loadPlaylists(Context context) {
+        String json = prefs(context).getString(KEY_PLAYLISTS, null);
+        if (json == null) {
+            return new ArrayList<>();
+        }
+        List<PortPlaylist> out = new ArrayList<>();
+        try {
+            JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                PortPlaylist pl = new PortPlaylist();
+                pl.name = o.optString("name", "");
+                if (pl.name.isEmpty()) {
+                    continue;
+                }
+                JSONArray entries = o.optJSONArray("entries");
+                if (entries != null) {
+                    for (int j = 0; j < entries.length(); j++) {
+                        JSONObject e = entries.getJSONObject(j);
+                        QueueEntry q = new QueueEntry();
+                        q.guid = e.optString("guid", "");
+                        q.enclosureUrl = e.optString("enclosureUrl", "");
+                        pl.entries.add(q);
+                    }
+                }
+                JSONObject rules = o.optJSONObject("rules");
+                if (rules != null) {
+                    java.util.Iterator<String> keys = rules.keys();
+                    while (keys.hasNext()) {
+                        String feedUrl = keys.next();
+                        pl.autoAddSinceByFeedUrl.put(feedUrl, rules.optLong(feedUrl, 0));
+                    }
+                }
+                out.add(pl);
+            }
+        } catch (Exception ignored) {
+            // intentionally ignored — a corrupt staging blob restarts empty
+        }
+        return out;
+    }
+
+    public static void clearPlaylists(Context context) {
+        prefs(context).edit().remove(KEY_PLAYLISTS).apply();
     }
 
     static void saveGlobalPrefs(Context context, @Nullable GlobalPrefs gp) throws Exception {
