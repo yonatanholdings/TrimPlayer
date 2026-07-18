@@ -68,7 +68,9 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
     @Override
     public void onBindViewHolder(@NonNull Holder holder, int position) {
         Playlist playlist = playlists.get(position);
-        holder.name.setText(playlist.getName());
+        // The default playlist IS the queue: fixed localized name, pinned first.
+        holder.name.setText(playlist.isDefault()
+                ? context.getString(R.string.queue_label) : playlist.getName());
         holder.countBadge.setText(context.getResources().getQuantityString(
                 R.plurals.num_episodes, playlist.getEpisodeCount(), playlist.getEpisodeCount()));
         if (playlist.getTotalDurationMs() > 0) {
@@ -95,7 +97,9 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
         holder.coverFull.setVisibility(!empty && covers.size() == 1 ? View.VISIBLE : View.GONE);
         holder.collageGrid.setVisibility(covers.size() >= 2 ? View.VISIBLE : View.GONE);
         if (empty) {
-            String name = playlist.getName() == null ? "" : playlist.getName().trim();
+            String name = playlist.isDefault()
+                    ? context.getString(R.string.queue_label)
+                    : playlist.getName() == null ? "" : playlist.getName().trim();
             // floorMod: hashCode() can be Integer.MIN_VALUE, where Math.abs stays negative.
             int color = TILE_COLORS[Math.floorMod(
                     name.toLowerCase(Locale.ROOT).hashCode(), TILE_COLORS.length)];

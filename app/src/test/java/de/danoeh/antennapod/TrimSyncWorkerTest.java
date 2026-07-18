@@ -99,19 +99,33 @@ public class TrimSyncWorkerTest {
     }
 
     @Test
-    public void diffQueueStampsActiveQueueOnAddsAndTombstones() {
-        FeedItem item = playedItem("https://example.com/a.mp3", 1_000L);
-        List<TrimClient.QueueChange> out = TrimSyncWorker.diffQueue(
-                Collections.singletonList("https://example.com/gone.mp3"), // prev snapshot
-                Collections.singletonList(item),                            // current queue
-                Collections.singletonList("https://example.com/a.mp3"),
-                "Running", 5_000L);
+    public void defaultQueueDiffsThroughThePlaylistPath() {
+        // Since the queue/playlist unification the Queue diffs through
+        // diffPlaylists under the reserved 'default' name — adds carry it,
+        // vanished urls tombstone under it.
+        java.util.Map<String, List<String>> prev = new java.util.HashMap<>();
+        prev.put("default", Collections.singletonList("https://example.com/gone.mp3"));
+        java.util.Map<String, List<String>> cur = new java.util.HashMap<>();
+        cur.put("default", Collections.singletonList("https://example.com/a.mp3"));
+        List<TrimClient.QueueChange> out = TrimSyncWorker.diffPlaylists(prev, cur, 5_000L);
         assertEquals(2, out.size());
         for (TrimClient.QueueChange q : out) {
-            assertEquals("Running", q.queue_name);
+            assertEquals("default", q.queue_name);
         }
-        assertFalse(out.get(0).deleted); // the add
-        assertTrue(out.get(1).deleted);  // the tombstone for the vanished url
+        java.util.Map<String, TrimClient.QueueChange> byUrl = new java.util.HashMap<>();
+        for (TrimClient.QueueChange q : out) {
+            byUrl.put(q.episode_url, q);
+        }
+        assertFalse(byUrl.get("https://example.com/a.mp3").deleted);
+        assertTrue(byUrl.get("https://example.com/gone.mp3").deleted);
+    }
+
+    @Test
+    public void markerDiffNeverEmitsTheDefaultQueue() {
+        HashSet<String> withDefault = new HashSet<>(
+                java.util.Arrays.asList("default", "Running"));
+        assertEquals(new HashSet<>(Collections.singletonList("Running")),
+                TrimSyncWorker.withoutDefault(withDefault));
     }
 
     @Test

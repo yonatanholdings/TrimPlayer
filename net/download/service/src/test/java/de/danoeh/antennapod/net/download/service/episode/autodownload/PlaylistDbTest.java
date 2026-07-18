@@ -55,16 +55,21 @@ public class PlaylistDbTest {
         long id = DBWriter.createPlaylist("Morning").get(TIMEOUT, TimeUnit.SECONDS);
         assertTrue(id > 0);
 
+        // Since the queue/playlist unification the DEFAULT playlist (the Queue)
+        // always exists and lists first.
         List<Playlist> playlists = DBReader.getPlaylists();
-        assertEquals(1, playlists.size());
-        assertEquals("Morning", playlists.get(0).getName());
-        assertEquals(0, playlists.get(0).getEpisodeCount());
+        assertEquals(2, playlists.size());
+        assertTrue(playlists.get(0).isDefault());
+        assertEquals("Morning", playlists.get(1).getName());
+        assertEquals(0, playlists.get(1).getEpisodeCount());
 
         DBWriter.renamePlaylist(id, "Commute").get(TIMEOUT, TimeUnit.SECONDS);
-        assertEquals("Commute", DBReader.getPlaylists().get(0).getName());
+        assertEquals("Commute", DBReader.getPlaylists().get(1).getName());
 
         DBWriter.removePlaylist(id).get(TIMEOUT, TimeUnit.SECONDS);
-        assertTrue(DBReader.getPlaylists().isEmpty());
+        playlists = DBReader.getPlaylists();
+        assertEquals(1, playlists.size());
+        assertTrue(playlists.get(0).isDefault());
     }
 
     @Test
@@ -83,7 +88,7 @@ public class PlaylistDbTest {
         assertEquals(items.get(0).getId(), playlistItems.get(0).getId());
         assertEquals(items.get(1).getId(), playlistItems.get(1).getId());
         assertEquals(items.get(2).getId(), playlistItems.get(2).getId());
-        assertEquals(3, DBReader.getPlaylists().get(0).getEpisodeCount());
+        assertEquals(3, DBReader.getPlaylists().get(1).getEpisodeCount()); // [0] is the Queue
 
         assertTrue(DBReader.isItemInPlaylist(id, items.get(1).getId()));
         assertFalse(DBReader.isItemInPlaylist(id, items.get(3).getId()));

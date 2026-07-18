@@ -18,6 +18,9 @@ public class Playlist {
     private final long totalDurationMs;
     /** Up to 4 episode/show cover urls for the card collage. Transient; never null. */
     private java.util.List<String> coverUrls = java.util.Collections.emptyList();
+    /** True for the one reserved playlist that IS the queue (pinned, undeletable,
+     *  displayed with a localized name, synced as "default"). */
+    private boolean isDefault;
 
     public Playlist(long id, String name) {
         this(id, name, 0, 0);
@@ -64,5 +67,13 @@ public class Playlist {
 
     public void setCoverUrls(java.util.List<String> coverUrls) {
         this.coverUrls = coverUrls == null ? java.util.Collections.emptyList() : coverUrls;
+    }
+
+    public boolean isDefault() {
+        return isDefault;
+    }
+
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
     }
 }

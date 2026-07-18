@@ -46,6 +46,15 @@ public final class AutoAddShowsDialog {
                         error -> Log.e(TAG, Log.getStackTraceString(error)));
     }
 
+    /** Same chooser for the Queue (= the default playlist); resolves its id off-main. */
+    public static void showForQueue(@NonNull Context context) {
+        Observable.fromCallable(DBReader::getDefaultPlaylistId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(defaultId -> show(context, defaultId),
+                        error -> Log.e(TAG, Log.getStackTraceString(error)));
+    }
+
     private static void showChooser(Context context, long playlistId,
                                     List<Feed> feeds, Set<Long> ruleFeedIds) {
         List<Feed> syncable = new ArrayList<>();

@@ -96,6 +96,14 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
         loadPlaylists();
     }
 
+    // The pinned Queue card mirrors the queue — refresh its count/collage on
+    // queue changes too (queue writes post QueueEvent, not PlaylistEvent).
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void onQueueEvent(de.danoeh.antennapod.event.QueueEvent event) {
+        loadPlaylists();
+    }
+
     private void loadPlaylists() {
         if (disposable != null) {
             disposable.dispose();
@@ -111,6 +119,12 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
 
     @Override
     public void onPlaylistClicked(Playlist playlist) {
+        if (playlist.isDefault()) {
+            // The Queue card opens the full queue screen (lock/sort/swipe intact).
+            ((MainActivity) requireActivity()).loadFragment(
+                    de.danoeh.antennapod.ui.screen.queue.QueueFragment.TAG, null);
+            return;
+        }
         ((MainActivity) requireActivity()).loadChildFragment(
                 PlaylistFragment.newInstance(playlist.getId(), playlist.getName()));
     }
@@ -125,8 +139,10 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
         PopupMenu popup = new PopupMenu(requireContext(), anchor);
         popup.getMenu().add(0, 0, 0, R.string.play_label);
         popup.getMenu().add(0, 1, 1, R.string.trim_auto_add_label);
-        popup.getMenu().add(0, 2, 2, R.string.rename_playlist_label);
-        popup.getMenu().add(0, 3, 3, R.string.remove_playlist_label);
+        if (!playlist.isDefault()) { // the Queue can't be renamed or deleted
+            popup.getMenu().add(0, 2, 2, R.string.rename_playlist_label);
+            popup.getMenu().add(0, 3, 3, R.string.remove_playlist_label);
+        }
         popup.setOnMenuItemClickListener(menuItem -> {
             switch (menuItem.getItemId()) {
                 case 0:

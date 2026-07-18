@@ -613,7 +613,7 @@ public class DBWriter {
                 adapter.open();
                 adapter.setPlaylistItems(playlistId, playlist);
                 adapter.close();
-                EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+                postPlaylistChanged(playlistId, playlist);
             }
         });
     }
@@ -628,9 +628,18 @@ public class DBWriter {
                 adapter.open();
                 adapter.setPlaylistItems(playlistId, playlist);
                 adapter.close();
-                EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+                postPlaylistChanged(playlistId, playlist);
             }
         });
+    }
+
+    /** Post the playlist change; the DEFAULT playlist is the queue, so its
+     *  changes also emit QueueEvent for the widget/Auto/queue-screen consumers. */
+    private static void postPlaylistChanged(long playlistId, List<FeedItem> items) {
+        EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+        if (playlistId == DBReader.getDefaultPlaylistId()) {
+            EventBus.getDefault().post(QueueEvent.setQueue(items));
+        }
     }
 
     /** Add an auto-add rule: new episodes of the feed land in the playlist.
@@ -667,7 +676,7 @@ public class DBWriter {
             adapter.open();
             adapter.setPlaylistItems(playlistId, items);
             adapter.close();
-            EventBus.getDefault().post(PlaylistEvent.contentChanged(playlistId));
+            postPlaylistChanged(playlistId, items);
         });
     }
 

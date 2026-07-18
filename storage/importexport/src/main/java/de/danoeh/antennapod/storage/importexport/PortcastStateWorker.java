@@ -168,7 +168,9 @@ public class PortcastStateWorker extends Worker {
         }
         Map<String, Long> playlistIdByName = new HashMap<>();
         for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
-            playlistIdByName.putIfAbsent(pl.getName(), pl.getId());
+            // The reserved name "default" is the Queue — imported rules for it
+            // must land on the default playlist, never create a look-alike.
+            playlistIdByName.putIfAbsent(pl.isDefault() ? "default" : pl.getName(), pl.getId());
         }
         Map<String, Feed> feedByUrl = new HashMap<>();
         for (Feed f : DBReader.getFeedList()) {

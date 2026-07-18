@@ -480,10 +480,23 @@ public final class DBReader {
         List<Playlist> playlists = new ArrayList<>();
         try (Cursor cursor = adapter.getPlaylistsCursor()) {
             while (cursor.moveToNext()) {
-                playlists.add(new Playlist(cursor.getLong(0), cursor.getString(1),
-                        cursor.getInt(2), cursor.getLong(3)));
+                Playlist playlist = new Playlist(cursor.getLong(0), cursor.getString(1),
+                        cursor.getInt(2), cursor.getLong(3));
+                playlist.setDefault(cursor.getInt(4) == 1);
+                playlists.add(playlist);
             }
             return playlists;
+        } finally {
+            adapter.close();
+        }
+    }
+
+    /** Id of the default playlist (the Queue), creating its row if needed. */
+    public static long getDefaultPlaylistId() {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try {
+            return adapter.ensureDefaultPlaylistId();
         } finally {
             adapter.close();
         }

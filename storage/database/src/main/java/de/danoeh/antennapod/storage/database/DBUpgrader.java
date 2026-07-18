@@ -393,6 +393,27 @@ class DBUpgrader {
             // Playlist auto-add rules: new episodes of a show land in a playlist.
             db.execSQL(PodDBAdapter.CREATE_TABLE_PLAYLIST_FEEDS);
         }
+        if (oldVersion < 3160000) {
+            // Queue/playlist unification: the Queue becomes the default playlist.
+            // Copy the legacy Queue rows (ordered by their id, which is the queue
+            // position) into PlaylistItems under a new is_default row. The Queue
+            // table is left in place, dormant, as a one-release rollback net.
+            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_PLAYLISTS
+                    + " ADD COLUMN " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT + " INTEGER DEFAULT 0");
+            db.execSQL("INSERT INTO " + PodDBAdapter.TABLE_NAME_PLAYLISTS
+                    + " (" + PodDBAdapter.KEY_TITLE + ", " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT
+                    + ") VALUES ('Queue', 1)");
+            db.execSQL("INSERT INTO " + PodDBAdapter.TABLE_NAME_PLAYLIST_ITEMS
+                    + " (" + PodDBAdapter.KEY_PLAYLIST_ID + ", " + PodDBAdapter.KEY_FEEDITEM
+                    + ", " + PodDBAdapter.KEY_FEED + ", " + PodDBAdapter.KEY_POSITION + ")"
+                    + " SELECT (SELECT " + PodDBAdapter.KEY_ID + " FROM " + PodDBAdapter.TABLE_NAME_PLAYLISTS
+                    + "         WHERE " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT + " = 1),"
+                    + "        q." + PodDBAdapter.KEY_FEEDITEM + ", q." + PodDBAdapter.KEY_FEED + ","
+                    + "        (SELECT COUNT(*) FROM " + PodDBAdapter.TABLE_NAME_QUEUE
+                    + "         q2 WHERE q2." + PodDBAdapter.KEY_ID + " < q." + PodDBAdapter.KEY_ID + ")"
+                    + " FROM " + PodDBAdapter.TABLE_NAME_QUEUE + " q"
+                    + " ORDER BY q." + PodDBAdapter.KEY_ID);
+        }
     }
 
 }

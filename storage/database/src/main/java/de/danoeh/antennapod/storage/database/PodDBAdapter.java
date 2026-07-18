@@ -55,7 +55,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3150000;
+    public static final int VERSION = 3160000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -142,6 +142,7 @@ public class PodDBAdapter {
     public static final String KEY_PODCASTINDEX_TRANSCRIPT_TYPE = "podcastindex_transcript_type";
     public static final String KEY_PLAYLIST_ID = "playlist_id";
     public static final String KEY_PLAYLIST_RULE_CREATED_AT = "created_at";
+    public static final String KEY_PLAYLIST_IS_DEFAULT = "is_default";
 
     // Table names
     public static final String TABLE_NAME_FEEDS = "Feeds";
@@ -274,8 +275,11 @@ public class PodDBAdapter {
 
     // Named playlists (TrimPlayer). A playlist is an ordered list of episodes that acts like an
     // additional queue; PlaylistItems.position defines the play order within a playlist.
+    // is_default: exactly one row (the Queue). Created lazily by
+    // ensureDefaultPlaylistId() so fresh installs and upgrades converge.
     static final String CREATE_TABLE_PLAYLISTS = "CREATE TABLE "
-            + TABLE_NAME_PLAYLISTS + "(" + TABLE_PRIMARY_KEY + KEY_TITLE + " TEXT)";
+            + TABLE_NAME_PLAYLISTS + "(" + TABLE_PRIMARY_KEY + KEY_TITLE + " TEXT,"
+            + KEY_PLAYLIST_IS_DEFAULT + " INTEGER DEFAULT 0)";
 
     static final String CREATE_TABLE_PLAYLIST_ITEMS = "CREATE TABLE "
             + TABLE_NAME_PLAYLIST_ITEMS + "(" + TABLE_PRIMARY_KEY
@@ -505,6 +509,7 @@ public class PodDBAdapter {
     public static void tearDownTests() {
         getInstance().dbHelper.close();
         instance = null;
+        defaultPlaylistId = -1; // cache points into the torn-down database
     }
 
     public static boolean deleteDatabase() {
@@ -514,6 +519,7 @@ public class PodDBAdapter {
             for (String tableName : ALL_TABLES) {
                 adapter.db.delete(tableName, "1", null);
             }
+            defaultPlaylistId = -1; // the cached default-playlist row was just wiped
             return true;
         } finally {
             adapter.close();
@@ -981,28 +987,49 @@ public class PodDBAdapter {
         return count > 0;
     }
 
-    public void setQueue(List<FeedItem> queue) {
-        ContentValues values = new ContentValues();
-        try {
-            db.beginTransactionNonExclusive();
-            db.delete(TABLE_NAME_QUEUE, null, null);
-            for (int i = 0; i < queue.size(); i++) {
-                FeedItem item = queue.get(i);
-                values.put(KEY_ID, i);
-                values.put(KEY_FEEDITEM, item.getId());
-                values.put(KEY_FEED, item.getFeed().getId());
-                db.insertWithOnConflict(TABLE_NAME_QUEUE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+    // ── Queue facade ─────────────────────────────────────────────────────────
+    // The Queue IS the default playlist (Playlists row with is_default=1): all
+    // queue reads/writes below target PlaylistItems, so queue and playlists are
+    // one storage model. The legacy Queue table is dormant (kept one release as
+    // a rollback net; DBUpgrader 3160000 copied it over). Public signatures are
+    // unchanged — playback, widgets, Android Auto and auto-download call these
+    // exactly as before.
+
+    /** Cached id of the default playlist; created lazily on first access. */
+    private static volatile long defaultPlaylistId = -1;
+
+    /** The default playlist's id, creating its row if it doesn't exist yet. */
+    public long ensureDefaultPlaylistId() {
+        long cached = defaultPlaylistId;
+        if (cached >= 0) {
+            return cached;
+        }
+        synchronized (PodDBAdapter.class) {
+            if (defaultPlaylistId >= 0) {
+                return defaultPlaylistId;
             }
-            db.setTransactionSuccessful();
-        } catch (SQLException e) {
-            Log.e(TAG, Log.getStackTraceString(e));
-        } finally {
-            db.endTransaction();
+            try (Cursor c = db.rawQuery("SELECT " + KEY_ID + " FROM " + TABLE_NAME_PLAYLISTS
+                    + " WHERE " + KEY_PLAYLIST_IS_DEFAULT + " = 1 LIMIT 1", null)) {
+                if (c.moveToFirst()) {
+                    defaultPlaylistId = c.getLong(0);
+                    return defaultPlaylistId;
+                }
+            }
+            ContentValues values = new ContentValues();
+            values.put(KEY_TITLE, "Queue"); // display name comes from resources, not this
+            values.put(KEY_PLAYLIST_IS_DEFAULT, 1);
+            defaultPlaylistId = db.insert(TABLE_NAME_PLAYLISTS, null, values);
+            return defaultPlaylistId;
         }
     }
 
+    public void setQueue(List<FeedItem> queue) {
+        setPlaylistItems(ensureDefaultPlaylistId(), queue);
+    }
+
     public void clearQueue() {
-        db.delete(TABLE_NAME_QUEUE, null, null);
+        db.delete(TABLE_NAME_PLAYLIST_ITEMS, KEY_PLAYLIST_ID + "=?",
+                new String[]{String.valueOf(ensureDefaultPlaylistId())});
     }
 
     /**
@@ -1149,31 +1176,17 @@ public class PodDBAdapter {
      * cursor uses the FEEDITEM_SEL_FI_SMALL selection.
      */
     public final Cursor getQueueCursor() {
-        final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
-                + " FROM " + TABLE_NAME_QUEUE
-                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
-                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_QUEUE + "." + KEY_FEEDITEM
-                +  JOIN_FEED_ITEM_AND_MEDIA
-                + " ORDER BY " + TABLE_NAME_QUEUE + "." + KEY_ID;
-        return db.rawQuery(query, null);
+        return getPlaylistItemsCursor(ensureDefaultPlaylistId());
     }
 
     public Cursor getQueueIDCursor() {
-        return db.query(TABLE_NAME_QUEUE, new String[]{KEY_FEEDITEM}, null, null, null, null, KEY_ID + " ASC", null);
+        return db.query(TABLE_NAME_PLAYLIST_ITEMS, new String[]{KEY_FEEDITEM},
+                KEY_PLAYLIST_ID + "=?", new String[]{String.valueOf(ensureDefaultPlaylistId())},
+                null, null, KEY_POSITION + " ASC", null);
     }
 
     public Cursor getNextInQueue(final FeedItem item) {
-        final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
-                + " FROM " + TABLE_NAME_QUEUE
-                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
-                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_QUEUE + "." + KEY_FEEDITEM
-                +  JOIN_FEED_ITEM_AND_MEDIA
-                + " WHERE Queue.ID > (SELECT Queue.ID FROM Queue WHERE Queue.FeedItem = "
-                +  item.getId()
-                + ")"
-                + " ORDER BY Queue.ID"
-                + " LIMIT 1";
-        return db.rawQuery(query, null);
+        return getNextInPlaylist(ensureDefaultPlaylistId(), item);
     }
 
     public Cursor getNextInFeed(final FeedItem item) {
@@ -1193,13 +1206,15 @@ public class PodDBAdapter {
                 + " OR " + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS
                 + " >= " + (System.currentTimeMillis() - 30000);
         final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
-                + " FROM " + TABLE_NAME_QUEUE
+                + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
                 + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
-                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_QUEUE + "." + KEY_FEEDITEM
+                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
                 +  JOIN_FEED_ITEM_AND_MEDIA
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID
+                + " = " + ensureDefaultPlaylistId()
                 + " ORDER BY (CASE WHEN " + hasPositionOrRecentlyPlayed + " THEN "
                     + TABLE_NAME_FEED_MEDIA + "." + KEY_LAST_PLAYED_TIME_STATISTICS + " ELSE 0 END) DESC , "
-                + TABLE_NAME_QUEUE + "." + KEY_ID
+                + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION
                 + " LIMIT " + limit;
         return db.rawQuery(query, null);
     }
@@ -1222,12 +1237,18 @@ public class PodDBAdapter {
     }
 
     public void renamePlaylist(long playlistId, String name) {
+        if (playlistId == ensureDefaultPlaylistId()) {
+            return; // the Queue's identity is fixed
+        }
         ContentValues values = new ContentValues();
         values.put(KEY_TITLE, name);
         db.update(TABLE_NAME_PLAYLISTS, values, KEY_ID + "=?", new String[]{String.valueOf(playlistId)});
     }
 
     public void removePlaylist(long playlistId) {
+        if (playlistId == ensureDefaultPlaylistId()) {
+            return; // the Queue can't be deleted
+        }
         try {
             db.beginTransactionNonExclusive();
             db.delete(TABLE_NAME_PLAYLIST_ITEMS, KEY_PLAYLIST_ID + "=?", new String[]{String.valueOf(playlistId)});
@@ -1280,6 +1301,7 @@ public class PodDBAdapter {
      * without media) for every playlist, ordered by name.
      */
     public Cursor getPlaylistsCursor() {
+        ensureDefaultPlaylistId(); // the Queue row always shows up in the listing
         final String query = "SELECT " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ", "
                 + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + ", "
                 + "(SELECT COUNT(*) FROM " + TABLE_NAME_PLAYLIST_ITEMS
@@ -1291,9 +1313,11 @@ public class PodDBAdapter {
                 + " ON " + TABLE_NAME_FEED_MEDIA + "." + KEY_FEEDITEM
                 + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
                 + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID
-                + " = " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ") AS total_duration"
+                + " = " + TABLE_NAME_PLAYLISTS + "." + KEY_ID + ") AS total_duration, "
+                + TABLE_NAME_PLAYLISTS + "." + KEY_PLAYLIST_IS_DEFAULT
                 + " FROM " + TABLE_NAME_PLAYLISTS
-                + " ORDER BY " + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + " COLLATE NOCASE ASC";
+                + " ORDER BY " + TABLE_NAME_PLAYLISTS + "." + KEY_PLAYLIST_IS_DEFAULT + " DESC, "
+                + TABLE_NAME_PLAYLISTS + "." + KEY_TITLE + " COLLATE NOCASE ASC";
         return db.rawQuery(query, null);
     }
 
@@ -1485,6 +1509,28 @@ public class PodDBAdapter {
     }
 
     public static Cursor getQueueCursor(SQLiteDatabase backupDb) {
+        // Backups from unified builds (DB >= 3160000) keep the queue as the
+        // default playlist; older backups still use the legacy Queue table.
+        long backupDefaultId = -1;
+        try (Cursor c = backupDb.rawQuery("SELECT " + KEY_ID + " FROM " + TABLE_NAME_PLAYLISTS
+                + " WHERE " + KEY_PLAYLIST_IS_DEFAULT + " = 1 LIMIT 1", null)) {
+            if (c.moveToFirst()) {
+                backupDefaultId = c.getLong(0);
+            }
+        } catch (SQLException e) {
+            // Pre-3160000 backup: Playlists has no is_default column (or no table).
+        }
+        if (backupDefaultId >= 0) {
+            final String query = "SELECT "
+                    + backupProjection(backupDb, KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA)
+                    + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                    + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
+                    + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
+                    + JOIN_FEED_ITEM_AND_MEDIA
+                    + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID + " = " + backupDefaultId
+                    + " ORDER BY " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION;
+            return backupDb.rawQuery(query, null);
+        }
         final String query = "SELECT "
                 + backupProjection(backupDb, KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA)
                 + " FROM " + TABLE_NAME_QUEUE
@@ -1718,7 +1764,8 @@ public class PodDBAdapter {
     }
 
     public int getQueueSize() {
-        final String query = String.format("SELECT COUNT(%s) FROM %s", KEY_ID, TABLE_NAME_QUEUE);
+        final String query = String.format(Locale.US, "SELECT COUNT(%s) FROM %s WHERE %s = %d",
+                KEY_ID, TABLE_NAME_PLAYLIST_ITEMS, KEY_PLAYLIST_ID, ensureDefaultPlaylistId());
         Cursor c = db.rawQuery(query, null);
         int result = 0;
         if (c.moveToFirst()) {
@@ -2235,6 +2282,7 @@ public class PodDBAdapter {
             db.execSQL(CREATE_TABLE_FAVORITES);
             db.execSQL(CREATE_TABLE_PLAYLISTS);
             db.execSQL(CREATE_TABLE_PLAYLIST_ITEMS);
+            db.execSQL(CREATE_TABLE_PLAYLIST_FEEDS);
 
             db.execSQL(CREATE_INDEX_FEEDITEMS_FEED);
             db.execSQL(CREATE_INDEX_FEEDITEMS_PUBDATE);

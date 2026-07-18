@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -105,8 +106,14 @@ public class PortcastExporter {
         Map<Long, Map<Long, Long>> rulesByPlaylist = DBReader.getAllPlaylistAutoFeeds();
         List<PlaylistExport> playlists = new ArrayList<>();
         for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
-            PlaylistExport export = new PlaylistExport(pl.getName(),
-                    DBReader.getPlaylistItems(pl.getId()));
+            // The default playlist IS the queue: its episodes are the spec-level
+            // `queue` field (built from DBReader.getQueue() above). Only its
+            // auto-add rules ride the extension, under the reserved name
+            // "default", so they survive a file journey too.
+            PlaylistExport export = new PlaylistExport(
+                    pl.isDefault() ? "default" : pl.getName(),
+                    pl.isDefault() ? Collections.<FeedItem>emptyList()
+                            : DBReader.getPlaylistItems(pl.getId()));
             Map<Long, Long> rules = rulesByPlaylist.get(pl.getId());
             if (rules != null) {
                 for (Map.Entry<Long, Long> rule : rules.entrySet()) {
@@ -115,6 +122,9 @@ public class PortcastExporter {
                         export.autoAddSinceByFeedUrl.put(url, rule.getValue());
                     }
                 }
+            }
+            if (pl.isDefault() && export.autoAddSinceByFeedUrl.isEmpty()) {
+                continue; // nothing extension-worthy about a rule-less queue
             }
             playlists.add(export);
         }

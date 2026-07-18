@@ -119,7 +119,9 @@ public class AddToPlaylistDialog {
             Playlist playlist = playlists.get(position);
             boolean isMember = memberIds.contains(playlist.getId());
             int count = playlist.getEpisodeCount() + countDelta.get(position);
-            holder.name.setText(playlist.getName());
+            // The Queue rides the same sheet, pinned first by the cursor's ordering.
+            holder.name.setText(playlist.isDefault()
+                    ? context.getString(R.string.queue_label) : playlist.getName());
             holder.count.setText(context.getResources().getQuantityString(
                     R.plurals.num_episodes, count, count));
             holder.check.setChecked(isMember);

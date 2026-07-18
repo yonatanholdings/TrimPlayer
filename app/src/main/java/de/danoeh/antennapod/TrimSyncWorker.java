@@ -22,7 +22,6 @@ import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.database.FeedDatabaseWriter;
-import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 import java.util.Collections;
@@ -116,11 +115,23 @@ public class TrimSyncWorker extends Worker {
         }
         String bearer = "Bearer " + UserPreferences.getTrimAccountToken();
         long now = System.currentTimeMillis();
-        // Playlists <-> named account queues. The journal snapshot maps playlist
-        // name -> ordered urls as last pushed; diffing against it yields only
-        // genuine local edits (item changes AND playlist creates/deletes).
+        // Playlists <-> named account queues; the DEFAULT playlist (the Queue)
+        // rides the same journal under the reserved name 'default'. The snapshot
+        // maps playlist name -> ordered urls as last pushed; diffing against it
+        // yields only genuine local edits (item changes AND creates/deletes).
         Map<String, List<String>> prevPlaylists = parsePlaylistsSnapshot(
                 UserPreferences.getTrimSyncPlaylistsSnapshot());
+        // One-time journal handoff (queue/playlist unification): builds before
+        // 3160000 journalled the queue in its own snapshot. Fold it into the
+        // playlists journal under 'default' so the first unified sync diffs to
+        // zero instead of re-asserting the whole queue.
+        if (!prevPlaylists.containsKey(DEFAULT_QUEUE)) {
+            String legacyQueueSnapshot = UserPreferences.getTrimSyncQueueSnapshot();
+            if (!legacyQueueSnapshot.isEmpty()) {
+                prevPlaylists.put(DEFAULT_QUEUE, parseQueueSnapshot(legacyQueueSnapshot));
+                UserPreferences.setTrimSyncQueueSnapshot("");
+            }
+        }
         Map<String, List<String>> curPlaylists = currentPlaylists();
         Set<String> prevRules = new HashSet<>(parseQueueSnapshot(
                 UserPreferences.getTrimSyncRulesSnapshot()));
@@ -130,12 +141,10 @@ public class TrimSyncWorker extends Worker {
         // last pushed, so we only send genuine local changes (adds / title edits /
         // reorders / removals) and never re-assert unchanged rows over a web edit.
         Map<String, String> prevSubs = parseSubsSnapshot(UserPreferences.getTrimSyncSubsSnapshot());
-        List<String> prevQueue = parseQueueSnapshot(UserPreferences.getTrimSyncQueueSnapshot());
         Map<String, Float> prevPrefs = parsePrefsSnapshot(UserPreferences.getTrimSyncPrefsSnapshot());
         List<Feed> feeds = DBReader.getFeedList();
         List<FeedItem> queue = DBReader.getQueue();
         Map<String, String> curSubs = currentSubs(feeds);
-        List<String> curQueueUrls = currentQueueUrls(queue);
         Map<String, Float> curPrefs = currentPrefs(feeds);
 
         // Favorites -> PortCast episodes[].starred. Change-journalled like the queue:
@@ -187,14 +196,15 @@ public class TrimSyncWorker extends Worker {
         req.cursor = UserPreferences.getTrimSyncCursor();
         req.named_queues = true; // pull rows for every named queue (playlists)
         req.subscriptions = diffSubscriptions(prevSubs, curSubs, now);
-        req.queue = diffQueue(prevQueue, queue, curQueueUrls, DEFAULT_QUEUE, now);
-        // Playlist item changes ride the same queue entity under their playlist's
-        // name; playlist creates/deletes ride the prefs entity as __queue__:<name>
-        // existence markers, exactly like the web player's.
-        req.queue.addAll(diffPlaylists(prevPlaylists, curPlaylists, now));
+        // All queue rows — the Queue itself (name 'default') and every named
+        // playlist — come from one diff over the unified playlists journal.
+        // Playlist creates/deletes ride the prefs entity as __queue__:<name>
+        // existence markers ('default' excluded: it always exists everywhere).
+        req.queue = diffPlaylists(prevPlaylists, curPlaylists, now);
         req.progress = buildProgress(queue, playedRecently, backfillItems, favItems, curFav, changedFav, now);
         req.prefs = diffPrefs(prevPrefs, curPrefs, now);
-        req.prefs.addAll(diffQueueNameMarkers(prevPlaylists.keySet(), curPlaylists.keySet(), now));
+        req.prefs.addAll(diffQueueNameMarkers(
+                withoutDefault(prevPlaylists.keySet()), withoutDefault(curPlaylists.keySet()), now));
         req.prefs.addAll(diffRuleMarkers(prevRules, curRules, now));
         req.bookmarks = diffBookmarks(prevBookmarks, bookmarkRows, now);
 
@@ -221,9 +231,9 @@ public class TrimSyncWorker extends Worker {
             favIds.add(f.getId());
         }
         ApplyResult progressRes = applyProgress(resp.body.progress, favIds);
-        // Partition the queue delta: default-queue rows drive the DB queue,
-        // named-queue rows drive the matching local playlists.
-        List<TrimClient.QueueChange> defaultRows = new ArrayList<>();
+        // The queue delta is one stream: rows for 'default' land in the default
+        // playlist (which IS the queue), named rows in their playlists — a single
+        // apply path since the storage unification.
         Map<String, List<TrimClient.QueueChange>> playlistRows = new HashMap<>();
         if (resp.body.queue != null) {
             for (TrimClient.QueueChange q : resp.body.queue) {
@@ -231,19 +241,14 @@ public class TrimSyncWorker extends Worker {
                     continue;
                 }
                 String name = normQueueName(q.queue_name);
-                if (DEFAULT_QUEUE.equals(name)) {
-                    defaultRows.add(q);
-                } else {
-                    List<TrimClient.QueueChange> group = playlistRows.get(name);
-                    if (group == null) {
-                        group = new ArrayList<>();
-                        playlistRows.put(name, group);
-                    }
-                    group.add(q);
+                List<TrimClient.QueueChange> group = playlistRows.get(name);
+                if (group == null) {
+                    group = new ArrayList<>();
+                    playlistRows.put(name, group);
                 }
+                group.add(q);
             }
         }
-        ApplyResult queueRes = applyQueue(getApplicationContext(), defaultRows);
         ApplyResult playlistRes = applyPlaylists(playlistRows, resp.body.prefs);
         // Rules AFTER playlists (their playlist may have been created just above).
         int appliedRules = applyRuleMarkers(resp.body.prefs);
@@ -261,9 +266,8 @@ public class TrimSyncWorker extends Worker {
         // once the episodes exist) and nudge a follow-up sync. Bounded by a
         // no-progress retry cap so a row for an episode that's gone from its feed
         // can't wedge sync forever.
-        int deferred = progressRes.deferred + queueRes.deferred + bookmarkRes.deferred
-                + playlistRes.deferred;
-        boolean progressed = (progressRes.changed + queueRes.changed + bookmarkRes.changed
+        int deferred = progressRes.deferred + bookmarkRes.deferred + playlistRes.deferred;
+        boolean progressed = (progressRes.changed + bookmarkRes.changed
                 + playlistRes.changed) > 0;
         long newCursor = resp.body.cursor;
         if (deferred > 0) {
@@ -285,7 +289,6 @@ public class TrimSyncWorker extends Worker {
         // clean — i.e. we don't echo server-applied changes back as local ones.
         List<Feed> reconciled = DBReader.getFeedList();
         UserPreferences.setTrimSyncSubsSnapshot(serializeSubs(currentSubs(reconciled)));
-        UserPreferences.setTrimSyncQueueSnapshot(serializeQueue(currentQueueUrls(DBReader.getQueue())));
         UserPreferences.setTrimSyncPrefsSnapshot(serializePrefs(currentPrefs(reconciled)));
         UserPreferences.setTrimSyncFavSnapshot(serializeQueue(new ArrayList<>(mediaUrlSet(
                 DBReader.getEpisodes(0, FAV_LIMIT,
@@ -328,7 +331,7 @@ public class TrimSyncWorker extends Worker {
                 + " queue=" + req.queue.size() + " progress=" + req.progress.size()
                 + " prefs=" + req.prefs.size() + " bookmarks=" + req.bookmarks.size()
                 + "; applied subs=" + appliedSubs + " progress=" + progressRes.changed
-                + " queue=" + queueRes.changed + " playlists=" + playlistRes.changed
+                + " playlists=" + playlistRes.changed
                 + " rules=" + appliedRules + " prefs=" + appliedPrefs
                 + " bookmarks=" + bookmarkRes.changed
                 + "; deferred=" + deferred + ", cursor=" + newCursor);
@@ -404,86 +407,6 @@ public class TrimSyncWorker extends Worker {
             FeedUpdateManager.getInstance().runOnce(ctx);
         }
         return added + removed;
-    }
-
-    /** Apply server-side queue changes to the local queue (delta only, so we
-     *  touch just the items that changed server-side rather than rebuilding the
-     *  queue): removals, additions (at their server position), and reorders of
-     *  already-queued items. Reorders are applied in ascending target-position
-     *  order against a live mirror of the queue, so each move lands the item at
-     *  its final index even when several rows move at once. Episodes not present
-     *  locally are skipped (queue auto-subscribe deferred). Only default-queue
-     *  rows reach this method — named-queue rows go to {@link #applyPlaylists}. */
-    private static ApplyResult applyQueue(android.content.Context ctx,
-                                  List<TrimClient.QueueChange> queue) {
-        ApplyResult r = new ApplyResult();
-        if (queue == null || queue.isEmpty()) {
-            return r;
-        }
-        // Ordered mirror of the queue — updated alongside every DB mutation so
-        // subsequent indices stay correct without re-reading the DB each step.
-        LongList ids = DBReader.getQueueIDList();
-        List<Long> order = new ArrayList<>();
-        for (int i = 0; i < ids.size(); i++) {
-            order.add(ids.get(i));
-        }
-
-        // Pass 1: removals and additions.
-        List<long[]> reorders = new ArrayList<>(); // [itemId, targetPosition]
-        for (TrimClient.QueueChange q : queue) {
-            if (q == null || q.episode_url == null) {
-                continue;
-            }
-            FeedItem item = DBReader.getFeedItemByGuidOrEpisodeUrl(q.guid, q.episode_url);
-            if (item == null) {
-                // A removal of an absent item is already satisfied; but an add/move
-                // we can't apply because the episode isn't fetched locally yet is a
-                // deferral — hold the cursor so it re-pulls once the episode exists.
-                if (!q.deleted) {
-                    r.deferred++;
-                }
-                continue;
-            }
-            boolean present = order.contains(item.getId());
-            try {
-                if (q.deleted) {
-                    if (present) {
-                        DBWriter.removeQueueItem(ctx, false, item).get();
-                        order.remove(Long.valueOf(item.getId()));
-                        r.changed++;
-                    }
-                } else if (!present) {
-                    int idx = q.position == null ? order.size()
-                            : Math.max(0, Math.min(q.position, order.size()));
-                    DBWriter.addQueueItemAt(ctx, item.getId(), idx).get();
-                    order.add(idx, item.getId());
-                    r.changed++;
-                } else if (q.position != null) {
-                    reorders.add(new long[] {item.getId(), q.position});
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "queue apply failed for " + q.episode_url + ": " + e.getMessage());
-            }
-        }
-        // Pass 2: reorders of items already in the queue, smallest target first.
-        Collections.sort(reorders, (a, b) -> Long.compare(a[1], b[1]));
-        for (long[] move : reorders) {
-            long itemId = move[0];
-            int from = order.indexOf(itemId);
-            int to = Math.max(0, Math.min((int) move[1], order.size() - 1));
-            if (from < 0 || from == to) {
-                continue;
-            }
-            try {
-                DBWriter.moveQueueItem(from, to, false).get();
-                order.remove(Long.valueOf(itemId));
-                order.add(to, itemId);
-                r.changed++;
-            } catch (Exception e) {
-                Log.w(TAG, "queue reorder failed for item " + itemId + ": " + e.getMessage());
-            }
-        }
-        return r;
     }
 
     /** Apply server-side progress to the local DB. Returns how many rows changed.
@@ -660,15 +583,24 @@ public class TrimSyncWorker extends Worker {
         return n.isEmpty() ? DEFAULT_QUEUE : n;
     }
 
+    /** Names to push as __queue__ existence markers: every playlist except the
+     *  default one (it exists on every device by definition). */
+    static Set<String> withoutDefault(Set<String> names) {
+        Set<String> out = new HashSet<>(names);
+        out.remove(DEFAULT_QUEUE);
+        return out;
+    }
+
     /** Every local playlist as name -> ordered episode urls (items without a
-     *  usable enclosure url are skipped — they can't sync). Empty playlists are
+     *  usable enclosure url are skipped — they can't sync). The default playlist
+     *  (the Queue) rides under the reserved name 'default'. Empty playlists are
      *  included so their existence still diffs/journals. */
     private static Map<String, List<String>> currentPlaylists() {
         Map<String, List<String>> out = new HashMap<>();
         for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
-            String name = normQueueName(pl.getName());
-            if (DEFAULT_QUEUE.equals(name) || out.containsKey(name)) {
-                continue; // unsyncable name / duplicate name — first one wins
+            String name = pl.isDefault() ? DEFAULT_QUEUE : normQueueName(pl.getName());
+            if ((!pl.isDefault() && DEFAULT_QUEUE.equals(name)) || out.containsKey(name)) {
+                continue; // reserved-name collision / duplicate name — first one wins
             }
             List<String> urls = new ArrayList<>();
             for (FeedItem item : DBReader.getPlaylistItems(pl.getId())) {
@@ -770,7 +702,9 @@ public class TrimSyncWorker extends Worker {
         }
         Map<String, Long> idByName = new HashMap<>();
         for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
-            String name = normQueueName(pl.getName());
+            // The default playlist owns the reserved name 'default' (its title is
+            // ignored) — server rows for the Queue land there, never in a new list.
+            String name = pl.isDefault() ? DEFAULT_QUEUE : normQueueName(pl.getName());
             if (!idByName.containsKey(name)) {
                 idByName.put(name, pl.getId());
             }
@@ -911,7 +845,9 @@ public class TrimSyncWorker extends Worker {
         }
         Map<Long, String> playlistNames = new HashMap<>();
         for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
-            playlistNames.put(pl.getId(), normQueueName(pl.getName()));
+            // Rules on the Queue sync under the reserved 'default' name.
+            playlistNames.put(pl.getId(),
+                    pl.isDefault() ? DEFAULT_QUEUE : normQueueName(pl.getName()));
         }
         Map<Long, String> feedUrls = new HashMap<>();
         for (Feed f : DBReader.getFeedList()) {
@@ -921,7 +857,7 @@ public class TrimSyncWorker extends Worker {
         }
         for (Map.Entry<Long, Map<Long, Long>> byPlaylist : all.entrySet()) {
             String name = playlistNames.get(byPlaylist.getKey());
-            if (name == null || DEFAULT_QUEUE.equals(name)) {
+            if (name == null) {
                 continue;
             }
             for (Map.Entry<Long, Long> rule : byPlaylist.getValue().entrySet()) {
@@ -985,13 +921,12 @@ public class TrimSyncWorker extends Worker {
             }
             String name = normQueueName(composite.substring(0, sep));
             String url = composite.substring(sep + 1);
-            if (DEFAULT_QUEUE.equals(name)) {
-                continue;
-            }
             if (playlistIdByName == null) {
                 playlistIdByName = new HashMap<>();
                 for (de.danoeh.antennapod.model.feed.Playlist pl : DBReader.getPlaylists()) {
-                    String n = normQueueName(pl.getName());
+                    // 'default' maps to the Queue: rules on it are legal since the
+                    // queue/playlist unification.
+                    String n = pl.isDefault() ? DEFAULT_QUEUE : normQueueName(pl.getName());
                     if (!playlistIdByName.containsKey(n)) {
                         playlistIdByName.put(n, pl.getId());
                     }
@@ -1020,7 +955,13 @@ public class TrimSyncWorker extends Worker {
                 }
                 Long playlistId = playlistIdByName.get(name);
                 if (playlistId == null) {
-                    playlistId = DBWriter.createPlaylist(name).get();
+                    // Never create a playlist literally named 'default' — that name
+                    // is the Queue's wire identity.
+                    if (DEFAULT_QUEUE.equals(name)) {
+                        playlistId = DBReader.getDefaultPlaylistId();
+                    } else {
+                        playlistId = DBWriter.createPlaylist(name).get();
+                    }
                     playlistIdByName.put(name, playlistId);
                 }
                 // client_ts carries the rule's cutoff so every device agrees.
@@ -1108,17 +1049,6 @@ public class TrimSyncWorker extends Worker {
         return m;
     }
 
-    private static List<String> currentQueueUrls(List<FeedItem> queue) {
-        List<String> urls = new ArrayList<>();
-        for (FeedItem item : queue) {
-            FeedMedia media = item.getMedia();
-            if (media != null && media.getDownloadUrl() != null && !media.getDownloadUrl().isEmpty()) {
-                urls.add(media.getDownloadUrl());
-            }
-        }
-        return urls;
-    }
-
     /** Subscriptions added or whose title changed (deleted=false), plus removals
      *  (deleted=true tombstones) — everything else is unchanged and omitted. */
     private static List<TrimClient.SubscriptionChange> diffSubscriptions(
@@ -1141,53 +1071,6 @@ public class TrimSyncWorker extends Worker {
                 s.deleted = true;
                 s.client_ts = ts;
                 out.add(s);
-            }
-        }
-        return out;
-    }
-
-    /** Queue items that are new or moved to a different position (deleted=false),
-     *  plus removals (deleted=true). Unchanged-position items are omitted. Every
-     *  row is stamped with the active queue's name, so local edits always land in
-     *  the named account queue this device is mirroring. Package-visible for
-     *  unit tests. */
-    static List<TrimClient.QueueChange> diffQueue(
-            List<String> prev, List<FeedItem> curItems, List<String> curUrls,
-            String activeQueue, long ts) {
-        List<TrimClient.QueueChange> out = new ArrayList<>();
-        Map<String, Integer> prevIdx = new HashMap<>();
-        for (int i = 0; i < prev.size(); i++) {
-            prevIdx.put(prev.get(i), i);
-        }
-        Set<String> curSet = new HashSet<>(curUrls);
-        for (int i = 0; i < curItems.size(); i++) {
-            FeedItem item = curItems.get(i);
-            FeedMedia media = item.getMedia();
-            if (media == null || media.getDownloadUrl() == null || media.getDownloadUrl().isEmpty()) {
-                continue;
-            }
-            String url = media.getDownloadUrl();
-            Integer pIdx = prevIdx.get(url);
-            if (pIdx == null || pIdx != i) {
-                TrimClient.QueueChange q = new TrimClient.QueueChange();
-                q.episode_url = url;
-                q.rss_url = item.getFeed() != null ? item.getFeed().getDownloadUrl() : null;
-                q.guid = item.getItemIdentifier();
-                q.position = i;
-                q.deleted = false;
-                q.client_ts = ts;
-                q.queue_name = activeQueue;
-                out.add(q);
-            }
-        }
-        for (String url : prev) {
-            if (!curSet.contains(url)) {
-                TrimClient.QueueChange q = new TrimClient.QueueChange();
-                q.episode_url = url;
-                q.deleted = true;
-                q.client_ts = ts;
-                q.queue_name = activeQueue;
-                out.add(q);
             }
         }
         return out;

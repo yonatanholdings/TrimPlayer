@@ -293,6 +293,11 @@ public class QueueFragment extends Fragment implements MaterialToolbar.OnMenuIte
         } else if (itemId == R.id.queue_sort) {
             new QueueSortDialog().show(getChildFragmentManager().beginTransaction(), "SortDialog");
             return true;
+        } else if (itemId == R.id.queue_auto_add) {
+            // The Queue is the default playlist — same auto-add rules as any playlist.
+            de.danoeh.antennapod.ui.screen.playlist.AutoAddShowsDialog
+                    .showForQueue(requireContext());
+            return true;
         } else if (itemId == R.id.refresh_item) {
             FeedUpdateManager.getInstance().runOnceOrAsk(requireContext());
             return true;
