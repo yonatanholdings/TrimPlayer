@@ -20,7 +20,6 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputLayout;
-import de.danoeh.antennapod.net.discovery.BuildConfig;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.event.DiscoveryDefaultUpdateEvent;
 import de.danoeh.antennapod.net.discovery.ItunesTopListLoader;
@@ -166,20 +165,11 @@ public class DiscoveryFragment extends Fragment implements Toolbar.OnMenuItemCli
             progressBar.setVisibility(View.GONE);
             return;
         }
-        //noinspection ConstantConditions
-        if (BuildConfig.FLAVOR.equals("free") && needsConfirm) {
-            txtvError.setVisibility(View.VISIBLE);
-            txtvError.setText("");
-            butRetry.setVisibility(View.VISIBLE);
-            butRetry.setText(R.string.discover_confirm);
-            butRetry.setOnClickListener(v -> {
-                prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, false).apply();
-                needsConfirm = false;
-                loadToplist(country);
-            });
-            txtvEmpty.setVisibility(View.GONE);
-            progressBar.setVisibility(View.GONE);
-            return;
+        // Suggestions load automatically: the former "Show suggestions" confirm gate has been
+        // removed, so we always behave as if the user had tapped it.
+        if (needsConfirm) {
+            prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, false).apply();
+            needsConfirm = false;
         }
 
         ItunesTopListLoader loader = new ItunesTopListLoader(getContext());
