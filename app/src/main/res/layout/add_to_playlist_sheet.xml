@@ -70,4 +70,15 @@
         android:layout_height="wrap_content"
         android:nestedScrollingEnabled="true" />
 
+    <!-- First-playlist shortcut: shown only while no custom playlist exists.
+         One tap creates the playlist AND files the episode into it. -->
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/suggestion_chips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="4dp"
+        android:visibility="gone"
+        app:chipSpacingVertical="4dp" />
+
 </LinearLayout>

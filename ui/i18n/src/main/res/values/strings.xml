@@ -1583,6 +1583,8 @@
     </plurals>
     <string name="trim_auto_add_backfill_yes">Add unplayed</string>
     <string name="trim_auto_add_backfill_no">Only new ones</string>
+    <string name="trim_first_playlist_title">Make your first playlist</string>
+    <string name="trim_first_playlist_sub">One queue for running, another for driving — playlists keep them separate and sync everywhere.</string>
     <string name="add_to_playlist_label">Add to playlist</string>
     <string name="remove_from_playlist_label">Remove from playlist</string>
     <string name="add_playlist_label">New playlist</string>

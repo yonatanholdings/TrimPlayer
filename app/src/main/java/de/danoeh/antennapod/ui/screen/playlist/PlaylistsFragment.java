@@ -56,8 +56,16 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
         ((MainActivity) requireActivity()).setupToolbarToggle(toolbar, displayUpArrow);
 
         RecyclerView recyclerView = root.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 2);
         adapter = new PlaylistListAdapter(getContext(), this);
+        // The first-playlist hero spans the full row under the cards.
+        layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return position == adapter.getHeroPosition() ? 2 : 1;
+            }
+        });
+        recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
         progressBar = root.findViewById(R.id.progressBar);
@@ -132,6 +140,11 @@ public class PlaylistsFragment extends Fragment implements PlaylistListAdapter.O
     @Override
     public void onPlaylistPlayClicked(Playlist playlist) {
         PlaylistPlayer.play(requireContext(), playlist.getId());
+    }
+
+    @Override
+    public void onCreateSuggestedPlaylist(String name) {
+        DBWriter.createPlaylist(name); // grid refreshes via PlaylistEvent
     }
 
     @Override

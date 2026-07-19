@@ -568,8 +568,9 @@ public class DBWriter {
         return dbExec.submit(() -> {
             PodDBAdapter adapter = PodDBAdapter.getInstance();
             adapter.open();
-            long id = adapter.createPlaylist(name);
+            final long id = adapter.createPlaylist(name);
             adapter.close();
+            DBReader.invalidateCustomPlaylistCache();
             EventBus.getDefault().post(PlaylistEvent.listChanged());
             return id;
         });
@@ -591,6 +592,7 @@ public class DBWriter {
             adapter.open();
             adapter.removePlaylist(playlistId);
             adapter.close();
+            DBReader.invalidateCustomPlaylistCache();
             EventBus.getDefault().post(PlaylistEvent.listChanged());
         });
     }

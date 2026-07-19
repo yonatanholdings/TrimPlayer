@@ -20,6 +20,7 @@ import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.net.download.serviceinterface.DownloadServiceInterface;
 import de.danoeh.antennapod.net.sync.serviceinterface.SynchronizationQueue;
+import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.playback.service.PlaybackServiceInterface;
 import de.danoeh.antennapod.storage.database.DBWriter;
@@ -112,9 +113,13 @@ public class FeedItemMenuHandler {
         setItemVisibility(menu, R.id.add_to_queue_item, canAddToQueue);
         // "Add to playlist" needs media to play — but unlike the queue toggle it stays
         // available for episodes already queued (playlist membership is orthogonal).
-        // "Remove from playlist" is only shown by the Playlist screen, which re-enables
-        // it after this prepare pass.
-        setItemVisibility(menu, R.id.add_to_playlist_item, canAddToPlaylist);
+        // Hidden while the user has no custom playlist: the sheet would only offer
+        // the Queue, duplicating "Add to queue" with an extra tap. It reappears the
+        // moment a first playlist exists (Playlists screen / queue Auto-add are the
+        // discovery surfaces). "Remove from playlist" is only shown by the Playlist
+        // screen, which re-enables it after this prepare pass.
+        setItemVisibility(menu, R.id.add_to_playlist_item,
+                canAddToPlaylist && DBReader.hasCustomPlaylistsCached());
         setItemVisibility(menu, R.id.remove_from_playlist_item, false);
         setItemVisibility(menu, R.id.visit_website_item, canVisitWebsite);
         setItemVisibility(menu, R.id.share_item, canShare);

@@ -73,6 +73,36 @@ public class AddToPlaylistDialog {
             PlaylistNameDialog.show(context, R.string.add_playlist_label, null,
                     name -> createPlaylistAndAdd(context, name, item));
         });
+
+        // No custom playlist yet: offer one-tap "create + add" suggestion chips
+        // so filing the first episode into a Running playlist is a single tap.
+        boolean hasCustom = false;
+        for (Playlist playlist : playlists) {
+            if (!playlist.isDefault()) {
+                hasCustom = true;
+                break;
+            }
+        }
+        if (!hasCustom) {
+            com.google.android.material.chip.ChipGroup chips =
+                    content.findViewById(R.id.suggestion_chips);
+            chips.setVisibility(View.VISIBLE);
+            int[] suggestions = {
+                    R.string.playlist_suggestion_running,
+                    R.string.playlist_suggestion_driving,
+                    R.string.playlist_suggestion_commute,
+            };
+            for (int labelRes : suggestions) {
+                com.google.android.material.chip.Chip chip =
+                        new com.google.android.material.chip.Chip(context);
+                chip.setText(labelRes);
+                chip.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    createPlaylistAndAdd(context, chip.getText().toString(), item);
+                });
+                chips.addView(chip);
+            }
+        }
         dialog.show();
     }
 

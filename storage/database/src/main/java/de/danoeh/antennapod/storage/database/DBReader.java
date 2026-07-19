@@ -479,16 +479,36 @@ public final class DBReader {
         adapter.open();
         List<Playlist> playlists = new ArrayList<>();
         try (Cursor cursor = adapter.getPlaylistsCursor()) {
+            boolean anyCustom = false;
             while (cursor.moveToNext()) {
                 Playlist playlist = new Playlist(cursor.getLong(0), cursor.getString(1),
                         cursor.getInt(2), cursor.getLong(3));
                 playlist.setDefault(cursor.getInt(4) == 1);
+                anyCustom |= !playlist.isDefault();
                 playlists.add(playlist);
             }
+            hasCustomPlaylists = anyCustom;
             return playlists;
         } finally {
             adapter.close();
         }
+    }
+
+    // Cached "does the user have any custom (non-default) playlist?" — read by
+    // menu preparation on the MAIN thread, so it must not hit the DB. Unknown
+    // (null) defaults to true (menu item shown; harmless). getPlaylists() —
+    // which every playlist screen already calls off-main — refreshes it as a
+    // side effect, and playlist create/delete invalidate it.
+    private static volatile Boolean hasCustomPlaylists = null;
+
+    /** Main-thread-safe: whether any custom playlist exists (true when unknown). */
+    public static boolean hasCustomPlaylistsCached() {
+        Boolean cached = hasCustomPlaylists;
+        return cached == null || cached;
+    }
+
+    static void invalidateCustomPlaylistCache() {
+        hasCustomPlaylists = null;
     }
 
     /** Id of the default playlist (the Queue), creating its row if needed. */

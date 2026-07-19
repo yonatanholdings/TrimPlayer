@@ -35,7 +35,19 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
         void onPlaylistPlayClicked(Playlist playlist);
 
         void onPlaylistOverflowClicked(Playlist playlist, View anchor);
+
+        /** A suggestion chip on the first-playlist hero was tapped. */
+        void onCreateSuggestedPlaylist(String name);
     }
+
+    private static final int TYPE_CARD = 0;
+    private static final int TYPE_HERO = 1;
+
+    private static final int[] HERO_SUGGESTIONS = {
+            R.string.playlist_suggestion_running,
+            R.string.playlist_suggestion_driving,
+            R.string.playlist_suggestion_commute,
+    };
 
     // Monogram tile palette for empty playlists — indexed by name hash so a
     // playlist keeps its color, and different playlists tend to differ.
@@ -58,15 +70,52 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
         notifyDataSetChanged();
     }
 
+    /** Whether the first-playlist onboarding hero trails the cards (no customs yet). */
+    private boolean showHero() {
+        for (Playlist playlist : playlists) {
+            if (!playlist.isDefault()) {
+                return false;
+            }
+        }
+        return !playlists.isEmpty();
+    }
+
+    /** Adapter position of the hero, or -1. The grid gives it the full row width. */
+    public int getHeroPosition() {
+        return showHero() ? playlists.size() : -1;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return position == getHeroPosition() ? TYPE_HERO : TYPE_CARD;
+    }
+
     @NonNull
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_HERO) {
+            View view = LayoutInflater.from(context)
+                    .inflate(R.layout.playlist_first_hero, parent, false);
+            com.google.android.material.chip.ChipGroup chips = view.findViewById(R.id.hero_chips);
+            for (int labelRes : HERO_SUGGESTIONS) {
+                com.google.android.material.chip.Chip chip =
+                        new com.google.android.material.chip.Chip(context);
+                chip.setText(labelRes);
+                chip.setOnClickListener(v ->
+                        listener.onCreateSuggestedPlaylist(chip.getText().toString()));
+                chips.addView(chip);
+            }
+            return new Holder(view);
+        }
         View view = LayoutInflater.from(context).inflate(R.layout.playlist_card, parent, false);
         return new Holder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull Holder holder, int position) {
+        if (getItemViewType(position) == TYPE_HERO) {
+            return; // static content, wired at creation
+        }
         Playlist playlist = playlists.get(position);
         // The default playlist IS the queue: fixed localized name, pinned first.
         holder.name.setText(playlist.isDefault()
@@ -129,7 +178,7 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
 
     @Override
     public int getItemCount() {
-        return playlists.size();
+        return playlists.size() + (showHero() ? 1 : 0);
     }
 
     static class Holder extends RecyclerView.ViewHolder {
