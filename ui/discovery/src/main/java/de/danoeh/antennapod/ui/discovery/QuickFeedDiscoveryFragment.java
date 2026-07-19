@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import androidx.fragment.app.Fragment;
-import de.danoeh.antennapod.net.discovery.BuildConfig;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.event.DiscoveryDefaultUpdateEvent;
 import de.danoeh.antennapod.net.discovery.ItunesTopListLoader;
@@ -114,20 +113,9 @@ public class QuickFeedDiscoveryFragment extends Fragment implements AdapterView.
             viewBinding.poweredByLabel.setVisibility(View.GONE);
             return;
         }
-        //noinspection ConstantConditions
-        if (BuildConfig.FLAVOR.equals("free") && prefs.getBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, true)) {
-            viewBinding.errorLabel.setText("");
-            viewBinding.errorContainer.setVisibility(View.VISIBLE);
-            viewBinding.discoverGrid.setVisibility(View.VISIBLE);
-            viewBinding.errorRetryButton.setVisibility(View.VISIBLE);
-            viewBinding.errorRetryButton.setText(R.string.discover_confirm);
-            viewBinding.poweredByLabel.setVisibility(View.VISIBLE);
-            viewBinding.errorRetryButton.setOnClickListener(v -> {
-                prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, false).apply();
-                loadToplist();
-            });
-            return;
-        }
+        // Suggestions load automatically: the former "Show suggestions" confirm gate has been
+        // removed, so we always behave as if the user had tapped it.
+        prefs.edit().putBoolean(ItunesTopListLoader.PREF_KEY_NEEDS_CONFIRM, false).apply();
 
         disposable = Observable.fromCallable(() ->
                         loader.loadToplist(countryCode, NUM_SUGGESTIONS, DBReader.getFeedList()))
