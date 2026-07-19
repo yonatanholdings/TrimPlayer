@@ -565,11 +565,17 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
             if (feed == null) {
                 return;
             }
-            DBWriter.setFeedState(getContext(), feed, Feed.STATE_SUBSCRIBED);
-            MainActivityStarter mainActivityStarter = new MainActivityStarter(getContext());
-            mainActivityStarter.withOpenFeed(feed.getId());
-            getActivity().finish();
-            startActivity(mainActivityStarter.getIntent());
+            // Pick where new episodes go (Inbox/Queue/playlist) BEFORE finishing
+            // this activity — any pick subscribes; dismissing cancels.
+            de.danoeh.antennapod.ui.screen.playlist.SubscribeDestinationDialog.show(
+                    requireContext(), feed, () -> {
+                        DBWriter.setFeedState(getContext(), feed, Feed.STATE_SUBSCRIBED);
+                        MainActivityStarter mainActivityStarter =
+                                new MainActivityStarter(getContext());
+                        mainActivityStarter.withOpenFeed(feed.getId());
+                        getActivity().finish();
+                        startActivity(mainActivityStarter.getIntent());
+                    });
         });
         viewBinding.header.butRestore.setOnClickListener(v -> {
             if (feed == null) {
