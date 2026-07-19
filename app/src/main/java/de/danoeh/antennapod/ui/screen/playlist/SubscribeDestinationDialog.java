@@ -69,8 +69,7 @@ public final class SubscribeDestinationDialog {
                     }
                     Playlist target = targets.get(which);
                     if (target != null) {
-                        DBWriter.addPlaylistAutoFeed(target.getId(), feed.getId(),
-                                System.currentTimeMillis());
+                        installRule(feed, target.getId());
                     }
                     onSubscribed.run();
                 })
@@ -84,12 +83,30 @@ public final class SubscribeDestinationDialog {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(playlistId -> {
-                    DBWriter.addPlaylistAutoFeed(playlistId, feed.getId(),
-                            System.currentTimeMillis());
+                    installRule(feed, playlistId);
                     onSubscribed.run();
                 }, error -> {
                     Log.e(TAG, Log.getStackTraceString(error));
                     onSubscribed.run();
                 });
+    }
+
+    /** Create the auto-add rule AND seed the show's newest episode into the
+     *  playlist right away — the rule alone (cutoff = now) leaves the playlist
+     *  visibly empty until the show's next release, which reads as broken. */
+    private static void installRule(Feed feed, long playlistId) {
+        DBWriter.addPlaylistAutoFeed(playlistId, feed.getId(), System.currentTimeMillis());
+        de.danoeh.antennapod.model.feed.FeedItem newest = feed.getMostRecentItem();
+        if (newest == null || newest.getMedia() == null) {
+            for (de.danoeh.antennapod.model.feed.FeedItem item : feed.getItems()) {
+                if (item.getMedia() != null) {
+                    newest = item;
+                    break;
+                }
+            }
+        }
+        if (newest != null && newest.getMedia() != null) {
+            DBWriter.addPlaylistItems(playlistId, newest);
+        }
     }
 }
