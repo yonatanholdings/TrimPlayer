@@ -9,11 +9,9 @@ import de.danoeh.antennapod.model.download.DownloadResult;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
-import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.net.sync.serviceinterface.EpisodeAction;
 import de.danoeh.antennapod.net.sync.serviceinterface.SynchronizationQueue;
-import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
@@ -59,7 +57,6 @@ public abstract class FeedDatabaseWriter {
     public static synchronized Feed updateFeed(Context context, Feed newFeed, boolean removeUnlistedItems) {
         Feed resultFeed;
         List<FeedItem> unlistedItems = new ArrayList<>();
-        List<FeedItem> itemsToAddToQueue = new ArrayList<>();
         List<FeedItem> genuinelyNewItems = new ArrayList<>();
         List<NewEpisodesPrefetchEvent.Item> trimPrefetchItems = new ArrayList<>();
 
@@ -171,27 +168,11 @@ public abstract class FeedDatabaseWriter {
                                         rssUrl, mediaUrl, item.getItemIdentifier()));
                             }
                         }
-                        FeedPreferences.NewEpisodesAction action = savedFeed.getPreferences().getNewEpisodesAction();
-                        if (action == FeedPreferences.NewEpisodesAction.GLOBAL) {
-                            action = UserPreferences.getNewEpisodesAction();
-                        }
-                        FeedPreferences.AutoDownloadSetting autoDownload = savedFeed.getPreferences().getAutoDownload();
-                        if (!savedFeed.isLocalFeed() && (autoDownload == FeedPreferences.AutoDownloadSetting.ENABLED
-                                || (autoDownload == FeedPreferences.AutoDownloadSetting.GLOBAL
-                                        && UserPreferences.isEnableAutodownloadGlobal()))) {
-                            // Auto download currently only considers episodes in the inbox
-                            action = FeedPreferences.NewEpisodesAction.ADD_TO_INBOX;
-                        }
-                        switch (action) {
-                            case ADD_TO_INBOX:
-                                item.setNew();
-                                break;
-                            case ADD_TO_QUEUE:
-                                itemsToAddToQueue.add(item);
-                                break;
-                            default:
-                                break;
-                        }
+                        // Inbox deprecation: new episodes are no longer flagged NEW or
+                        // routed by NewEpisodesAction — playlist auto-add rules (below,
+                        // applyPlaylistAutoRules) are the only router. Feeds whose legacy
+                        // setting was ADD_TO_QUEUE were converted to rules on the default
+                        // playlist by InboxDeprecationMigration.
                     }
                 }
             }
@@ -230,9 +211,6 @@ public abstract class FeedDatabaseWriter {
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
-
-        // We need to add to queue after items are saved to database
-        DBWriter.addQueueItem(context, itemsToAddToQueue.toArray(new FeedItem[0]));
 
         // Playlist auto-add rules: append this refresh's genuinely-new episodes to
         // every playlist watching this show. Rule creation time is the cutoff, so

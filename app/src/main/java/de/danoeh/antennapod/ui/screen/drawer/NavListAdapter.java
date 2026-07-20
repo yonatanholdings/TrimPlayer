@@ -26,7 +26,6 @@ import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.storage.database.NavDrawerData;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.common.ImagePlaceholder;
-import de.danoeh.antennapod.ui.screen.InboxFragment;
 import de.danoeh.antennapod.ui.screen.queue.QueueFragment;
 import de.danoeh.antennapod.ui.screen.subscriptions.SubscriptionFragment;
 
@@ -198,12 +197,6 @@ public class NavListAdapter extends RecyclerView.Adapter<NavListAdapter.Holder>
             int queueSize = itemAccess.getQueueSize();
             if (queueSize > 0) {
                 holder.count.setText(NumberFormat.getInstance().format(queueSize));
-                holder.count.setVisibility(View.VISIBLE);
-            }
-        } else if (tag.equals(InboxFragment.TAG)) {
-            int unreadItems = itemAccess.getNumberOfNewItems();
-            if (unreadItems > 0) {
-                holder.count.setText(NumberFormat.getInstance().format(unreadItems));
                 holder.count.setVisibility(View.VISIBLE);
             }
         } else if (tag.equals(SubscriptionFragment.TAG)) {

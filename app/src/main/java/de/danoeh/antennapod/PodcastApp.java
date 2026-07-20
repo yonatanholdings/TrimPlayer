@@ -37,6 +37,7 @@ public class PodcastApp extends Application {
         DynamicColors.applyToActivitiesIfAvailable(this);
         ClientConfigurator.initialize(this);
         PreferenceUpgrader.checkUpgrades(this);
+        runInboxDeprecationMigrationOnce();
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true);
         EventBus.getDefault().register(new TrimAnalytics(this));
         logFirstLaunchPlayClick();
@@ -90,6 +91,27 @@ public class PodcastApp extends Application {
             // Analytics must never break app startup.
             Log.w(TAG, "first-launch play_click failed: " + t.getMessage());
         }
+    }
+
+    /** One-shot Inbox-deprecation migration (playlists-only model): converts
+     *  legacy add-to-queue routing into synced rules and clears NEW flags.
+     *  Off-main (DB work); guarded by a preference so it runs exactly once. */
+    private void runInboxDeprecationMigrationOnce() {
+        SharedPreferences prefs = getSharedPreferences("inbox_deprecation", MODE_PRIVATE);
+        if (prefs.getBoolean("done", false)) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                boolean globalIsQueue = de.danoeh.antennapod.storage.preferences.UserPreferences
+                        .getNewEpisodesAction()
+                        == de.danoeh.antennapod.model.feed.FeedPreferences.NewEpisodesAction.ADD_TO_QUEUE;
+                de.danoeh.antennapod.storage.database.InboxDeprecationMigration.run(globalIsQueue);
+                prefs.edit().putBoolean("done", true).apply();
+            } catch (Throwable t) {
+                Log.w(TAG, "Inbox deprecation migration failed (will retry next start): " + t);
+            }
+        }, "InboxDeprecationMigration").start();
     }
 
     private void scheduleTrimEventsUpload() {

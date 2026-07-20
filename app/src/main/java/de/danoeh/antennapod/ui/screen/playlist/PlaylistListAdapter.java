@@ -119,7 +119,8 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
         Playlist playlist = playlists.get(position);
         // The default playlist IS the queue: fixed localized name, pinned first.
         holder.name.setText(playlist.isDefault()
-                ? context.getString(R.string.queue_label) : playlist.getName());
+                ? de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimUpNextTitle(
+                        context.getString(R.string.trim_up_next_label)) : playlist.getName());
         holder.countBadge.setText(context.getResources().getQuantityString(
                 R.plurals.num_episodes, playlist.getEpisodeCount(), playlist.getEpisodeCount()));
         if (playlist.getTotalDurationMs() > 0) {
@@ -147,7 +148,8 @@ public class PlaylistListAdapter extends RecyclerView.Adapter<PlaylistListAdapte
         holder.collageGrid.setVisibility(covers.size() >= 2 ? View.VISIBLE : View.GONE);
         if (empty) {
             String name = playlist.isDefault()
-                    ? context.getString(R.string.queue_label)
+                    ? de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimUpNextTitle(
+                        context.getString(R.string.trim_up_next_label))
                     : playlist.getName() == null ? "" : playlist.getName().trim();
             // floorMod: hashCode() can be Integer.MIN_VALUE, where Math.abs stays negative.
             int color = TILE_COLORS[Math.floorMod(

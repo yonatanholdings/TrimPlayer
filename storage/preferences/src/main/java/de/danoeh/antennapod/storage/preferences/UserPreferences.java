@@ -1036,6 +1036,23 @@ public abstract class UserPreferences {
                 .apply();
     }
 
+    // Synced display alias for the default playlist ("Up Next"); the wire name
+    // stays 'default' forever. Written when the __queue_title__ pref arrives in
+    // an account-sync delta (web is the rename surface for now).
+    public static final String PREF_TRIM_UP_NEXT_TITLE = "prefTrimUpNextTitle";
+
+    /**
+     * The Up Next display alias, or {@code fallback} when never renamed.
+     */
+    public static String getTrimUpNextTitle(String fallback) {
+        String title = prefs.getString(PREF_TRIM_UP_NEXT_TITLE, "");
+        return title == null || title.trim().isEmpty() ? fallback : title.trim();
+    }
+
+    public static void setTrimUpNextTitle(String title) {
+        prefs.edit().putString(PREF_TRIM_UP_NEXT_TITLE, title == null ? "" : title.trim()).apply();
+    }
+
     /** Journal of auto-add rule composites ("name\nfeedUrl") as last pushed (JSON array). */
     public static String getTrimSyncRulesSnapshot() {
         return prefs.getString(PREF_TRIM_SYNC_SNAP_RULES, "");

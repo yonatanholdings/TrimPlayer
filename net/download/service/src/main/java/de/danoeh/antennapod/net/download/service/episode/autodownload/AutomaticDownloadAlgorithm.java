@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
-import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.net.download.serviceinterface.DownloadServiceInterface;
@@ -50,38 +49,8 @@ public class AutomaticDownloadAlgorithm {
 
                 Log.d(TAG, "Performing auto-dl of undownloaded episodes");
 
-                final List<FeedItem> newItems = DBReader.getEpisodes(0, Integer.MAX_VALUE,
-                        new FeedItemFilter(FeedItemFilter.NEW), SortOrder.DATE_NEW_OLD);
-                final List<FeedItem> candidates = new ArrayList<>();
-                for (FeedItem newItem : newItems) {
-                    FeedPreferences feedPrefs = newItem.getFeed().getPreferences();
-                    if (feedPrefs.isAutoDownload(UserPreferences.isEnableAutodownloadGlobal())
-                            && !candidates.contains(newItem)
-                            && feedPrefs.getFilter().shouldAutoDownload(newItem)) {
-                        candidates.add(newItem);
-                    }
-                }
-
-                if (UserPreferences.isEnableAutodownloadQueue()) {
-                    final List<FeedItem> queue = DBReader.getQueue();
-                    for (FeedItem item : queue) {
-                        if (!candidates.contains(item)) {
-                            candidates.add(item);
-                        }
-                    }
-                }
-
-                // filter items that are not auto downloadable
-                Iterator<FeedItem> it = candidates.iterator();
-                while (it.hasNext()) {
-                    FeedItem item = it.next();
-                    if (!item.isAutoDownloadEnabled()
-                            || item.isDownloaded()
-                            || !item.hasMedia()
-                            || item.getFeed().isLocalFeed()) {
-                        it.remove();
-                    }
-                }
+                final List<FeedItem> candidates = selectPlaylistCandidates(
+                        UserPreferences.isEnableAutodownloadQueue());
 
                 int autoDownloadableEpisodes = candidates.size();
                 int downloadedEpisodes = DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.DOWNLOADED));
@@ -109,6 +78,51 @@ public class AutomaticDownloadAlgorithm {
                 }
             }
         };
+    }
+
+    /**
+     * Inbox-deprecation policy: auto-download candidates come from PLAYLIST
+     * membership, not the removed NEW flag. Order = download priority: the
+     * queue / Up Next first (it is what plays next), then every other playlist
+     * in listing order, items in play order. Per-feed auto-download settings
+     * and episode filters still apply; already-downloaded, media-less, and
+     * local-feed items are skipped. Package-visible for unit tests.
+     *
+     * @param includeQueue honor the "include queue in auto download" setting
+     */
+    static List<FeedItem> selectPlaylistCandidates(boolean includeQueue) {
+        List<FeedItem> candidates = new ArrayList<>();
+        long defaultPlaylistId = DBReader.getDefaultPlaylistId();
+        if (includeQueue) {
+            candidates.addAll(DBReader.getPlaylistItems(defaultPlaylistId));
+        }
+        for (de.danoeh.antennapod.model.feed.Playlist playlist : DBReader.getPlaylists()) {
+            if (playlist.isDefault()) {
+                continue; // handled above (and only when enabled)
+            }
+            for (FeedItem item : DBReader.getPlaylistItems(playlist.getId())) {
+                if (!candidates.contains(item)) {
+                    candidates.add(item);
+                }
+            }
+        }
+        Iterator<FeedItem> it = candidates.iterator();
+        while (it.hasNext()) {
+            FeedItem item = it.next();
+            FeedPreferences feedPrefs = item.getFeed() != null
+                    ? item.getFeed().getPreferences() : null;
+            boolean feedAllows = feedPrefs == null
+                    || (feedPrefs.isAutoDownload(UserPreferences.isEnableAutodownloadGlobal())
+                        && feedPrefs.getFilter().shouldAutoDownload(item));
+            if (!feedAllows
+                    || !item.isAutoDownloadEnabled()
+                    || item.isDownloaded()
+                    || !item.hasMedia()
+                    || (item.getFeed() != null && item.getFeed().isLocalFeed())) {
+                it.remove();
+            }
+        }
+        return candidates;
     }
 
     /**

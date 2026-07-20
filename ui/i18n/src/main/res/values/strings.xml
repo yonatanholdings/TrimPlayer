@@ -1583,8 +1583,12 @@
     </plurals>
     <string name="trim_auto_add_backfill_yes">Add unplayed</string>
     <string name="trim_auto_add_backfill_no">Only new ones</string>
+    <string name="trim_recent_title">Recently published</string>
+    <string name="trim_recent_more">All episodes »</string>
+    <string name="trim_recent_empty_text">New episodes of your shows appear here as they are published.</string>
+    <string name="trim_up_next_label">Up Next</string>
     <string name="trim_subscribe_dest_title">Where should new episodes go?</string>
-    <string name="trim_subscribe_dest_inbox">Inbox (default)</string>
+    <string name="trim_subscribe_dest_inbox">Library only (no playlist)</string>
     <string name="trim_first_playlist_title">Make your first playlist</string>
     <string name="trim_first_playlist_sub">One queue for running, another for driving — playlists keep them separate and sync everywhere.</string>
     <string name="add_to_playlist_label">Add to playlist</string>

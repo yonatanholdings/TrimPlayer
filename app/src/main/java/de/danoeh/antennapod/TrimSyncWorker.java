@@ -521,9 +521,26 @@ public class TrimSyncWorker extends Worker {
      *  this run is already on the server and comes back unchanged in the delta —
      *  {@code applyPrefs} then no-ops on it (equal-value skip). Only genuine
      *  other-device changes get written here. */
+    /** Reserved pref carrying the Up Next display alias (see UserPreferences). */
+    static final String UP_NEXT_TITLE_KEY = "__queue_title__";
+
     private static int applyPrefs(List<TrimClient.PrefChange> prefs) {
         if (prefs == null || prefs.isEmpty()) {
             return 0;
+        }
+        // Up Next alias: rides the prefs entity as a reserved key whose string
+        // value travels in... prefs only carry numbers, so the alias is encoded
+        // in the KEY: "__queue_title__:<name>" (deleted row = reset to default).
+        for (TrimClient.PrefChange p : prefs) {
+            if (p == null || p.rss_url == null || !p.rss_url.startsWith(UP_NEXT_TITLE_KEY)) {
+                continue;
+            }
+            if (p.deleted || p.playback_rate == null || p.playback_rate < 0.5f) {
+                UserPreferences.setTrimUpNextTitle("");
+            } else if (p.rss_url.length() > UP_NEXT_TITLE_KEY.length() + 1) {
+                UserPreferences.setTrimUpNextTitle(
+                        p.rss_url.substring(UP_NEXT_TITLE_KEY.length() + 1));
+            }
         }
         Map<String, Feed> byUrl = new HashMap<>();
         for (Feed f : DBReader.getFeedList()) {

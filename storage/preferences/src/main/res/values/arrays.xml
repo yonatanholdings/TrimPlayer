@@ -4,7 +4,6 @@
         <item>HomeFragment</item>
         <item>QueueFragment</item>
         <item>PlaylistsFragment</item>
-        <item>NewEpisodesFragment</item>
         <item>SubscriptionFragment</item>
         <item>EpisodesFragment</item>
         <item>SavedFragment</item>

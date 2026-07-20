@@ -151,7 +151,8 @@ public class AddToPlaylistDialog {
             int count = playlist.getEpisodeCount() + countDelta.get(position);
             // The Queue rides the same sheet, pinned first by the cursor's ordering.
             holder.name.setText(playlist.isDefault()
-                    ? context.getString(R.string.queue_label) : playlist.getName());
+                    ? de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimUpNextTitle(
+                        context.getString(R.string.trim_up_next_label)) : playlist.getName());
             holder.count.setText(context.getResources().getQuantityString(
                     R.plurals.num_episodes, count, count));
             holder.check.setChecked(isMember);

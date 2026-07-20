@@ -18,7 +18,6 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
@@ -28,18 +27,22 @@ import de.danoeh.antennapod.event.FeedListUpdateEvent;
 import de.danoeh.antennapod.event.UnreadItemsUpdateEvent;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
+import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.storage.database.DBReader;
-import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.MenuItemUtils;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
-import de.danoeh.antennapod.ui.screen.InboxFragment;
 import de.danoeh.antennapod.ui.screen.home.HomeSection;
-import de.danoeh.antennapod.ui.swipeactions.SwipeActions;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
+/**
+ * "Recently published" rail — the Inbox's successor after the playlists-only
+ * deprecation. Shows the newest episodes across subscribed feeds, derived from
+ * publish dates: purely a glance surface, no NEW flag, no per-item lifecycle.
+ * Keeps the InboxSection TAG so users' home-section order prefs keep working.
+ */
 public class InboxSection extends HomeSection {
     public static final String TAG = "InboxSection";
     private static final int NUM_EPISODES = 2;
@@ -65,11 +68,8 @@ public class InboxSection extends HomeSection {
         };
         adapter.setDummyViews(NUM_EPISODES);
         viewBinding.recyclerView.setAdapter(adapter);
-        viewBinding.emptyLabel.setText(R.string.home_new_empty_text);
+        viewBinding.emptyLabel.setText(R.string.trim_recent_empty_text);
 
-        SwipeActions swipeActions = new SwipeActions(this, InboxFragment.TAG);
-        swipeActions.attachTo(viewBinding.recyclerView);
-        swipeActions.setFilter(new FeedItemFilter(FeedItemFilter.NEW));
         return view;
     }
 
@@ -81,7 +81,8 @@ public class InboxSection extends HomeSection {
 
     @Override
     protected void handleMoreClick() {
-        ((MainActivity) requireActivity()).loadChildFragment(new InboxFragment());
+        ((MainActivity) requireActivity()).loadChildFragment(
+                new de.danoeh.antennapod.ui.screen.AllEpisodesFragment());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -111,12 +112,12 @@ public class InboxSection extends HomeSection {
 
     @Override
     protected String getSectionTitle() {
-        return getString(R.string.home_new_title);
+        return getString(R.string.trim_recent_title);
     }
 
     @Override
     protected String getMoreLinkTitle() {
-        return getString(R.string.inbox_label_more);
+        return getString(R.string.trim_recent_more);
     }
 
     private void loadItems() {
@@ -125,8 +126,7 @@ public class InboxSection extends HomeSection {
         }
         disposable = Observable.fromCallable(() ->
                         new Pair<>(DBReader.getEpisodes(0, NUM_EPISODES,
-                                new FeedItemFilter(FeedItemFilter.NEW), UserPreferences.getInboxSortedOrder()),
-                                DBReader.getTotalEpisodeCount(new FeedItemFilter(FeedItemFilter.NEW))))
+                                new FeedItemFilter(), SortOrder.DATE_NEW_OLD), 0))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(data -> {
@@ -134,12 +134,7 @@ public class InboxSection extends HomeSection {
                     adapter.setDummyViews(0);
                     adapter.updateItems(items);
                     viewBinding.emptyLabel.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                    viewBinding.numNewItemsLabel.setVisibility(!items.isEmpty() ? View.VISIBLE : View.GONE);
-                    if (data.second >= 100) {
-                        viewBinding.numNewItemsLabel.setText(String.format(Locale.getDefault(), "%d+", 99));
-                    } else {
-                        viewBinding.numNewItemsLabel.setText(String.format(Locale.getDefault(), "%d", data.second));
-                    }
+                    viewBinding.numNewItemsLabel.setVisibility(View.GONE);
                 }, error -> Log.e(TAG, Log.getStackTraceString(error)));
     }
 }
