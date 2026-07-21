@@ -24,12 +24,14 @@ import de.danoeh.antennapod.actionbutton.StreamActionButton;
 import de.danoeh.antennapod.event.PlaylistEvent;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
+import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.ui.MenuItemUtils;
 import de.danoeh.antennapod.ui.common.ConfirmationDialog;
 import de.danoeh.antennapod.ui.common.Converter;
+import de.danoeh.antennapod.ui.screen.feed.ItemSortDialog;
 import de.danoeh.antennapod.ui.swipeactions.SwipeActions;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemViewHolder;
@@ -114,6 +116,9 @@ public class PlaylistFragment extends EpisodesListFragment {
         final int id = item.getItemId();
         if (id == R.id.play_playlist_item) {
             PlaylistPlayer.play(requireContext(), playlistId);
+            return true;
+        } else if (id == R.id.playlist_sort_item) {
+            PlaylistSortDialog.newInstance(playlistId).show(getChildFragmentManager().beginTransaction(), "SortDialog");
             return true;
         } else if (id == R.id.auto_add_shows_item) {
             AutoAddShowsDialog.show(requireContext(), playlistId);
@@ -333,6 +338,35 @@ public class PlaylistFragment extends EpisodesListFragment {
                 DBWriter.setPlaylistItems(playlistId, new java.util.ArrayList<>(episodes));
             }
             dragFrom = dragTo = -1;
+        }
+    }
+
+    /** One-shot re-sort of the playlist's episodes, reusing the queue's sort orders.
+     *  Unlike the queue there is no "keep sorted" mode: this reorders once, and the
+     *  playlist's manual drag order takes over again from there. */
+    public static class PlaylistSortDialog extends ItemSortDialog {
+        private static final String ARG_PLAYLIST_ID = "playlistId";
+
+        public static PlaylistSortDialog newInstance(long playlistId) {
+            Bundle bundle = new Bundle();
+            bundle.putLong(ARG_PLAYLIST_ID, playlistId);
+            PlaylistSortDialog dialog = new PlaylistSortDialog();
+            dialog.setArguments(bundle);
+            return dialog;
+        }
+
+        @Override
+        protected void onAddItem(int title, SortOrder ascending, SortOrder descending, boolean ascendingIsDefault) {
+            if (ascending == SortOrder.EPISODE_FILENAME_A_Z || ascending == SortOrder.SIZE_SMALL_LARGE) {
+                return;
+            }
+            super.onAddItem(title, ascending, descending, ascendingIsDefault);
+        }
+
+        @Override
+        protected void onSelectionChanged() {
+            super.onSelectionChanged();
+            DBWriter.reorderPlaylist(getArguments().getLong(ARG_PLAYLIST_ID), sortOrder, true);
         }
     }
 }

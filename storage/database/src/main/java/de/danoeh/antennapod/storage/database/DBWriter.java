@@ -682,6 +682,29 @@ public class DBWriter {
         });
     }
 
+    /**
+     * Re-sorts a playlist's episodes in place using the same sort orders offered for the queue.
+     */
+    public static Future<?> reorderPlaylist(final long playlistId, @Nullable SortOrder sortOrder,
+                                            final boolean broadcastUpdate) {
+        if (sortOrder == null) {
+            Log.w(TAG, "reorderPlaylist() - sortOrder is null. Do nothing.");
+            return runOnDbThread(() -> { });
+        }
+        final Permutor<FeedItem> permutor = FeedItemPermutors.getPermutor(sortOrder);
+        return runOnDbThread(() -> {
+            final List<FeedItem> playlist = DBReader.getPlaylistItems(playlistId);
+            permutor.reorder(playlist);
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.setPlaylistItems(playlistId, playlist);
+            adapter.close();
+            if (broadcastUpdate) {
+                postPlaylistChanged(playlistId, playlist);
+            }
+        });
+    }
+
     private static int playlistIndexOfItem(List<FeedItem> items, long itemId) {
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i).getId() == itemId) {
