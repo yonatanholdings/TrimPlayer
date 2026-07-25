@@ -13,7 +13,9 @@ import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.net.download.serviceinterface.DownloadServiceInterface;
 import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.database.LongList;
+import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.ui.share.ShareUtils;
 import de.danoeh.antennapod.ui.view.LocalDeleteModal;
 import org.greenrobot.eventbus.EventBus;
 
@@ -47,6 +49,8 @@ public class EpisodeMultiSelectActionHandler {
             moveToTopChecked(items);
         } else if (actionId == R.id.move_to_bottom_item) {
             moveToBottomChecked(items);
+        } else if (actionId == R.id.share_feeds_item) {
+            shareFeedsChecked(items);
         } else {
             Log.e(TAG, "Unrecognized speed dial action item. Do nothing. id=" + actionId);
         }
@@ -130,6 +134,25 @@ public class EpisodeMultiSelectActionHandler {
     private void moveToBottomChecked(List<FeedItem> items) {
         DBWriter.moveQueueItemsToBottom(items);
         showMessage(R.plurals.move_to_bottom_message, items.size());
+    }
+
+    // Dedupe to the distinct podcasts behind the selected episodes — this shares the
+    // shows, not the episodes. Sent through ShareUtils on the UI thread since this
+    // handler otherwise runs on an IO thread (startActivity needs a live Context).
+    private void shareFeedsChecked(List<FeedItem> items) {
+        List<Feed> feeds = new ArrayList<>();
+        LongList seenFeedIds = new LongList();
+        for (FeedItem episode : items) {
+            Feed feed = episode.getFeed();
+            if (feed != null && !feed.isLocalFeed() && !seenFeedIds.contains(feed.getId())) {
+                seenFeedIds.add(feed.getId());
+                feeds.add(feed);
+            }
+        }
+        if (feeds.isEmpty()) {
+            return;
+        }
+        activity.runOnUiThread(() -> ShareUtils.shareFeedsLink(activity, feeds));
     }
 
     private void showMessage(@PluralsRes int msgId, int numItems) {

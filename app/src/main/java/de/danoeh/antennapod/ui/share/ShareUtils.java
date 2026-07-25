@@ -12,6 +12,7 @@ import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.List;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.model.feed.Feed;
@@ -35,9 +36,34 @@ public class ShareUtils {
         context.startActivity(intent);
     }
 
+    /**
+     * Shares one podcast as a navigable {@code app.trimplayer.com/deeplink/subscribe}
+     * link (App-Links-opened by an installed app, or handled by the web player), not
+     * the raw RSS feed URL — a bare feed URL isn't something a recipient can act on.
+     */
     public static void shareFeedLink(Context context, Feed feed) {
-        String text = feed.getTitle() + "\n\n" + feed.getDownloadUrl();
+        String text = feed.getTitle() + "\n\n" + subscribeDeepLink(feed);
         shareLink(context, text);
+    }
+
+    /**
+     * Shares several podcasts as a single deep link — one {@code url=} query param
+     * per feed. The web player's {@code /deeplink/subscribe} handler subscribes to
+     * every {@code url=} it finds, so this needs no new backend support.
+     */
+    public static void shareFeedsLink(Context context, List<Feed> feeds) {
+        StringBuilder link = new StringBuilder("https://app.trimplayer.com/deeplink/subscribe");
+        char sep = '?';
+        for (Feed feed : feeds) {
+            link.append(sep).append("url=").append(encode(feed.getDownloadUrl()));
+            sep = '&';
+        }
+        String text = feeds.size() + " podcasts:\n\n" + link;
+        shareLink(context, text);
+    }
+
+    private static String subscribeDeepLink(Feed feed) {
+        return "https://app.trimplayer.com/deeplink/subscribe?url=" + encode(feed.getDownloadUrl());
     }
 
     public static boolean hasLinkToShare(FeedItem item) {

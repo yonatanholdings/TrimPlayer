@@ -54,4 +54,10 @@
         android:title="@string/move_to_bottom_label"
         android:visible="false" />
 
+    <item
+        android:id="@+id/share_feeds_item"
+        android:icon="@drawable/ic_share"
+        android:title="@string/share_feeds_item_label"
+        android:visible="false" />
+
 </menu>

@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,16 +23,19 @@ import de.danoeh.antennapod.actionbutton.PlayActionButton;
 import de.danoeh.antennapod.actionbutton.PlayLocalActionButton;
 import de.danoeh.antennapod.actionbutton.StreamActionButton;
 import de.danoeh.antennapod.event.PlaylistEvent;
+import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
 import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
+import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.ui.MenuItemUtils;
 import de.danoeh.antennapod.ui.common.ConfirmationDialog;
 import de.danoeh.antennapod.ui.common.Converter;
 import de.danoeh.antennapod.ui.screen.feed.ItemSortDialog;
+import de.danoeh.antennapod.ui.share.ShareUtils;
 import de.danoeh.antennapod.ui.swipeactions.SwipeActions;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemViewHolder;
@@ -131,6 +135,9 @@ public class PlaylistFragment extends EpisodesListFragment {
             return true;
         } else if (id == R.id.remove_playlist_item) {
             showDeleteDialog();
+            return true;
+        } else if (id == R.id.share_playlist_item) {
+            shareFeeds();
             return true;
         }
         return super.onMenuItemClick(item);
@@ -293,6 +300,23 @@ public class PlaylistFragment extends EpisodesListFragment {
                 getParentFragmentManager().popBackStack();
             }
         }.createNewDialog().show();
+    }
+
+    // Distinct, non-local podcasts among this playlist's episodes — shares the shows,
+    // not the episode list itself.
+    private void shareFeeds() {
+        List<Feed> feeds = new ArrayList<>();
+        LongList seenFeedIds = new LongList();
+        for (FeedItem item : episodes) {
+            Feed feed = item.getFeed();
+            if (feed != null && !feed.isLocalFeed() && !seenFeedIds.contains(feed.getId())) {
+                seenFeedIds.add(feed.getId());
+                feeds.add(feed);
+            }
+        }
+        if (!feeds.isEmpty()) {
+            ShareUtils.shareFeedsLink(requireActivity(), feeds);
+        }
     }
 
     /** Drag-to-reorder for the play order (same pattern as the queue): moves are

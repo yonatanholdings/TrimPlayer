@@ -26,4 +26,8 @@
         android:id="@+id/remove_playlist_item"
         android:title="@string/remove_playlist_label"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/share_playlist_item"
+        android:title="@string/share_playlist_label"
+        app:showAsAction="never" />
 </menu>

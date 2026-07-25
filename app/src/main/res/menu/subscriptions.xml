@@ -64,4 +64,9 @@
         android:id="@+id/show_archive"
         android:title="@string/archive_feed_label_noun"
         custom:showAsAction="never" />
+
+    <item
+        android:id="@+id/share_all_feeds"
+        android:title="@string/share_all_feeds_label"
+        custom:showAsAction="never" />
 </menu>

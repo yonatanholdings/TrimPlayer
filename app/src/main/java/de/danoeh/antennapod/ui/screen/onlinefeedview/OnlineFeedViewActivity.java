@@ -39,6 +39,7 @@ import de.danoeh.antennapod.net.discovery.PodcastSearcherRegistry;
 import de.danoeh.antennapod.net.download.service.feed.remote.Downloader;
 import de.danoeh.antennapod.net.download.service.feed.remote.HttpDownloader;
 import de.danoeh.antennapod.net.download.serviceinterface.DownloadRequestCreator;
+import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import de.danoeh.antennapod.parser.feed.FeedHandler;
 import de.danoeh.antennapod.parser.feed.FeedHandlerResult;
 import de.danoeh.antennapod.parser.feed.UnsupportedFeedtypeException;
@@ -51,6 +52,8 @@ import de.danoeh.antennapod.ui.common.ThemeUtils;
 import de.danoeh.antennapod.ui.preferences.screen.synchronization.AuthenticationDialog;
 import de.danoeh.antennapod.ui.screen.download.DownloadErrorLabel;
 import de.danoeh.antennapod.ui.screen.feed.FeedItemlistFragment;
+import de.danoeh.antennapod.ui.screen.subscriptions.SubscriptionFragment;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -63,6 +66,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -104,8 +108,22 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setTheme(ThemeSwitcher.getTranslucentTheme(this));
         super.onCreate(savedInstanceState);
+
+        // A group-of-podcasts share link (ShareUtils#shareFeedsLink on the sending side:
+        // one url= per feed) has no single feed to preview. Uri#getQueryParameter only
+        // ever returns the FIRST match for a repeated key, so without this check we'd
+        // silently subscribe to just one show and drop the rest. Bypass the normal
+        // single-feed preview/confirm flow entirely for this case.
+        if (TextUtils.equals(getIntent().getAction(), Intent.ACTION_VIEW) && getIntent().getData() != null) {
+            List<String> groupUrls = getIntent().getData().getQueryParameters("url");
+            if (groupUrls.size() > 1) {
+                subscribeToGroupAndFinish(groupUrls);
+                return;
+            }
+        }
+
+        setTheme(ThemeSwitcher.getTranslucentTheme(this));
 
         viewBinding = OnlinefeedviewActivityBinding.inflate(getLayoutInflater());
         setContentView(viewBinding.getRoot());
@@ -274,6 +292,32 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
             }
         }, error -> Log.e(TAG, Log.getStackTraceString(error)), () -> startFeedDownload(url));
         return null;
+    }
+
+    /** Silently subscribes to every feed in a group-share link and lands on
+     *  Subscriptions, where they now appear — mirrors OpmlImportActivity's bulk
+     *  subscribe (a bare, already-SUBSCRIBED-state Feed row; the title/episodes
+     *  fill in on the refresh triggered below) rather than this activity's normal
+     *  one-feed-at-a-time download/preview/confirm flow, which has no shape for N. */
+    private void subscribeToGroupAndFinish(List<String> urls) {
+        Completable.fromAction(() -> {
+            for (String url : urls) {
+                String prepared = UrlChecker.prepareUrl(url);
+                Feed feed = new Feed(prepared, null, prepared);
+                feed.setItems(Collections.emptyList());
+                FeedDatabaseWriter.updateFeed(this, feed, false);
+            }
+            FeedUpdateManager.getInstance().runOnce(this);
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(() -> {
+            new MainActivityStarter(this).withFragmentLoaded(SubscriptionFragment.TAG).withClearTop().start();
+            finish();
+        }, error -> {
+            Log.e(TAG, Log.getStackTraceString(error));
+            showNoPodcastFoundError();
+        });
     }
 
     /** If the share URL was a YouTube watch URL (or similar) and the searcher

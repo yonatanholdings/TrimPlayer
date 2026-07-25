@@ -244,6 +244,7 @@
     <string name="remove_archive_feed_label">Delete / archive</string>
     <string name="remove_feed_label">Delete</string>
     <string name="share_label">Share</string>
+    <string name="share_all_feeds_label">Share all subscriptions</string>
     <string name="share_file_label">Share file</string>
     <string name="feed_delete_explanation_delete">Deleting will remove ALL its episodes including downloads, playback history, and statistics.</string>
     <string name="feed_delete_explanation_archive">Archiving will hide it from the subscription list and avoid it getting updates. Downloads, statistics and playback state are kept.</string>
@@ -1574,7 +1575,7 @@
     <string name="playlist_suggestion_workout">Workout</string>
     <string name="playlist_suggestion_commute">Commute</string>
     <string name="playlist_suggestion_bedtime">Bedtime</string>
-    <string name="trim_auto_add_label">Auto-add new episodes</string>
+    <string name="trim_auto_add_label">Auto-add shows</string>
     <string name="trim_auto_add_no_subscriptions">Subscribe to some shows first — checked shows will drop their new episodes into this playlist automatically.</string>
     <string name="trim_auto_add_backfill_title">Include older episodes?</string>
     <plurals name="trim_auto_add_backfill_message">
@@ -1597,6 +1598,8 @@
     <string name="rename_playlist_label">Rename playlist</string>
     <string name="remove_playlist_label">Delete playlist</string>
     <string name="clear_playlist_label">Clear playlist</string>
+    <string name="share_playlist_label">Share podcasts in playlist</string>
+    <string name="share_feeds_item_label">Share podcasts</string>
     <string name="playlist_name_hint">Playlist name</string>
     <string name="playlist_options_label">Playlist options</string>
     <string name="added_to_playlist_label">Added to \"%1$s\"</string>

@@ -67,6 +67,7 @@ public class FeedItemMenuHandler {
         boolean canAddToPlaylist = false;
         boolean canVisitWebsite = false;
         boolean canShare = false;
+        boolean canShareFeeds = false;
         boolean canRemoveFromInbox = false;
         boolean canMarkPlayed = false;
         boolean canMarkUnplayed = false;
@@ -88,6 +89,11 @@ public class FeedItemMenuHandler {
             canAddToPlaylist |= hasMedia;
             canVisitWebsite |= !item.getFeed().isLocalFeed() && ShareUtils.hasLinkToShare(item);
             canShare |= !item.getFeed().isLocalFeed();
+            // Unlike canShare (one episode link — meaningless past a single selection),
+            // this shares the distinct podcasts behind the selection, so it stays valid
+            // for any selection size and is intentionally NOT cleared in the
+            // selectedItems.size() > 1 block below.
+            canShareFeeds |= !item.getFeed().isLocalFeed();
             canRemoveFromInbox |= item.isNew();
             canMarkPlayed |= !item.isPlayed();
             canMarkUnplayed |= item.isPlayed();
@@ -123,6 +129,7 @@ public class FeedItemMenuHandler {
         setItemVisibility(menu, R.id.remove_from_playlist_item, false);
         setItemVisibility(menu, R.id.visit_website_item, canVisitWebsite);
         setItemVisibility(menu, R.id.share_item, canShare);
+        setItemVisibility(menu, R.id.share_feeds_item, canShareFeeds);
         setItemVisibility(menu, R.id.remove_inbox_item, canRemoveFromInbox);
         setItemVisibility(menu, R.id.mark_read_item, canMarkPlayed);
         setItemVisibility(menu, R.id.mark_unread_item, canMarkUnplayed);

@@ -35,4 +35,9 @@
         android:menuCategory="container"
         android:title="@string/edit_tags"
         android:icon="@drawable/ic_tag"/>
+    <item
+        android:id="@+id/share_feeds"
+        android:menuCategory="container"
+        android:title="@string/share_label"
+        android:icon="@drawable/ic_share"/>
 </menu>
