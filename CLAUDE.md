@@ -18,7 +18,7 @@ Most "AntennaPod" packages should be left untouched unless the change is TrimPla
 
 ## Build / tooling
 
-- Gradle wrapper. AGP `8.11.0`, compileSdk 35, minSdk 23, targetSdk 35, Java 17 source/target, JVM toolchain 21 (`org.gradle.java.home` pinned in `gradle.properties` to Android Studio's JBR).
+- Gradle wrapper. AGP `8.11.0`, compileSdk 36, minSdk 23, targetSdk 36, Java 17 source/target, JVM toolchain 21 (`org.gradle.java.home` pinned in `gradle.properties` to Android Studio's JBR).
 - Flavors: `free` and `play` (market dimension). `play` is what ships; `free` is vestigial from upstream. Build types: `debug` (suffix `.debug`, app name "TrimPlayer Debug") and `release` (minified, shrunk, signed via `trimplayer-upload.p12` at repo root).
 - Version: single source of truth is `versionName` in `app/build.gradle`. `versionCode` is computed: `major*1_000_000 + minor*10_000 + patch*100 + (betaN or 95)`. e.g. `1.2.3-beta4 → 1020304`, `1.2.3 → 1020395`.
 - Resource locales whitelisted in `common.gradle` (`resourceConfigurations`). Only English strings should be edited — other locales come from upstream AntennaPod or the TrimPlayer rebrand sweep (see memory).

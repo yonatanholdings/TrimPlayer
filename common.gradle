@@ -1,9 +1,9 @@
 android {
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         minSdk 23
-        targetSdk 35
+        targetSdk 36
 
         vectorDrawables.useSupportLibrary true
         vectorDrawables.generatedDensities = []
@@ -41,6 +41,15 @@ android {
         animationsDisabled = true
         unitTests {
             includeAndroidResources = true
+        }
+    }
+
+    // Pins Robolectric's simulated SDK to 34 regardless of compileSdk/targetSdk --
+    // Robolectric 4.14 ships no API 36 shadows, so letting it default to the
+    // manifest's targetSdk breaks every module's unit tests once targetSdk > 35.
+    sourceSets {
+        test {
+            resources.srcDirs += rootProject.file("config/robolectric")
         }
     }
 

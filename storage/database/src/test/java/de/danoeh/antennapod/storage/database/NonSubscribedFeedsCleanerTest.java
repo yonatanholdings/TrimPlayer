@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -149,10 +150,15 @@ public class NonSubscribedFeedsCleanerTest {
         PodDBAdapter.tearDownTests();
     }
 
+    private static final AtomicInteger feedCounter = new AtomicInteger();
+
     private Feed createFeed() {
+        // Each call models a distinct podcast subscription, so the download URL must be
+        // unique -- Feeds.download_url now has a unique index (see PodDBAdapter#VERSION 3170000).
+        String downloadUrl = "http://example.com/feed" + feedCounter.incrementAndGet();
         Feed feed = new Feed(0, null, "title", "http://example.com", "This is the description",
-                "http://example.com/payment", "Daniel", "en", null, "http://example.com/feed",
-                "http://example.com/image", null, "http://example.com/feed", System.currentTimeMillis());
+                "http://example.com/payment", "Daniel", "en", null, downloadUrl,
+                "http://example.com/image", null, downloadUrl, System.currentTimeMillis());
         feed.setItems(new ArrayList<>());
         return feed;
     }
