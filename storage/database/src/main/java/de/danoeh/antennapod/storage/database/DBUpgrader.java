@@ -6,8 +6,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.media.MediaMetadataRetriever;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.model.feed.FeedPreferences;
 
 import static de.danoeh.antennapod.model.feed.FeedPreferences.SPEED_USE_GLOBAL;
@@ -414,6 +418,144 @@ class DBUpgrader {
                     + " FROM " + PodDBAdapter.TABLE_NAME_QUEUE + " q"
                     + " ORDER BY q." + PodDBAdapter.KEY_ID);
         }
+        if (oldVersion < 3170000 && tableExists(db, PodDBAdapter.TABLE_NAME_FEEDS)) {
+            // Bug: concurrent auto-subscribe / feed-refresh runs could occasionally
+            // slip a second Feeds row past the app-level dedup-by-URL check in
+            // FeedDatabaseWriter.updateFeed, creating a duplicate local subscription
+            // for a podcast that's already subscribed (e.g. it showing up twice in
+            // the subscriptions list). Clean up duplicate groups where every extra
+            // copy is a pure ghost -- zero user data: never played, not queued,
+            // favorited, bookmarked, or downloaded -- since those are safe to drop
+            // outright. A group where more than one copy has real user data is left
+            // alone; a migration shouldn't guess which one to keep. The unique index
+            // below makes new duplicates impossible from this point on, regardless
+            // of what upstream bug let one slip past the app-level check.
+            // (Guarded by tableExists() because upgrade() applies every block whose
+            // oldVersion threshold matches regardless of the target newVersion --
+            // some unit tests exercise a single upgrade step against a minimal
+            // synthetic schema that doesn't include every table.)
+            mergeDuplicateFeeds(db);
+            try {
+                db.execSQL(PodDBAdapter.CREATE_UNIQUE_INDEX_FEEDS_DOWNLOAD_URL);
+            } catch (android.database.sqlite.SQLiteException e) {
+                // A duplicate group where more than one copy has real user data was
+                // deliberately left unmerged above, so the URL still isn't unique.
+                // Don't fail the whole migration (and thus app startup) over it --
+                // this device just doesn't get the new-duplicates-impossible
+                // guarantee until that group is resolved by hand.
+                Log.w("DBUpgrader", "Skipping Feeds.download_url unique index: "
+                        + "unresolved duplicate subscription(s) remain", e);
+            }
+        }
+    }
+
+    private static boolean tableExists(SQLiteDatabase db, String tableName) {
+        try (Cursor c = db.rawQuery(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", new String[]{tableName})) {
+            return c.moveToFirst();
+        }
+    }
+
+    /** See the oldVersion < 3170000 migration above. */
+    private static void mergeDuplicateFeeds(SQLiteDatabase db) {
+        List<String> dupUrls = new ArrayList<>();
+        try (Cursor c = db.rawQuery(
+                "SELECT " + PodDBAdapter.KEY_DOWNLOAD_URL + " FROM " + PodDBAdapter.TABLE_NAME_FEEDS
+                        + " WHERE " + PodDBAdapter.KEY_DOWNLOAD_URL + " IS NOT NULL AND "
+                        + PodDBAdapter.KEY_DOWNLOAD_URL + " != ''"
+                        + " GROUP BY " + PodDBAdapter.KEY_DOWNLOAD_URL + " HAVING COUNT(*) > 1", null)) {
+            while (c.moveToNext()) {
+                dupUrls.add(c.getString(0));
+            }
+        }
+        for (String url : dupUrls) {
+            List<Long> ids = new ArrayList<>();
+            try (Cursor c = db.rawQuery(
+                    "SELECT " + PodDBAdapter.KEY_ID + " FROM " + PodDBAdapter.TABLE_NAME_FEEDS
+                            + " WHERE " + PodDBAdapter.KEY_DOWNLOAD_URL + "=? ORDER BY " + PodDBAdapter.KEY_ID + " ASC",
+                    new String[]{url})) {
+                while (c.moveToNext()) {
+                    ids.add(c.getLong(0));
+                }
+            }
+            List<Long> withUserData = new ArrayList<>();
+            List<Long> empty = new ArrayList<>();
+            for (long id : ids) {
+                if (feedHasUserData(db, id)) {
+                    withUserData.add(id);
+                } else {
+                    empty.add(id);
+                }
+            }
+            if (withUserData.size() == 1) {
+                // Exactly one real subscription in the group -- drop every ghost copy.
+                for (long id : empty) {
+                    deleteGhostFeed(db, id);
+                }
+            } else if (withUserData.isEmpty() && empty.size() > 1) {
+                // Nobody ever touched any copy -- keep the oldest, drop the rest.
+                for (int i = 1; i < empty.size(); i++) {
+                    deleteGhostFeed(db, empty.get(i));
+                }
+            }
+            // withUserData.size() > 1: more than one copy has real user data; leave
+            // the whole group untouched.
+        }
+    }
+
+    private static boolean feedHasUserData(SQLiteDatabase db, long feedId) {
+        String[] args = {String.valueOf(feedId)};
+        String[] queries = {
+                "SELECT 1 FROM " + PodDBAdapter.TABLE_NAME_FEED_ITEMS
+                        + " WHERE " + PodDBAdapter.KEY_FEED + "=? AND " + PodDBAdapter.KEY_READ + "=1 LIMIT 1",
+                "SELECT 1 FROM " + PodDBAdapter.TABLE_NAME_QUEUE
+                        + " WHERE " + PodDBAdapter.KEY_FEED + "=? LIMIT 1",
+                "SELECT 1 FROM " + PodDBAdapter.TABLE_NAME_PLAYLIST_ITEMS
+                        + " WHERE " + PodDBAdapter.KEY_FEED + "=? LIMIT 1",
+                "SELECT 1 FROM " + PodDBAdapter.TABLE_NAME_FAVORITES
+                        + " WHERE " + PodDBAdapter.KEY_FEED + "=? LIMIT 1",
+                "SELECT 1 FROM " + PodDBAdapter.TABLE_NAME_BOOKMARKS + " bm JOIN " + PodDBAdapter.TABLE_NAME_FEED_ITEMS
+                        + " fi ON fi." + PodDBAdapter.KEY_ID + "=bm." + PodDBAdapter.KEY_FEEDITEM
+                        + " WHERE fi." + PodDBAdapter.KEY_FEED + "=? LIMIT 1",
+                "SELECT 1 FROM " + PodDBAdapter.TABLE_NAME_FEED_MEDIA + " fm JOIN " + PodDBAdapter.TABLE_NAME_FEED_ITEMS
+                        + " fi ON fi." + PodDBAdapter.KEY_ID + "=fm." + PodDBAdapter.KEY_FEEDITEM
+                        + " WHERE fi." + PodDBAdapter.KEY_FEED + "=? AND (fm." + PodDBAdapter.KEY_DOWNLOAD_DATE
+                        + "=1 OR fm." + PodDBAdapter.KEY_POSITION + ">0) LIMIT 1",
+        };
+        for (String sql : queries) {
+            try (Cursor c = db.rawQuery(sql, args)) {
+                if (c.moveToFirst()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Deletes a feed verified by the caller to carry no user data -- mirrors
+     *  PodDBAdapter's removeFeedItems()/removeFeed() cascade. */
+    private static void deleteGhostFeed(SQLiteDatabase db, long feedId) {
+        String[] args = {String.valueOf(feedId)};
+        String itemIdsOfFeed = "(SELECT " + PodDBAdapter.KEY_ID + " FROM " + PodDBAdapter.TABLE_NAME_FEED_ITEMS
+                + " WHERE " + PodDBAdapter.KEY_FEED + "=?)";
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_SIMPLECHAPTERS
+                + " WHERE " + PodDBAdapter.KEY_FEEDITEM + " IN " + itemIdsOfFeed, args);
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_SKIP_EVENTS
+                + " WHERE " + PodDBAdapter.KEY_FEEDITEM + " IN " + itemIdsOfFeed, args);
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_DOWNLOAD_LOG
+                + " WHERE " + PodDBAdapter.KEY_FEEDFILETYPE + "=" + FeedMedia.FEEDFILETYPE_FEEDMEDIA
+                + " AND " + PodDBAdapter.KEY_FEEDFILE + " IN (SELECT fm." + PodDBAdapter.KEY_ID
+                + " FROM " + PodDBAdapter.TABLE_NAME_FEED_MEDIA + " fm WHERE fm." + PodDBAdapter.KEY_FEEDITEM
+                + " IN " + itemIdsOfFeed + ")", args);
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_FEED_MEDIA
+                + " WHERE " + PodDBAdapter.KEY_FEEDITEM + " IN " + itemIdsOfFeed, args);
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_FEED_ITEMS
+                + " WHERE " + PodDBAdapter.KEY_FEED + "=?", args);
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_DOWNLOAD_LOG
+                + " WHERE " + PodDBAdapter.KEY_FEEDFILE + "=? AND " + PodDBAdapter.KEY_FEEDFILETYPE
+                + "=" + Feed.FEEDFILETYPE_FEED, args);
+        db.execSQL("DELETE FROM " + PodDBAdapter.TABLE_NAME_FEEDS
+                + " WHERE " + PodDBAdapter.KEY_ID + "=?", args);
     }
 
 }

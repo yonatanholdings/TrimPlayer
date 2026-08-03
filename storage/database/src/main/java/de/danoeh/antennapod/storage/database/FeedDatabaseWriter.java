@@ -210,6 +210,14 @@ public abstract class FeedDatabaseWriter {
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
+            if (savedFeed == null && isUniqueConstraintViolation(e)) {
+                // Another thread/process won the race and inserted a Feeds row for
+                // this exact download_url a moment ago -- the unique index added in
+                // PodDBAdapter#VERSION 3170000 rejected our insert instead of
+                // silently creating a duplicate. Resolve to the row that won instead
+                // of handing the caller back an unsaved, id=0 Feed.
+                resultFeed = searchFeedByIdentifyingValueOrID(newFeed);
+            }
         }
 
         // Playlist auto-add rules: append this refresh's genuinely-new episodes to
@@ -233,6 +241,17 @@ public abstract class FeedDatabaseWriter {
         }
 
         return resultFeed;
+    }
+
+    private static boolean isUniqueConstraintViolation(Throwable e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof android.database.sqlite.SQLiteConstraintException) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     /** Append new episodes (published after each rule's cutoff) to the playlists

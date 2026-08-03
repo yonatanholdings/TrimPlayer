@@ -55,7 +55,7 @@ public class PodDBAdapter {
 
     private static final String TAG = "PodDBAdapter";
     public static final String DATABASE_NAME = "Antennapod.db";
-    public static final int VERSION = 3160000;
+    public static final int VERSION = 3170000;
 
     /**
      * Maximum number of arguments for IN-operator.
@@ -268,6 +268,15 @@ public class PodDBAdapter {
     static final String CREATE_INDEX_SIMPLECHAPTERS_FEEDITEM = "CREATE INDEX "
             + TABLE_NAME_SIMPLECHAPTERS + "_" + KEY_FEEDITEM + " ON " + TABLE_NAME_SIMPLECHAPTERS + " ("
             + KEY_FEEDITEM + ")";
+
+    // Enforces "one local subscription per feed URL" at the storage layer, so a bug
+    // in the app-level dedup check (FeedDatabaseWriter.updateFeed) can no longer
+    // silently create a duplicate Feeds row -- the insert fails loudly instead.
+    // Partial (WHERE-qualified) so local/imported feeds with no download_url can
+    // still share a null/empty value.
+    static final String CREATE_UNIQUE_INDEX_FEEDS_DOWNLOAD_URL = "CREATE UNIQUE INDEX "
+            + TABLE_NAME_FEEDS + "_" + KEY_DOWNLOAD_URL + " ON " + TABLE_NAME_FEEDS + " ("
+            + KEY_DOWNLOAD_URL + ") WHERE " + KEY_DOWNLOAD_URL + " IS NOT NULL AND " + KEY_DOWNLOAD_URL + " != ''";
 
     static final String CREATE_TABLE_FAVORITES = "CREATE TABLE "
             + TABLE_NAME_FAVORITES + "(" + KEY_ID + " INTEGER PRIMARY KEY,"
@@ -2292,6 +2301,7 @@ public class PodDBAdapter {
             db.execSQL(CREATE_INDEX_SIMPLECHAPTERS_FEEDITEM);
             db.execSQL(CREATE_INDEX_BOOKMARKS_FEEDITEM);
             db.execSQL(CREATE_INDEX_PLAYLIST_ITEMS_PLAYLIST);
+            db.execSQL(CREATE_UNIQUE_INDEX_FEEDS_DOWNLOAD_URL);
         }
 
         @Override
