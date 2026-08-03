@@ -734,8 +734,19 @@ public class DBWriter {
     private static void removeQueueItemSynchronous(final Context context,
                                                    final boolean performAutoDownload,
                                                    final long... itemIds) {
+        removeFromQueueSynchronous(itemIds);
+        if (performAutoDownload) {
+            AutoDownloadManager.getInstance().autodownloadUndownloadedItems(context);
+        }
+    }
+
+    /** Drops the given items from the queue (Up Next) if present, with no context/autodownload
+     *  side effect -- used by {@link #removeQueueItemSynchronous} and by markItemPlayed so a
+     *  played episode never lingers in the queue, however it was marked played (menu action,
+     *  bulk select, or an incoming account sync row). */
+    private static boolean removeFromQueueSynchronous(final long... itemIds) {
         if (itemIds.length < 1) {
-            return;
+            return false;
         }
         final PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();
@@ -772,9 +783,7 @@ public class DBWriter {
             Log.w(TAG, "Queue was not modified by call to removeQueueItem");
         }
         adapter.close();
-        if (performAutoDownload) {
-            AutoDownloadManager.getInstance().autodownloadUndownloadedItems(context);
-        }
+        return queueModified;
     }
 
     public static Future<?> toggleFavoriteItem(final FeedItem item) {
@@ -917,6 +926,9 @@ public class DBWriter {
             adapter.open();
             adapter.setFeedItemRead(played, itemIds);
             adapter.close();
+            if (played == FeedItem.PLAYED) {
+                removeFromQueueSynchronous(itemIds);
+            }
             if (broadcastUpdate) {
                 EventBus.getDefault().post(new UnreadItemsUpdateEvent());
             }
@@ -938,6 +950,9 @@ public class DBWriter {
             adapter.open();
             adapter.setFeedItemRead(item, played, resetMediaPosition);
             adapter.close();
+            if (played == FeedItem.PLAYED) {
+                removeFromQueueSynchronous(item.getId());
+            }
 
             EventBus.getDefault().post(new UnreadItemsUpdateEvent());
         });
