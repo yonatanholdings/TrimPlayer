@@ -44,6 +44,16 @@
         android:localeConfig="@xml/locale_config"
         android:networkSecurityConfig="@xml/network_security_config">
 
+        <!-- Firebase Analytics collects the Android advertising ID by default and
+             contributes the AD_ID permission to the merged manifest. Nothing in
+             TrimPlayer uses an advertising ID: there are no ads, no ad networks and
+             no ad profiles, and the privacy policy says so. Collecting it is pure
+             liability with no benefit, and it forces a "yes" on the Play Data Safety
+             advertising-ID question. Switched off so the honest answer is "no". -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+
         <activity
             android:name=".ui.screen.playback.PlaybackSpeedDialogActivity"
             android:noHistory="true"
