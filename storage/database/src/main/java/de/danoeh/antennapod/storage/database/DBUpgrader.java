@@ -402,8 +402,18 @@ class DBUpgrader {
             // Copy the legacy Queue rows (ordered by their id, which is the queue
             // position) into PlaylistItems under a new is_default row. The Queue
             // table is left in place, dormant, as a one-release rollback net.
-            db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_PLAYLISTS
-                    + " ADD COLUMN " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT + " INTEGER DEFAULT 0");
+            if (oldVersion >= 3140000) {
+                // Only a device whose Playlists table was created by the pre-3160000
+                // CREATE_TABLE_PLAYLISTS (which lacked is_default) needs the column
+                // added here. A device jumping straight from < 3140000 gets the table
+                // freshly created by the block above using the CURRENT
+                // CREATE_TABLE_PLAYLISTS, which already bakes is_default in --
+                // ALTER-ing it again throws "duplicate column name" and rolls back
+                // the whole (transactional) upgrade, wedging the app in a permanent
+                // crash-on-launch loop.
+                db.execSQL("ALTER TABLE " + PodDBAdapter.TABLE_NAME_PLAYLISTS
+                        + " ADD COLUMN " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT + " INTEGER DEFAULT 0");
+            }
             db.execSQL("INSERT INTO " + PodDBAdapter.TABLE_NAME_PLAYLISTS
                     + " (" + PodDBAdapter.KEY_TITLE + ", " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT
                     + ") VALUES ('Queue', 1)");
