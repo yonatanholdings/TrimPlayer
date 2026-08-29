@@ -10,6 +10,14 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Families Policy: TrimPlayer declares a target age group that includes
+         children, and Play forbids transmitting the advertising ID from a
+         child-directed app. firebase-analytics contributes this permission and
+         collects the AdID by default, so it is removed at merge time. Nothing in
+         TrimPlayer reads the AdID. Paired with the opt-out meta-data below. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
@@ -130,6 +138,11 @@
 
         <meta-data android:name="android.webkit.WebView.MetricsOptOut"
             android:value="true"/>
+        <!-- Belt-and-braces with the AD_ID removal above: tells the Analytics SDK
+             itself not to collect the advertising ID, so no build variant can
+             reintroduce it via a transitive manifest. -->
+        <meta-data android:name="google_analytics_adid_collection_enabled"
+            android:value="false"/>
         <meta-data android:name="com.google.android.gms.car.notification.SmallIcon"
             android:resource="@drawable/ic_notification"/>
         <meta-data
