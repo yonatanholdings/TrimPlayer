@@ -382,7 +382,7 @@ public abstract class PlaybackController {
         if (playbackService != null) {
             if (playable != null) {
                 long timestamp = playable.getLastPlayedTimeStatistics();
-                PlayableUtils.saveCurrentPosition(playable, time, timestamp);
+                PlayableUtils.saveCurrentPosition(activity, playable, time, timestamp);
             }
             playbackService.seekTo(time);
         } else if (playable instanceof FeedMedia) {

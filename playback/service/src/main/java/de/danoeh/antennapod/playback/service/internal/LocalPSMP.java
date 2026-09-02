@@ -715,6 +715,12 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                 Log.d(TAG, "Lost audio focus");
                 if (playerStatus == PlayerStatus.PLAYING) {
                     mediaPlayer.pause();
+                    // Mirror pause(): ExoPlayerWrapper.pause() only calls exoPlayer.pause() and
+                    // never touches playerStatus, so without this the status stays PLAYING while
+                    // audio is silent -- which makes resume() a no-op and skips the
+                    // onPlaybackPause -> saveCurrentPosition() checkpoint. Deliberately not
+                    // calling pause(): that would reinit() the stream on every interruption.
+                    setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
                     pausedBecauseOfTransientAudiofocusLoss = true;
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
@@ -729,24 +735,35 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                 if (playerStatus == PlayerStatus.PLAYING) {
                     Log.d(TAG, "Lost audio focus temporarily. Pausing...");
                     mediaPlayer.pause();
+                    // See the AUDIOFOCUS_LOSS branch above: keep playerStatus in sync with the
+                    // player, and let onPlaybackPause checkpoint the position. This is the hot
+                    // path -- a nav app ducking for turn prompts hits it every few seconds.
+                    setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
                     pausedBecauseOfTransientAudiofocusLoss = true;
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 Log.d(TAG, "Gained audio focus");
                 if (pausedBecauseOfTransientAudiofocusLoss) {
-                    // Resume ExoPlayer. ExoPlayer's state callback will have
-                    // already moved playerStatus to PAUSED on the loss; sync it
-                    // back here so listeners see the PLAYING transition.
-                    // Diagnostic: this focus-regain resume bypasses resume()'s position
-                    // restore (it calls start() directly). A named suspect for the mid-episode
-                    // "returned to the beginning" reports — log the position ExoPlayer is at.
+                    // The loss branches above put us in PAUSED, so this transition actually
+                    // fires now (before 2026-09-01 the status was still PLAYING here and the
+                    // PAUSED guard silently skipped it -- 88 focus regains on a single drive
+                    // produced exactly one onPlaybackStart).
+                    //
+                    // Resume ExoPlayer directly rather than via resume(): resume() re-requests
+                    // audio focus we already hold, and would apply the rewind-on-resume interval
+                    // on every nav prompt. ExoPlayer kept its own position across the pause, so
+                    // no seek is needed -- we only have to tell the rest of the app where it is.
                     de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
                             "focus-gain-resume mediaPos="
                                     + (media != null ? media.getPosition() : -1)
                                     + " playerPos=" + getPosition());
                     mediaPlayer.start();
                     if (playerStatus == PlayerStatus.PAUSED) {
-                        setPlayerStatus(PlayerStatus.PLAYING, media);
+                        // Pass the real position, not INVALID_TIME: onPlaybackStart routes
+                        // INVALID_TIME into skipIntro() -- i.e. "fresh start, decide the intro"
+                        // for an episode we are mid-way through. A real position takes the
+                        // setPosition() branch and restarts the position saver.
+                        setPlayerStatus(PlayerStatus.PLAYING, media, getPosition());
                     }
                 } else {
                     setVolume(1.0f, 1.0f);
@@ -773,7 +790,7 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                 media.setPosition(position);
             }
             // Save final played_duration to DB so statistics are up to date
-            PlayableUtils.saveCurrentPosition(media, media.getPosition(), System.currentTimeMillis());
+            PlayableUtils.saveCurrentPosition(context, media, media.getPosition(), System.currentTimeMillis());
         }
 
         if (mediaPlayer != null) {

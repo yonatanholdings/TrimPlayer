@@ -127,3 +127,64 @@ test case.
 |---|--------|-----------|------------------|
 | 1 | MoS intro skipped → returned to beginning | Mid-episode reload dropping playback position (open reload/position-loss class); all HEAD guards present, trigger not yet reproducible | Added diagnostics to pin the trigger on next report; no speculative fix shipped |
 | 2 | Wiser Than Me host-read ads not skipped | Host-read ads have no cross-episode fingerprint recurrence → never promoted to `canonical_segments`; transcript path dormant | No — backend (`TrimPlayer-Unified`) transcript pipeline, out of scope |
+
+---
+
+## Update 2026-09-01 — Issue 1's trigger found, partial fix shipped
+
+The occurrence this document was waiting for arrived: a drive on the reporter's own device
+(SM-S908E, beta11 — which contains the diagnostics commit `6b4a31dca`; `LocalPSMP`,
+`PlaybackService` and `PlayableUtils` are byte-identical from that commit through beta13, so the
+trail below was produced by exactly the code analysed here).
+
+### The trigger is audio-focus churn, not a reload
+
+`dumpsys audio` names the interrupter: **Waze** requests
+`GAIN_TRANSIENT_MAY_DUCK` (`req=3`, `USAGE_ASSISTANCE_NAVIGATION_GUIDANCE`) once per turn prompt,
+and TrimPlayer receives `-3` (`LOSS_TRANSIENT_CAN_DUCK`). With `prefPauseForFocusLoss=true` (the
+default) `LocalPSMP` skips the duck branch and fully pauses. **88 interruptions in one day, median
+24 s apart.** Worst stretch: 11:50:45→11:56:20, five and a half minutes of wall clock for 33 s of
+audio, with four consecutive focus-gains logging the identical position (`5504`).
+
+### Why it corrupted state
+
+The focus-loss handler called `mediaPlayer.pause()` directly. `ExoPlayerWrapper.pause()` only calls
+`exoPlayer.pause()` — it never touches `playerStatus`, and the sole `setPlayerStatus(PAUSED, …)` is
+inside `pause()`, which this path bypasses. **The comment claiming "ExoPlayer's state callback will
+have already moved playerStatus to PAUSED" was false.** Status stayed `PLAYING` while audio was
+silent, so:
+
+- `resume()` early-returns → the Play button on the wheel/Android Auto did nothing.
+- `onPlaybackPause` never fired → no `saveCurrentPosition()` checkpoint at the interruption.
+- `onPlaybackStart` never fired on regain (the `== PAUSED` guard) → 88 regains, **1** `start` line.
+
+### The third case this document did not enumerate
+
+Issue 1 was framed as *(a)* position preserved and benign vs *(b)* position dropped to ~0. The trail
+has **17** `pos=-1` reloads and **none** dropped to 0 (the three `storedPos=0` lines are genuine
+new-episode auto-advances). The real failure is **preserved but stale**: at 12:05:32 `storedPos`
+regressed `215921 → 85587` (130 s backwards) with no logged seek. On an episode three minutes in,
+a 130 s rewind reads to the user as "returned to the beginning". Watching for a zero that never
+comes is why the trigger stayed unreproducible for six weeks.
+
+`skipIntro` is **ruled out** as the cause: it only seeks forward, and its `skip-intro-preset` line
+never appears in the trail.
+
+### Shipped
+
+1. **Fix** — focus loss now sets `PAUSED` (inline, *not* via `pause()`, which would `reinit()` the
+   stream on every prompt); focus gain passes the real position instead of `INVALID_TIME`, which
+   also keeps the regain off `skipIntro`'s "fresh start" path. Verified: the extra start/pause pairs
+   do not double-count `playedDuration` (the accumulator composes), and `statusChanged` cancels and
+   restarts the position observer symmetrically.
+2. **Diagnostics** — `PlayableUtils.saveCurrentPosition` is the single funnel every position write
+   goes through (service tick, pause checkpoint, `endPlayback`, and the UI-side
+   `PlaybackController.seekTo`). It now emits `position-regression from=… to=… delta=… by=<caller>`
+   when a write moves an episode backwards past `REGRESSION_THRESHOLD_MS`, naming the writer.
+   Regressions only — the per-tick contract of `TrimPlaybackLog` is preserved.
+
+### Still open
+
+The writer of the stale `85587` is **not** identified. `cancelPositionSaver()` was also skipped on
+this path, so the 5 s saver should have stayed running — the staleness mechanism is not closed, and
+item 2 above exists to name it on the next drive. Do not treat Issue 1 as fully resolved.
