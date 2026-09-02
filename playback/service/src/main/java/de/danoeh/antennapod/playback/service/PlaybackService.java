@@ -477,6 +477,43 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     // Trim Player helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Per-episode Trim Player setup: drop the previous episode's segments and skip-guard state,
+     * then fetch this episode's segments and warm its streaming cache.
+     *
+     * <p>Driven by {@code onMediaChanged}, which {@code playMediaObject} calls exactly once per
+     * load. This used to hang off {@code statusChanged}'s {@code case INITIALIZED} — the same
+     * once-per-load cadence, but {@code LocalPSMP.playMediaObject} skips
+     * {@code setPlayerStatus(INITIALIZED)} whenever Android Auto is connected (upstream commit
+     * 51f92e94e, car-mode skip-to-next fix). That made INITIALIZED unreachable in the car, so
+     * {@link #trimFetchSegments} — whose only other caller is the re-fetch inside its own
+     * analysis poll loop — never ran and no ads were skipped while driving. Proven on
+     * 2026-09-01: the same episode played on Auto produced no auto-skip, and off Auto
+     * auto-skipped its intro within two seconds.
+     *
+     * <p>Hanging this off onMediaChanged instead of removing the upstream guard keeps whatever
+     * that guard fixes for car skip-to-next intact.
+     */
+    private void trimOnEpisodeLoaded(Playable playable) {
+        trimPollHandler.removeCallbacksAndMessages(null);
+        currentSegments = Collections.emptyList();
+        // New episode: re-arm auto-skip and drop any pending seek verification from the previous one.
+        trimSeekUnreliable = false;
+        pendingSkipVerify = null;
+        phantomTailHandled = false;
+        if (playable instanceof FeedMedia) {
+            FeedMedia fm = (FeedMedia) playable;
+            trimFetchSegments(fm);
+            // Warm the streaming cache for the episode that just started, regardless of
+            // whether it sits at the top of the queue. QueuePrefetchManager only covers the
+            // top-of-queue items, so an episode played straight from a feed/home/history
+            // (not via the queue) would otherwise stream with no cached fallback — a forward
+            // seek/skip into an un-fetched region plus a brief network dip then strands
+            // playback in a long silent buffer. This closes that hole.
+            prefetchPlayingEpisode(fm);
+        }
+    }
+
     private void trimFetchSegments(FeedMedia media) {
         trimFetchSegments(media, null);
     }
@@ -1615,26 +1652,10 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         PlaybackPreferences.writeMediaPlaying(mediaPlayer.getPSMPInfo().getPlayable());
                     }
                     updateNotificationAndMediaSession(newInfo.getPlayable());
-                    // Trim Player: fetch segments for the new episode (fires once per new media,
-                    // covers both manual play and auto-advance via endPlayback → playMediaObject)
-                    trimPollHandler.removeCallbacksAndMessages(null);
-                    currentSegments = Collections.emptyList();
-                    // New episode: re-arm auto-skip and drop any pending seek verification
-                    // from the previous one.
-                    trimSeekUnreliable = false;
-                    pendingSkipVerify = null;
-                    phantomTailHandled = false;
-                    if (newInfo.getPlayable() instanceof FeedMedia) {
-                        FeedMedia fm = (FeedMedia) newInfo.getPlayable();
-                        trimFetchSegments(fm);
-                        // Warm the streaming cache for the episode that just started, regardless of
-                        // whether it sits at the top of the queue. QueuePrefetchManager only covers the
-                        // top-of-queue items, so an episode played straight from a feed/home/history
-                        // (not via the queue) would otherwise stream with no cached fallback — a forward
-                        // seek/skip into an un-fetched region plus a brief network dip then strands
-                        // playback in a long silent buffer. This closes that hole.
-                        prefetchPlayingEpisode(fm);
-                    }
+                    // Trim Player per-episode setup used to live here. It does NOT any more:
+                    // LocalPSMP.playMediaObject skips setPlayerStatus(INITIALIZED) whenever
+                    // Android Auto is connected, so this case never runs in the car and the
+                    // segment fetch never happened there. See trimOnEpisodeLoaded().
                     break;
                 case PREPARED:
                     if (mediaPlayer.getPSMPInfo().getPlayable() != null) {
@@ -1749,6 +1770,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 sendNotificationBroadcast(PlaybackServiceInterface.NOTIFICATION_TYPE_RELOAD, 0);
             }
             updateNotificationAndMediaSession(getPlayable());
+            trimOnEpisodeLoaded(getPlayable());
         }
 
         @Override
