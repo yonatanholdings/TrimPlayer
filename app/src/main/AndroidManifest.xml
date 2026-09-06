@@ -18,6 +18,14 @@
          TrimPlayer reads the AdID. Paired with the opt-out meta-data below. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"
         tools:node="remove" />
+    <!-- The Privacy Sandbox (Android 13+) counterpart, contributed by
+         play-services-measurement-api. Removed for the same reason. -->
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID"
+        tools:node="remove" />
+    <!-- Attribution Reporting, from the same measurement libraries. TrimPlayer
+         runs no ad campaigns, so there is nothing to attribute. -->
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION"
+        tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
