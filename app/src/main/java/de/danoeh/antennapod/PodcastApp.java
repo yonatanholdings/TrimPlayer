@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.google.android.material.color.DynamicColors;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import org.greenrobot.eventbus.EventBus;
 
 import org.greenrobot.eventbus.EventBus;
@@ -38,7 +37,7 @@ public class PodcastApp extends Application {
         ClientConfigurator.initialize(this);
         PreferenceUpgrader.checkUpgrades(this);
         runInboxDeprecationMigrationOnce();
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true);
+        TrimAnalytics.enableCrashReporting();
         EventBus.getDefault().register(new TrimAnalytics(this));
         logFirstLaunchPlayClick();
         EventBus.getDefault().register(new TrimPrefetchSubscriber());

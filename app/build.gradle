@@ -1,11 +1,35 @@
 plugins {
     id('com.android.application')
-    id('com.google.gms.google-services')
-    id('com.google.firebase.crashlytics')
+    // Firebase plugins are resolved here but applied further down, and ONLY for the
+    // play flavour — see "Google plugins" below.
+    id('com.google.gms.google-services') apply false
+    id('com.google.firebase.crashlytics') apply false
     id('com.github.triplet.play') version '3.9.0' apply false
 }
 apply from: "../common.gradle"
 apply from: "../playFlavor.gradle"
+
+// ── Google plugins: google-services + crashlytics ────────────────────────────
+// Both are per-PROJECT plugins, so they cannot be expressed per-flavour in
+// playFlavor.gradle the way the dependencies can. Applying them is the DEFAULT,
+// which keeps the shipping play build byte-for-byte in the behaviour it has
+// today, including a bare `./gradlew build` and anything CI runs.
+//
+// They are skipped only when every requested task is unambiguously free-flavour,
+// which is exactly how a FOSS packager invokes it (`assembleFreeRelease`). That
+// build then processes no google-services.json and injects no Crashlytics build
+// id. The dependencies are already play-only (see playImplementation below), so
+// the free APK carries no proprietary Google library either way; this just keeps
+// the free build from carrying Firebase project metadata it has no use for.
+def requestedTasks = gradle.startParameter.taskNames*.toLowerCase()
+def freeOnlyBuild = !requestedTasks.isEmpty() &&
+        requestedTasks.every { it.contains('free') && !it.contains('play') }
+if (!freeOnlyBuild) {
+    apply plugin: 'com.google.gms.google-services'
+    apply plugin: 'com.google.firebase.crashlytics'
+} else {
+    logger.lifecycle('TrimPlayer: free-only build — Firebase Gradle plugins not applied.')
+}
 
 // Single source of truth: versionName. versionCode is derived from it.
 // Schema: VERSION_CODE_OFFSET + major * 1_000_000 + minor * 10_000 + patch * 100 + (betaNum or 95 for final)
@@ -39,7 +63,7 @@ android {
 
     defaultConfig {
         applicationId "com.trimplayer"
-        versionName "1.0.7-beta13"
+        versionName "1.0.7-beta15"
         versionCode computeVersionCode(versionName)
 
         javaCompileOptions {
@@ -140,6 +164,13 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:$recyclerViewVersion"
     implementation "androidx.viewpager2:viewpager2:$viewPager2Version"
     implementation "androidx.work:work-runtime:$workManagerVersion"
+    // Compiling any androidx.work Worker subclass needs ListenableFuture on the
+    // compile classpath, because ListenableWorker exposes it. work-runtime only
+    // brings it at runtime; until 2026-09-09 it reached javac transitively through
+    // firebase-analytics, so moving Firebase to playImplementation broke the free
+    // flavour with "cannot access ListenableFuture". Declared explicitly, for both
+    // flavours. Guava is Apache-2.0 and the same coordinate the storage modules use.
+    implementation "com.google.guava:guava:31.0.1-android"
     implementation "com.google.android.material:material:$googleMaterialVersion"
     implementation "androidx.drawerlayout:drawerlayout:1.2.0"
 
@@ -154,16 +185,32 @@ dependencies {
     implementation "io.reactivex.rxjava3:rxandroid:$rxAndroidVersion"
     implementation "io.reactivex.rxjava3:rxjava:$rxJavaVersion"
 
-    implementation platform('com.google.firebase:firebase-bom:34.12.0')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics'
+    // Firebase is play-flavour ONLY. The free flavour must contain no proprietary
+    // Google libraries -- that is the entry requirement for F-Droid, IzzyOnDroid and
+    // the FOSS app lists. The only code that touches these lives in
+    // app/src/play/java/.../TrimAnalytics.java, which has a no-op twin under
+    // app/src/free/.
+    playImplementation platform('com.google.firebase:firebase-bom:34.12.0')
+    // firebase-analytics drags in play-services-ads-identifier, which is what
+    // puts AdvertisingIdClient in the dex. The AD_ID permission is already
+    // stripped (tools:node="remove") and collection is off
+    // (google_analytics_adid_collection_enabled=false), but Play's ad-ID scan
+    // looks at the linked SDK too, and the Families Policy is about the app
+    // being *incapable* of reading an ad ID, not merely declining to. Nothing
+    // here ever reads one, so unlink it outright. Analytics degrades to
+    // app-instance-id only, which is what we want. Google documents this
+    // exclusion as the supported way to ship Analytics without the ad ID.
+    playImplementation('com.google.firebase:firebase-analytics') {
+        exclude group: 'com.google.android.gms', module: 'play-services-ads-identifier'
+    }
+    playImplementation 'com.google.firebase:firebase-crashlytics'
 
     // 16 KB page-size compliance: libdatastore_shared_counter.so is the only
     // native lib bundled in the app, pulled transitively via Firebase Sessions.
     // datastore-core >= 1.1.2 ships a 16 KB-aligned .so; pin it so a future
     // transitive bump can't silently regress to a 4 KB-aligned build that Play
     // would reject. See blog.google "Prepare Play apps for 16 KB page size".
-    implementation 'androidx.datastore:datastore-core-android:1.1.7'
+    playImplementation 'androidx.datastore:datastore-core-android:1.1.7'
 
     // Google Play Billing — used by app.billing.TrimBillingManager. The
     // 'free' product flavor is currently vestigial (inherited from AntennaPod

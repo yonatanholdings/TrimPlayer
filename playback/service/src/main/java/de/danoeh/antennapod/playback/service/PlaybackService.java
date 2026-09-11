@@ -222,6 +222,28 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     public static volatile List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> debugLastSegments = Collections.emptyList();
     public static volatile String debugLastSegmentsEpisode = null;
 
+    /**
+     * True only when the installed app is actually debuggable.
+     *
+     * Prefer this over {@code BuildConfig.DEBUG} for anything a user could see or feel. There is
+     * no import of BuildConfig in this file, so it resolves to this LIBRARY module's BuildConfig,
+     * and a library's DEBUG flag is not a dependable statement about the build type of the app
+     * that ships it. The application's own debuggable flag is what we actually mean, and it comes
+     * from the manifest that shipped rather than from which module a constant was compiled into.
+     *
+     * Prompted by an observation on 2026-09-03: a toast reading "[TrimBrain] 4 segments received"
+     * appeared over the mini-player with the release package com.trimplayer (versionCode 5000713,
+     * not debuggable) in the foreground, having just fetched exactly 4 segments. The debug package
+     * com.trimplayer.debug was also running at the time and was not ruled out as the source, and
+     * a string scan of the release APK was inconclusive — "[TrimBrain] " is present in
+     * classes.dex, but "[Stub] " from the sibling debug branch a few lines above is not, which
+     * one value of the same constant cannot explain. So: not proven, but the gate below is the
+     * one we want in either case.
+     */
+    private boolean isDebuggableBuild() {
+        return (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    }
+
     /** Set by the segment-edit sheet while it auditions a region. When true the
      *  auto-skip loop stands down so the listener can actually hear the segment
      *  they're tuning instead of having it skipped out from under the preview. */
@@ -538,11 +560,17 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         final String capturedGuid = episodeGuid;
         final String capturedPodcastTitle = podcastTitleSync;
 
-        // Stub segments are a debug-only testing aid (offline, no backend). Gate the whole
-        // lookup on BuildConfig.DEBUG so the shipped stub_segments.json asset can never
-        // override real backend segments in release — isTrimStubEnabled() defaults to true.
+        // Stub segments are a debug-only testing aid (offline, no backend). The whole lookup is
+        // gated so the shipped stub_segments.json asset can never override real backend segments
+        // in release — isTrimStubEnabled() defaults to true, and assets/stub_segments.json is
+        // 439 KB of real data for 48 episode URLs that IS packaged into the release APK
+        // (verified 2026-09-03). If this gate ever opened, those 48 episodes would silently serve
+        // canned segments and return before the backend was ever called.
+        //
+        // Gated on the app's own debuggable flag rather than this library module's
+        // BuildConfig.DEBUG — see isDebuggableBuild().
         java.util.List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> stub =
-                BuildConfig.DEBUG
+                isDebuggableBuild()
                         ? de.danoeh.antennapod.playback.service.trim.TrimStub.getSegments(this, episodeUrl)
                         : null;
         if (stub != null) {
@@ -620,7 +648,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 EventBus.getDefault().post(
                                         new de.danoeh.antennapod.event.TrimSegmentsUnlockedEvent(announceUnlockTitle));
                             }
-                            if (BuildConfig.DEBUG) {
+                            if (isDebuggableBuild()) {
                                 new Handler(Looper.getMainLooper()).post(() ->
                                         Toast.makeText(getApplicationContext(),
                                                 "[TrimBrain] " + currentSegments.size() + " segments received",
