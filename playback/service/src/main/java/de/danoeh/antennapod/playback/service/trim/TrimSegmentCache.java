@@ -146,9 +146,60 @@ public final class TrimSegmentCache {
             return;
         }
         try {
-            writeSegments(ctx, guid, segments, false);
+            writeSegments(ctx, guid, segments, false, null);
         } catch (JSONException e) {
             Log.w(TAG, "Failed to serialize segments for guid=" + guid, e);
+        }
+    }
+
+    /** {@link #put(Context, String, List)} plus the length of the server copy the segment times
+     *  were measured on (either may be null), so a warm-path load can still run
+     *  {@link TrimCopyCheck}. */
+    public static void put(Context ctx, String guid, List<TrimClient.Segment> segments,
+                           Double serverDurationSec, Double serverMinDurationSec) {
+        if (ctx == null || guid == null || guid.isEmpty() || segments == null || segments.isEmpty()) {
+            return;
+        }
+        if (isUserOwned(ctx, guid)) {
+            return;
+        }
+        try {
+            JSONObject copy = new JSONObject();
+            copy.put("dur", serverDurationSec != null ? serverDurationSec : JSONObject.NULL);
+            copy.put("min", serverMinDurationSec != null ? serverMinDurationSec : JSONObject.NULL);
+            writeSegments(ctx, guid, segments, false, copy);
+        } catch (JSONException e) {
+            Log.w(TAG, "Failed to serialize segments for guid=" + guid, e);
+        }
+    }
+
+    /** True when the entry was written with the server-copy length (by a client that knows about
+     *  it). Entries from older app versions lack it, and the warm path re-fetches those once
+     *  rather than skip on times it can no longer check. */
+    public static boolean hasCopyInfo(Context ctx, String guid) {
+        return getCopyInfo(ctx, guid) != null;
+    }
+
+    /** {@code {durationSec, minDurationSec}} (entries may be null), or null when the entry is
+     *  missing or predates the field. */
+    public static Double[] getCopyInfo(Context ctx, String guid) {
+        if (ctx == null || guid == null || guid.isEmpty()) {
+            return null;
+        }
+        String raw = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(guid, null);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            JSONObject copy = new JSONObject(raw).optJSONObject("copy");
+            if (copy == null) {
+                return null;
+            }
+            return new Double[]{
+                copy.isNull("dur") ? null : copy.getDouble("dur"),
+                copy.isNull("min") ? null : copy.getDouble("min")};
+        } catch (JSONException e) {
+            return null;
         }
     }
 
@@ -212,6 +263,13 @@ public final class TrimSegmentCache {
 
     private static void writeSegments(Context ctx, String guid, List<TrimClient.Segment> segments,
                                       boolean userOwned) throws JSONException {
+        // Local edits are positioned on this device's own file, so they carry no server-copy
+        // length to check against.
+        writeSegments(ctx, guid, segments, userOwned, null);
+    }
+
+    private static void writeSegments(Context ctx, String guid, List<TrimClient.Segment> segments,
+                                      boolean userOwned, JSONObject copy) throws JSONException {
         JSONArray arr = new JSONArray();
         for (TrimClient.Segment s : segments) {
             JSONObject obj = new JSONObject();

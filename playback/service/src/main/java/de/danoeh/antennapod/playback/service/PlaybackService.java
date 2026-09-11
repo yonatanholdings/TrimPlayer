@@ -272,6 +272,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      *  a download so seeks work on replay. Reset per new episode (INITIALIZED). */
     private boolean trimSeekUnreliable = false;
 
+    /** Length in seconds of the audio copy the backend measured currentSegments on — exact and a
+     *  proven lower bound, either may be null (old backend, unknown, or the listener's own marks,
+     *  which were made on this very file). On a dynamic-ad-insertion feed the server's copy can
+     *  carry a different ad load than ours, shifting every timestamp onto the wrong audio; when
+     *  the lengths provably differ, {@link #trimCopyMismatch} stands the auto-skip loop down for
+     *  the episode. See {@link de.danoeh.antennapod.playback.service.trim.TrimCopyCheck}. */
+    private volatile Double trimServerDurationSec = null;
+    private volatile Double trimServerMinDurationSec = null;
+    private boolean trimCopyMismatch = false;
+
     /** Pending verification of the most recent auto-skip seek: {@code {startMs, endMs,
      *  earliestCheckMs, deadlineMs}}. Evaluated on later position ticks once past
      *  {@code earliestCheckMs} — playhead below {@code startMs} means the seek regressed
@@ -521,6 +531,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         currentSegments = Collections.emptyList();
         // New episode: re-arm auto-skip and drop any pending seek verification from the previous one.
         trimSeekUnreliable = false;
+        trimServerDurationSec = null;
+        trimServerMinDurationSec = null;
+        trimCopyMismatch = false;
         pendingSkipVerify = null;
         phantomTailHandled = false;
         if (playable instanceof FeedMedia) {
@@ -575,6 +588,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         : null;
         if (stub != null) {
             currentSegments = stub;
+            trimServerDurationSec = null;
+            trimServerMinDurationSec = null;
             skippedSegmentIndices.clear();
             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " stub segments");
             android.widget.Toast.makeText(this,
@@ -593,14 +608,25 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 .isUserOwned(this, episodeGuid);
         if (userOwned) {
             currentSegments = cached != null ? cached : Collections.emptyList();
+            // The listener's own marks were made on this very file — nothing to check them against.
+            trimServerDurationSec = null;
+            trimServerMinDurationSec = null;
+            trimCopyMismatch = false;
             skippedSegmentIndices.clear();
             debugLastSegments = currentSegments;
             debugLastSegmentsEpisode = episodeUrl;
             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " user-owned segments");
             return;
         }
-        if (cached != null && !cached.isEmpty()) {
+        // Only take the warm path when the entry remembers the length of the server copy its times
+        // were measured on; entries written by older app versions re-fetch once so TrimCopyCheck can
+        // still run (see the copy-mismatch check in the position observer).
+        Double[] cachedCopy = de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.getCopyInfo(this, episodeGuid);
+        if (cached != null && !cached.isEmpty() && cachedCopy != null) {
             currentSegments = cached;
+            trimServerDurationSec = cachedCopy[0];
+            trimServerMinDurationSec = cachedCopy[1];
+            trimCopyMismatch = false;
             skippedSegmentIndices.clear();
             debugLastSegments = currentSegments;
             debugLastSegmentsEpisode = episodeUrl;
@@ -638,11 +664,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 && response.body().segments != null
                                 && !response.body().segments.isEmpty()) {
                             currentSegments = response.body().segments;
+                            trimServerDurationSec = response.body().duration;
+                            trimServerMinDurationSec = response.body().min_duration;
+                            trimCopyMismatch = false;
                             skippedSegmentIndices.clear();
                             debugLastSegments = currentSegments;
                             debugLastSegmentsEpisode = episodeUrl;
                             de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.put(
-                                    getApplicationContext(), capturedGuid, currentSegments);
+                                    getApplicationContext(), capturedGuid, currentSegments,
+                                    trimServerDurationSec, trimServerMinDurationSec);
                             Log.d(TAG, "Trim Player: Loaded " + currentSegments.size() + " segments");
                             if (announceUnlockTitle != null) {
                                 EventBus.getDefault().post(
@@ -1922,6 +1952,10 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> edited =
                 de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.get(getApplicationContext(), guid);
         currentSegments = edited != null ? edited : Collections.emptyList();
+        // Edited segments are the listener's own, positioned on this file.
+        trimServerDurationSec = null;
+        trimServerMinDurationSec = null;
+        trimCopyMismatch = false;
         skippedSegmentIndices.clear();
         debugLastSegments = currentSegments;
         Log.d(TAG, "Trim Player: reloaded " + currentSegments.size() + " segments after local edit");
@@ -3343,6 +3377,26 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         int pos = getCurrentPosition(); // ms
                         int dur = getDuration();
 
+                        // The segment times were measured on the server's copy of this episode. On a
+                        // dynamic-ad-insertion feed ours can carry a different ad load, which shifts
+                        // every time onto the wrong audio (How I Built This, 2026-09-10: three skips in
+                        // 12s, all in the interview). If the lengths provably differ, stop auto-skipping
+                        // this episode rather than cut content. Evaluated per tick because our own
+                        // duration is only known once the player has it.
+                        if (!trimCopyMismatch && de.danoeh.antennapod.playback.service.trim.TrimCopyCheck.copyMismatch(
+                                dur, trimServerDurationSec, trimServerMinDurationSec)) {
+                            trimCopyMismatch = true;
+                            Log.w(TAG, "Trim Player: server segment times were measured on a different copy"
+                                    + " (playerDur=" + dur + "ms serverDur=" + trimServerDurationSec
+                                    + "s serverMinDur=" + trimServerMinDurationSec
+                                    + "s) — disabling auto-skip for this episode");
+                            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                    "copy-mismatch -> auto-skip off  playerDur=" + dur
+                                            + " serverDur=" + trimServerDurationSec
+                                            + " serverMinDur=" + trimServerMinDurationSec
+                                            + " ep=" + fm.getEpisodeTitle());
+                        }
+
                         // Verify the previous auto-skip seek actually held before doing any more
                         // skipping. On a non-seekable streaming source a forward seekTo() reports
                         // complete, then ExoPlayer silently restarts the stream at position 0; the
@@ -3366,7 +3420,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         }
 
                         List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsSnap = currentSegments;
-                        for (int si = 0; !trimSeekUnreliable && si < segsSnap.size(); si++) {
+                        for (int si = 0; !trimSeekUnreliable && !trimCopyMismatch
+                                && si < segsSnap.size(); si++) {
                             de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg = segsSnap.get(si);
                             int startMs = (int) (seg.start * 1000);
                             // Cap endMs to episode duration so we never seek past the end.

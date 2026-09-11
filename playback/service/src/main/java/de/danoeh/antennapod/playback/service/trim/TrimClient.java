@@ -486,6 +486,13 @@ public class TrimClient {
         // pre-2026-05-29 backends — the client treats null as "unknown" so old
         // servers never paint the "analyzed, nothing to trim" badge.
         public Boolean analyzed;
+        // Length in seconds of the audio copy the segment times were measured on:
+        // exact, and a proven lower bound for episodes whose exact length the
+        // backend never stored. Null on older backends / when unknown. Lets the
+        // player refuse to apply them to a differently-assembled file — see
+        // TrimCopyCheck.
+        public Double duration;
+        public Double min_duration;
     }
 
     /** Mirrors backend EntitlementStatus. status is the discriminator:
