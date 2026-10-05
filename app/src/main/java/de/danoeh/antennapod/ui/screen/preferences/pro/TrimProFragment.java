@@ -511,29 +511,23 @@ public class TrimProFragment extends Fragment {
         MaterialButton monthly     = root.findViewById(R.id.trimProPriceMonthly);
         MaterialButton monthlyPlus = root.findViewById(R.id.trimProPriceMonthlyPlus);
         MaterialButton yearly      = root.findViewById(R.id.trimProPriceYearly);
-        applyOnePrice(monthly, billing.getProductDetails(SKU_MONTHLY),
+        applyOnePrice(monthly, billing.getFormattedPrice(SKU_MONTHLY),
                 R.string.trim_pro_price_monthly_label);
-        applyOnePrice(monthlyPlus, billing.getProductDetails(SKU_MONTHLY_PLUS),
+        applyOnePrice(monthlyPlus, billing.getFormattedPrice(SKU_MONTHLY_PLUS),
                 R.string.trim_pro_price_monthly_plus_label);
-        applyOnePrice(yearly,  billing.getProductDetails(SKU_YEARLY),
+        applyOnePrice(yearly,  billing.getFormattedPrice(SKU_YEARLY),
                 R.string.trim_pro_price_yearly_label);
     }
 
-    private void applyOnePrice(MaterialButton btn,
-                               com.android.billingclient.api.ProductDetails details,
-                               int labelRes) {
-        if (details == null) return;  // keep the fallback hardcoded label
-        java.util.List<com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails> offers =
-                details.getSubscriptionOfferDetails();
-        if (offers == null || offers.isEmpty()) {
+    /** {@code formatted} is the already-localized price string from the store, or
+     *  null when it isn't known — unknown keeps the hardcoded fallback label.
+     *  Deliberately a String rather than Play's ProductDetails: this class lives in
+     *  the flavour-agnostic source set, and the free flavour has no billing library
+     *  to name that type. See TrimBillingManager's play/free twins. */
+    private void applyOnePrice(MaterialButton btn, String formatted, int labelRes) {
+        if (formatted == null || formatted.isEmpty()) {
             return;
         }
-        java.util.List<com.android.billingclient.api.ProductDetails.PricingPhase> phases =
-                offers.get(0).getPricingPhases().getPricingPhaseList();
-        if (phases == null || phases.isEmpty()) {
-            return;
-        }
-        String formatted = phases.get(0).getFormattedPrice();  // already localized
         btn.setText(getString(labelRes, formatted));
     }
 

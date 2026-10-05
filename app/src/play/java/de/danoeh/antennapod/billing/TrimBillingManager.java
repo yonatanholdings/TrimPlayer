@@ -127,9 +127,32 @@ public final class TrimBillingManager {
         }
     }
 
+    /**
+     * The store's localized price for {@code sku}, or null when it isn't known.
+     *
+     * Returns a String rather than Play's {@code ProductDetails} so the caller
+     * (TrimProFragment, which lives in the flavour-agnostic source set) never has
+     * to name a Play type — the free twin of this class has no billing library to
+     * name it with. Only the first pricing phase of the first subscription offer
+     * is used, which is the one the purchase buttons display.
+     */
     @Nullable
-    public ProductDetails getProductDetails(String sku) {
-        return products.get(sku);
+    public String getFormattedPrice(String sku) {
+        ProductDetails details = products.get(sku);
+        if (details == null) {
+            return null;
+        }
+        java.util.List<ProductDetails.SubscriptionOfferDetails> offers =
+                details.getSubscriptionOfferDetails();
+        if (offers == null || offers.isEmpty()) {
+            return null;
+        }
+        java.util.List<ProductDetails.PricingPhase> phases =
+                offers.get(0).getPricingPhases().getPricingPhaseList();
+        if (phases == null || phases.isEmpty()) {
+            return null;
+        }
+        return phases.get(0).getFormattedPrice();  // already localized
     }
 
     public boolean isUnavailable() {

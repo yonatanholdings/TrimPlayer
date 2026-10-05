@@ -148,6 +148,9 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     public static final String PREF_TRIM_ANALYTICS    = "TrimAnalytics";
     public static final String KEY_FIRST_TRIM_OBSERVED = "firstTrimObserved";
     public static final String KEY_ENTRY_SOURCE       = "entrySource";
+    /** Count of auto-skips this install has performed. Read by the review prompt,
+     *  which only asks after the user has actually felt the feature work. */
+    public static final String KEY_TRIM_SKIP_COUNT    = "trimSkipCount";
     public static final String AUTO_DOWNLOADS_ID     = "auto_downloads";
     public static final String AUTO_EPISODES_ID      = "auto_episodes";
     public static final String AUTO_SUBSCRIPTIONS_ID = "auto_subscriptions";
@@ -3554,6 +3557,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     EventBus.getDefault().post(AnalyticsEvent.firstTrimObserved(
                                             eventType, trimPrefs.getString(KEY_ENTRY_SOURCE, "organic")));
                                 }
+                                // Running count of skips this install has felt. The review
+                                // prompt reads it so we only ever ask someone who has seen
+                                // the feature work, never on a cold or broken install.
+                                trimPrefs.edit().putInt(KEY_TRIM_SKIP_COUNT,
+                                        trimPrefs.getInt(KEY_TRIM_SKIP_COUNT, 0) + 1).apply();
                                 // Track the just-skipped range so a backwards user seek into it
                                 // within REVERT_WINDOW_MS is classified as a revert (false positive).
                                 recentAutoSkips.addLast(

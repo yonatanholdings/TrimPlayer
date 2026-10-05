@@ -20,22 +20,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
-import androidx.credentials.Credential;
-import androidx.credentials.CredentialManager;
-import androidx.credentials.CredentialManagerCallback;
-import androidx.credentials.CustomCredential;
-import androidx.credentials.GetCredentialRequest;
-import androidx.credentials.GetCredentialResponse;
-import androidx.credentials.exceptions.GetCredentialException;
-import androidx.credentials.exceptions.NoCredentialException;
 import androidx.preference.Preference;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
@@ -62,7 +51,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 /**
  * Login / logout dialogs for the TrimPlayer sync account, driven from the
@@ -702,6 +690,10 @@ public final class TrimAccountDialogs {
         };
         bindMode.run();
 
+        // Hidden entirely in the free flavour, which ships no Google sign-in
+        // library; email/password remains fully available there.
+        googleBtn.setVisibility(
+                de.danoeh.antennapod.account.GoogleSignIn.isSupported() ? View.VISIBLE : View.GONE);
         googleBtn.setOnClickListener(v -> startGoogleSignIn(context, pref, dialog));
         primaryBtn.setOnClickListener(v -> {
             errorBanner.setVisibility(View.GONE);
@@ -765,64 +757,30 @@ public final class TrimAccountDialogs {
                             Toast.LENGTH_LONG).show();
                     return;
                 }
-                requestGoogleCredential(context, pref, dialog, serverClientId);
+                // The Credential Manager call itself lives behind account/GoogleSignIn,
+                // which has play/free twins — androidx.credentials' provider and the
+                // Google ID library are Google-only, and a free build must contain
+                // neither. Everything after the token (backend login, dialog, sync)
+                // is flavour-agnostic and stays here.
+                de.danoeh.antennapod.account.GoogleSignIn.requestIdToken(
+                        context, serverClientId,
+                        new de.danoeh.antennapod.account.GoogleSignIn.Callback() {
+                            @Override
+                            public void onIdToken(String idToken) {
+                                loginWithGoogleIdToken(context, pref, dialog, idToken);
+                            }
+
+                            @Override
+                            public void onUnavailable(int messageRes) {
+                                Toast.makeText(context, messageRes, Toast.LENGTH_LONG).show();
+                            }
+                        });
             });
         }).start();
     }
 
-    private static void requestGoogleCredential(Context context, Preference pref,
-                                                AlertDialog dialog, String serverClientId) {
-        // Button-triggered flow: use GetSignInWithGoogleOption (the explicit
-        // "Sign in with Google" button option), NOT GetGoogleIdOption — the
-        // latter is the One-Tap/auto-select style that throws
-        // NoCredentialException on first use or after a prior dismissal.
-        GetSignInWithGoogleOption option =
-                new GetSignInWithGoogleOption.Builder(serverClientId).build();
-        GetCredentialRequest request = new GetCredentialRequest.Builder()
-                .addCredentialOption(option)
-                .build();
-        CredentialManager credentialManager = CredentialManager.create(context);
-        Executor mainExecutor = ContextCompat.getMainExecutor(context);
-        credentialManager.getCredentialAsync(context, request, null, mainExecutor,
-                new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
-                    @Override
-                    public void onResult(GetCredentialResponse result) {
-                        handleGoogleCredential(context, pref, dialog, result);
-                    }
-
-                    @Override
-                    public void onError(GetCredentialException e) {
-                        // Log the real cause — without this, every failure looks
-                        // identical and is impossible to diagnose from the field.
-                        Log.w(TAG, "Google credential request failed: "
-                                + e.getClass().getSimpleName() + ": " + e.getMessage());
-                        if (e instanceof NoCredentialException) {
-                            // No Google account on the device (or the user has
-                            // none that can be offered) — actionable for the user.
-                            Toast.makeText(context, R.string.trim_account_google_no_account,
-                                    Toast.LENGTH_LONG).show();
-                        } else {
-                            // Real failure (config/SHA-1 mismatch, cancellation,
-                            // transient errors). Cancellation is benign but rare
-                            // enough that a toast is acceptable.
-                            Toast.makeText(context, R.string.trim_account_google_failed,
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    }
-                });
-    }
-
-    private static void handleGoogleCredential(Context context, Preference pref,
-                                               AlertDialog dialog, GetCredentialResponse response) {
-        Credential credential = response.getCredential();
-        if (!(credential instanceof CustomCredential)
-                || !GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())) {
-            Log.w(TAG, "Unexpected credential type from Credential Manager: " + credential.getType());
-            Toast.makeText(context, R.string.trim_account_google_failed, Toast.LENGTH_LONG).show();
-            return;
-        }
-        String idToken = GoogleIdTokenCredential
-                .createFrom(((CustomCredential) credential).getData()).getIdToken();
+    private static void loginWithGoogleIdToken(Context context, Preference pref,
+                                               AlertDialog dialog, String idToken) {
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
             String error = TrimAccountManager.loginWithGoogle(idToken);

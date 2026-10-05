@@ -212,22 +212,33 @@ dependencies {
     // would reject. See blog.google "Prepare Play apps for 16 KB page size".
     playImplementation 'androidx.datastore:datastore-core-android:1.1.7'
 
-    // Google Play Billing — used by app.billing.TrimBillingManager. The
-    // 'free' product flavor is currently vestigial (inherited from AntennaPod
-    // upstream); we ship 'play' to the Play Store. Plain implementation keeps
-    // the build green on both flavors. If F-Droid distribution is ever
-    // pursued, split this into flavor-specific source sets with a no-op
-    // TrimBillingManager under src/free/java/.
-    implementation 'com.android.billingclient:billing:8.0.0'
+    // In-app review (Play Core). play-flavour only: it is a proprietary Google
+    // library, and a free-flavour build is not installed from Play so there would
+    // be nothing to rate. The free twin of review/ReviewPrompter is a no-op.
+    playImplementation 'com.google.android.play:review:2.0.2'
+
+    // Google Play Billing — used by billing/TrimBillingManager, which now lives in
+    // app/src/play/ with a no-op twin under app/src/free/. play-flavour only: it is
+    // a proprietary Google library and the last large one, so this is what makes a
+    // free build acceptable to F-Droid / IzzyOnDroid / the FOSS lists. Nothing is
+    // lost: every feature is free and the Pro screen is a goodwill surface that the
+    // backend flag keeps hidden anyway.
+    playImplementation 'com.android.billingclient:billing:8.0.0'
 
     // Native Google sign-in (Credential Manager + Google ID). The returned ID
     // token is POSTed to the backend /auth/google, which verifies it. The
     // serverClientId is the backend's OAuth Web client id, fetched at runtime
     // from /auth/config — nothing hardcoded; the button stays dormant until the
     // backend is configured (GOOGLE_OAUTH_CLIENT_ID).
-    implementation 'androidx.credentials:credentials:1.3.0'
-    implementation 'androidx.credentials:credentials-play-services-auth:1.3.0'
-    implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
+    //
+    // play-flavour only, behind account/GoogleSignIn's twins: the credentials
+    // *provider* (play-services-auth) and the Google ID library are Google-only.
+    // androidx.credentials itself is Apache-2.0 but is useless without a provider,
+    // so it goes with them. Free builds keep email/password sign-in and hide the
+    // Google button (GoogleSignIn.isSupported() == false).
+    playImplementation 'androidx.credentials:credentials:1.3.0'
+    playImplementation 'androidx.credentials:credentials-play-services-auth:1.3.0'
+    playImplementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
 
     implementation 'com.github.ByteHamster:SearchPreference:v2.5.0'
     implementation 'com.github.skydoves:balloon:1.5.3'

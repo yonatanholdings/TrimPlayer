@@ -692,6 +692,10 @@ public class MainActivity extends CastEnabledActivity {
         if (UserPreferences.getHiddenDrawerItems().contains(NavDrawerFragment.getLastNavFragment(this))) {
             loadFragment(UserPreferences.getDefaultPage(), null);
         }
+        // Ask for a Play review once this install has actually felt auto-trim work.
+        // Returns immediately unless the skip count has earned the question; the
+        // free flavour's twin is a no-op. See review/ReviewPrompter.
+        de.danoeh.antennapod.review.ReviewPrompter.maybePrompt(this);
     }
 
     @Override
