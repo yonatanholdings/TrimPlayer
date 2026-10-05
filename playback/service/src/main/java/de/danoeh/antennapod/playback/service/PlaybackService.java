@@ -289,6 +289,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      *  held. Null when there is nothing to verify. */
     private long[] pendingSkipVerify = null;
 
+    /** Protects the saved listening position while a resume-time restore seek has not landed; see
+     *  {@link de.danoeh.antennapod.playback.service.internal.PositionRestoreGuard}. Without it, a streamed
+     *  episode whose restore seek silently restarted the stream at the top had its real position
+     *  overwritten by the automatic saver (2026-10-04: 43:00 -> 4113ms, then marked played). */
+    private final de.danoeh.antennapod.playback.service.internal.PositionRestoreGuard restoreGuard =
+            new de.danoeh.antennapod.playback.service.internal.PositionRestoreGuard();
+    private boolean restoreGuardVetoLogged = false;
+
     /** Wait this long after a skip before judging the result, so a transient post-seek
      *  position read of 0 (the buffering/idle window right after a seekTo) isn't mistaken
      *  for a regression. The seek itself completes in well under this. */
@@ -297,6 +305,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     /** Total window after a skip to watch for a regression before treating the seek as
      *  held. Spans the observed restart-to-0 (~1–5 s out) at the 1 s observer cadence. */
     private static final long SKIP_VERIFY_WINDOW_MS = 4000L;
+
+    /** How far short of the seek target the playhead may legitimately sit when the skip is judged
+     *  (position sampling plus the speed/skip-silence dance jitter) before we call the seek
+     *  failed. */
+    private static final long SKIP_VERIFY_TOLERANCE_MS = 3000L;
 
     /** One-shot guard so the phantom-tail end (see {@link PlaybackEndGuard}) fires at most once per
      *  episode. Reset per new episode at INITIALIZED. */
@@ -531,6 +544,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         currentSegments = Collections.emptyList();
         // New episode: re-arm auto-skip and drop any pending seek verification from the previous one.
         trimSeekUnreliable = false;
+        restoreGuard.disarm();
         trimServerDurationSec = null;
         trimServerMinDurationSec = null;
         trimCopyMismatch = false;
@@ -1736,6 +1750,20 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 case PLAYING:
                     mutePause = false; // user-initiated resume overrides any pending mute-pause
                     PlaybackPreferences.setCurrentPlayerStatus(PlaybackPreferences.PLAYER_STATUS_PLAYING);
+                    // Arm BEFORE the first save of this run: when playback starts far behind the
+                    // position the episode remembers, the resume-time restore seek did not land (a
+                    // stream whose host ignores Range restarts at the top), and this very save is
+                    // what used to overwrite the real position with that playhead.
+                    Playable playingPlayable = newInfo.getPlayable();
+                    if (playingPlayable != null && restoreGuard.armIfBehind(
+                            playingPlayable.getPosition(), getCurrentPosition(),
+                            System.currentTimeMillis())) {
+                        restoreGuardVetoLogged = false;
+                        de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this,
+                                "restore-guard armed target=" + restoreGuard.targetMs()
+                                        + "ms playerPos=" + getCurrentPosition()
+                                        + "ms ep=" + playingPlayable.getEpisodeTitle());
+                    }
                     saveCurrentPosition(true, null, Playable.INVALID_TIME);
                     recreateMediaSessionIfNeeded();
                     updateNotificationAndMediaSession(newInfo.getPlayable());
@@ -2618,6 +2646,18 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         } else {
             duration = playable.getDuration();
         }
+        if (fromMediaPlayer && restoreGuard.vetoSave(position)) {
+            // The restore seek has not landed: this is the un-restored playhead, not where the
+            // listener is. Writing it would destroy their position (see PositionRestoreGuard).
+            if (!restoreGuardVetoLogged) {
+                restoreGuardVetoLogged = true;
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                        "restore-guard veto save pos=" + position
+                                + "ms target=" + restoreGuard.targetMs() + "ms");
+            }
+            Log.d(TAG, "Dropping position write " + position + ": restore seek has not landed");
+            return;
+        }
         if (position != Playable.INVALID_TIME && duration != Playable.INVALID_TIME && playable != null) {
             Log.d(TAG, "Saving current position to " + position);
             PlayableUtils.saveCurrentPosition(this, playable, position, System.currentTimeMillis());
@@ -3163,6 +3203,17 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         if (!internal && fromPos != Playable.INVALID_TIME) {
             recordSeekTelemetry(fromPos, t);
         }
+        if (!internal) {
+            // A deliberate seek says where the listener wants to be, so the stale remembered
+            // position stops deserving protection -- and it must not be mistaken for an
+            // auto-skip seek that bounced back (see pendingSkipVerify below).
+            if (restoreGuard.isArmed()) {
+                restoreGuard.disarm();
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                        "restore-guard released: user seek to=" + t + "ms");
+            }
+            pendingSkipVerify = null;
+        }
         silenceTrackLastPos = -1; // reset silence tracking; seek invalidates the position delta
         mediaPlayer.seekTo(t);
         EventBus.getDefault().post(new PlaybackPositionEvent(t, getDuration()));
@@ -3364,6 +3415,33 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         return;
                     }
 
+                    // Restore-seek guard: runs for every episode, with or without trim segments.
+                    if (restoreGuard.isArmed()) {
+                        int guardPos = getCurrentPosition();
+                        long guardNow = System.currentTimeMillis();
+                        if (restoreGuard.landed(guardPos)) {
+                            restoreGuard.disarm();
+                            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                    "restore-guard landed pos=" + guardPos + "ms");
+                        } else {
+                            Integer retryTo = restoreGuard.retryTarget(guardPos, guardNow);
+                            if (retryTo != null) {
+                                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                        "restore-guard retry seek to=" + retryTo
+                                                + "ms from=" + guardPos + "ms");
+                                nextSeekIsInternal = true;
+                                seekTo(retryTo);
+                            } else if (restoreGuard.sustainedListening(guardPos, guardNow)) {
+                                // They have carried on from where the stream restarted, so their
+                                // progress is the truth worth saving now.
+                                restoreGuard.disarm();
+                                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                        "restore-guard released: listening on from pos="
+                                                + guardPos + "ms");
+                            }
+                        }
+                    }
+
                     // Trim Player: Check for skip
                     de.danoeh.antennapod.model.playback.Playable trimPlayable = getPlayable();
                     if (currentSegments != null && !trimSegmentEditPreviewActive
@@ -3405,10 +3483,16 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         // before the skipped segment, stand down for this episode.
                         if (pendingSkipVerify != null
                                 && System.currentTimeMillis() >= pendingSkipVerify[2]) {
-                            if (pos < pendingSkipVerify[0]) {
+                            // Judge against the seek TARGET, not the segment start: a stream that
+                            // ignores Range bounces the playhead back INSIDE the segment
+                            // (2026-10-04: a skip to 35863ms landed back at 11183ms), which is
+                            // still >= the start, so comparing against the start read that failure
+                            // as success and the intro was heard in full.
+                            if (pos < pendingSkipVerify[1] - SKIP_VERIFY_TOLERANCE_MS) {
                                 Log.w(TAG, "Trim Player: auto-skip seek regressed (pos=" + pos
-                                        + " < segmentStart=" + pendingSkipVerify[0]
-                                        + ", target=" + pendingSkipVerify[1] + ") — stream not"
+                                        + " < target=" + pendingSkipVerify[1]
+                                        + " - tolerance " + SKIP_VERIFY_TOLERANCE_MS
+                                        + ") — stream not"
                                         + " seekable; disabling auto-skip for this episode");
                                 trimSeekUnreliable = true;
                                 pendingSkipVerify = null;
