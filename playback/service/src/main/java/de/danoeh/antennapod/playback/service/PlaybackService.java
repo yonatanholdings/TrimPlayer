@@ -3219,6 +3219,28 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         }
         silenceTrackLastPos = -1; // reset silence tracking; seek invalidates the position delta
         mediaPlayer.seekTo(t);
+        // Protect the DESTINATION until the seek actually lands. Two ways a forward seek loses the
+        // listener's place, both observed on this device:
+        //   1. The automatic saver fires in the gap between seekTo() and the seek settling, and
+        //      writes the pre-seek playhead over the destination (2026-10-09: a seek to 17862824ms
+        //      logged "position-regression ... to=26599ms" 18ms before the seek settled).
+        //   2. The source cannot serve the target at all — a headerless MP3 whose SeekMap is
+        //      unseekable resolves every seek to 0. ExoPlayerWrapper's collapse guard bounces once,
+        //      that bounce collapses too, and playback then runs from the top; the saver persists
+        //      that playhead and the episode is lost (2026-10-08, ep 11836).
+        // armIfBehind only fires for a forward seek of more than THRESHOLD_MS, so a deliberate
+        // rewind is never protected, and landed() disarms on the very next tick of a healthy seek.
+        // Any seek supersedes a previous arming: without this, a short internal auto-skip that does
+        // not qualify would leave the guard pointed at a stale, now-unreachable target and veto
+        // every legitimate write until sustainedListening finally released it a minute later.
+        restoreGuard.disarm();
+        if (fromPos != Playable.INVALID_TIME
+                && restoreGuard.armIfBehind(t, fromPos, System.currentTimeMillis())) {
+            restoreGuardVetoLogged = false;
+            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                    "seek-guard armed target=" + t + "ms from=" + fromPos
+                            + "ms internal=" + internal);
+        }
         EventBus.getDefault().post(new PlaybackPositionEvent(t, getDuration()));
     }
 

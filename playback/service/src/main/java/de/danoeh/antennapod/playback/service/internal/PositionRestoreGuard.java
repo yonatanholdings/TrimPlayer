@@ -1,7 +1,19 @@
 package de.danoeh.antennapod.playback.service.internal;
 
 /**
- * Protects the saved listening position while a resume-time restore seek has not landed.
+ * Protects the saved listening position while a forward seek has not landed.
+ *
+ * <p>Armed from two places, both via {@link #armIfBehind}: the resume-time restore seek (the
+ * original case, below) and {@code PlaybackService.seekTo} for <b>every</b> forward seek — auto-skip
+ * and user scrub alike. The second was added on 2026-10-09 after two further ways to lose the
+ * listener's place turned up on-device: the automatic saver firing in the gap between
+ * {@code seekTo()} and the seek settling (a seek to 17862824ms logged
+ * {@code position-regression ... to=26599ms} 18ms later), and a source that cannot serve the target
+ * at all — a headerless MP3 with an unseekable SeekMap resolves every seek to 0, ExoPlayerWrapper's
+ * collapse guard bounces once, the bounce collapses too, and the saver then persists the
+ * played-from-the-top playhead (2026-10-08, ep 11836: three regressions in 35s, episode left at
+ * 8761ms). The guard cannot make a seek land — only the extractor flags can — but it stops a failed
+ * one from destroying where the listener was.
  *
  * <p><b>Why this exists:</b> resuming a STREAMED episode seeks to the remembered position while the
  * player is PREPARED, but the stream can restart near 0 instead (the host ignores the Range
@@ -36,7 +48,13 @@ public final class PositionRestoreGuard {
     public static final int SUSTAINED_PROGRESS_MS = 30_000;
 
     private int targetMs = -1;
-    private int armedPlayerPosMs;
+    /** Lowest playhead seen since arming. Progress for {@link #sustainedListening} is measured from
+     *  here, not from the playhead at arming time: when the guard is armed by a SEEK, the arming
+     *  playhead is where the listener was BEFORE the seek, so a source that collapsed the seek and
+     *  restarted the episode at 0 would never show progress against it and the guard would veto
+     *  every write until they had re-listened past their old position. The restart is the baseline
+     *  that matters. */
+    private int lowestSeenMs;
     private long armedAtMs;
     private boolean retried;
 
@@ -50,7 +68,7 @@ public final class PositionRestoreGuard {
             return false;
         }
         targetMs = rememberedMs;
-        armedPlayerPosMs = playerPosMs;
+        lowestSeenMs = playerPosMs;
         armedAtMs = nowMs;
         retried = false;
         return true;
@@ -72,11 +90,21 @@ public final class PositionRestoreGuard {
     /** True when this automatic write must be dropped: it would overwrite the remembered position
      *  with the playhead of a restore that never landed. */
     public boolean vetoSave(int writePosMs) {
+        observe(writePosMs);
         return isArmed() && writePosMs < targetMs - THRESHOLD_MS;
+    }
+
+    /** Track the restart baseline. Every method that is handed a live playhead funnels through
+     *  here so {@link #sustainedListening} measures from the lowest point actually observed. */
+    private void observe(int playerPosMs) {
+        if (isArmed() && playerPosMs >= 0 && playerPosMs < lowestSeenMs) {
+            lowestSeenMs = playerPosMs;
+        }
     }
 
     /** True once the playhead is at (or past) the restore target. */
     public boolean landed(int playerPosMs) {
+        observe(playerPosMs);
         return isArmed() && playerPosMs >= targetMs - THRESHOLD_MS;
     }
 
@@ -92,8 +120,9 @@ public final class PositionRestoreGuard {
     /** True when the listener has plainly carried on from where the stream restarted, so their
      *  progress — not the old position — is now the truth worth saving. */
     public boolean sustainedListening(int playerPosMs, long nowMs) {
+        observe(playerPosMs);
         return isArmed()
                 && nowMs - armedAtMs >= SUSTAINED_LISTEN_MS
-                && playerPosMs - armedPlayerPosMs >= SUSTAINED_PROGRESS_MS;
+                && playerPosMs - lowestSeenMs >= SUSTAINED_PROGRESS_MS;
     }
 }
