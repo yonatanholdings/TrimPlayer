@@ -689,6 +689,21 @@ public class ExoPlayerWrapper {
         }
         DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
         extractorsFactory.setConstantBitrateSeekingEnabled(true);
+        // ...and ALWAYS, i.e. even when the stream length is unknown. Many podcast MP3s carry no
+        // Xing/VBRI seek header (they start straight at a frame sync), so the constant-bitrate
+        // seeker is the only seek map they get. media3 builds that seeker with dataSize = -1 when
+        // the input length is unknown, and ConstantBitrateSeekMap.isSeekable() is then false unless
+        // this flag is set — whereupon ProgressiveMediaPeriod.seekToUs() silently rewrites EVERY
+        // seek target to 0 ("positionUs = seekMap.isSeekable() ? positionUs : 0"). The length is
+        // unknown on exactly the first listen: CacheDataSource.open() takes it from the cached
+        // ContentMetadata, which does not exist yet. So a first play of a headerless episode had
+        // unseekable audio — the ad auto-skip, the resume restore and manual scrubbing all landed
+        // back at 0, and the position saver then persisted that, destroying the saved place
+        // (2026-10-08, "גוגל מתחדשת… פרק 109": skip to 242742ms, playhead 12091ms 5s later; the
+        // same episode re-listened that evening, length now cached, skipped correctly).
+        // These files are CBR, so the constant-bitrate mapping is exact; for a headerless VBR file
+        // it is approximate, which is still strictly better than seeking to zero.
+        extractorsFactory.setConstantBitrateSeekingAlwaysEnabled(true);
         extractorsFactory.setMp3ExtractorFlags(Mp3Extractor.FLAG_DISABLE_ID3_METADATA);
         ProgressiveMediaSource.Factory f = new ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory);
         if (isHttpSource) {
