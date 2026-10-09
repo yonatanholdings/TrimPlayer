@@ -372,11 +372,19 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         if (playerStatus == PlayerStatus.PLAYING
                 || playerStatus == PlayerStatus.PAUSED
                 || playerStatus == PlayerStatus.PREPARED) {
-            if (t >= getDuration()) {
-                // Only honor a seek-past-end as end-of-playback while the player is
-                // actively playing/paused/prepared. Otherwise an onPrepared() resume-seek
-                // to a saved position >= duration (an already-finished queued episode)
-                // fires endPlayback during PREPARING and cascade-skips the whole queue.
+            // Only honor a seek-past-end as end-of-playback for a seek made while the player is
+            // actively PLAYING or PAUSED — i.e. the listener dragged the scrubber to the end.
+            // NOT in PREPARED: that is the resume-time restore seek in resume(), and there
+            // getDuration() is still the publisher's feed duration, which routinely under-states
+            // the real audio by a few seconds. PlaybackEndGuard deliberately lets the playhead run
+            // past the feed duration when the player knows a longer end, so a legitimately saved
+            // position is often > feed duration — and ending here marks a half-heard episode played
+            // and advances the queue (2026-10-06, ep 6712: resumed at 2704984ms against a feed
+            // duration of 2679000ms, 45 min in, marked played). Falling through performs the seek;
+            // ExoPlayer clamps it to the real end and playback completes normally from there.
+            // An earlier fix excluded PREPARING for the same reason — PREPARED was the other half.
+            if ((playerStatus == PlayerStatus.PLAYING || playerStatus == PlayerStatus.PAUSED)
+                    && t >= getDuration()) {
                 Log.d(TAG, "Seek reached end of file, skipping to next episode");
                 de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
                         "seek>=duration -> skip-to-next  seekTo=" + t
