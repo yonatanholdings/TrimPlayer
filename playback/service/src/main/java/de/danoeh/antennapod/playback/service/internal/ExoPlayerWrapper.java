@@ -223,6 +223,11 @@ public class ExoPlayerWrapper {
     private long lastSeekTargetMs = C.TIME_UNSET;
     private long lastSeekFromMs = 0;
     private boolean seekCollapseGuardArmed = false;
+    /** Where the collapse guard just bounced back to, while that bounce is still in flight.
+     *  C.TIME_UNSET when no bounce is pending. If the bounce ALSO lands near zero the source cannot
+     *  serve any seek at all (an unseekable SeekMap, not a transient un-cached region), which is
+     *  worth recording: it is the shape that silently restarts the episode from the top. */
+    private long bouncedFromCollapseToMs = C.TIME_UNSET;
     // Target of an in-flight recovery restore seek (set by the controller's Player.seekTo), so the next
     // seek discontinuity can verify it landed vs. collapsed to ~0 and tell the controller which.
     private long recoveryRestoreTargetMs = C.TIME_UNSET;
@@ -354,8 +359,28 @@ public class ExoPlayerWrapper {
                         Log.w(TAG, "Seek to " + lastSeekTargetMs + " collapsed to "
                                 + newPosition.positionMs + " — stream couldn't serve it; restoring to "
                                 + lastSeekFromMs);
+                        bouncedFromCollapseToMs = lastSeekFromMs;
                         exoPlayer.seekTo(lastSeekFromMs);
                         return;
+                    }
+                    if (bouncedFromCollapseToMs != C.TIME_UNSET) {
+                        long bounceTarget = bouncedFromCollapseToMs;
+                        bouncedFromCollapseToMs = C.TIME_UNSET;
+                        if (bounceTarget > SEEK_COLLAPSE_NEAR_ZERO_MS
+                                && newPosition.positionMs < SEEK_COLLAPSE_NEAR_ZERO_MS) {
+                            // Even the bounce back to a position we had already been playing
+                            // collapsed, so this is not a transient un-cached region — the source
+                            // is unseekable outright and the episode is now playing from the top.
+                            // Nothing here can recover it (only a seekable SeekMap can), but say so
+                            // in the trail: without this the restart is indistinguishable from the
+                            // listener having started the episode over.
+                            Log.w(TAG, "Bounce to " + bounceTarget + " collapsed too — source is "
+                                    + "unseekable; episode is restarting from the top");
+                            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                                    "seek-unservable: bounce to " + bounceTarget
+                                            + "ms also collapsed to " + newPosition.positionMs
+                                            + "ms — source cannot seek");
+                        }
                     }
                     if (speedChangeSeeking) {
                         // The flush-seek is confirmed complete by ExoPlayer — AudioSink.flush()
