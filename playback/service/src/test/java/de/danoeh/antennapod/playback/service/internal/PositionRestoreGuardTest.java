@@ -163,4 +163,29 @@ public class PositionRestoreGuardTest {
         assertFalse(g.sustainedListening(20_000, T0 + 61_000));          // only 14s on from 5597
         assertTrue(g.sustainedListening(5_597 + 31_000, T0 + 61_000));   // 31s on: they moved on
     }
+
+    @Test
+    public void armsOnAMidPlaybackCollapseThatNoSeekExplains() {
+        PositionRestoreGuard g = new PositionRestoreGuard();
+        // 2026-10-11 19:51, "How to plan an epic 2025": 27 minutes in, the source restarted under
+        // the player with no seek, no resume and no focus event. The automatic saver offered 590ms
+        // against a stored 1628206ms. This is how saveCurrentPosition auto-arms at that moment.
+        assertTrue(g.armIfBehind(1_628_206, 590, T0));
+        assertTrue(g.vetoSave(590));
+        // The playhead keeps climbing from the restart; those writes stay vetoed too.
+        assertTrue(g.vetoSave(119_493));
+        // One re-seek back to where they were.
+        assertEquals(Integer.valueOf(1_628_206), g.retryTarget(119_493, T0 + SETTLE));
+        // If the re-seek lands, the guard gets out of the way.
+        assertTrue(g.landed(1_628_206));
+    }
+
+    @Test
+    public void aWriteThatIsOnlySlightlyBehindIsNotTreatedAsACollapse() {
+        PositionRestoreGuard g = new PositionRestoreGuard();
+        // Rewind-on-resume tops out at 10s, inside THRESHOLD_MS: ordinary playback must never
+        // auto-arm, or every resume would start vetoing writes.
+        assertFalse(g.armIfBehind(600_000, 590_000, T0));
+        assertFalse(g.isArmed());
+    }
 }

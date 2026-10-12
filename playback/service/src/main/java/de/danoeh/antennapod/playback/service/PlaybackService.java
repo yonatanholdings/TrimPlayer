@@ -2649,6 +2649,28 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         } else {
             duration = playable.getDuration();
         }
+        // Last line of defence, and the only one that does not depend on knowing HOW the playhead
+        // moved. Arming the guard from named events (resume-restore, seekTo) keeps missing paths:
+        // on 2026-10-11 19:51 an episode 27 minutes in was rewritten to 590ms mid-playback with no
+        // seek, no resume and no focus event in the trail — the source restarted underneath us
+        // (network re-prepare) and the automatic saver persisted the restarted playhead. Neither
+        // the resume-restore arming (no PLAYING transition) nor the seek arming (no seekTo) fired.
+        // So treat ANY automatic write that drops the stored position by more than the threshold as
+        // suspect at the moment it happens: arm, and let the veto below drop this very write. The
+        // guard then retries the seek once and releases if the listener plainly carries on, so a
+        // genuinely restarted stream still records progress. A deliberate rewind never reaches here
+        // as a regression because seekTo() writes the user's target to the Playable first.
+        if (fromMediaPlayer && playable != null && !restoreGuard.isArmed()) {
+            int stored = playable.getPosition();
+            if (stored - position > de.danoeh.antennapod.playback.service.internal
+                    .PositionRestoreGuard.THRESHOLD_MS
+                    && restoreGuard.armIfBehind(stored, position, System.currentTimeMillis())) {
+                restoreGuardVetoLogged = false;
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                        "auto-guard armed: playhead fell to " + position + "ms from stored "
+                                + stored + "ms with no seek — protecting the stored position");
+            }
+        }
         if (fromMediaPlayer && restoreGuard.vetoSave(position)) {
             // The restore seek has not landed: this is the un-restored playhead, not where the
             // listener is. Writing it would destroy their position (see PositionRestoreGuard).
@@ -3216,6 +3238,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         "restore-guard released: user seek to=" + t + "ms");
             }
             pendingSkipVerify = null;
+            // Record the listener's intent on the Playable immediately. A deliberate rewind moves
+            // the stored position backwards by design, and the auto-guard in saveCurrentPosition
+            // judges a write against that stored value — without this, the listener's own rewind
+            // would read as a regression and be vetoed.
+            Playable seekIntent = getPlayable();
+            if (seekIntent != null && t >= 0) {
+                seekIntent.setPosition(t);
+            }
         }
         silenceTrackLastPos = -1; // reset silence tracking; seek invalidates the position delta
         mediaPlayer.seekTo(t);
