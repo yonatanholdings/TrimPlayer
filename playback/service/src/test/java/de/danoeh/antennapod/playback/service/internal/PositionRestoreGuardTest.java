@@ -71,7 +71,7 @@ public class PositionRestoreGuardTest {
     public void noRetryOnceTheSeekLanded() {
         PositionRestoreGuard g = new PositionRestoreGuard();
         g.armIfBehind(2_576_200, 4_113, T0);
-        assertTrue(g.landed(2_570_000));
+        assertTrue(g.landed(2_570_000, T0 + SETTLE));
         assertNull(g.retryTarget(2_570_000, T0 + 5_000));
     }
 
@@ -122,7 +122,7 @@ public class PositionRestoreGuardTest {
         assertTrue(g.vetoSave(26_599));
         assertTrue(g.vetoSave(126_052));
         // Once the seek lands, the guard gets out of the way immediately.
-        assertTrue(g.landed(17_862_824));
+        assertTrue(g.landed(17_862_824, T0 + SETTLE));
     }
 
     @Test
@@ -177,7 +177,7 @@ public class PositionRestoreGuardTest {
         // One re-seek back to where they were.
         assertEquals(Integer.valueOf(1_628_206), g.retryTarget(119_493, T0 + SETTLE));
         // If the re-seek lands, the guard gets out of the way.
-        assertTrue(g.landed(1_628_206));
+        assertTrue(g.landed(1_628_206, T0 + SETTLE));
     }
 
     @Test
@@ -187,5 +187,19 @@ public class PositionRestoreGuardTest {
         // auto-arm, or every resume would start vetoing writes.
         assertFalse(g.armIfBehind(600_000, 590_000, T0));
         assertFalse(g.isArmed());
+    }
+
+    @Test
+    public void aTransientEchoOfTheTargetDoesNotDisarmTheGuard() {
+        PositionRestoreGuard g = new PositionRestoreGuard();
+        // 2026-10-12 control build: armed at T0, the reported position echoed the seek target
+        // ~1s later, and the playhead was really back at 2720ms. Landing must not be believed
+        // before the seek has had time to resolve.
+        assertTrue(g.armIfBehind(538_560, 7_292, T0));
+        assertFalse(g.landed(538_560, T0 + 1_002));   // the echo, inside the settle window
+        assertTrue(g.isArmed());                       // still protecting
+        assertTrue(g.vetoSave(2_720));                 // ...so the collapse is still caught
+        // Past the settle delay a genuine landing is accepted.
+        assertTrue(g.landed(538_560, T0 + SETTLE));
     }
 }

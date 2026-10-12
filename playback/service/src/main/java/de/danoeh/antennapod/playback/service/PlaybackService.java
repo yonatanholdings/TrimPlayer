@@ -344,7 +344,6 @@ public class PlaybackService extends MediaBrowserServiceCompat {
     private final java.util.Deque<long[]> recentAutoSkips = new java.util.ArrayDeque<>();
     private static final long REVERT_WINDOW_MS = 30_000L;
     private static final int  MIN_MISS_FORWARD_MS = 15_000;
-    private boolean nextSeekIsInternal = false;
 
 
     /**
@@ -2014,8 +2013,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         // earlier states the position is picked up from the playable on start).
         playable.setPosition(event.positionMs);
         if (status == PlayerStatus.PAUSED || status == PlayerStatus.PREPARED) {
-            nextSeekIsInternal = true;
-            seekTo(event.positionMs);
+            seekTo(event.positionMs, true);
         }
         Log.d(TAG, "Adopted externally synced position " + event.positionMs
                 + " ms for loaded media " + event.mediaId);
@@ -2030,8 +2028,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             mediaPlayer.setVolume(1.0f, 1.0f);
             int newPosition = mediaPlayer.getPosition() - (int) SleepTimer.NOTIFICATION_THRESHOLD / 2;
             newPosition = Math.max(newPosition, 0);
-            nextSeekIsInternal = true;
-            seekTo(newPosition);
+            seekTo(newPosition, true);
         } else if (event.getMillisTimeLeft() < SleepTimer.NOTIFICATION_THRESHOLD) {
             final float[] multiplicators = {0.1f, 0.2f, 0.3f, 0.3f, 0.3f, 0.4f, 0.4f, 0.4f, 0.6f, 0.8f};
             float multiplicator = multiplicators[Math.max(0, (int) event.getMillisTimeLeft() / 1000)];
@@ -3221,9 +3218,24 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         mediaPlayer.setStartWhenPrepared(s);
     }
 
+    /** A seek the listener asked for. Every public entry point (media session, UI scrub, widget)
+     *  lands here, so internality is never guessed. */
     public void seekTo(final int t) {
-        boolean internal = nextSeekIsInternal;
-        nextSeekIsInternal = false;
+        seekTo(t, false);
+    }
+
+    /**
+     * @param internal true for a seek the app issued itself (auto-skip, restore retry, sleep-timer
+     *                 rewind, adopted sync position) rather than one the listener asked for.
+     *                 Passed explicitly: this used to be a {@code nextSeekIsInternal} field set
+     *                 just before the call, but auto-skip and the restore retry run on the
+     *                 position-observer thread while user scrubs arrive on the main thread, so a
+     *                 scrub landing between any setter and its seekTo stole the "internal" label
+     *                 — and the scrub then skipped the user-seek branch below (guard release,
+     *                 telemetry, recording the listener's intent on the Playable). Observed
+     *                 2026-10-12 as "seek-guard armed ... internal=true" on a manual scrub.
+     */
+    private void seekTo(final int t, final boolean internal) {
         int fromPos = getCurrentPosition();
         if (!internal && fromPos != Playable.INVALID_TIME) {
             recordSeekTelemetry(fromPos, t);
@@ -3292,7 +3304,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         // Re-arm auto-skip for any segment the user manually seeks into. The auto-skip
         // de-dup (skippedSegmentIndices) suppresses re-skipping a segment once skipped;
         // a deliberate user seek back into one is the signal to skip it again. This only
-        // runs for user seeks — internal auto-skip seeks set nextSeekIsInternal and never
+        // runs for user seeks — internal auto-skip seeks pass internal=true to seekTo and never
         // reach here, and the skip-silence/speed dance seeks below LocalPSMP don't either.
         List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsForReArm = currentSegments;
         if (segsForReArm != null) {
@@ -3474,7 +3486,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                     if (restoreGuard.isArmed()) {
                         int guardPos = getCurrentPosition();
                         long guardNow = System.currentTimeMillis();
-                        if (restoreGuard.landed(guardPos)) {
+                        if (restoreGuard.landed(guardPos, guardNow)) {
                             restoreGuard.disarm();
                             de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
                                     "restore-guard landed pos=" + guardPos + "ms");
@@ -3484,8 +3496,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
                                         "restore-guard retry seek to=" + retryTo
                                                 + "ms from=" + guardPos + "ms");
-                                nextSeekIsInternal = true;
-                                seekTo(retryTo);
+                                seekTo(retryTo, true);
                             } else if (restoreGuard.sustainedListening(guardPos, guardNow)) {
                                 // They have carried on from where the stream restarted, so their
                                 // progress is the truth worth saving now.
@@ -3638,8 +3649,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                     mediaPlayer.completePlayback();
                                     break;
                                 }
-                                nextSeekIsInternal = true;
-                                seekTo(endMs);
+                                seekTo(endMs, true);
                                 // Watch the next few ticks: if the playhead regresses to before
                                 // this segment, the source couldn't honor the seek (see
                                 // trimSeekUnreliable) and we stop auto-skipping it.

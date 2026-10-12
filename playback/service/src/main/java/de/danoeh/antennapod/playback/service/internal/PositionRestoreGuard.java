@@ -102,15 +102,29 @@ public final class PositionRestoreGuard {
         }
     }
 
-    /** True once the playhead is at (or past) the restore target. */
-    public boolean landed(int playerPosMs) {
+    /**
+     * True once the playhead is at (or past) the target AND the seek has had time to actually take
+     * effect.
+     *
+     * <p>The settle delay is not cosmetic. The reported position can echo the seek TARGET for a
+     * beat before the seek resolves — {@code LocalPSMP.seekTo} writes {@code media.setPosition(t)}
+     * on a PREPARED seek, and ExoPlayer reports the requested position on the discontinuity — so a
+     * seek that is about to collapse looks landed for one tick. Disarming there drops the guard
+     * exactly when it is needed. Observed 2026-10-12 in the control build: armed at 20:49:01.638,
+     * "restore-guard landed pos=538560ms" 1002ms later, and the playhead was really at 2720ms.
+     * Waiting {@link #SETTLE_MS} costs nothing, because a seek that truly landed only produces
+     * forward writes, and forward writes are never vetoed.
+     */
+    public boolean landed(int playerPosMs, long nowMs) {
         observe(playerPosMs);
-        return isArmed() && playerPosMs >= targetMs - THRESHOLD_MS;
+        return isArmed()
+                && nowMs >= armedAtMs + SETTLE_MS
+                && playerPosMs >= targetMs - THRESHOLD_MS;
     }
 
     /** The target to re-seek to, once per arming, after the settle delay. Null when not due. */
     public Integer retryTarget(int playerPosMs, long nowMs) {
-        if (!isArmed() || retried || nowMs < armedAtMs + SETTLE_MS || landed(playerPosMs)) {
+        if (!isArmed() || retried || nowMs < armedAtMs + SETTLE_MS || landed(playerPosMs, nowMs)) {
             return null;
         }
         retried = true;
