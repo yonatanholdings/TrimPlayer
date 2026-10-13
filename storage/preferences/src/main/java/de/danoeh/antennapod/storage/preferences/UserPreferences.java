@@ -285,7 +285,9 @@ public abstract class UserPreferences {
     }
 
     public static FeedCounter getFeedCounterSetting() {
-        String value = prefs.getString(PREF_DRAWER_FEED_COUNTER, "" + FeedCounter.SHOW_NEW.id);
+        // SHOW_NEW counts FeedItem.NEW, which nothing sets since the Inbox was
+        // retired -- as the default it made every subscription badge read 0.
+        String value = prefs.getString(PREF_DRAWER_FEED_COUNTER, "" + FeedCounter.SHOW_UNPLAYED.id);
         return FeedCounter.fromOrdinal(Integer.parseInt(value));
     }
 

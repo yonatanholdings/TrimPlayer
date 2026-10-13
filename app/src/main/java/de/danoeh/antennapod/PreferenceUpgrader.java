@@ -6,6 +6,7 @@ import android.view.KeyEvent;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.preference.PreferenceManager;
 
+import de.danoeh.antennapod.model.feed.FeedCounter;
 import de.danoeh.antennapod.system.CrashReportWriter;
 import de.danoeh.antennapod.net.download.serviceinterface.FeedUpdateManager;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +35,13 @@ public class PreferenceUpgrader {
     private static final String PREF_MIGRATED_CLEANUP_TO_HOURS = "migratedEpisodeCleanupToHours";
     // Largest cleanup value the picker offers (168 h = 7 days); anything above is corrupted data.
     private static final int MAX_VALID_CLEANUP_HOURS = (int) TimeUnit.DAYS.toHours(7);
+    // One-time repair of swipe prefs that still name the removed inbox action.
+    // Flag-guarded rather than version-gated for the same reason as the two above.
+    private static final String PREF_MIGRATED_INBOX_SWIPE_ACTIONS = "migratedInboxSwipeActions";
+    // One-time move off the inbox feed counter, which can only ever read zero now.
+    private static final String PREF_MIGRATED_INBOX_FEED_COUNTER = "migratedInboxFeedCounter";
+    // One-time move off the "Inbox" start screen, whose fragment no longer exists.
+    private static final String PREF_MIGRATED_INBOX_DEFAULT_PAGE = "migratedInboxDefaultPage";
 
     private static SharedPreferences prefs;
 
@@ -218,5 +226,91 @@ public class PreferenceUpgrader {
             }
             FeedUpdateManager.getInstance().restartUpdateAlarm(context, true);
         }
+        migrateInboxSwipeActions(context);
+        migrateInboxFeedCounter(context);
+        migrateInboxDefaultPage();
+    }
+
+    /**
+     * Move anyone whose start screen was the Inbox onto Home.
+     *
+     * <p>"NewEpisodesFragment" names a fragment that no longer exists, so
+     * MainActivity#createFragmentInstance fell through to its default and opened
+     * Home anyway — but the Settings row rendered blank, because the value is no
+     * longer among the options. Store what actually happens.
+     */
+    private static void migrateInboxDefaultPage() {
+        if (prefs.getBoolean(PREF_MIGRATED_INBOX_DEFAULT_PAGE, false)) {
+            return;
+        }
+        if ("NewEpisodesFragment".equals(UserPreferences.getDefaultPage())) {
+            UserPreferences.setDefaultPage("HomeFragment");
+        }
+        prefs.edit().putBoolean(PREF_MIGRATED_INBOX_DEFAULT_PAGE, true).apply();
+    }
+
+    /**
+     * Move anyone still on the inbox feed counter onto the unplayed counter.
+     *
+     * <p>FeedCounter.SHOW_NEW (id 1) counts FeedItem.NEW. Nothing sets that flag
+     * since the Inbox was retired, so the badge showed 0 on every subscription —
+     * and because it was also the default, that was most users. The 2080000 block
+     * above made the same substitution for the older "unplayed and in inbox"
+     * value, so this follows that precedent.
+     */
+    private static void migrateInboxFeedCounter(Context context) {
+        if (prefs.getBoolean(PREF_MIGRATED_INBOX_FEED_COUNTER, false)) {
+            return;
+        }
+        String current = prefs.getString(UserPreferences.PREF_DRAWER_FEED_COUNTER,
+                "" + FeedCounter.SHOW_NEW.id);
+        if (current.equals("" + FeedCounter.SHOW_NEW.id)) {
+            prefs.edit().putString(UserPreferences.PREF_DRAWER_FEED_COUNTER,
+                    "" + FeedCounter.SHOW_UNPLAYED.id).apply();
+        }
+        prefs.edit().putBoolean(PREF_MIGRATED_INBOX_FEED_COUNTER, true).apply();
+    }
+
+    /**
+     * Drop REMOVE_FROM_INBOX out of saved swipe preferences.
+     *
+     * <p>The inbox swipe action went away with the Inbox itself. SwipeActions#getAction
+     * returns null for an id it no longer knows, and Actions#hasActions then reports
+     * false, which silently disables BOTH swipe directions on every screen whose saved
+     * pref mentions it — so leaving the stale value in place would break swiping for
+     * exactly the users who had configured it. Rewrite each affected screen to its
+     * default pair instead.
+     */
+    private static void migrateInboxSwipeActions(Context context) {
+        if (prefs.getBoolean(PREF_MIGRATED_INBOX_SWIPE_ACTIONS, false)) {
+            return;
+        }
+        SharedPreferences swipePrefs = context.getSharedPreferences(
+                SwipeActions.PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = swipePrefs.edit();
+        for (String key : swipePrefs.getAll().keySet()) {
+            if (!key.startsWith(SwipeActions.KEY_PREFIX_SWIPEACTIONS)) {
+                continue;
+            }
+            String value = swipePrefs.getString(key, null);
+            if (value == null || !value.contains(SwipeAction.REMOVE_FROM_INBOX)) {
+                continue;
+            }
+            // Keep whichever side the user chose deliberately; replace only the
+            // dead half. If both sides were the inbox action, fall back to
+            // marking the episode played, the nearest thing it used to do.
+            String[] sides = value.split(",", -1);
+            if (sides.length != 2) {
+                editor.remove(key);
+                continue;
+            }
+            String right = SwipeAction.REMOVE_FROM_INBOX.equals(sides[0])
+                    ? SwipeAction.TOGGLE_PLAYED : sides[0];
+            String left = SwipeAction.REMOVE_FROM_INBOX.equals(sides[1])
+                    ? SwipeAction.TOGGLE_PLAYED : sides[1];
+            editor.putString(key, right + "," + left);
+        }
+        editor.apply();
+        prefs.edit().putBoolean(PREF_MIGRATED_INBOX_SWIPE_ACTIONS, true).apply();
     }
 }

@@ -68,32 +68,6 @@
         <item>4320</item>
     </string-array>
 
-    <string-array name="globalNewEpisodesActionItems">
-        <item>@string/feed_new_episodes_action_add_to_inbox</item>
-        <item>@string/feed_new_episodes_action_add_to_queue</item>
-        <item>@string/feed_new_episodes_action_nothing</item>
-    </string-array>
-
-    <string-array name="globalNewEpisodesActionValues">
-        <item>1</item>
-        <item>3</item>
-        <item>2</item>
-    </string-array>
-
-    <string-array name="feedNewEpisodesActionItems">
-        <item>@string/global_default</item>
-        <item>@string/feed_new_episodes_action_add_to_inbox</item>
-        <item>@string/feed_new_episodes_action_add_to_queue</item>
-        <item>@string/feed_new_episodes_action_nothing</item>
-    </string-array>
-
-    <string-array name="feedNewEpisodesActionValues">
-        <item>0</item>
-        <item>1</item>
-        <item>3</item>
-        <item>2</item>
-    </string-array>
-
     <string-array name="smart_mark_as_played_values">
         <item>0</item>
         <item>15</item>
@@ -224,15 +198,16 @@
         <item>3</item>
     </string-array>
 
+    <!-- "Number of episodes in the inbox" (FeedCounter.SHOW_NEW, id 1) is gone:
+         it counted FeedItem.NEW, and nothing sets that flag since the Inbox was
+         retired, so the badge read 0 for every podcast. -->
     <string-array name="nav_drawer_feed_counter_options">
-        <item>@string/drawer_feed_counter_inbox</item>
         <item>@string/drawer_feed_counter_unplayed</item>
         <item>@string/drawer_feed_counter_downloaded</item>
         <item>@string/drawer_feed_counter_downloaded_unplayed</item>
         <item>@string/drawer_feed_counter_none</item>
     </string-array>
     <string-array name="nav_drawer_feed_counter_values">
-        <item>1</item>
         <item>2</item>
         <item>4</item>
         <item>5</item>
@@ -264,10 +239,12 @@
         <item>@string/sleep_timer_label</item>
     </string-array>
 
+    <!-- "NewEpisodesFragment"/Inbox dropped: no such fragment exists any more, so
+         MainActivity#createFragmentInstance fell through to its default and the
+         option silently opened Home instead. -->
     <string-array name="default_page_values">
         <item>HomeFragment</item>
         <item>QueueFragment</item>
-        <item>NewEpisodesFragment</item>
         <item>EpisodesFragment</item>
         <item>SubscriptionFragment</item>
         <item>remember</item>
@@ -276,7 +253,6 @@
     <string-array name="default_page_titles">
         <item>@string/home_label</item>
         <item>@string/queue_label</item>
-        <item>@string/inbox_label</item>
         <item>@string/episodes_label</item>
         <item>@string/subscriptions_label</item>
         <item>@string/remember_last_page</item>

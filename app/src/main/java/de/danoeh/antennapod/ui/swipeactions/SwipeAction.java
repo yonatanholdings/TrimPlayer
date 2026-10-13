@@ -12,6 +12,8 @@ import de.danoeh.antennapod.model.feed.FeedItemFilter;
 public interface SwipeAction {
 
     String ADD_TO_QUEUE = "ADD_TO_QUEUE";
+    // Retained only so PreferenceUpgrader can recognise and repair saved prefs
+    // that still name it; the action itself went away with the Inbox.
     String REMOVE_FROM_INBOX = "REMOVE_FROM_INBOX";
     String START_DOWNLOAD = "START_DOWNLOAD";
     String MARK_FAV = "MARK_FAV";

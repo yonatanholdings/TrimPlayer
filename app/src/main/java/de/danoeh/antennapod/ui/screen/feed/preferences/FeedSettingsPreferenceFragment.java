@@ -55,7 +55,6 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
     private static final String PREF_AUTHENTICATION = "authentication";
     private static final String PREF_AUTO_DELETE = "autoDelete";
     private static final String PREF_CATEGORY_AUTO_DOWNLOAD = "autoDownloadCategory";
-    private static final String PREF_NEW_EPISODES_ACTION = "feedNewEpisodesAction";
     private static final String PREF_FEED_PLAYBACK_SPEED = "feedPlaybackSpeed";
     private static final String PREF_AUTO_SKIP = "feedAutoSkip";
     private static final String PREF_NOTIFICATION = "episodeNotification";
@@ -126,7 +125,6 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
                     setupPreferences();
                     updateAutoDeleteSummary();
                     updateAutoDownloadEnabledSummary();
-                    updateNewEpisodesActionSummary();
 
                     if (feed.isLocalFeed()) {
                         findPreference(PREF_AUTHENTICATION).setVisible(false);
@@ -211,13 +209,6 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
             EventBus.getDefault().post(new VolumeAdaptionChangedEvent(newSetting, feed.getId()));
             return false;
         });
-        findPreference(PREF_NEW_EPISODES_ACTION).setOnPreferenceChangeListener((preference, newValue) -> {
-            int code = Integer.parseInt((String) newValue);
-            feedPreferences.setNewEpisodesAction(FeedPreferences.NewEpisodesAction.fromCode(code));
-            DBWriter.setFeedPreferences(feedPreferences);
-            updateNewEpisodesActionSummary();
-            return false;
-        });
         SwitchPreferenceCompat keepUpdated = findPreference("keepUpdated");
         keepUpdated.setChecked(feedPreferences.getKeepUpdated());
         keepUpdated.setOnPreferenceChangeListener((preference, newValue) -> {
@@ -232,7 +223,6 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
                     FeedPreferences.AutoDownloadSetting.fromInteger(Integer.parseInt((String) newValue)));
             DBWriter.setFeedPreferences(feedPreferences);
             updateAutoDownloadEnabledSummary();
-            updateNewEpisodesActionSummary();
             return false;
         });
         findPreference(PREF_TAGS).setOnPreferenceClickListener(preference -> {
@@ -269,33 +259,6 @@ public class FeedSettingsPreferenceFragment extends PreferenceFragmentCompat {
         };
         autoDeletePreference.setSummary(summary);
         autoDeletePreference.setValue("" + feedPreferences.getAutoDeleteAction().code);
-    }
-
-    private void updateNewEpisodesActionSummary() {
-        if (feed == null || feed.getPreferences() == null) {
-            return;
-        }
-        ListPreference newEpisodesAction = findPreference(PREF_NEW_EPISODES_ACTION);
-        boolean isAutoDownload = feed.getPreferences().isAutoDownload(UserPreferences.isEnableAutodownloadGlobal());
-        if (isAutoDownload && !feed.isLocalFeed()) {
-            newEpisodesAction.setEnabled(false);
-            newEpisodesAction.setSummary(R.string.feed_new_episodes_action_summary_autodownload);
-            return;
-        }
-        newEpisodesAction.setEnabled(true);
-        newEpisodesAction.setValue("" + feedPreferences.getNewEpisodesAction().code);
-        int globalStringResource = switch (UserPreferences.getNewEpisodesAction()) {
-            case ADD_TO_INBOX -> R.string.feed_new_episodes_action_add_to_inbox;
-            case ADD_TO_QUEUE -> R.string.feed_new_episodes_action_add_to_queue;
-            default -> R.string.feed_new_episodes_action_nothing;
-        };
-        String summary = switch (feedPreferences.getNewEpisodesAction()) {
-            case GLOBAL -> getString(R.string.global_default_with_value, getString(globalStringResource));
-            case ADD_TO_INBOX -> getString(R.string.feed_new_episodes_action_add_to_inbox);
-            case ADD_TO_QUEUE -> getString(R.string.feed_new_episodes_action_add_to_queue);
-            default -> getString(R.string.feed_new_episodes_action_nothing);
-        };
-        newEpisodesAction.setSummary(summary);
     }
 
     private void updateAutoDownloadEnabledSummary() {

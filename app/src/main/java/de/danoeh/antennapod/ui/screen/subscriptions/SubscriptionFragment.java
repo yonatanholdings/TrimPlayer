@@ -458,7 +458,7 @@ public class SubscriptionFragment extends Fragment
         if (item.getItemId() == R.id.multi_select) {
             return subscriptionAdapter.onContextItemSelected(item);
         }
-        return FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), selectedFeed, this::loadSubscriptionsAndTags);
+        return FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), selectedFeed);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

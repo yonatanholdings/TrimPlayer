@@ -25,7 +25,6 @@ import de.danoeh.antennapod.databinding.SwipeactionsRowBinding;
 import de.danoeh.antennapod.ui.screen.AllEpisodesFragment;
 import de.danoeh.antennapod.ui.screen.download.CompletedDownloadsFragment;
 import de.danoeh.antennapod.ui.screen.feed.FeedItemlistFragment;
-import de.danoeh.antennapod.ui.screen.InboxFragment;
 import de.danoeh.antennapod.ui.screen.PlaybackHistoryFragment;
 import de.danoeh.antennapod.ui.screen.queue.QueueFragment;
 import de.danoeh.antennapod.ui.common.ThemeUtils;
@@ -62,27 +61,18 @@ public class SwipeActionsDialog {
         if (!tag.equals(CompletedDownloadsFragment.TAG)) {
             keys.add(new StartDownloadSwipeAction());
         }
-        if (!tag.equals(CompletedDownloadsFragment.TAG)
-                && ! tag.equals(QueueFragment.TAG)
-                && !tag.equals(PlaybackHistoryFragment.TAG)) {
-            keys.add(new RemoveFromInboxSwipeAction());
-        }
-        if (!tag.equals(InboxFragment.TAG)) {
-            keys.add(new DeleteSwipeAction());
-        }
+        // "Remove from inbox" is gone with the Inbox itself: its action body was
+        // gated on FeedItem#isNew, and nothing sets that flag any more, so
+        // assigning it produced a swipe that silently did nothing.
+        keys.add(new DeleteSwipeAction());
         keys.add(new MarkFavoriteSwipeAction());
         if (tag.equals(PlaybackHistoryFragment.TAG)) {
             keys.add(new RemoveFromHistorySwipeAction());
         }
-        if (!tag.equals(InboxFragment.TAG)) {
-            keys.add(new TogglePlaybackStateSwipeAction());
-        }
+        keys.add(new TogglePlaybackStateSwipeAction());
 
         String forFragment = "";
         switch (tag) {
-            case InboxFragment.TAG:
-                forFragment = context.getString(R.string.inbox_label);
-                break;
             case AllEpisodesFragment.TAG:
                 forFragment = context.getString(R.string.episodes_label);
                 break;

@@ -289,7 +289,6 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
             viewBinding.toolbar.getMenu().findItem(R.id.refresh_item).setVisible(false);
             viewBinding.toolbar.getMenu().findItem(R.id.rename_item).setVisible(false);
             viewBinding.toolbar.getMenu().findItem(R.id.remove_archive_feed).setVisible(false);
-            viewBinding.toolbar.getMenu().findItem(R.id.remove_all_inbox_item).setVisible(false);
             viewBinding.toolbar.getMenu().findItem(R.id.action_search).setVisible(false);
         } else if (feed.getState() == Feed.STATE_ARCHIVED) {
             viewBinding.toolbar.getMenu().findItem(R.id.sort_items).setVisible(false);
@@ -340,9 +339,7 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
             return true;
         }
 
-        Runnable showRemovedAllSnackbar = () -> EventBus.getDefault().post(
-                new MessageEvent(getString(R.string.removed_all_inbox_msg)));
-        return FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), feed, showRemovedAllSnackbar);
+        return FeedMenuHandler.onMenuItemClicked(this, item.getItemId(), feed);
     }
 
     public static class RemoveFeedDialogClose extends RemoveFeedDialog {

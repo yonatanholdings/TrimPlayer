@@ -34,7 +34,7 @@ public class SwipeActions extends ItemTouchHelper.SimpleCallback implements Life
     public static final String KEY_PREFIX_NO_ACTION = "PrefNoSwipeAction";
 
     private static final List<SwipeAction> swipeActions = Collections.unmodifiableList(
-            Arrays.asList(new AddToQueueSwipeAction(), new RemoveFromInboxSwipeAction(),
+            Arrays.asList(new AddToQueueSwipeAction(),
                     new StartDownloadSwipeAction(), new MarkFavoriteSwipeAction(),
                     new TogglePlaybackStateSwipeAction(), new RemoveFromQueueSwipeAction(),
                     new DeleteSwipeAction(), new RemoveFromHistorySwipeAction()));

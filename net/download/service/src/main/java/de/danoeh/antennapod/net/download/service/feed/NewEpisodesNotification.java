@@ -30,6 +30,18 @@ import java.util.Map;
 public class NewEpisodesNotification {
     private static final String TAG = "NewEpisodesNotification";
     private static final String GROUP_KEY = "de.danoeh.antennapod.EPISODES";
+    /**
+     * Counter used to spot episodes that arrived during a refresh.
+     *
+     * <p>This was SHOW_NEW, which counts {@code FeedItem.NEW}. Retiring the Inbox
+     * stopped anything from setting that flag and cleared the existing ones, so
+     * both the before and after counts were permanently 0 and the
+     * {@code after > before} test below could never fire — per-feed episode
+     * notifications went silent. Unplayed is the flag a newly fetched episode
+     * actually carries now. Playback during the refresh window can only lower
+     * the after-count, so the comparison still never fires spuriously.
+     */
+    private static final FeedCounter COUNTER = FeedCounter.SHOW_UNPLAYED;
 
     private Map<Long, Integer> countersBefore;
 
@@ -39,7 +51,7 @@ public class NewEpisodesNotification {
     public void loadCountersBeforeRefresh() {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();
-        countersBefore = adapter.getFeedCounters(FeedCounter.SHOW_NEW);
+        countersBefore = adapter.getFeedCounters(COUNTER);
         adapter.close();
     }
 
@@ -139,7 +151,7 @@ public class NewEpisodesNotification {
     private static int getNewEpisodeCount(long feedId) {
         PodDBAdapter adapter = PodDBAdapter.getInstance();
         adapter.open();
-        Map<Long, Integer> counters = adapter.getFeedCounters(FeedCounter.SHOW_NEW, feedId);
+        Map<Long, Integer> counters = adapter.getFeedCounters(COUNTER, feedId);
         int episodeCount = counters.containsKey(feedId) ? counters.get(feedId) : 0;
         adapter.close();
         return episodeCount;
