@@ -27,8 +27,24 @@ public class FeedItemFilterQuery {
         String keyMediaId = PodDBAdapter.TABLE_NAME_FEED_MEDIA + "." + PodDBAdapter.KEY_ID;
         String keyItemId = PodDBAdapter.TABLE_NAME_FEED_ITEMS + "." + PodDBAdapter.KEY_ID;
         String keyFeedItem = PodDBAdapter.KEY_FEEDITEM;
-        String tableQueue = PodDBAdapter.TABLE_NAME_QUEUE;
         String tableFavorites = PodDBAdapter.TABLE_NAME_FAVORITES;
+        // Queued-ness must be read from PlaylistItems, not the legacy Queue table.
+        // Queue has been dormant since the queue/playlist unification (DBUpgrader
+        // 3160000 copied it across and every write has gone to PlaylistItems
+        // since), so a filter reading it sees only the frozen pre-upgrade
+        // snapshot: episodes queued after the upgrade showed up under "Not
+        // Queued", and episodes queued before it and since removed still counted
+        // as queued. The queue IS the default playlist, so resolve its id in SQL
+        // (generateFrom is static and has no PodDBAdapter to ask).
+        String queuedItemIds = "SELECT " + keyFeedItem
+                + " FROM " + PodDBAdapter.TABLE_NAME_PLAYLIST_ITEMS
+                // PlaylistItems.feeditem has no NOT NULL constraint, and a single
+                // NULL in the list would make the NOT IN below evaluate to NULL for
+                // every row — i.e. "Not Queued" would silently match nothing.
+                + " WHERE " + keyFeedItem + " IS NOT NULL"
+                + " AND " + PodDBAdapter.KEY_PLAYLIST_ID + " = (SELECT " + PodDBAdapter.KEY_ID
+                + " FROM " + PodDBAdapter.TABLE_NAME_PLAYLISTS
+                + " WHERE " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT + " = 1 LIMIT 1)";
 
         List<String> statements = new ArrayList<>();
         if (filter.showPlayed) {
@@ -44,9 +60,9 @@ public class FeedItemFilterQuery {
             statements.add(" (" + keyPosition + " IS NULL OR " + keyPosition + " = 0 " + ") ");
         }
         if (filter.showQueued) {
-            statements.add(keyItemId + " IN (SELECT " + keyFeedItem + " FROM " + tableQueue + ") ");
+            statements.add(keyItemId + " IN (" + queuedItemIds + ") ");
         } else if (filter.showNotQueued) {
-            statements.add(keyItemId + " NOT IN (SELECT " + keyFeedItem + " FROM " + tableQueue + ") ");
+            statements.add(keyItemId + " NOT IN (" + queuedItemIds + ") ");
         }
         if (filter.showDownloaded) {
             statements.add(keyDownloaded + " > 0 ");
