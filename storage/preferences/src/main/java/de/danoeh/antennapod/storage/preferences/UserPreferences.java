@@ -69,6 +69,7 @@ public abstract class UserPreferences {
     public static final String PREF_NEW_EPISODES_ACTION = "prefNewEpisodesAction";
     private static final String PREF_DOWNLOADS_SORTED_ORDER = "prefDownloadSortedOrder";
     private static final String PREF_INBOX_SORTED_ORDER = "prefInboxSortedOrder";
+    public static final String PREF_LAST_SEEN_PUBDATE = "prefLastSeenPubDate";
     private static final String PREF_HISTORY_SORTED_ORDER = "prefHistorySortedOrder";
 
     // Episode
@@ -293,6 +294,43 @@ public abstract class UserPreferences {
 
     public static void setFeedCounterSetting(FeedCounter counter) {
         prefs.edit().putString(PREF_DRAWER_FEED_COUNTER, "" + counter.id).apply();
+    }
+
+    /**
+     * The new-arrivals watermark: episodes published after this are "new".
+     *
+     * <p>Seeded lazily on first read rather than by PreferenceUpgrader, whose
+     * upgrade() returns early for a new installation -- exactly the case that
+     * needs a seed. Without it an existing library would read as entirely new.
+     * The write makes the stamp stable across restarts; a read-only default
+     * would move with the clock and arrivals would never accumulate.
+     */
+    public static long getLastSeenPubDate() {
+        long stored = prefs.getLong(PREF_LAST_SEEN_PUBDATE, 0L);
+        if (stored > 0L) {
+            return stored;
+        }
+        long now = System.currentTimeMillis();
+        prefs.edit().putLong(PREF_LAST_SEEN_PUBDATE, now).apply();
+        return now;
+    }
+
+    /**
+     * Advance the watermark. Monotonic on purpose: moving it backwards would
+     * resurrect arrivals the user already cleared, and the sync merge
+     * (TrimSyncWorker's __seen__ row) relies on max() rather than
+     * last-writer-wins so an offline device cannot undo a triage done
+     * elsewhere.
+     */
+    public static void setLastSeenPubDate(long millis) {
+        if (millis > getLastSeenPubDate()) {
+            prefs.edit().putLong(PREF_LAST_SEEN_PUBDATE, millis).apply();
+        }
+    }
+
+    /** Everything published up to now counts as seen. */
+    public static void markAllArrivalsSeen() {
+        setLastSeenPubDate(System.currentTimeMillis());
     }
 
     /**
@@ -1080,6 +1118,7 @@ public abstract class UserPreferences {
     public static final String PREF_TRIM_SYNC_SNAP_SUBS = "prefTrimSyncSnapSubs";
     public static final String PREF_TRIM_SYNC_SNAP_QUEUE = "prefTrimSyncSnapQueue";
     public static final String PREF_TRIM_SYNC_SNAP_PREFS = "prefTrimSyncSnapPrefs";
+    public static final String PREF_TRIM_SYNC_SNAP_SEEN = "prefTrimSyncSnapSeen";
     // Episode download-urls that were favorited as of the last push, so the worker
     // pushes only genuine favorite toggles (mirrors PortCast episodes[].starred).
     public static final String PREF_TRIM_SYNC_SNAP_FAV = "prefTrimSyncSnapFav";
@@ -1091,6 +1130,16 @@ public abstract class UserPreferences {
 
     public static void setTrimSyncSubsSnapshot(String json) {
         prefs.edit().putString(PREF_TRIM_SYNC_SNAP_SUBS, json == null ? "" : json).apply();
+    }
+
+    /** Watermark value last pushed to the account, so the next diff can
+     *  tombstone that key instead of leaving a row per advance on the server. */
+    public static long getTrimSyncSeenSnapshot() {
+        return prefs.getLong(PREF_TRIM_SYNC_SNAP_SEEN, 0L);
+    }
+
+    public static void setTrimSyncSeenSnapshot(long millis) {
+        prefs.edit().putLong(PREF_TRIM_SYNC_SNAP_SEEN, millis).apply();
     }
 
     public static String getTrimSyncPrefsSnapshot() {

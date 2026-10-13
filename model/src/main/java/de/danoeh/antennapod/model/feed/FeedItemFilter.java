@@ -15,6 +15,7 @@ public class FeedItemFilter implements Serializable {
     public final boolean showPaused;
     public final boolean showNotPaused;
     public final boolean showNew;
+    public final boolean showNewArrivals;
     public final boolean showQueued;
     public final boolean showNotQueued;
     public final boolean showDownloaded;
@@ -29,6 +30,13 @@ public class FeedItemFilter implements Serializable {
     public static final String PLAYED = "played";
     public static final String UNPLAYED = "unplayed";
     public static final String NEW = "new";
+    /**
+     * Published after the last-seen watermark, not played, in no playlist.
+     * The watermark lives in UserPreferences, which this module cannot see, so
+     * the predicate is built in FeedItemFilterQuery; {@link #matches} only
+     * approximates it (see there).
+     */
+    public static final String NEW_ARRIVALS = "new_arrivals";
     public static final String PAUSED = "paused";
     public static final String NOT_PAUSED = "not_paused";
     public static final String IS_FAVORITE = "is_favorite";
@@ -71,6 +79,7 @@ public class FeedItemFilter implements Serializable {
         showIsFavorite = hasProperty(IS_FAVORITE);
         showNotFavorite = hasProperty(NOT_FAVORITE);
         showNew = hasProperty(NEW);
+        showNewArrivals = hasProperty(NEW_ARRIVALS);
         showInHistory = hasProperty(IS_IN_HISTORY);
         includeNotSubscribed = hasProperty(INCLUDE_NOT_SUBSCRIBED);
     }
@@ -99,6 +108,16 @@ public class FeedItemFilter implements Serializable {
         } else if (showNotPaused && item.isInProgress()) {
             return false;
         } else if (showNew && !item.isNew()) {
+            return false;
+        } else if (showNewArrivals && item.isPlayed()) {
+            // Deliberately partial. The watermark is not reachable from this
+            // module, and an item's pubDate cannot change during a session, so
+            // the boundary is left to FeedItemFilterQuery. TAG_QUEUE covers
+            // only Up Next, so adding an episode to a *named* playlist is not
+            // caught here and its row survives until the next full reload --
+            // incomplete, never wrong.
+            return false;
+        } else if (showNewArrivals && item.isTagged(FeedItem.TAG_QUEUE)) {
             return false;
         } else if (showQueued && !item.isTagged(FeedItem.TAG_QUEUE)) {
             return false;

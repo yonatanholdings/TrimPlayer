@@ -2,6 +2,7 @@
 <resources>
     <string-array name="nav_drawer_section_tags">
         <item>HomeFragment</item>
+        <item>NewArrivalsFragment</item>
         <item>QueueFragment</item>
         <item>PlaylistsFragment</item>
         <item>SubscriptionFragment</item>

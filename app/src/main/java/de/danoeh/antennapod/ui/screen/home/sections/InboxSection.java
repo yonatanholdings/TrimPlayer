@@ -31,6 +31,7 @@ import de.danoeh.antennapod.model.feed.SortOrder;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.ui.MenuItemUtils;
 import de.danoeh.antennapod.ui.episodeslist.EpisodeItemListAdapter;
+import de.danoeh.antennapod.ui.screen.NewArrivalsFragment;
 import de.danoeh.antennapod.ui.screen.home.HomeSection;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -38,14 +39,18 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 /**
- * "Recently published" rail — the Inbox's successor after the playlists-only
- * deprecation. Shows the newest episodes across subscribed feeds, derived from
- * publish dates: purely a glance surface, no NEW flag, no per-item lifecycle.
+ * "New episodes" rail — the Inbox's successor after the playlists-only
+ * deprecation. Shows episodes published since the last-seen watermark that are
+ * neither played nor already in a playlist, with a count, and links to
+ * {@link NewArrivalsFragment} for the full list.
+ *
+ * <p>Still no NEW flag and no per-item lifecycle: the set is derived from
+ * {@link de.danoeh.antennapod.storage.preferences.UserPreferences}' watermark.
  * Keeps the InboxSection TAG so users' home-section order prefs keep working.
  */
 public class InboxSection extends HomeSection {
     public static final String TAG = "InboxSection";
-    private static final int NUM_EPISODES = 2;
+    private static final int NUM_EPISODES = 5;
     private EpisodeItemListAdapter adapter;
     private List<FeedItem> items = new ArrayList<>();
     private Disposable disposable;
@@ -81,8 +86,7 @@ public class InboxSection extends HomeSection {
 
     @Override
     protected void handleMoreClick() {
-        ((MainActivity) requireActivity()).loadChildFragment(
-                new de.danoeh.antennapod.ui.screen.AllEpisodesFragment());
+        ((MainActivity) requireActivity()).loadChildFragment(new NewArrivalsFragment());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -124,9 +128,10 @@ public class InboxSection extends HomeSection {
         if (disposable != null) {
             disposable.dispose();
         }
+        final FeedItemFilter filter = new FeedItemFilter(FeedItemFilter.NEW_ARRIVALS);
         disposable = Observable.fromCallable(() ->
-                        new Pair<>(DBReader.getEpisodes(0, NUM_EPISODES,
-                                new FeedItemFilter(), SortOrder.DATE_NEW_OLD), 0))
+                        new Pair<>(DBReader.getEpisodes(0, NUM_EPISODES, filter, SortOrder.DATE_NEW_OLD),
+                                DBReader.getTotalEpisodeCount(filter)))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(data -> {
@@ -134,7 +139,16 @@ public class InboxSection extends HomeSection {
                     adapter.setDummyViews(0);
                     adapter.updateItems(items);
                     viewBinding.emptyLabel.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                    viewBinding.numNewItemsLabel.setVisibility(View.GONE);
+                    // The count is the point of the rail: it is what the Inbox
+                    // badge used to answer. Only shown when it exceeds what is
+                    // already on screen, so it reads as "and N more".
+                    int total = data.second != null ? data.second : 0;
+                    if (total > NUM_EPISODES) {
+                        viewBinding.numNewItemsLabel.setVisibility(View.VISIBLE);
+                        viewBinding.numNewItemsLabel.setText(String.valueOf(total));
+                    } else {
+                        viewBinding.numNewItemsLabel.setVisibility(View.GONE);
+                    }
                 }, error -> Log.e(TAG, Log.getStackTraceString(error)));
     }
 }

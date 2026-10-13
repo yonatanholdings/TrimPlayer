@@ -1584,9 +1584,16 @@
     </plurals>
     <string name="trim_auto_add_backfill_yes">Add unplayed</string>
     <string name="trim_auto_add_backfill_no">Only new ones</string>
-    <string name="trim_recent_title">Recently published</string>
-    <string name="trim_recent_more">All episodes »</string>
-    <string name="trim_recent_empty_text">New episodes of your shows appear here as they are published.</string>
+    <string name="trim_recent_title">New episodes</string>
+    <string name="trim_recent_more">See all »</string>
+    <string name="trim_recent_empty_text">Nothing new since you last looked.</string>
+    <!-- New arrivals (the last-seen watermark; successor to the Inbox) -->
+    <string name="new_arrivals_label">New episodes</string>
+    <string name="new_arrivals_label_short">New</string>
+    <string name="mark_all_seen_label">Mark all as seen</string>
+    <string name="marked_all_seen_msg">Marked all as seen</string>
+    <string name="no_new_arrivals_head_label">Nothing new</string>
+    <string name="no_new_arrivals_label">Episodes published since you last looked appear here. Add one to a playlist, or mark it played, to clear it.</string>
     <string name="trim_up_next_label">Up Next</string>
     <string name="trim_subscribe_dest_title">Where should new episodes go?</string>
     <string name="trim_subscribe_dest_inbox">Library only (no playlist)</string>

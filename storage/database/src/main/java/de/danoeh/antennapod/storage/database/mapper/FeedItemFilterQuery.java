@@ -1,7 +1,9 @@
 package de.danoeh.antennapod.storage.database.mapper;
 
+import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.FeedItemFilter;
 import de.danoeh.antennapod.storage.database.PodDBAdapter;
+import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,7 @@ public class FeedItemFilterQuery {
         String keyMediaId = PodDBAdapter.TABLE_NAME_FEED_MEDIA + "." + PodDBAdapter.KEY_ID;
         String keyItemId = PodDBAdapter.TABLE_NAME_FEED_ITEMS + "." + PodDBAdapter.KEY_ID;
         String keyFeedItem = PodDBAdapter.KEY_FEEDITEM;
+        String keyPubDate = PodDBAdapter.TABLE_NAME_FEED_ITEMS + "." + PodDBAdapter.KEY_PUBDATE;
         String tableFavorites = PodDBAdapter.TABLE_NAME_FAVORITES;
         // Queued-ness must be read from PlaylistItems, not the legacy Queue table.
         // Queue has been dormant since the queue/playlist unification (DBUpgrader
@@ -45,6 +48,12 @@ public class FeedItemFilterQuery {
                 + " AND " + PodDBAdapter.KEY_PLAYLIST_ID + " = (SELECT " + PodDBAdapter.KEY_ID
                 + " FROM " + PodDBAdapter.TABLE_NAME_PLAYLISTS
                 + " WHERE " + PodDBAdapter.KEY_PLAYLIST_IS_DEFAULT + " = 1 LIMIT 1)";
+        // Membership of ANY playlist, Up Next included. "Queued" above means Up
+        // Next specifically; new-arrivals triage means "already scheduled
+        // somewhere", so it must not privilege one queue over the named ones.
+        String anyPlaylistItemIds = "SELECT " + keyFeedItem
+                + " FROM " + PodDBAdapter.TABLE_NAME_PLAYLIST_ITEMS
+                + " WHERE " + keyFeedItem + " IS NOT NULL";
 
         List<String> statements = new ArrayList<>();
         if (filter.showPlayed) {
@@ -58,6 +67,15 @@ public class FeedItemFilterQuery {
             statements.add(" (" + keyPosition + " NOT NULL AND " + keyPosition + " > 0 " + ") ");
         } else if (filter.showNotPaused) {
             statements.add(" (" + keyPosition + " IS NULL OR " + keyPosition + " = 0 " + ") ");
+        }
+        if (filter.showNewArrivals) {
+            // Arrivals = published since the watermark, not yet played, and not
+            // already scheduled in a playlist. storage:database depends on
+            // storage:preferences, so the watermark is read at query-build time;
+            // pubDate is indexed (CREATE_INDEX_FEEDITEMS_PUBDATE).
+            statements.add(keyPubDate + " > " + UserPreferences.getLastSeenPubDate() + " ");
+            statements.add(keyRead + " != " + FeedItem.PLAYED + " ");
+            statements.add(keyItemId + " NOT IN (" + anyPlaylistItemIds + ") ");
         }
         if (filter.showQueued) {
             statements.add(keyItemId + " IN (" + queuedItemIds + ") ");

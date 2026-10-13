@@ -206,6 +206,8 @@ public class TrimSyncWorker extends Worker {
         req.prefs.addAll(diffQueueNameMarkers(
                 withoutDefault(prevPlaylists.keySet()), withoutDefault(curPlaylists.keySet()), now));
         req.prefs.addAll(diffRuleMarkers(prevRules, curRules, now));
+        req.prefs.addAll(diffSeenMarker(UserPreferences.getTrimSyncSeenSnapshot(),
+                UserPreferences.getLastSeenPubDate(), now));
         req.bookmarks = diffBookmarks(prevBookmarks, bookmarkRows, now);
 
         TrimClient.SyncResult resp = TrimClient.getInstance().accountSyncBlocking(bearer, req);
@@ -290,6 +292,9 @@ public class TrimSyncWorker extends Worker {
         List<Feed> reconciled = DBReader.getFeedList();
         UserPreferences.setTrimSyncSubsSnapshot(serializeSubs(currentSubs(reconciled)));
         UserPreferences.setTrimSyncPrefsSnapshot(serializePrefs(currentPrefs(reconciled)));
+        // Post-apply, so a watermark the server just advanced past ours is
+        // recorded as pushed and the next diff doesn't echo it back.
+        UserPreferences.setTrimSyncSeenSnapshot(UserPreferences.getLastSeenPubDate());
         UserPreferences.setTrimSyncFavSnapshot(serializeQueue(new ArrayList<>(mediaUrlSet(
                 DBReader.getEpisodes(0, FAV_LIMIT,
                         new FeedItemFilter(FeedItemFilter.IS_FAVORITE), SortOrder.DATE_NEW_OLD)))));
@@ -524,6 +529,57 @@ public class TrimSyncWorker extends Worker {
     /** Reserved pref carrying the Up Next display alias (see UserPreferences). */
     static final String UP_NEXT_TITLE_KEY = "__queue_title__";
 
+    /** Reserved pref carrying the new-arrivals watermark, epoch millis encoded
+     *  in the key: {@code __seen__:<millis>}. Prefs only carry a Float payload,
+     *  and a float's 24-bit mantissa quantises current epoch values to ~128 s,
+     *  so the value rides the key exactly as the Up Next alias does. */
+    static final String SEEN_MARKER_PREFIX = "__seen__:";
+
+    /** Emit the watermark when it has moved since the last push, tombstoning the
+     *  previously pushed key so the server keeps one row rather than one per
+     *  advance. Package-visible for unit tests. */
+    static List<TrimClient.PrefChange> diffSeenMarker(long prev, long cur, long ts) {
+        List<TrimClient.PrefChange> out = new ArrayList<>();
+        if (cur <= 0L || cur == prev) {
+            return out;
+        }
+        if (prev > 0L) {
+            TrimClient.PrefChange tombstone = new TrimClient.PrefChange();
+            tombstone.rss_url = SEEN_MARKER_PREFIX + prev;
+            tombstone.playback_rate = null;
+            tombstone.deleted = true;
+            tombstone.client_ts = ts;
+            out.add(tombstone);
+        }
+        TrimClient.PrefChange pc = new TrimClient.PrefChange();
+        pc.rss_url = SEEN_MARKER_PREFIX + cur;
+        pc.playback_rate = 1f;
+        pc.deleted = false;
+        pc.client_ts = ts;
+        out.add(pc);
+        return out;
+    }
+
+    /** Largest watermark advertised in a prefs delta, or 0 if none. */
+    static long seenFromPrefs(List<TrimClient.PrefChange> prefs) {
+        long best = 0L;
+        if (prefs == null) {
+            return best;
+        }
+        for (TrimClient.PrefChange p : prefs) {
+            if (p == null || p.deleted || p.rss_url == null
+                    || !p.rss_url.startsWith(SEEN_MARKER_PREFIX)) {
+                continue;
+            }
+            try {
+                best = Math.max(best, Long.parseLong(p.rss_url.substring(SEEN_MARKER_PREFIX.length())));
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "ignoring malformed seen marker: " + p.rss_url);
+            }
+        }
+        return best;
+    }
+
     private static int applyPrefs(List<TrimClient.PrefChange> prefs) {
         if (prefs == null || prefs.isEmpty()) {
             return 0;
@@ -541,6 +597,14 @@ public class TrimSyncWorker extends Worker {
                 UserPreferences.setTrimUpNextTitle(
                         p.rss_url.substring(UP_NEXT_TITLE_KEY.length() + 1));
             }
+        }
+        // New-arrivals watermark. setLastSeenPubDate clamps to max(), so this is
+        // a monotonic merge rather than last-writer-wins: a device that was
+        // offline while the user triaged elsewhere cannot resurrect arrivals
+        // they already cleared.
+        long incomingSeen = seenFromPrefs(prefs);
+        if (incomingSeen > 0L) {
+            UserPreferences.setLastSeenPubDate(incomingSeen);
         }
         Map<String, Feed> byUrl = new HashMap<>();
         for (Feed f : DBReader.getFeedList()) {

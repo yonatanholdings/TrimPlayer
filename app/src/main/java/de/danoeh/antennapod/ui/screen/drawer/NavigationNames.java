@@ -5,6 +5,7 @@ import androidx.annotation.StringRes;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.ui.screen.AddFeedFragment;
 import de.danoeh.antennapod.ui.screen.AllEpisodesFragment;
+import de.danoeh.antennapod.ui.screen.NewArrivalsFragment;
 import de.danoeh.antennapod.ui.screen.PlaybackHistoryFragment;
 import de.danoeh.antennapod.ui.screen.download.CompletedDownloadsFragment;
 import de.danoeh.antennapod.ui.screen.home.HomeFragment;
@@ -18,6 +19,8 @@ public abstract class NavigationNames {
         switch (tag) {
             case HomeFragment.TAG:
                 return R.drawable.ic_home;
+            case NewArrivalsFragment.TAG:
+                return R.drawable.ic_feed;
             case QueueFragment.TAG:
                 return R.drawable.ic_playlist_play;
             case PlaylistsFragment.TAG:
@@ -43,6 +46,8 @@ public abstract class NavigationNames {
         switch (tag) {
             case HomeFragment.TAG:
                 return R.string.home_label;
+            case NewArrivalsFragment.TAG:
+                return R.string.new_arrivals_label;
             case QueueFragment.TAG:
                 return R.string.trim_up_next_label;
             case PlaylistsFragment.TAG:
@@ -70,6 +75,8 @@ public abstract class NavigationNames {
         switch (tag) {
             case HomeFragment.TAG:
                 return R.string.home_label_short;
+            case NewArrivalsFragment.TAG:
+                return R.string.new_arrivals_label_short;
             case QueueFragment.TAG:
                 return R.string.trim_up_next_label;
             case PlaylistsFragment.TAG:
