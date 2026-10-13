@@ -44,7 +44,10 @@ public class PlaybackPreferencesFragment extends AnimatedPreferenceFragment {
         final Activity activity = getActivity();
 
         findPreference(PREF_PLAYBACK_SPEED_LAUNCHER).setOnPreferenceClickListener(preference -> {
-            new VariableSpeedDialog().show(getChildFragmentManager(), null);
+            // Global entry point: this screen edits the app-wide defaults, so the
+            // dialog must not write per-feed preferences for whatever episode the
+            // playback service still has loaded.
+            VariableSpeedDialog.newGlobalInstance().show(getChildFragmentManager(), null);
             return true;
         });
         findPreference(PREF_PLAYBACK_REWIND_DELTA_LAUNCHER).setOnPreferenceClickListener(preference -> {

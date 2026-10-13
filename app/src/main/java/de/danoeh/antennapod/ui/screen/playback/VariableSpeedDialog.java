@@ -41,6 +41,14 @@ import java.util.Locale;
 
 public class VariableSpeedDialog extends BottomSheetDialogFragment {
     private static final String TAG = "VariableSpeedDialog";
+
+    /**
+     * When set, the dialog edits the APP-WIDE defaults and never touches
+     * per-feed preferences. Settings -> Playback -> Playback speed opens the
+     * same dialog as the player's speed button, but there the user is editing
+     * the global default, not the currently-loaded podcast.
+     */
+    private static final String ARG_GLOBAL_ONLY = "globalOnly";
     private SpeedSelectionAdapter adapter;
     private PlaybackController controller;
     private final List<Float> selectedSpeeds;
@@ -68,6 +76,33 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         DecimalFormatSymbols format = new DecimalFormatSymbols(Locale.US);
         format.setDecimalSeparator('.');
         selectedSpeeds = new ArrayList<>(UserPreferences.getPlaybackSpeedArray());
+    }
+
+    /**
+     * Dialog instance for the global Settings entry: every control writes the
+     * app-wide preference, regardless of what the playback service happens to
+     * have loaded. Without this, a user who turns skip silence off in Settings
+     * while any episode is loaded silently writes that podcast's own override
+     * and the global setting stays on, so the change appears not to stick.
+     */
+    public static VariableSpeedDialog newGlobalInstance() {
+        VariableSpeedDialog dialog = new VariableSpeedDialog();
+        Bundle args = new Bundle();
+        args.putBoolean(ARG_GLOBAL_ONLY, true);
+        dialog.setArguments(args);
+        return dialog;
+    }
+
+    /** True when this dialog edits the app-wide defaults only (Settings entry). */
+    private boolean isGlobalOnly() {
+        return getArguments() != null && getArguments().getBoolean(ARG_GLOBAL_ONLY, false);
+    }
+
+    /** Dismiss from a delayed callback without crashing if we already detached. */
+    private void dismissSafely() {
+        if (isAdded()) {
+            dismiss();
+        }
     }
 
     @Override
@@ -116,13 +151,19 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                         return;
                     }
                     cachedMedia = maybe.orElse(null);
-                    updateSpeed(new SpeedChangedEvent(controller.getCurrentPlaybackSpeedMultiplier()));
+                    // In global mode the dialog must render what it writes: the
+                    // app-wide defaults. Reading the controller there would show
+                    // the loaded episode's resolved speed/silence, so the user
+                    // sees a value they did not set and cannot change here.
+                    updateSpeed(new SpeedChangedEvent(isGlobalOnly()
+                            ? UserPreferences.getPlaybackSpeed()
+                            : controller.getCurrentPlaybackSpeedMultiplier()));
                     // When no media is playing (Settings entry), the ExoPlayer-backed
                     // controller.getCurrentPlaybackSkipSilence() returns false (idle
                     // player default) regardless of the user's saved preference.
                     // Read from prefs instead so the checkbox reflects the actual
                     // global setting.
-                    boolean silence = cachedMedia != null
+                    boolean silence = (cachedMedia != null && !isGlobalOnly())
                             ? controller.getCurrentPlaybackSkipSilence()
                             : UserPreferences.isSkipSilence();
                     updateSkipSilence(silence);
@@ -162,24 +203,24 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         // overwrites this with the resolved per-feed/per-episode value.
         speedSeekBar.updateSpeed(UserPreferences.getPlaybackSpeed());
         speedSeekBar.setProgressChangedListener(multiplier -> {
-            // Use the cached snapshot resolved by loadMediaInfo on the IO thread;
-            // calling controller.getMedia() here would trigger a main-thread DB
-            // open and crash via StrictMode (RuntimeException: I/O on main thread).
-            de.danoeh.antennapod.model.playback.Playable media = cachedMedia;
-            if (media instanceof FeedMedia) {
-                FeedMedia feedMedia = (FeedMedia) media;
-                Feed feed = feedMedia.getItem() != null ? feedMedia.getItem().getFeed() : null;
-                if (feed != null && feed.getPreferences() != null) {
-                    feed.getPreferences().setFeedPlaybackSpeed(multiplier);
-                    DBWriter.setFeedPreferences(feed.getPreferences());
-                } else {
-                    UserPreferences.setPlaybackSpeed(multiplier);
-                }
+            // currentFeed() reads the cached snapshot resolved by loadMediaInfo on
+            // the IO thread (calling controller.getMedia() here would trigger a
+            // main-thread DB open and crash via StrictMode) and returns null in
+            // global mode, which is what sends the write to UserPreferences.
+            Feed feed = currentFeed();
+            if (feed != null && feed.getPreferences() != null) {
+                feed.getPreferences().setFeedPlaybackSpeed(multiplier);
+                DBWriter.setFeedPreferences(feed.getPreferences());
             } else {
                 UserPreferences.setPlaybackSpeed(multiplier);
             }
 
-            if (controller != null) {
+            // Never push a temporary override onto the live episode from the
+            // Settings entry: PlaybackService.setSpeed stores
+            // currentlyPlayingTemporaryPlaybackSpeed, which outranks both the
+            // per-feed and the global value in PlaybackSpeedUtils. Settings
+            // edits the default; it must not hijack what is already playing.
+            if (controller != null && !isGlobalOnly()) {
                 controller.setPlaybackSpeed(multiplier);
             }
         });
@@ -208,25 +249,22 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         // to UserPreferences, which silently flipped silence globally and broke
         // inheritance for other podcasts the user had not configured.
         skipSilenceUserChangedListener = (buttonView, isChecked) -> {
-            // Use cachedMedia, not controller.getMedia(), for the same StrictMode
-            // reason as the speed seek-bar listener above.
-            boolean wroteToFeed = false;
-            de.danoeh.antennapod.model.playback.Playable media = cachedMedia;
-            if (media instanceof FeedMedia) {
-                FeedMedia feedMedia = (FeedMedia) media;
-                Feed feed = feedMedia.getItem() != null ? feedMedia.getItem().getFeed() : null;
-                if (feed != null && feed.getPreferences() != null) {
-                    feed.getPreferences().setFeedSkipSilence(isChecked
-                            ? FeedPreferences.SkipSilence.AGGRESSIVE
-                            : FeedPreferences.SkipSilence.OFF);
-                    DBWriter.setFeedPreferences(feed.getPreferences());
-                    wroteToFeed = true;
-                }
-            }
-            if (!wroteToFeed) {
+            // currentFeed() uses cachedMedia, not controller.getMedia(), for the
+            // same StrictMode reason as the speed seek-bar listener above, and is
+            // null in global mode so the write lands on UserPreferences.
+            Feed feed = currentFeed();
+            if (feed != null && feed.getPreferences() != null) {
+                feed.getPreferences().setFeedSkipSilence(isChecked
+                        ? FeedPreferences.SkipSilence.AGGRESSIVE
+                        : FeedPreferences.SkipSilence.OFF);
+                DBWriter.setFeedPreferences(feed.getPreferences());
+            } else {
                 UserPreferences.setSkipSilence(isChecked);
             }
-            if (controller != null) {
+            // As with speed: PlaybackService.setSkipSilence writes the
+            // currentlyPlayingTemporarySkipSilence override, so the Settings
+            // entry must not reach into live playback.
+            if (controller != null && !isGlobalOnly()) {
                 controller.setSkipSilence(isChecked);
             }
         };
@@ -268,6 +306,12 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
     }
 
     private Feed currentFeed() {
+        if (isGlobalOnly()) {
+            // Settings entry: there is no "current podcast" to configure, even
+            // when the playback service still has an episode loaded. Returning
+            // null routes every write to the app-wide preference.
+            return null;
+        }
         // Use cachedMedia (resolved on the IO thread by loadMediaInfo) — calling
         // controller.getMedia() from main-thread UI callbacks would trigger a
         // synchronous DB open and crash via StrictMode.
@@ -346,21 +390,24 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                 return true;
             });
             holder.chip.setOnClickListener(v -> {
-                // Use cachedMedia, not controller.getMedia(), to avoid main-thread
-                // DB I/O when nothing is playing yet (Settings → Playback speed).
-                de.danoeh.antennapod.model.playback.Playable cm = cachedMedia;
-                boolean wroteToFeed = false;
-                if (cm instanceof FeedMedia) {
-                    FeedMedia media = (FeedMedia) cm;
-                    Feed feed = media.getItem() != null ? media.getItem().getFeed() : null;
-                    if (feed != null && feed.getPreferences() != null) {
-                        feed.getPreferences().setFeedPlaybackSpeed(speed);
-                        DBWriter.setFeedPreferences(feed.getPreferences());
-                        wroteToFeed = true;
-                    }
-                }
-                if (!wroteToFeed) {
+                // currentFeed() uses cachedMedia, not controller.getMedia(), to
+                // avoid main-thread DB I/O when nothing is playing yet, and is
+                // null in global mode (Settings → Playback speed) so the preset
+                // becomes the app-wide default instead of one podcast's override.
+                Feed feed = currentFeed();
+                if (feed != null && feed.getPreferences() != null) {
+                    feed.getPreferences().setFeedPlaybackSpeed(speed);
+                    DBWriter.setFeedPreferences(feed.getPreferences());
+                } else {
                     UserPreferences.setPlaybackSpeed(speed);
+                }
+                if (isGlobalOnly()) {
+                    // Don't reach into live playback from Settings (see the
+                    // seek-bar listener); just reflect and close.
+                    speedSeekBar.updateSpeed(speed);
+                    new Handler(Looper.getMainLooper())
+                            .postDelayed(VariableSpeedDialog.this::dismissSafely, 200);
+                    return;
                 }
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (controller != null) {
