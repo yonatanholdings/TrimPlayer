@@ -415,6 +415,12 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         androidAutoConnectionObserver = connectionState -> {
             boolean wasConnected = androidAutoConnected;
             androidAutoConnected = connectionState == CarConnection.CONNECTION_TYPE_PROJECTION;
+            if (androidAutoConnected != wasConnected) {
+                // Brackets car sessions in the trim log, so "were ads skipped in the car" is
+                // answerable from the log alone instead of correlating with usagestats.
+                de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this,
+                        androidAutoConnected ? "car connected" : "car disconnected");
+            }
             if (androidAutoConnected && !wasConnected) {
                 EventBus.getDefault().post(AnalyticsEvent.androidAutoConnected());
                 mutePause = false; // phone mute state is irrelevant when audio routes to the car
@@ -1878,7 +1884,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this,
                     "start ep=" + playable.getEpisodeTitle() + " pos=" + position
                             + " storedPos=" + playable.getPosition()
-                            + " dur=" + playable.getDuration());
+                            + " dur=" + playable.getDuration()
+                            + (androidAutoConnected ? " car" : ""));
             taskManager.startWidgetUpdater();
             if (position != Playable.INVALID_TIME) {
                 playable.setPosition(position);
