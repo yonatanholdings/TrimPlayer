@@ -14,9 +14,9 @@ import retrofit2.Response;
  *
  * <p>The local edit always lands in {@link TrimSegmentCache} first (Scope A), so a
  * failed or offline report never blocks the user's edit — this just submits the
- * correction to the backend's moderation queue, where it only affects other
- * users once an admin approves it. Sends the request-time client id so reports
- * are attributable per install without a login.
+ * correction to the backend, where it applies for every listener whose copy of the
+ * episode matches (an admin can veto it). Sends the request-time client id so
+ * reports are attributable per install without a login.
  */
 public final class TrimReportClient {
     private static final String TAG = "TrimReportClient";
@@ -30,10 +30,12 @@ public final class TrimReportClient {
      * @param action   confirm | adjust | remove | missing
      * @param newStart proposed start for adjust/missing, else null
      * @param newEnd   proposed end for adjust/missing, else null
+     * @param copyDurationSec length of the file being played, {@code <= 0} if unknown
      */
     public static void report(Context ctx, String episodeUrl, String episodeGuid,
                               float origStart, float origEnd, String type,
-                              String action, Float newStart, Float newEnd) {
+                              String action, Float newStart, Float newEnd,
+                              float copyDurationSec) {
         if (ctx == null || (episodeUrl == null && episodeGuid == null)) {
             return;
         }
@@ -47,6 +49,7 @@ public final class TrimReportClient {
         req.action = action;
         req.new_start = newStart;
         req.new_end = newEnd;
+        req.copy_duration = copyDurationSec > 0 ? copyDurationSec : null;
 
         TrimClient.getInstance().reportSegment(req).enqueue(
                 new Callback<TrimClient.SegmentReportResponse>() {
@@ -54,7 +57,7 @@ public final class TrimReportClient {
                     public void onResponse(Call<TrimClient.SegmentReportResponse> call,
                                            Response<TrimClient.SegmentReportResponse> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            Log.d(TAG, "Segment report '" + action + "' queued for review, status="
+                            Log.d(TAG, "Segment report '" + action + "' sent, status="
                                     + response.body().status);
                         } else {
                             Log.w(TAG, "Segment report '" + action + "' rejected: " + response.code());

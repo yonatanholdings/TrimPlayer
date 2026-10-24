@@ -582,10 +582,14 @@ public class TrimClient {
         public String action;
         public Float new_start;
         public Float new_end;
+        /** Length in seconds of the file being played. Report times are positions in this
+         *  file, and on a dynamic-ad-insertion feed other listeners' copies can differ, so the
+         *  server only applies the report while it matches its own copy. Null if unknown. */
+        public Float copy_duration;
     }
 
     public static class SegmentReportResponse {
-        /** "pending" — the report was queued for manual review. */
+        /** "applied" — live for every listener on the next /segments response. */
         public String status;
     }
 

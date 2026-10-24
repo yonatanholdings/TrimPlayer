@@ -341,7 +341,7 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         Float newStart = "confirm".equals(action) ? null : boundStart;
         Float newEnd = "confirm".equals(action) ? null : boundEnd;
         TrimReportClient.report(requireContext().getApplicationContext(), episodeUrl, guid,
-                origStart, origEnd, type, action, newStart, newEnd);
+                origStart, origEnd, type, action, newStart, newEnd, episodeDuration);
 
         toastAndDismiss(R.string.trim_edit_saved);
     }
@@ -350,7 +350,7 @@ public class EditSegmentDialog extends BottomSheetDialogFragment {
         TrimSegmentCache.removeSegment(requireContext().getApplicationContext(), guid, segmentId);
         EventBus.getDefault().post(new TrimSegmentsEditedEvent(guid));
         TrimReportClient.report(requireContext().getApplicationContext(), episodeUrl, guid,
-                origStart, origEnd, origType, "remove", null, null);
+                origStart, origEnd, origType, "remove", null, null, episodeDuration);
         toastAndDismiss(R.string.trim_edit_removed);
     }
 
