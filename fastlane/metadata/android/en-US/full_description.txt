@@ -1,0 +1,25 @@
+<p>TrimPlayer is a podcast player that skips the parts of a show that repeat from episode to episode: the intro, recurring ad reads and the outro. It works this out per show by comparing the audio of its episodes, so there is nothing to tag, no markers to drag and no crowd-sourced database to subscribe to.</p>
+
+<p>It is a fork of <a href="https://antennapod.org">AntennaPod</a>, so it is a full podcast player. All credit to the AntennaPod project for that foundation.</p>
+
+<p><b>Skipping</b></p>
+<ul>
+<li>Skips detected intros, ads and outros automatically on playback</li>
+<li>Each skip type can be turned off separately</li>
+<li>Skipped sections are shown on the timeline</li>
+<li>Detection is probabilistic and improves as more of a show's episodes are analysed; a show nobody has played yet may get no skips at first</li>
+</ul>
+
+<p><b>Player</b></p>
+<ul>
+<li>Subscribe to any RSS feed, search Podcast Index and iTunes, import and export OPML</li>
+<li>Bring your subscriptions and playback positions from AntennaPod and Podcast Addict backups</li>
+<li>Downloads, queue, playlists, playback speed, silence trimming, sleep timer, chapters and transcripts</li>
+<li>Android Auto</li>
+<li>No account needed</li>
+</ul>
+
+<p><b>Network service</b></p>
+<p>Skip detection runs on TrimPlayer's server (TrimBrain), which is not open source. The app sends it the URLs of the episodes you play, and the server analyses the publicly available audio and returns the skip points. Without network access the app works as a normal podcast player with no skipping.</p>
+
+<p>This build contains no proprietary libraries. Garmin watch sync and Google sign-in, which depend on proprietary SDKs, are only in the Google Play build.</p>

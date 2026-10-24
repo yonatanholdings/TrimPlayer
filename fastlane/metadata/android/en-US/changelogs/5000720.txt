@@ -1,0 +1,5 @@
+First F-Droid build.
+
+- Raises the minimum Android version to 7.0
+- Sends the played file length with skip reports, so skips measured on a different copy of an episode (dynamically inserted ads) are not applied in the wrong place
+- Garmin watch sync and Google sign-in are not included in this build

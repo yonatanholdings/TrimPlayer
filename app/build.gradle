@@ -91,7 +91,12 @@ android {
             resValue "string", "provider_authority", "com.trimplayer.provider"
             minifyEnabled true
             shrinkResources true
-            signingConfig signingConfigs.releaseConfig
+            // Unsigned when the upload keystore isn't present (it's gitignored), so a
+            // clean checkout can still build a release: F-Droid builds from source
+            // and signs with its own key.
+            if (rootProject.file("trimplayer-upload.p12").exists()) {
+                signingConfig signingConfigs.releaseConfig
+            }
             ndk {
                 debugSymbolLevel = 'FULL'
             }
