@@ -698,6 +698,11 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         setMediaPlayerListeners(mediaPlayer);
     }
 
+    @Override
+    public boolean isPausedForAudioFocusLoss() {
+        return pausedBecauseOfTransientAudiofocusLoss && playerStatus == PlayerStatus.PAUSED;
+    }
+
     private final AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
 
         @Override
@@ -728,8 +733,10 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     // audio is silent -- which makes resume() a no-op and skips the
                     // onPlaybackPause -> saveCurrentPosition() checkpoint. Deliberately not
                     // calling pause(): that would reinit() the stream on every interruption.
-                    setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
+                    // Set the flag first: the PAUSED status callback reads it to keep the
+                    // service in the foreground (see isPausedForAudioFocusLoss()).
                     pausedBecauseOfTransientAudiofocusLoss = true;
+                    setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
                     && !UserPreferences.shouldPauseForFocusLoss()) {
@@ -746,8 +753,8 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     // See the AUDIOFOCUS_LOSS branch above: keep playerStatus in sync with the
                     // player, and let onPlaybackPause checkpoint the position. This is the hot
                     // path -- a nav app ducking for turn prompts hits it every few seconds.
-                    setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
                     pausedBecauseOfTransientAudiofocusLoss = true;
+                    setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 Log.d(TAG, "Gained audio focus");

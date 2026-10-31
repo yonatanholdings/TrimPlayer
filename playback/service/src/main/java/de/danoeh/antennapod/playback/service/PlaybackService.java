@@ -1746,7 +1746,10 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 case PAUSED:
                     updateNotificationAndMediaSession(newInfo.getPlayable());
                     PlaybackPreferences.setCurrentPlayerStatus(PlaybackPreferences.PLAYER_STATUS_PAUSED);
-                    if (!isCasting) {
+                    // A focus-loss pause (nav prompt, notification, call) resumes on its own
+                    // from the background when focus returns. Leaving the foreground here made
+                    // that resume's startForeground() throw ForegroundServiceStartNotAllowed.
+                    if (!isCasting && !mediaPlayer.isPausedForAudioFocusLoss()) {
                         stateManager.stopForeground(!UserPreferences.isPersistNotify());
                     }
                     cancelPositionObserver();

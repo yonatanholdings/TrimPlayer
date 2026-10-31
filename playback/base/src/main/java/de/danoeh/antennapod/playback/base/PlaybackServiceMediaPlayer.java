@@ -337,6 +337,16 @@ public abstract class PlaybackServiceMediaPlayer {
         callback.statusChanged(new PSMPInfo(oldPlayerStatus, playerStatus, getPlayable()));
     }
 
+    /**
+     * True while playback is paused only because another app holds audio focus, and will
+     * resume by itself when focus comes back. The service stays in the foreground for that
+     * time: Android 12+ refuses startForeground() from the background, which is exactly
+     * where the focus-gain resume runs.
+     */
+    public boolean isPausedForAudioFocusLoss() {
+        return false;
+    }
+
     public boolean isAudioChannelInUse() {
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         return (audioManager.getMode() != AudioManager.MODE_NORMAL || audioManager.isMusicActive());
