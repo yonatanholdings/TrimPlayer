@@ -275,6 +275,8 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
         releaseWifiLockIfNecessary();
         if (playerStatus == PlayerStatus.PLAYING) {
             Log.d(TAG, "Pausing playback.");
+            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context, "pause abandonFocus=" + abandonFocus
+                    + " reinit=" + reinit + " playerPos=" + getPosition() + " dur=" + getDuration());
             mediaPlayer.pause();
             setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
 
@@ -737,6 +739,8 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     // service in the foreground (see isPausedForAudioFocusLoss()).
                     pausedBecauseOfTransientAudiofocusLoss = true;
                     setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
+                    de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                            "focus-loss-pause change=" + focusChange + " playerPos=" + getPosition());
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
                     && !UserPreferences.shouldPauseForFocusLoss()) {
@@ -755,6 +759,8 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
                     // path -- a nav app ducking for turn prompts hits it every few seconds.
                     pausedBecauseOfTransientAudiofocusLoss = true;
                     setPlayerStatus(PlayerStatus.PAUSED, media, getPosition());
+                    de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                            "focus-loss-pause change=" + focusChange + " playerPos=" + getPosition());
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 Log.d(TAG, "Gained audio focus");

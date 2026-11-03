@@ -47,7 +47,18 @@ public class TrimClient {
      */
     public Call<EpisodeSegmentsResponse> getSegments(String episodeUrl, String episodeGuid,
                                                      String clientId, String proToken) {
-        return api.getSegments(episodeUrl, episodeGuid, clientId, proToken);
+        return api.getSegments(episodeUrl, episodeGuid, null, null, clientId, proToken);
+    }
+
+    /**
+     * /segments for OUR copy of a differently ad-stitched episode: its length and the variant
+     * URL the stream resolved to. The server aligns that copy once and from then on answers
+     * with the segments moved onto it ({@code copy_mapped}); until then {@code copy_pending}.
+     */
+    public Call<EpisodeSegmentsResponse> getSegmentsForCopy(String episodeUrl, String episodeGuid,
+                                                            double clientDurationSec, String copyUrl,
+                                                            String clientId, String proToken) {
+        return api.getSegments(episodeUrl, episodeGuid, clientDurationSec, copyUrl, clientId, proToken);
     }
 
     /** Onboarding "Great first listens" rail: per curated show, its feed URL and
@@ -222,6 +233,8 @@ public class TrimClient {
         Call<EpisodeSegmentsResponse> getSegments(
                 @Query("episode_url") String episodeUrl,
                 @Query("episode_guid") String episodeGuid,
+                @Query("client_duration") Double clientDurationSec,
+                @Query("copy_url") String copyUrl,
                 @Header("X-Client-Id") String clientId,
                 @Header("X-Pro-Token") String proToken);
 
@@ -493,6 +506,10 @@ public class TrimClient {
         // TrimCopyCheck.
         public Double duration;
         public Double min_duration;
+        // Answers to getSegmentsForCopy: segments were moved onto our copy (duration is then
+        // our copy's length), or the alignment is still queued. Null on older backends.
+        public Boolean copy_mapped;
+        public Boolean copy_pending;
     }
 
     /** Mirrors backend EntitlementStatus. status is the discriminator:

@@ -27,6 +27,8 @@ import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
+import androidx.media3.exoplayer.audio.AudioSink;
+import androidx.media3.exoplayer.audio.DefaultAudioSink;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackParameters;
@@ -120,6 +122,17 @@ public class ExoPlayerWrapper {
     private MediaSource mediaSource;
     private Runnable audioSeekCompleteListener;
     private Runnable audioCompletionListener;
+    private static final long END_STATE_LOG_WINDOW_MS = 120_000L;
+
+    private static String playbackStateName(@Player.State int state) {
+        switch (state) {
+            case Player.STATE_IDLE: return "IDLE";
+            case Player.STATE_BUFFERING: return "BUFFERING";
+            case Player.STATE_READY: return "READY";
+            case Player.STATE_ENDED: return "ENDED";
+            default: return String.valueOf(state);
+        }
+    }
     private Consumer<String> audioErrorListener;
     private Consumer<Integer> bufferingUpdateListener;
     private PlaybackParameters playbackParameters;
@@ -271,7 +284,7 @@ public class ExoPlayerWrapper {
         loadControl.setTargetBufferBytes(32 * 1024 * 1024);
         loadControl.setBackBuffer((int) TimeUnit.MINUTES.toMillis(5), true);
         trackSelector = new DefaultTrackSelector(context);
-        exoPlayer = new ExoPlayer.Builder(context, new DefaultRenderersFactory(context))
+        exoPlayer = new ExoPlayer.Builder(context, new SkipSilenceSafeRenderersFactory(context))
                 .setTrackSelector(trackSelector)
                 .setLoadControl(loadControl.build())
                 .build();
@@ -307,6 +320,17 @@ public class ExoPlayerWrapper {
                         PlaybackDiagnostics.log(context, TAG, "buffering stall ended after " + stall
                                 + "ms (state=" + playbackState + ")");
                     }
+                }
+                // Near the end, every state change goes to the playback log: the silent
+                // "played past the end, never advanced" stall (feedback #20) left no trace of
+                // whether ExoPlayer ever reached ENDED. Cheap -- only the last two minutes.
+                long endDur = exoPlayer.getDuration();
+                long endPos = exoPlayer.getCurrentPosition();
+                if (endDur != C.TIME_UNSET && endPos >= endDur - END_STATE_LOG_WINDOW_MS) {
+                    de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                            "exo-state " + playbackStateName(playbackState) + " pos=" + endPos
+                                    + " dur=" + endDur + " playWhenReady=" + exoPlayer.getPlayWhenReady()
+                                    + " completionListener=" + (audioCompletionListener != null));
                 }
                 if (audioCompletionListener != null && playbackState == Player.STATE_ENDED) {
                     audioCompletionListener.run();
@@ -1017,5 +1041,25 @@ public class ExoPlayerWrapper {
         }
 
         this.loudnessEnhancer = newEnhancer;
+    }
+
+    /** {@link DefaultRenderersFactory} whose audio sink uses {@link SkipSilenceAudioProcessorChain}. */
+    private static final class SkipSilenceSafeRenderersFactory extends DefaultRenderersFactory {
+        SkipSilenceSafeRenderersFactory(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected AudioSink buildAudioSink(Context context, boolean enableFloatOutput,
+                                           boolean enableAudioTrackPlaybackParams, boolean enableOffload) {
+            return new DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                    .setOffloadMode(enableOffload
+                            ? DefaultAudioSink.OFFLOAD_MODE_ENABLED_GAPLESS_REQUIRED
+                            : DefaultAudioSink.OFFLOAD_MODE_DISABLED)
+                    .setAudioProcessorChain(new SkipSilenceAudioProcessorChain())
+                    .build();
+        }
     }
 }

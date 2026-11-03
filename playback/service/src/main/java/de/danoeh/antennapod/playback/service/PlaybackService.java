@@ -318,6 +318,13 @@ public class PlaybackService extends MediaBrowserServiceCompat {
      *  episode. Reset per new episode at INITIALIZED. */
     private boolean phantomTailHandled = false;
 
+    /** One-shot per episode: the playhead ran past the player's own duration while PLAYING. The
+     *  end-of-file is behind us, so playback should have ended -- logged to catch the silent
+     *  "played past the end, never advanced" stall (feedback #20). Reset with phantomTailHandled. */
+    private boolean pastEndLogged = false;
+
+    private static final int PAST_END_LOG_MARGIN_MS = 3000;
+
     /** How far the player's duration estimate must exceed the feed duration before we end the
      *  episode at the feed duration. Large enough that only a genuine headerless/VBR over-estimate
      *  triggers it — a few-second rounding difference (or a slightly under-stated feed) does not. */
@@ -558,6 +565,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         trimCopyMismatch = false;
         pendingSkipVerify = null;
         phantomTailHandled = false;
+        pastEndLogged = false;
         if (playable instanceof FeedMedia) {
             FeedMedia fm = (FeedMedia) playable;
             trimFetchSegments(fm);
@@ -740,6 +748,74 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                 trimTriggerAnalysis(capturedRssUrl, episodeUrl, capturedGuid, capturedPodcastTitle);
                             }
                         }
+                    }
+                });
+    }
+
+    private static final int COPY_MAP_MAX_POLLS = 8;
+    private static final long COPY_MAP_POLL_MS = 20_000L;
+
+    /**
+     * Our copy differs from the server's (TrimCopyCheck) -- on a dynamic-ad-insertion host
+     * that is a different ad load, e.g. an Israeli listener's +16 s pre-roll (feedback #20).
+     * Ask the server to align THIS copy: send its length and the variant URL the stream
+     * resolved to (ExoPlayer keeps the final redirect in the stream cache's metadata). Once
+     * the server has the map it answers with the segments moved onto our copy, including the
+     * ads only our copy has; until then auto-skip stays off and we ask again.
+     */
+    private void trimRequestCopySegments(de.danoeh.antennapod.model.feed.FeedMedia fm, int playerDurMs, int attempt) {
+        if (fm.localFileAvailable() || fm.getStreamUrl() == null || playerDurMs <= 0) {
+            return; // a downloaded file has no resolved variant URL to hand the server
+        }
+        final String streamUrl = fm.getStreamUrl();
+        android.net.Uri resolved = androidx.media3.datasource.cache.ContentMetadata.getRedirectedUri(
+                de.danoeh.antennapod.playback.service.trim.StreamingCache.getInstance(this).getContentMetadata(streamUrl));
+        if (resolved == null || !"https".equals(resolved.getScheme())) {
+            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this, "copy-map unavailable: no resolved https URL ep=" + fm.getEpisodeTitle());
+            return;
+        }
+        final String guid = fm.getItem() != null ? fm.getItem().getItemIdentifier() : null;
+        String clientId = de.danoeh.antennapod.storage.preferences.UserPreferences.getOrCreateTrimClientId();
+        String proToken = de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimProToken();
+        if (proToken != null && de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimProTokenExpiresMs() <= System.currentTimeMillis()) {
+            proToken = null;
+        }
+        de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
+                .getSegmentsForCopy(streamUrl, guid, playerDurMs / 1000.0, resolved.toString(),
+                        clientId, proToken)
+                .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> call, retrofit2.Response<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> response) {
+                        de.danoeh.antennapod.model.playback.Playable now = getPlayable();
+                        if (!(now instanceof de.danoeh.antennapod.model.feed.FeedMedia) || !streamUrl.equals(((de.danoeh.antennapod.model.feed.FeedMedia) now).getStreamUrl())) {
+                            return; // the listener moved on
+                        }
+                        de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse body = response.isSuccessful() ? response.body() : null;
+                        if (body != null && Boolean.TRUE.equals(body.copy_mapped) && body.segments != null) {
+                            currentSegments = body.segments;
+                            trimServerDurationSec = body.duration;
+                            trimServerMinDurationSec = null;
+                            trimCopyMismatch = false;
+                            skippedSegmentIndices.clear();
+                            debugLastSegments = currentSegments;
+                            de.danoeh.antennapod.playback.service.trim.TrimSegmentCache.put(getApplicationContext(), guid, currentSegments,
+                                    body.duration, null);
+                            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this, "copy-mapped -> auto-skip on  segments="
+                                    + body.segments.size() + " copyDur=" + body.duration
+                                    + " ep=" + fm.getEpisodeTitle());
+                        } else if (body != null && Boolean.TRUE.equals(body.copy_pending)
+                                && attempt + 1 < COPY_MAP_MAX_POLLS) {
+                            trimPollHandler.postDelayed(
+                                    () -> trimRequestCopySegments(fm, playerDurMs, attempt + 1), COPY_MAP_POLL_MS);
+                        } else {
+                            de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this, "copy-map unavailable: http=" + response.code()
+                                    + " attempt=" + attempt + " ep=" + fm.getEpisodeTitle());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> call, Throwable t) {
+                        Log.w(TAG, "Trim Player: copy-map request failed", t);
                     }
                 });
     }
@@ -3492,6 +3568,18 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         return;
                     }
 
+                    int tickPos = getCurrentPosition();
+                    int tickDur = getDuration();
+                    if (!pastEndLogged && tickDur > 0 && tickPos > tickDur + PAST_END_LOG_MARGIN_MS
+                            && mediaPlayer != null && mediaPlayer.getPlayerStatus() == PlayerStatus.PLAYING) {
+                        pastEndLogged = true;
+                        de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this,
+                                "playhead-past-end pos=" + tickPos + " playerDur=" + tickDur
+                                        + " speed=" + getCurrentPlaybackSpeed()
+                                        + " skipSilence=" + getCurrentSkipSilence()
+                                        + " car=" + androidAutoConnected);
+                    }
+
                     // Restore-seek guard: runs for every episode, with or without trim segments.
                     if (restoreGuard.isArmed()) {
                         int guardPos = getCurrentPosition();
@@ -3549,6 +3637,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                                             + " serverDur=" + trimServerDurationSec
                                             + " serverMinDur=" + trimServerMinDurationSec
                                             + " ep=" + fm.getEpisodeTitle());
+                            trimRequestCopySegments(fm, dur, 0);
                         }
 
                         // Verify the previous auto-skip seek actually held before doing any more
