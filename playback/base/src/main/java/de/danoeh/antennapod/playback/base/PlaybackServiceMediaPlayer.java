@@ -347,6 +347,15 @@ public abstract class PlaybackServiceMediaPlayer {
         return false;
     }
 
+    /**
+     * Length of the media as the player itself measured it, or {@link Playable#INVALID_TIME}
+     * while it does not know yet. Unlike {@link #getDuration()} this never falls back to the
+     * feed's duration, which describes some other copy of the episode.
+     */
+    public int getPlayerReportedDuration() {
+        return getDuration();
+    }
+
     public boolean isAudioChannelInUse() {
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         return (audioManager.getMode() != AudioManager.MODE_NORMAL || audioManager.isMusicActive());

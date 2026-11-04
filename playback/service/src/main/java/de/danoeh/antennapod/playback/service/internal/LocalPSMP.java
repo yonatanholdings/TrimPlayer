@@ -701,6 +701,19 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
     }
 
     @Override
+    public int getPlayerReportedDuration() {
+        if (playerStatus == PlayerStatus.PLAYING
+                || playerStatus == PlayerStatus.PAUSED
+                || playerStatus == PlayerStatus.PREPARED) {
+            int dur = mediaPlayer.getDuration();
+            if (dur > 0) {
+                return dur;
+            }
+        }
+        return Playable.INVALID_TIME;
+    }
+
+    @Override
     public boolean isPausedForAudioFocusLoss() {
         return pausedBecauseOfTransientAudiofocusLoss && playerStatus == PlayerStatus.PAUSED;
     }

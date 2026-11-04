@@ -3624,8 +3624,15 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         // every time onto the wrong audio (How I Built This, 2026-09-10: three skips in
                         // 12s, all in the interview). If the lengths provably differ, stop auto-skipping
                         // this episode rather than cut content. Evaluated per tick because our own
-                        // duration is only known once the player has it.
-                        if (!trimCopyMismatch && de.danoeh.antennapod.playback.service.trim.TrimCopyCheck.copyMismatch(
+                        // duration is only known once the player has it -- and until then nothing
+                        // may be skipped: getDuration() falls back to the feed's length, usually the
+                        // server's copy, so the check passes and the skip lands on the wrong audio
+                        // (How To Do Things ep 12531, 2026-11-03: intro skip 0->35.9 s on a copy
+                        // with a 23 s pre-roll, one tick before the real 3282.6 s turned skips off).
+                        boolean playerKnowsLength = mediaPlayer != null
+                                && mediaPlayer.getPlayerReportedDuration() > 0;
+                        if (playerKnowsLength && !trimCopyMismatch
+                                && de.danoeh.antennapod.playback.service.trim.TrimCopyCheck.copyMismatch(
                                 dur, trimServerDurationSec, trimServerMinDurationSec)) {
                             trimCopyMismatch = true;
                             Log.w(TAG, "Trim Player: server segment times were measured on a different copy"
@@ -3669,7 +3676,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         }
 
                         List<de.danoeh.antennapod.playback.service.trim.TrimClient.Segment> segsSnap = currentSegments;
-                        for (int si = 0; !trimSeekUnreliable && !trimCopyMismatch
+                        for (int si = 0; playerKnowsLength && !trimSeekUnreliable && !trimCopyMismatch
                                 && si < segsSnap.size(); si++) {
                             de.danoeh.antennapod.playback.service.trim.TrimClient.Segment seg = segsSnap.get(si);
                             int startMs = (int) (seg.start * 1000);
