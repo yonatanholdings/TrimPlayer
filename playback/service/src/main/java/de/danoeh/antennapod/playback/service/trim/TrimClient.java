@@ -61,6 +61,17 @@ public class TrimClient {
         return api.getSegments(episodeUrl, episodeGuid, clientDurationSec, copyUrl, clientId, proToken);
     }
 
+    /**
+     * Ask the server to align a copy the prefetcher has cached but nobody has played yet: the
+     * variant URL without a length (no player has measured it). An alignment takes 40-150 s,
+     * so asked for only at play time it lands after the pre-roll and intro it should skip.
+     * The response is not used; the play-time {@link #getSegmentsForCopy} picks up the map.
+     */
+    public Call<EpisodeSegmentsResponse> premapCopy(String episodeUrl, String copyUrl,
+                                                    String clientId, String proToken) {
+        return api.getSegments(episodeUrl, null, null, copyUrl, clientId, proToken);
+    }
+
     /** Onboarding "Great first listens" rail: per curated show, its feed URL and
      *  the best demo episode to drop a brand-new listener onto. */
     public Call<FirstListensResponse> getFirstListens() {

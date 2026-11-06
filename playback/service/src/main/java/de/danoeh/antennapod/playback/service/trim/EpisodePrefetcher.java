@@ -12,11 +12,16 @@ import androidx.media3.datasource.DataSpec;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.datasource.cache.CacheWriter;
+import androidx.media3.datasource.cache.ContentMetadata;
 
 import de.danoeh.antennapod.net.common.HttpCredentialEncoder;
 import de.danoeh.antennapod.net.common.UserAgentInterceptor;
+import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -97,7 +102,17 @@ public final class EpisodePrefetcher {
                         .setPosition(0)
                         .setLength(length)
                         .build();
-                new CacheWriter(dataSource, dataSpec, null, null).cache();
+                // The variant URL is in the cache metadata as soon as the first bytes arrive;
+                // pre-map then rather than after a full download that can take minutes.
+                final boolean[] premapped = {false};
+                new CacheWriter(dataSource, dataSpec, null, (requestLength, bytesCached, newBytesCached) -> {
+                    if (!premapped[0]) {
+                        premapped[0] = premapCopy(app, url);
+                    }
+                }).cache();
+                if (!premapped[0]) {
+                    premapCopy(app, url);
+                }
                 Log.d(TAG, "Prefetched " + (length == C.LENGTH_UNSET ? "full episode" : length + " bytes")
                         + " for " + url);
             } catch (Throwable t) {
@@ -105,5 +120,54 @@ public final class EpisodePrefetcher {
                 Log.d(TAG, "Prefetch failed for " + url + ": " + t.getMessage());
             }
         });
+    }
+
+    /** Variant URLs already handed to the server this process; queue changes re-run prefetch. */
+    private static final Set<String> PREMAPPED = Collections.synchronizedSet(new HashSet<>());
+
+    /**
+     * Hand the server the variant URL this episode's stream resolved to, so it can align
+     * that copy before playback reaches it (see {@link TrimClient#premapCopy}). On a feed
+     * that stitches ads per listener region the map otherwise arrives 40-150 s into the
+     * episode, after the pre-roll and intro (How To Do Things, 2026-11-04). The server
+     * decides whether the podcast needs it; a plain tracking redirect costs one request.
+     *
+     * @return true once the variant URL is known (sent now or earlier), false while the
+     *         stream has not resolved yet
+     */
+    private static boolean premapCopy(Context app, String url) {
+        try {
+            Uri resolved = ContentMetadata.getRedirectedUri(
+                    StreamingCache.getInstance(app).getContentMetadata(url));
+            if (resolved == null) {
+                return false;
+            }
+            if (!"https".equals(resolved.getScheme()) || !PREMAPPED.add(resolved.toString())) {
+                return true;
+            }
+            String proToken = UserPreferences.getTrimProToken();
+            if (proToken != null && UserPreferences.getTrimProTokenExpiresMs() <= System.currentTimeMillis()) {
+                proToken = null;
+            }
+            TrimClient.getInstance()
+                    .premapCopy(url, resolved.toString(), UserPreferences.getOrCreateTrimClientId(), proToken)
+                    .enqueue(new retrofit2.Callback<TrimClient.EpisodeSegmentsResponse>() {
+                        @Override
+                        public void onResponse(retrofit2.Call<TrimClient.EpisodeSegmentsResponse> call,
+                                               retrofit2.Response<TrimClient.EpisodeSegmentsResponse> response) {
+                            Log.d(TAG, "Pre-map sent (http " + response.code() + ") for " + url);
+                        }
+
+                        @Override
+                        public void onFailure(retrofit2.Call<TrimClient.EpisodeSegmentsResponse> call,
+                                              Throwable t) {
+                            PREMAPPED.remove(resolved.toString()); // try again on the next prefetch
+                        }
+                    });
+            return true;
+        } catch (Throwable t) {
+            Log.d(TAG, "Pre-map failed for " + url + ": " + t.getMessage());
+            return true;
+        }
     }
 }

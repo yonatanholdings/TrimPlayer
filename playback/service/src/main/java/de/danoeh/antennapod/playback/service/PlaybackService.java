@@ -752,8 +752,18 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 });
     }
 
-    private static final int COPY_MAP_MAX_POLLS = 8;
+    // An alignment usually lands within a minute, but can wait behind a busy fleet: ep 12528
+    // (How To Do Things, 2026-11-04) took 148 s and the old 8 x 20 s budget gave up 6 s before
+    // it, so that episode's mid-roll, outro and closing ad all played. A late map still skips
+    // everything after it, so keep asking -- every 20 s at first, then every minute (~35 min).
+    private static final int COPY_MAP_MAX_POLLS = 40;
+    private static final int COPY_MAP_FAST_POLLS = 8;
     private static final long COPY_MAP_POLL_MS = 20_000L;
+    private static final long COPY_MAP_SLOW_POLL_MS = 60_000L;
+
+    private static long copyMapPollDelayMs(int attempt) {
+        return attempt < COPY_MAP_FAST_POLLS ? COPY_MAP_POLL_MS : COPY_MAP_SLOW_POLL_MS;
+    }
 
     /**
      * Our copy differs from the server's (TrimCopyCheck) -- on a dynamic-ad-insertion host
@@ -806,7 +816,8 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                         } else if (body != null && Boolean.TRUE.equals(body.copy_pending)
                                 && attempt + 1 < COPY_MAP_MAX_POLLS) {
                             trimPollHandler.postDelayed(
-                                    () -> trimRequestCopySegments(fm, playerDurMs, attempt + 1), COPY_MAP_POLL_MS);
+                                    () -> trimRequestCopySegments(fm, playerDurMs, attempt + 1),
+                                    copyMapPollDelayMs(attempt));
                         } else {
                             de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(PlaybackService.this, "copy-map unavailable: http=" + response.code()
                                     + " attempt=" + attempt + " ep=" + fm.getEpisodeTitle());
@@ -816,6 +827,14 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                     @Override
                     public void onFailure(retrofit2.Call<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse> call, Throwable t) {
                         Log.w(TAG, "Trim Player: copy-map request failed", t);
+                        // A dropped connection (a tunnel, a cell handover) is not an answer.
+                        de.danoeh.antennapod.model.playback.Playable now = getPlayable();
+                        if (attempt + 1 < COPY_MAP_MAX_POLLS && now instanceof de.danoeh.antennapod.model.feed.FeedMedia
+                                && streamUrl.equals(((de.danoeh.antennapod.model.feed.FeedMedia) now).getStreamUrl())) {
+                            trimPollHandler.postDelayed(
+                                    () -> trimRequestCopySegments(fm, playerDurMs, attempt + 1),
+                                    copyMapPollDelayMs(attempt));
+                        }
                     }
                 });
     }
