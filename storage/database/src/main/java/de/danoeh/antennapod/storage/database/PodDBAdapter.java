@@ -1397,6 +1397,24 @@ public class PodDBAdapter {
         return db.rawQuery(query, null);
     }
 
+    /** The top episode of a playlist other than {@code excludeItemId}. */
+    public Cursor getFirstInPlaylist(long playlistId, long excludeItemId) {
+        final String query = "SELECT " + KEYS_FEED_ITEM_WITHOUT_DESCRIPTION + ", " + KEYS_FEED_MEDIA
+                + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
+                + " INNER JOIN " + TABLE_NAME_FEED_ITEMS
+                + " ON " + SELECT_KEY_ITEM_ID + " = " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM
+                + JOIN_FEED_ITEM_AND_MEDIA
+                + " WHERE " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_PLAYLIST_ID + " = " + playlistId
+                + " AND " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_FEEDITEM + " != " + excludeItemId
+                + " ORDER BY " + TABLE_NAME_PLAYLIST_ITEMS + "." + KEY_POSITION
+                + " LIMIT 1";
+        return db.rawQuery(query, null);
+    }
+
+    public Cursor getFirstInQueue(long excludeItemId) {
+        return getFirstInPlaylist(ensureDefaultPlaylistId(), excludeItemId);
+    }
+
     public boolean isItemInPlaylist(long playlistId, long itemId) {
         final String query = "SELECT " + KEY_ID + " FROM " + TABLE_NAME_PLAYLIST_ITEMS
                 + " WHERE " + KEY_PLAYLIST_ID + " = " + playlistId

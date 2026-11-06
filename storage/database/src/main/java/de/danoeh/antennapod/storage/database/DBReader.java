@@ -447,6 +447,27 @@ public final class DBReader {
         }
     }
 
+    /** The top episode of the playlist (or, for {@code playlistId} &lt;= 0, the queue) other than
+     *  {@code excludeItemId}; what auto-advance wraps to when nothing follows the current one. */
+    public static FeedItem getFirstInPlaylist(long playlistId, long excludeItemId) {
+        PodDBAdapter adapter = PodDBAdapter.getInstance();
+        adapter.open();
+        try (FeedItemCursor cursor = new FeedItemCursor(playlistId > 0
+                ? adapter.getFirstInPlaylist(playlistId, excludeItemId)
+                : adapter.getFirstInQueue(excludeItemId))) {
+            List<FeedItem> list = extractItemlistFromCursor(cursor);
+            if (!list.isEmpty()) {
+                loadAdditionalFeedItemListData(list);
+                return list.get(0);
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            adapter.close();
+        }
+    }
+
     public static FeedItem getNextInFeed(FeedItem item) {
         Log.d(TAG, "getNextInFeed() called with: itemId = [" + item.getId() + "]");
         PodDBAdapter adapter = PodDBAdapter.getInstance();

@@ -2168,6 +2168,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 public FeedItem nextInFeed(FeedItem item) {
                     return DBReader.getNextInFeed(item);
                 }
+
+                @Override
+                public FeedItem firstInPlaylist(long playlistId, long excludeItemId) {
+                    return DBReader.getFirstInPlaylist(playlistId, excludeItemId);
+                }
             };
 
     private Playable getNextInQueue(final Playable currentMedia) {

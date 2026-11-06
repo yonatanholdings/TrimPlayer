@@ -141,6 +141,32 @@ public class PlaylistDbTest {
     }
 
     @Test
+    public void testGetFirstInPlaylistSkipsTheFinishedEpisode() throws Exception {
+        List<Feed> feeds = DbTestUtils.saveFeedlist(1, 3, true);
+        List<FeedItem> items = feeds.get(0).getItems();
+        long id = DBWriter.createPlaylist("P").get(TIMEOUT, TimeUnit.SECONDS);
+        DBWriter.addPlaylistItems(id, items.get(0), items.get(1), items.get(2))
+                .get(TIMEOUT, TimeUnit.SECONDS);
+
+        // Wrapping from the last episode lands on the top one.
+        assertEquals(items.get(0).getId(), DBReader.getFirstInPlaylist(id, items.get(2).getId()).getId());
+        // The finished episode itself is never the wrap target.
+        assertEquals(items.get(1).getId(), DBReader.getFirstInPlaylist(id, items.get(0).getId()).getId());
+    }
+
+    @Test
+    public void testGetFirstInQueueAloneIsNull() throws Exception {
+        List<Feed> feeds = DbTestUtils.saveFeedlist(1, 2, true);
+        List<FeedItem> items = feeds.get(0).getItems();
+        // The default playlist is the queue.
+        long queueId = DBReader.getPlaylists().get(0).getId();
+        DBWriter.addPlaylistItems(queueId, items.get(1)).get(TIMEOUT, TimeUnit.SECONDS);
+
+        assertNull(DBReader.getFirstInPlaylist(0, items.get(1).getId()));
+        assertEquals(items.get(1).getId(), DBReader.getFirstInPlaylist(0, items.get(0).getId()).getId());
+    }
+
+    @Test
     public void testGetNextInPlaylistForNonMemberIsNull() throws Exception {
         List<Feed> feeds = DbTestUtils.saveFeedlist(1, 3, true);
         List<FeedItem> items = feeds.get(0).getItems();

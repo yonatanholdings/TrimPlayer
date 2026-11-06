@@ -27,7 +27,7 @@ public class NextEpisodePickerTest {
     }
 
     /** One queue plus "next unplayed episode of the same show" links. */
-    private static final class FakeDb implements NextEpisodePicker.Lookup {
+    private static class FakeDb implements NextEpisodePicker.Lookup {
         final List<FeedItem> queue = new ArrayList<>();
         final Map<Long, FeedItem> nextInShow = new HashMap<>();
 
@@ -55,6 +55,19 @@ public class NextEpisodePickerTest {
         public FeedItem nextInFeed(FeedItem item) {
             return nextInShow.get(item.getId());
         }
+
+        @Override
+        public FeedItem firstInPlaylist(long playlistId, long excludeItemId) {
+            List<FeedItem> list = playlistId == NO_PLAYLIST ? queue : playlist;
+            for (FeedItem item : list) {
+                if (item.getId() != excludeItemId) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        final List<FeedItem> playlist = new ArrayList<>();
     }
 
     @Test
@@ -124,6 +137,40 @@ public class NextEpisodePickerTest {
 
         assertNull(pick.item);
         assertFalse(pick.fromFeed);
+    }
+
+    @Test
+    public void lastInQueueAndNewestOfItsShowWrapsToTheTopOfTheQueue() {
+        // 2026-11-05: the auto-added daily episode 25366 ended last in a 95-episode queue.
+        FakeDb db = new FakeDb();
+        FeedItem playing = episode(25366);
+        db.queue.add(episode(2058));
+        db.queue.add(episode(6426));
+        db.queue.add(playing);
+
+        NextEpisodePicker.Pick pick = NextEpisodePicker.pick(playing, NO_PLAYLIST, NO_PLAYLIST, NO_RUN, db);
+
+        assertEquals(2058, pick.item.getId());
+        assertFalse(pick.fromFeed);
+    }
+
+    @Test
+    public void endOfANamedPlaylistWrapsWithinThatPlaylist() {
+        FakeDb db = new FakeDb() {
+            @Override
+            public boolean isInPlaylist(long playlistId, long itemId) {
+                return playlistId == 7;
+            }
+        };
+        FeedItem playing = episode(3);
+        db.playlist.add(episode(1));
+        db.playlist.add(playing);
+        db.queue.add(episode(99));
+
+        NextEpisodePicker.Pick pick = NextEpisodePicker.pick(playing, 7, NO_PLAYLIST, NO_RUN, db);
+
+        assertEquals(1, pick.item.getId());
+        assertFalse(pick.leftPlaylist);
     }
 
     @Test
