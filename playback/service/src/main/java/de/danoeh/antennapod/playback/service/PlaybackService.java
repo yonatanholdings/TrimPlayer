@@ -2147,6 +2147,29 @@ public class PlaybackService extends MediaBrowserServiceCompat {
         }
     }
 
+    private static final de.danoeh.antennapod.playback.service.internal.NextEpisodePicker.Lookup DB_NEXT_LOOKUP =
+            new de.danoeh.antennapod.playback.service.internal.NextEpisodePicker.Lookup() {
+                @Override
+                public boolean isInPlaylist(long playlistId, long itemId) {
+                    return DBReader.isItemInPlaylist(playlistId, itemId);
+                }
+
+                @Override
+                public FeedItem nextInPlaylist(long playlistId, FeedItem item) {
+                    return DBReader.getNextInPlaylist(playlistId, item);
+                }
+
+                @Override
+                public FeedItem nextInQueue(FeedItem item) {
+                    return DBReader.getNextInQueue(item);
+                }
+
+                @Override
+                public FeedItem nextInFeed(FeedItem item) {
+                    return DBReader.getNextInFeed(item);
+                }
+            };
+
     private Playable getNextInQueue(final Playable currentMedia) {
         if (!(currentMedia instanceof FeedMedia)) {
             Log.d(TAG, "getNextInQueue(), but playable not an instance of FeedMedia, so not proceeding");
@@ -2164,26 +2187,22 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             PlaybackPreferences.writeNoMediaPlaying();
             return null;
         }
-        FeedItem nextItem = null;
         // If playback is following a named playlist, continue with the next episode in the SAME
         // playlist. Once the current episode is no longer part of that playlist (the user played
-        // something else), drop the playlist context and fall back to the global queue.
-        final long activePlaylistId = PlaybackPreferences.getActivePlaylistId();
-        if (activePlaylistId != PlaybackPreferences.NO_ACTIVE_PLAYLIST) {
-            if (DBReader.isItemInPlaylist(activePlaylistId, item.getId())) {
-                nextItem = DBReader.getNextInPlaylist(activePlaylistId, item);
-            } else {
-                PlaybackPreferences.setActivePlaylistId(PlaybackPreferences.NO_ACTIVE_PLAYLIST);
-            }
+        // something else), drop the playlist context and fall back to the global queue. An
+        // episode reached by running through its show continues that show first.
+        de.danoeh.antennapod.playback.service.internal.NextEpisodePicker.Pick pick =
+                de.danoeh.antennapod.playback.service.internal.NextEpisodePicker.pick(item,
+                        PlaybackPreferences.getActivePlaylistId(), PlaybackPreferences.NO_ACTIVE_PLAYLIST,
+                        PlaybackPreferences.getFeedRunItemId(), DB_NEXT_LOOKUP);
+        if (pick.leftPlaylist) {
+            PlaybackPreferences.setActivePlaylistId(PlaybackPreferences.NO_ACTIVE_PLAYLIST);
         }
-        if (nextItem == null || nextItem.getMedia() == null) {
-            nextItem = DBReader.getNextInQueue(item);
-        }
-        if (nextItem == null || nextItem.getMedia() == null) {
-            nextItem = DBReader.getNextInFeed(item);
-        }
+        FeedItem nextItem = pick.item;
+        PlaybackPreferences.setFeedRunItemId(nextItem != null && pick.fromFeed
+                ? nextItem.getId() : PlaybackPreferences.NO_FEED_RUN);
 
-        if (nextItem == null || nextItem.getMedia() == null) {
+        if (nextItem == null) {
             PlaybackPreferences.writeNoMediaPlaying();
             return null;
         }

@@ -72,6 +72,18 @@ public abstract class PlaybackPreferences {
     private static final String PREF_ACTIVE_PLAYLIST_ID = "de.danoeh.antennapod.preferences.activePlaylistId";
 
     /**
+     * Id of the episode auto-advance last reached by continuing through its show (the next
+     * unplayed episode of the same feed), or {@link #NO_FEED_RUN}. When that episode finishes,
+     * playback keeps going through the show before looking at the queue.
+     */
+    private static final String PREF_FEED_RUN_ITEM_ID = "de.danoeh.antennapod.preferences.feedRunItemId";
+
+    /**
+     * Value of {@link #PREF_FEED_RUN_ITEM_ID} when playback is not running through a show.
+     */
+    public static final long NO_FEED_RUN = -1;
+
+    /**
      * Value of PREF_CURRENTLY_PLAYING_MEDIA if no media is playing.
      */
     public static final long NO_MEDIA_PLAYING = -1;
@@ -131,6 +143,14 @@ public abstract class PlaybackPreferences {
 
     public static void setActivePlaylistId(long playlistId) {
         prefs.edit().putLong(PREF_ACTIVE_PLAYLIST_ID, playlistId).apply();
+    }
+
+    public static long getFeedRunItemId() {
+        return prefs.getLong(PREF_FEED_RUN_ITEM_ID, NO_FEED_RUN);
+    }
+
+    public static void setFeedRunItemId(long itemId) {
+        prefs.edit().putLong(PREF_FEED_RUN_ITEM_ID, itemId).apply();
     }
 
     public static float getCurrentlyPlayingTemporaryPlaybackSpeed() {
