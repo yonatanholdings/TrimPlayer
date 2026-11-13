@@ -778,12 +778,67 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             return; // a downloaded file has no resolved variant URL to hand the server
         }
         final String streamUrl = fm.getStreamUrl();
+        if (attempt > 0 && streamUrl.equals(copyUrlStream)) {
+            sendCopySegmentsRequest(fm, playerDurMs, attempt, copyUrl);
+            return;
+        }
         android.net.Uri resolved = androidx.media3.datasource.cache.ContentMetadata.getRedirectedUri(
                 de.danoeh.antennapod.playback.service.trim.StreamingCache.getInstance(this).getContentMetadata(streamUrl));
         if (resolved == null || !"https".equals(resolved.getScheme())) {
             de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(this, "copy-map unavailable: no resolved https URL ep=" + fm.getEpisodeTitle());
             return;
         }
+        resolveFreshCopyUrl(fm, playerDurMs, resolved.toString());
+    }
+
+    /** The variant URL sent with this stream's copy-map requests (see resolveFreshCopyUrl). */
+    private volatile String copyUrlStream;
+    private volatile String copyUrl;
+
+    /**
+     * The stream cache keeps the redirect from when the bytes were first fetched, often hours
+     * before play (the queue prefetcher), and signed variant links expire: megaphone's after
+     * 2 h, after which the server is sent on to the US ad load and aligns the wrong copy (On
+     * Purpose ep 5479, 2026-11-11: a link cached 5 h before play, so no map and no skips).
+     * Ask the host where the stream goes now -- the same variant for this region -- and fall
+     * back to the cached link if that fails. The server checks the copy's length either way.
+     */
+    private void resolveFreshCopyUrl(de.danoeh.antennapod.model.feed.FeedMedia fm, int playerDurMs, String cachedUrl) {
+        final String streamUrl = fm.getStreamUrl();
+        okhttp3.Request request;
+        try {
+            request = new okhttp3.Request.Builder().url(streamUrl).header("Range", "bytes=0-1").build();
+        } catch (IllegalArgumentException e) {
+            useCopyUrl(fm, playerDurMs, cachedUrl);
+            return;
+        }
+        de.danoeh.antennapod.net.common.AntennapodHttpClient.getHttpClient().newCall(request)
+                .enqueue(new okhttp3.Callback() {
+                    @Override
+                    public void onFailure(okhttp3.Call call, java.io.IOException e) {
+                        useCopyUrl(fm, playerDurMs, cachedUrl);
+                    }
+
+                    @Override
+                    public void onResponse(okhttp3.Call call, okhttp3.Response response) {
+                        okhttp3.HttpUrl now = response.request().url();
+                        response.close();
+                        useCopyUrl(fm, playerDurMs, response.isSuccessful() && now.isHttps() ? now.toString() : cachedUrl);
+                    }
+                });
+    }
+
+    private void useCopyUrl(de.danoeh.antennapod.model.feed.FeedMedia fm, int playerDurMs, String url) {
+        trimPollHandler.post(() -> {
+            copyUrlStream = fm.getStreamUrl();
+            copyUrl = url;
+            sendCopySegmentsRequest(fm, playerDurMs, 0, url);
+        });
+    }
+
+    private void sendCopySegmentsRequest(de.danoeh.antennapod.model.feed.FeedMedia fm, int playerDurMs, int attempt,
+                                         String variantUrl) {
+        final String streamUrl = fm.getStreamUrl();
         final String guid = fm.getItem() != null ? fm.getItem().getItemIdentifier() : null;
         String clientId = de.danoeh.antennapod.storage.preferences.UserPreferences.getOrCreateTrimClientId();
         String proToken = de.danoeh.antennapod.storage.preferences.UserPreferences.getTrimProToken();
@@ -791,7 +846,7 @@ public class PlaybackService extends MediaBrowserServiceCompat {
             proToken = null;
         }
         de.danoeh.antennapod.playback.service.trim.TrimClient.getInstance()
-                .getSegmentsForCopy(streamUrl, guid, playerDurMs / 1000.0, resolved.toString(),
+                .getSegmentsForCopy(streamUrl, guid, playerDurMs / 1000.0, variantUrl,
                         clientId, proToken)
                 .enqueue(new retrofit2.Callback<de.danoeh.antennapod.playback.service.trim.TrimClient.EpisodeSegmentsResponse>() {
                     @Override
