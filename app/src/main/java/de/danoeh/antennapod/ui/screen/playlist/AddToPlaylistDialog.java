@@ -27,6 +27,7 @@ import de.danoeh.antennapod.model.feed.FeedItem;
 import de.danoeh.antennapod.model.feed.Playlist;
 import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
+import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Observable;
@@ -167,6 +168,9 @@ public class AddToPlaylistDialog {
                 memberIds.add(playlist.getId());
                 countDelta.set(position, countDelta.get(position) + 1);
                 DBWriter.addPlaylistItems(playlist.getId(), item);
+                if (playlist.isDefault() || playlist.getId() == PlaybackPreferences.getActivePlaylistId()) {
+                    PlaybackPreferences.endFeedRun();
+                }
                 EventBus.getDefault().post(new MessageEvent(
                         context.getString(R.string.added_to_playlist_label, playlist.getName())));
             } else {

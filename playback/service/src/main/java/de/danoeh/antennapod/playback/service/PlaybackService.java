@@ -2210,6 +2210,11 @@ public class PlaybackService extends MediaBrowserServiceCompat {
                 }
 
                 @Override
+                public boolean isInQueue(long itemId) {
+                    return DBReader.isItemInPlaylist(DBReader.getDefaultPlaylistId(), itemId);
+                }
+
+                @Override
                 public FeedItem nextInPlaylist(long playlistId, FeedItem item) {
                     return DBReader.getNextInPlaylist(playlistId, item);
                 }

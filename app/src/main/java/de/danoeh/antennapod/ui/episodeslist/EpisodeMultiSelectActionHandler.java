@@ -15,6 +15,7 @@ import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
+import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.ui.share.ShareUtils;
 import de.danoeh.antennapod.ui.view.LocalDeleteModal;
 import org.greenrobot.eventbus.EventBus;
@@ -65,6 +66,7 @@ public class EpisodeMultiSelectActionHandler {
             }
         }
         DBWriter.addQueueItem(activity, toQueue.toArray(new FeedItem[0]));
+        PlaybackPreferences.endFeedRun();
         showMessage(R.plurals.added_to_queue_message, toQueue.size());
     }
 

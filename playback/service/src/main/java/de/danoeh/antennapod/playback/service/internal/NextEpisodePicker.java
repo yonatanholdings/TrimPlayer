@@ -14,12 +14,20 @@ import de.danoeh.antennapod.model.feed.FeedItem;
  * cut in, and since it was the newest of its show and the last in the queue, playback
  * stopped: How To Do Things, 2026-11-05, after a daily-news episode joined the queue behind
  * the playing episode (playing always appends it to the queue).
+ *
+ * <p>An episode the player streamed while running through a show is not in the queue, so "the
+ * next one in the queue" never matches it and everything the user queued was passed over for
+ * the show: a listener added an episode to Up Next and the show kept playing (feedback #22,
+ * 2026-11-05). Adding an episode by hand ends the run, and an episode outside both the queue
+ * and the playlist being followed continues with the top of the queue before its show.
  */
 public final class NextEpisodePicker {
 
     /** Database lookups the choice depends on. */
     public interface Lookup {
         boolean isInPlaylist(long playlistId, long itemId);
+
+        boolean isInQueue(long itemId);
 
         @Nullable
         FeedItem nextInPlaylist(long playlistId, FeedItem item);
@@ -79,6 +87,9 @@ public final class NextEpisodePicker {
         }
         if (next == null) {
             next = playable(lookup.nextInQueue(current));
+        }
+        if (next == null && !inPlaylist && !lookup.isInQueue(current.getId())) {
+            next = playable(lookup.firstInPlaylist(noPlaylist, current.getId()));
         }
         if (next != null) {
             return new Pick(next, false, leftPlaylist);

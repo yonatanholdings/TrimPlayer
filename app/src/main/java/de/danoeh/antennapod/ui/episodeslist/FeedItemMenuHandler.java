@@ -240,6 +240,7 @@ public class FeedItemMenuHandler {
             }
         } else if (menuItemId == R.id.add_to_queue_item) {
             DBWriter.addQueueItem(context, selectedItem);
+            PlaybackPreferences.endFeedRun();
         } else if (menuItemId == R.id.remove_from_queue_item) {
             DBWriter.removeQueueItem(context, true, selectedItem);
         } else if (menuItemId == R.id.add_to_playlist_item) {

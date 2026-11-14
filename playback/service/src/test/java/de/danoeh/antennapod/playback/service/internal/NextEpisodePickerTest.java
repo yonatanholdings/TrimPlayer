@@ -37,6 +37,16 @@ public class NextEpisodePickerTest {
         }
 
         @Override
+        public boolean isInQueue(long itemId) {
+            for (FeedItem item : queue) {
+                if (item.getId() == itemId) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
         public FeedItem nextInPlaylist(long playlistId, FeedItem item) {
             return null;
         }
@@ -84,6 +94,50 @@ public class NextEpisodePickerTest {
         NextEpisodePicker.Pick pick = NextEpisodePicker.pick(playing, NO_PLAYLIST, NO_PLAYLIST, 8315, db);
 
         assertEquals(25013, pick.item.getId());
+        assertTrue(pick.fromFeed);
+    }
+
+    @Test
+    public void streamedRunEpisodeKeepsToItsShowOverAnAutoAddedEpisode() {
+        // A streamed episode reached through its show is not in the queue; the daily news
+        // auto-added to the queue still waits for the run to finish.
+        FakeDb db = new FakeDb();
+        FeedItem playing = episode(8315);
+        db.queue.add(episode(25366));
+        db.nextInShow.put(8315L, episode(25013));
+
+        NextEpisodePicker.Pick pick = NextEpisodePicker.pick(playing, NO_PLAYLIST, NO_PLAYLIST, 8315, db);
+
+        assertEquals(25013, pick.item.getId());
+        assertTrue(pick.fromFeed);
+    }
+
+    @Test
+    public void episodeQueuedByHandDuringAStreamedRunPlaysNext() {
+        // Feedback #22, 2026-11-05: Wildrake (streamed, not in the queue) ended and the show's
+        // next episode played although the listener had put Dahab in Up Next. Queuing by hand
+        // ends the run, so the episode outside the queue goes to the top of the queue.
+        FakeDb db = new FakeDb();
+        db.queue.add(episode(700));
+        db.queue.add(episode(701));
+        db.nextInShow.put(500L, episode(501));
+        FeedItem playing = episode(500);
+
+        NextEpisodePicker.Pick pick = NextEpisodePicker.pick(playing, NO_PLAYLIST, NO_PLAYLIST, NO_RUN, db);
+
+        assertEquals(700, pick.item.getId());
+        assertFalse(pick.fromFeed);
+    }
+
+    @Test
+    public void episodeOutsideAnEmptyQueueContinuesThroughItsShow() {
+        FakeDb db = new FakeDb();
+        FeedItem playing = episode(500);
+        db.nextInShow.put(500L, episode(501));
+
+        NextEpisodePicker.Pick pick = NextEpisodePicker.pick(playing, NO_PLAYLIST, NO_PLAYLIST, NO_RUN, db);
+
+        assertEquals(501, pick.item.getId());
         assertTrue(pick.fromFeed);
     }
 

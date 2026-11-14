@@ -153,6 +153,14 @@ public abstract class PlaybackPreferences {
         prefs.edit().putLong(PREF_FEED_RUN_ITEM_ID, itemId).apply();
     }
 
+    /**
+     * The user added an episode to the queue (or to the playlist being followed): what they
+     * queued plays next, so a run through one show stops here.
+     */
+    public static void endFeedRun() {
+        setFeedRunItemId(NO_FEED_RUN);
+    }
+
     public static float getCurrentlyPlayingTemporaryPlaybackSpeed() {
         return prefs.getFloat(PREF_CURRENTLY_PLAYING_TEMPORARY_PLAYBACK_SPEED, FeedPreferences.SPEED_USE_GLOBAL);
     }
