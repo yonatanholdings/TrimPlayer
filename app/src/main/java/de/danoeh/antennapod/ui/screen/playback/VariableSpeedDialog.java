@@ -23,6 +23,7 @@ import de.danoeh.antennapod.model.feed.FeedMedia;
 import de.danoeh.antennapod.model.feed.FeedPreferences;
 import de.danoeh.antennapod.playback.service.PlaybackController;
 import de.danoeh.antennapod.storage.database.DBWriter;
+import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.view.ItemOffsetDecoration;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -212,14 +213,19 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                 feed.getPreferences().setFeedPlaybackSpeed(multiplier);
                 DBWriter.setFeedPreferences(feed.getPreferences());
             } else {
+                float oldDefault = UserPreferences.getPlaybackSpeed();
                 UserPreferences.setPlaybackSpeed(multiplier);
+                if (isGlobalOnly()) {
+                    applyNewDefaultToLoadedEpisode(oldDefault, multiplier);
+                }
             }
 
             // Never push a temporary override onto the live episode from the
             // Settings entry: PlaybackService.setSpeed stores
             // currentlyPlayingTemporaryPlaybackSpeed, which outranks both the
             // per-feed and the global value in PlaybackSpeedUtils. Settings
-            // edits the default; it must not hijack what is already playing.
+            // edits the default; it must not hijack what is already playing
+            // (an episode that follows the default is moved along above).
             if (controller != null && !isGlobalOnly()) {
                 controller.setPlaybackSpeed(multiplier);
             }
@@ -303,6 +309,40 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
         cb.setOnCheckedChangeListener(null);
         cb.setChecked(checked);
         cb.setOnCheckedChangeListener(listener);
+    }
+
+    /**
+     * Settings changed the app-wide default. The loaded episode's speed was
+     * pinned to the old default when it started (PlaybackService.setSpeed
+     * stores it as the episode's temporary speed, which outranks the global
+     * value), so without this the change only showed up on the next episode
+     * and the setting looked broken. Follow the new default only when the
+     * episode was following the old one: its show has no speed of its own and
+     * nobody picked a different speed for this episode.
+     */
+    private void applyNewDefaultToLoadedEpisode(float oldDefault, float newDefault) {
+        if (!(cachedMedia instanceof FeedMedia)) {
+            return;
+        }
+        FeedMedia media = (FeedMedia) cachedMedia;
+        Feed feed = media.getItem() != null ? media.getItem().getFeed() : null;
+        if (feed == null || feed.getPreferences() == null
+                || feed.getPreferences().getFeedPlaybackSpeed() != FeedPreferences.SPEED_USE_GLOBAL) {
+            return;
+        }
+        if (PlaybackPreferences.getCurrentlyPlayingFeedMediaId() != media.getId()) {
+            return;
+        }
+        float episodeSpeed = PlaybackPreferences.getCurrentlyPlayingTemporaryPlaybackSpeed();
+        if (episodeSpeed != FeedPreferences.SPEED_USE_GLOBAL && Math.abs(episodeSpeed - oldDefault) > 0.001f) {
+            return;
+        }
+        // Written here too because, with the service stopped, the controller
+        // only posts an event and the stale value would win on the next resume.
+        PlaybackPreferences.setCurrentlyPlayingTemporaryPlaybackSpeed(newDefault);
+        if (controller != null) {
+            controller.setPlaybackSpeed(newDefault);
+        }
     }
 
     private Feed currentFeed() {
@@ -399,7 +439,11 @@ public class VariableSpeedDialog extends BottomSheetDialogFragment {
                     feed.getPreferences().setFeedPlaybackSpeed(speed);
                     DBWriter.setFeedPreferences(feed.getPreferences());
                 } else {
+                    float oldDefault = UserPreferences.getPlaybackSpeed();
                     UserPreferences.setPlaybackSpeed(speed);
+                    if (isGlobalOnly()) {
+                        applyNewDefaultToLoadedEpisode(oldDefault, speed);
+                    }
                 }
                 if (isGlobalOnly()) {
                     // Don't reach into live playback from Settings (see the
