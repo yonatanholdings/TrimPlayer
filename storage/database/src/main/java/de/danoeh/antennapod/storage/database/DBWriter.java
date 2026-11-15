@@ -620,6 +620,33 @@ public class DBWriter {
         });
     }
 
+    /**
+     * Moves every episode of one playlist to the end of another, in order, and
+     * empties the source. Episodes already in the target keep their place there.
+     */
+    public static Future<?> moveAllPlaylistItems(final long fromPlaylistId, final long toPlaylistId) {
+        return runOnDbThread(() -> {
+            final List<FeedItem> source = DBReader.getPlaylistItems(fromPlaylistId);
+            if (source.isEmpty() || fromPlaylistId == toPlaylistId) {
+                return;
+            }
+            final List<FeedItem> target = DBReader.getPlaylistItems(toPlaylistId);
+            for (FeedItem item : source) {
+                if (playlistIndexOfItem(target, item.getId()) < 0) {
+                    target.add(item);
+                }
+            }
+            final List<FeedItem> emptied = new ArrayList<>();
+            PodDBAdapter adapter = PodDBAdapter.getInstance();
+            adapter.open();
+            adapter.setPlaylistItems(toPlaylistId, target);
+            adapter.setPlaylistItems(fromPlaylistId, emptied);
+            adapter.close();
+            postPlaylistChanged(toPlaylistId, target);
+            postPlaylistChanged(fromPlaylistId, emptied);
+        });
+    }
+
     public static Future<?> removePlaylistItem(final long playlistId, final long itemId) {
         return runOnDbThread(() -> {
             final List<FeedItem> playlist = DBReader.getPlaylistItems(playlistId);

@@ -297,6 +297,9 @@ public class QueueFragment extends Fragment implements MaterialToolbar.OnMenuIte
             de.danoeh.antennapod.ui.screen.playlist.AutoAddShowsDialog
                     .showForQueue(requireContext());
             return true;
+        } else if (itemId == R.id.queue_move_all_to_playlist) {
+            moveAllToNewPlaylist();
+            return true;
         } else if (itemId == R.id.refresh_item) {
             FeedUpdateManager.getInstance().runOnceOrAsk(requireContext());
             return true;
@@ -320,6 +323,31 @@ public class QueueFragment extends Fragment implements MaterialToolbar.OnMenuIte
             return true;
         }
         return false;
+    }
+
+    /** Ask for a name, create that playlist, and move all of Up Next into it in order. */
+    private void moveAllToNewPlaylist() {
+        if (queue == null || queue.isEmpty()) {
+            EventBus.getDefault().post(new MessageEvent(getString(R.string.move_queue_empty_label)));
+            return;
+        }
+        Context context = requireContext();
+        de.danoeh.antennapod.ui.screen.playlist.PlaylistNameDialog.show(context,
+                R.string.move_queue_to_new_playlist_label, null, name ->
+                    Observable.fromCallable(() -> {
+                        long playlistId = DBWriter.createPlaylist(name).get();
+                        long upNextId = DBReader.getDefaultPlaylistId();
+                        List<FeedItem> moving = DBReader.getPlaylistItems(upNextId);
+                        DBWriter.moveAllPlaylistItems(upNextId, playlistId).get();
+                        de.danoeh.antennapod.ui.screen.playlist.PlaylistPlayer
+                                .followMovedEpisodes(moving, upNextId, playlistId);
+                        return moving.size();
+                    })
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(count -> EventBus.getDefault().post(new MessageEvent(
+                                    context.getString(R.string.moved_queue_to_playlist_label, count, name))),
+                                error -> Log.e(TAG, Log.getStackTraceString(error))));
     }
 
     private void toggleQueueLock() {

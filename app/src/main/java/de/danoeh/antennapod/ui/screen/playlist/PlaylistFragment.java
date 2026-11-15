@@ -1,6 +1,7 @@
 package de.danoeh.antennapod.ui.screen.playlist;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -22,6 +23,7 @@ import de.danoeh.antennapod.actionbutton.ItemActionButton;
 import de.danoeh.antennapod.actionbutton.PlayActionButton;
 import de.danoeh.antennapod.actionbutton.PlayLocalActionButton;
 import de.danoeh.antennapod.actionbutton.StreamActionButton;
+import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.event.PlaylistEvent;
 import de.danoeh.antennapod.model.feed.Feed;
 import de.danoeh.antennapod.model.feed.FeedItem;
@@ -31,6 +33,7 @@ import de.danoeh.antennapod.storage.database.DBReader;
 import de.danoeh.antennapod.storage.database.DBWriter;
 import de.danoeh.antennapod.storage.database.LongList;
 import de.danoeh.antennapod.storage.preferences.PlaybackPreferences;
+import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.MenuItemUtils;
 import de.danoeh.antennapod.ui.common.ConfirmationDialog;
 import de.danoeh.antennapod.ui.common.Converter;
@@ -44,6 +47,11 @@ import de.danoeh.antennapod.ui.episodeslist.FeedItemMenuHandler;
 
 import android.widget.EditText;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
+import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
@@ -129,6 +137,9 @@ public class PlaylistFragment extends EpisodesListFragment {
             return true;
         } else if (id == R.id.rename_playlist_item) {
             showRenameDialog();
+            return true;
+        } else if (id == R.id.move_all_to_up_next_item) {
+            moveAllToUpNext();
             return true;
         } else if (id == R.id.clear_playlist_item) {
             showClearDialog();
@@ -279,6 +290,28 @@ public class PlaylistFragment extends EpisodesListFragment {
                 })
                 .setNegativeButton(R.string.cancel_label, null)
                 .show();
+    }
+
+    /** Moves every episode here to the end of Up Next, in order, and empties this playlist. */
+    private void moveAllToUpNext() {
+        if (episodes.isEmpty()) {
+            EventBus.getDefault().post(new MessageEvent(getString(R.string.playlist_empty_label)));
+            return;
+        }
+        android.content.Context context = requireContext();
+        String upNext = UserPreferences.getTrimUpNextTitle(context.getString(R.string.trim_up_next_label));
+        Observable.fromCallable(() -> {
+            long upNextId = DBReader.getDefaultPlaylistId();
+            List<FeedItem> moving = DBReader.getPlaylistItems(playlistId);
+            DBWriter.moveAllPlaylistItems(playlistId, upNextId).get();
+            PlaylistPlayer.followMovedEpisodes(moving, playlistId, upNextId);
+            return moving.size();
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(count -> EventBus.getDefault().post(new MessageEvent(
+                        context.getString(R.string.moved_queue_to_playlist_label, count, upNext))),
+                    error -> Log.e(TAG, Log.getStackTraceString(error)));
     }
 
     private void showClearDialog() {

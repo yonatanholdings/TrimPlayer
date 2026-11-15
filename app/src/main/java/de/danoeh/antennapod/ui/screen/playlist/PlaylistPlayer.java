@@ -16,6 +16,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.util.List;
+
 /**
  * Starts playback of a named playlist: it marks the playlist as the active playback context (so the
  * playback service auto-advances through the same playlist) and plays the first playable episode.
@@ -24,6 +26,29 @@ public final class PlaylistPlayer {
     private static final String TAG = "PlaylistPlayer";
 
     private PlaylistPlayer() {
+    }
+
+    /**
+     * After every episode of one list moved to another: if playback was following
+     * the old list and the playing episode was among those moved, follow it to the
+     * new one instead of stopping after it. Up Next is "no active playlist".
+     */
+    public static void followMovedEpisodes(List<FeedItem> moved, long fromPlaylistId, long toPlaylistId) {
+        long upNextId = DBReader.getDefaultPlaylistId();
+        long active = PlaybackPreferences.getActivePlaylistId();
+        boolean followingSource = active == fromPlaylistId
+                || (fromPlaylistId == upNextId && active == PlaybackPreferences.NO_ACTIVE_PLAYLIST);
+        if (!followingSource) {
+            return;
+        }
+        long playingMediaId = PlaybackPreferences.getCurrentlyPlayingFeedMediaId();
+        for (FeedItem item : moved) {
+            if (item.getMedia() != null && item.getMedia().getId() == playingMediaId) {
+                PlaybackPreferences.setActivePlaylistId(toPlaylistId == upNextId
+                        ? PlaybackPreferences.NO_ACTIVE_PLAYLIST : toPlaylistId);
+                return;
+            }
+        }
     }
 
     /** Plays the whole playlist starting from its first playable episode. */

@@ -1615,4 +1615,8 @@
     <string name="playlist_empty_label">This playlist is empty</string>
     <string name="remove_playlist_confirmation_msg">Delete the playlist \"%1$s\"? The episodes themselves are not deleted.</string>
     <string name="clear_playlist_confirmation_msg">Remove all episodes from \"%1$s\"?</string>
+    <string name="move_queue_to_new_playlist_label">Move all to new playlist</string>
+    <string name="move_playlist_to_up_next_label">Move all to Up Next</string>
+    <string name="moved_queue_to_playlist_label">Moved %1$d episodes to \"%2$s\"</string>
+    <string name="move_queue_empty_label">Nothing to move. Up Next is empty</string>
 </resources>

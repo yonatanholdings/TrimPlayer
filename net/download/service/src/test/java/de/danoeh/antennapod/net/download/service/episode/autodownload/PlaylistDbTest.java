@@ -101,6 +101,38 @@ public class PlaylistDbTest {
     }
 
     @Test
+    public void testMoveAllFromQueueToNewPlaylist() throws Exception {
+        List<Feed> feeds = DbTestUtils.saveFeedlist(1, 4, true);
+        List<FeedItem> items = feeds.get(0).getItems();
+        long queueId = DBReader.getDefaultPlaylistId();
+        DBWriter.addPlaylistItems(queueId, items.get(2), items.get(0), items.get(1))
+                .get(TIMEOUT, TimeUnit.SECONDS);
+        long id = DBWriter.createPlaylist("Running").get(TIMEOUT, TimeUnit.SECONDS);
+        // Already in the target: keeps its place, not duplicated.
+        DBWriter.addPlaylistItems(id, items.get(0), items.get(3)).get(TIMEOUT, TimeUnit.SECONDS);
+
+        DBWriter.moveAllPlaylistItems(queueId, id).get(TIMEOUT, TimeUnit.SECONDS);
+
+        assertTrue(DBReader.getPlaylistItems(queueId).isEmpty());
+        assertTrue(DBReader.getQueue().isEmpty());
+        List<FeedItem> result = DBReader.getPlaylistItems(id);
+        assertEquals(4, result.size());
+        assertEquals(items.get(0).getId(), result.get(0).getId());
+        assertEquals(items.get(3).getId(), result.get(1).getId());
+        assertEquals(items.get(2).getId(), result.get(2).getId());
+        assertEquals(items.get(1).getId(), result.get(3).getId());
+
+        // And back: Up Next gets them all in the same order, the playlist empties.
+        DBWriter.moveAllPlaylistItems(id, queueId).get(TIMEOUT, TimeUnit.SECONDS);
+        assertTrue(DBReader.getPlaylistItems(id).isEmpty());
+        List<FeedItem> queue = DBReader.getQueue();
+        assertEquals(4, queue.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(result.get(i).getId(), queue.get(i).getId());
+        }
+    }
+
+    @Test
     public void testReorderPreservesOrder() throws Exception {
         List<Feed> feeds = DbTestUtils.saveFeedlist(1, 3, true);
         List<FeedItem> items = feeds.get(0).getItems();

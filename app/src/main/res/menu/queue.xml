@@ -31,6 +31,12 @@
         custom:showAsAction="never" />
 
     <item
+        android:id="@+id/queue_move_all_to_playlist"
+        android:title="@string/move_queue_to_new_playlist_label"
+        android:menuCategory="container"
+        custom:showAsAction="never" />
+
+    <item
         android:id="@+id/clear_queue"
         android:title="@string/clear_queue_label"
         custom:showAsAction="collapseActionView"
