@@ -134,6 +134,7 @@ public class ExoPlayerWrapper {
         }
     }
     private Consumer<String> audioErrorListener;
+    private Consumer<String> sourceGoneListener;
     private Consumer<Integer> bufferingUpdateListener;
     private PlaybackParameters playbackParameters;
     private DefaultTrackSelector trackSelector;
@@ -588,6 +589,7 @@ public class ExoPlayerWrapper {
         audioSeekCompleteListener = null;
         audioCompletionListener = null;
         audioErrorListener = null;
+        sourceGoneListener = null;
         bufferingUpdateListener = null;
     }
 
@@ -650,6 +652,10 @@ public class ExoPlayerWrapper {
         }
         if (NetworkUtils.wasDownloadBlocked(error)) {
             audioErrorListener.accept(context.getString(R.string.download_error_blocked));
+            return;
+        }
+        if (sourceGoneListener != null && isSourceGone(error)) {
+            sourceGoneListener.accept(error.getErrorCodeName() + " " + httpStatus(error));
             return;
         }
         Throwable cause = error.getCause();
@@ -790,7 +796,8 @@ public class ExoPlayerWrapper {
 
             @Override
             public long getRetryDelayMsFor(LoadErrorHandlingPolicy.LoadErrorInfo loadErrorInfo) {
-                if (super.getRetryDelayMsFor(loadErrorInfo) == C.TIME_UNSET) {
+                if (super.getRetryDelayMsFor(loadErrorInfo) == C.TIME_UNSET
+                        || isPermanentHttpStatus(loadErrorInfo.exception)) {
                     // Permanent fault — let it surface instead of retrying uselessly.
                     return C.TIME_UNSET;
                 }
@@ -799,6 +806,33 @@ public class ExoPlayerWrapper {
                 return Math.min(backoff, LOAD_RETRY_MAX_DELAY_MS);
             }
         };
+    }
+
+    /**
+     * A 4xx answer will not change on retry. media3's default treats a bad HTTP status as
+     * retryable, so with {@link #MAX_LOAD_RETRIES} a missing file (404) took ~2.5 minutes of
+     * silent buffering before it surfaced. 408 (timeout) and 429 (rate limit) are transient.
+     */
+    @androidx.annotation.VisibleForTesting
+    static boolean isPermanentHttpStatus(@Nullable Throwable error) {
+        int code = httpStatus(error);
+        return code >= 400 && code < 500 && code != 408 && code != 429;
+    }
+
+    /** True when the server says the audio file does not exist (404) or is gone for good (410). */
+    @androidx.annotation.VisibleForTesting
+    static boolean isSourceGone(@Nullable Throwable error) {
+        int code = httpStatus(error);
+        return code == 404 || code == 410;
+    }
+
+    private static int httpStatus(@Nullable Throwable error) {
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            if (t instanceof HttpDataSource.InvalidResponseCodeException) {
+                return ((HttpDataSource.InvalidResponseCodeException) t).responseCode;
+            }
+        }
+        return -1;
     }
 
     public void setDisplay(SurfaceHolder sh) {
@@ -990,6 +1024,11 @@ public class ExoPlayerWrapper {
 
     void setOnErrorListener(Consumer<String> audioErrorListener) {
         this.audioErrorListener = audioErrorListener;
+    }
+
+    /** Called instead of the error listener when the episode's audio no longer exists. */
+    void setOnSourceGoneListener(Consumer<String> sourceGoneListener) {
+        this.sourceGoneListener = sourceGoneListener;
     }
 
     int getVideoWidth() {

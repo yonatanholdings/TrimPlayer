@@ -1,16 +1,23 @@
 package de.danoeh.antennapod.playback.service.internal;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import android.net.Uri;
 
 import androidx.annotation.OptIn;
 import androidx.media3.common.C;
 import androidx.media3.common.ParserException;
 import androidx.media3.common.util.UnstableApi;
+import androidx.media3.datasource.DataSpec;
+import androidx.media3.datasource.HttpDataSource;
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy;
 
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 
 /**
  * Guards {@link ExoPlayerWrapper#patientLoadErrorHandlingPolicy()} — the streaming load-error
@@ -67,5 +74,35 @@ public class ExoPlayerWrapperLoadErrorPolicyTest {
         ParserException parseError =
                 ParserException.createForMalformedContainer("malformed", /* cause= */ null);
         assertEquals(C.TIME_UNSET, policy.getRetryDelayMsFor(errorInfo(parseError, 1)));
+    }
+
+    private static HttpDataSource.InvalidResponseCodeException httpError(int code) {
+        return new HttpDataSource.InvalidResponseCodeException(code, null, null,
+                Collections.emptyMap(), new DataSpec(org.mockito.Mockito.mock(Uri.class)), new byte[0]);
+    }
+
+    @Test
+    public void missingFileIsNotRetried() {
+        // A 404 never fixes itself. Retried like a network drop it buffered silently for ~2.5
+        // minutes in the car (2026-11-19) before the player gave up.
+        assertEquals(C.TIME_UNSET, policy.getRetryDelayMsFor(errorInfo(httpError(404), 1)));
+        assertEquals(C.TIME_UNSET, policy.getRetryDelayMsFor(errorInfo(httpError(410), 1)));
+        assertEquals(C.TIME_UNSET, policy.getRetryDelayMsFor(errorInfo(httpError(403), 1)));
+    }
+
+    @Test
+    public void transientHttpStatusIsRetried() {
+        assertEquals(1000L, policy.getRetryDelayMsFor(errorInfo(httpError(503), 1)));
+        assertEquals(1000L, policy.getRetryDelayMsFor(errorInfo(httpError(429), 1)));
+        assertEquals(1000L, policy.getRetryDelayMsFor(errorInfo(httpError(408), 1)));
+    }
+
+    @Test
+    public void onlyNotFoundAndGoneCountAsSourceGone() {
+        assertTrue(ExoPlayerWrapper.isSourceGone(httpError(404)));
+        assertTrue(ExoPlayerWrapper.isSourceGone(new IOException("wrapped", httpError(410))));
+        assertFalse(ExoPlayerWrapper.isSourceGone(httpError(403)));
+        assertFalse(ExoPlayerWrapper.isSourceGone(httpError(503)));
+        assertFalse(ExoPlayerWrapper.isSourceGone(new IOException("connection reset")));
     }
 }

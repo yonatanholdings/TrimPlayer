@@ -14,6 +14,7 @@ import androidx.lifecycle.Observer;
 import androidx.media.AudioAttributesCompat;
 import androidx.media.AudioFocusRequestCompat;
 import androidx.media.AudioManagerCompat;
+import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.event.PlayerErrorEvent;
 import de.danoeh.antennapod.event.playback.BufferUpdateEvent;
 import de.danoeh.antennapod.event.playback.SpeedChangedEvent;
@@ -26,6 +27,7 @@ import de.danoeh.antennapod.playback.base.PlaybackServiceMediaPlayer;
 import de.danoeh.antennapod.playback.base.PlayerStatus;
 import de.danoeh.antennapod.playback.base.RewindAfterPauseUtils;
 import de.danoeh.antennapod.playback.service.PlaybackService;
+import de.danoeh.antennapod.playback.service.R;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.episodes.PlaybackSpeedUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -912,19 +914,49 @@ public class LocalPSMP extends PlaybackServiceMediaPlayer {
             if (percent == ExoPlayerWrapper.BUFFERING_STARTED) {
                 EventBus.getDefault().post(BufferUpdateEvent.started());
             } else if (percent == ExoPlayerWrapper.BUFFERING_ENDED) {
+                if (mp.getDuration() > 0) {
+                    sourceGoneSkips = 0; // this episode's audio loaded
+                }
                 EventBus.getDefault().post(BufferUpdateEvent.ended());
             } else {
                 EventBus.getDefault().post(BufferUpdateEvent.progressUpdate(0.01f * percent));
             }
         });
         mp.setOnErrorListener(message -> EventBus.getDefault().postSticky(new PlayerErrorEvent(message)));
+        mp.setOnSourceGoneListener(this::onSourceGone);
     }
+
+    /**
+     * The episode's audio file no longer exists on the publisher's server (404/410). Stopping
+     * here leaves a driver with silence and no way to tell why, so move on to the next episode
+     * as a playback-error skip (not marked played, stays in its list) and say so. Capped, so a
+     * feed whose files are all gone ends in the normal error instead of eating the queue.
+     */
+    private void onSourceGone(String reason) {
+        String title = media != null ? media.getEpisodeTitle() : "";
+        de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(context,
+                "source-gone ep=" + title + " (" + reason + ") skipsSoFar=" + sourceGoneSkips);
+        if (sourceGoneSkips >= MAX_SOURCE_GONE_SKIPS) {
+            EventBus.getDefault().postSticky(new PlayerErrorEvent(
+                    context.getString(R.string.episode_audio_gone_msg, title)));
+            return;
+        }
+        sourceGoneSkips++;
+        EventBus.getDefault().post(new MessageEvent(
+                context.getString(R.string.episode_audio_gone_skipped_msg, title)));
+        endPlayback(false, false, true, true);
+    }
+
+    private static final int MAX_SOURCE_GONE_SKIPS = 3;
+    /** Episodes skipped in a row because their audio was gone; reset once one loads. */
+    private int sourceGoneSkips = 0;
 
     private void clearMediaPlayerListeners() {
         mediaPlayer.setOnCompletionListener(() -> { });
         mediaPlayer.setOnSeekCompleteListener(() -> { });
         mediaPlayer.setOnBufferingUpdateListener(percent -> { });
         mediaPlayer.setOnErrorListener(x -> { });
+        mediaPlayer.setOnSourceGoneListener(x -> { });
     }
 
     private void genericSeekCompleteListener() {

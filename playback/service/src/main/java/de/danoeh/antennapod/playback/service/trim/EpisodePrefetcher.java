@@ -10,6 +10,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSpec;
 import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.datasource.HttpDataSource;
 import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.datasource.cache.CacheWriter;
 import androidx.media3.datasource.cache.ContentMetadata;
@@ -118,6 +119,12 @@ public final class EpisodePrefetcher {
             } catch (Throwable t) {
                 // Best-effort: a failed prefetch just means the episode streams normally.
                 Log.d(TAG, "Prefetch failed for " + url + ": " + t.getMessage());
+                // A file the server no longer has can't be cached either; record it in the playback
+                // trail so a later "next episode never started" has its cause on record.
+                if (t instanceof HttpDataSource.InvalidResponseCodeException) {
+                    de.danoeh.antennapod.storage.preferences.TrimPlaybackLog.log(app, "prefetch http "
+                            + ((HttpDataSource.InvalidResponseCodeException) t).responseCode + " " + url);
+                }
             }
         });
     }
